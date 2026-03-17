@@ -1,0 +1,854 @@
+
+# claude-dev-kit — Operational Guide
+
+**Version**: 0.2.0
+**Audience**: Development team members adopting Claude Code with structured governance
+**Format**: Reference + step-by-step. Read it once end-to-end, then use it as a lookup.
+
+---
+
+## Table of Contents
+
+1. [What this is and why it exists](#1-what-this-is-and-why-it-exists)
+2. [Prerequisites](#2-prerequisites)
+3. [Installing the scaffold — three paths](#3-installing-the-scaffold--three-paths)
+   - 3a. Greenfield
+   - 3b. From context
+   - 3c. In-place
+4. [Context Import — how Claude learns your project](#4-context-import--how-claude-learns-your-project)
+5. [The three pipeline tiers](#5-the-three-pipeline-tiers)
+   - Tier S — Fast Lane
+   - Tier M — Standard
+   - Tier L — Full
+6. [Day-to-day workflow](#6-day-to-day-workflow)
+7. [Governance files reference](#7-governance-files-reference)
+8. [Audit skills](#8-audit-skills)
+9. [Governance mechanics](#9-governance-mechanics)
+10. [Conventions and non-negotiables](#10-conventions-and-non-negotiables)
+11. [Maintaining the scaffold](#11-maintaining-the-scaffold)
+12. [Frequently asked questions](#12-frequently-asked-questions)
+
+---
+
+## 1. What this is and why it exists
+
+Claude Code is a powerful CLI assistant that can read, write, and reason about your entire codebase. Without structure, it makes autonomous decisions that are hard to track and harder to review.
+
+`claude-dev-kit` installs a governance layer on top of Claude Code. It does not limit what Claude can do — it makes every meaningful action visible, auditable, and reversible.
+
+**What you get:**
+
+- A development pipeline Claude follows strictly — requirements reviewed before code is written, tests verified before declaring done.
+- Pre-wired hooks that enforce the pipeline mechanically, not just as instructions.
+- A tiered system to match process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature.
+- Audit trails, commit attribution, secret scanning, and CODEOWNERS gates — so the team retains full visibility over AI-generated changes.
+- A discovery mechanism that teaches Claude about your existing codebase in a single structured session, with no manual copy-pasting.
+
+**What it does not do:**
+
+- It does not write your code for you — Claude Code does that. This tool governs how.
+- It does not enforce specific tech stack choices. Everything is configurable.
+- It does not slow you down for trivial changes. The Fast Lane (Tier S) has no gates.
+
+---
+
+## 2. Prerequisites
+
+| Requirement | Version | Why |
+|---|---|---|
+| Node.js | ≥ 18 | CLI runtime |
+| Claude Code | latest | The AI assistant being governed |
+| Git | any | Branch discipline enforced by pipeline |
+| `gh` CLI | any | Optional — needed only for cloning private repos in From context mode |
+| Pre-commit | any | Optional — needed only if you enable the pre-commit hook |
+
+Install Claude Code:
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+---
+
+## 3. Installing the scaffold — three paths
+
+Run this from any directory:
+
+```bash
+npx claude-dev-kit init
+```
+
+You will be asked to choose one of three paths:
+
+---
+
+### 3a. Greenfield — new project from scratch
+
+**Use when**: you are starting a new project and there is no existing codebase.
+
+The wizard asks:
+- Project name and one-line description
+- Pipeline tier (S / M / L)
+- Tech stack (Node.js/TS, Node.js/JS, Python, Go, other)
+- Test command, type check command, dev server command
+- Whether to include pre-commit config and `.github/` files
+
+Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code.
+
+**After running:**
+1. Review `CLAUDE.md` — it has placeholder values. Fill in the project-specific details.
+2. Update `.github/CODEOWNERS` with real GitHub usernames.
+3. If you enabled pre-commit: run `pip install pre-commit && pre-commit install`.
+4. Open Claude Code: `claude` from the project root.
+
+---
+
+### 3b. From context — populate from existing repos and docs
+
+**Use when**: you are starting a new governance project but want to bootstrap it from an existing codebase or documentation (e.g. an existing product you're about to extend, or a spec document).
+
+The wizard asks for:
+- One or more source repositories (GitHub URL, `org/repo`, or local path — one per line, empty line to finish)
+- Optional source documents (PDF, Markdown, TXT file paths)
+- New project name
+- Which repo is the primary (if multiple)
+- Pipeline tier, pre-commit, `.github/`
+
+What happens:
+1. Each source repo is cloned into `.claude/context/repos/<name>/` using `gh` CLI (private repos) or `git clone --depth=1` (public).
+2. Source documents are copied to `.claude/context/docs/`.
+3. The governance scaffold is created.
+4. `CONTEXT_IMPORT.md` is generated in the project root — this file contains the paths and a structured workflow for Claude to follow on the first session.
+5. `.claude/context/` and `CONTEXT_IMPORT.md` are added to `.gitignore` (they contain local paths and potentially large repos).
+
+**After running:** open Claude Code. Claude will automatically detect `CONTEXT_IMPORT.md` and run the Discovery Workflow before doing anything else. See section 4 for details.
+
+---
+
+### 3c. In-place — add governance to an existing project
+
+**Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
+
+The CLI:
+1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`.
+2. Shows detected values pre-filled in every prompt — you confirm or override.
+3. Counts your source files to suggest an appropriate tier.
+4. Creates all governance files **without overwriting** `CLAUDE.md`, `MEMORY.md`, `.gitignore`, or `README.md` if they already exist.
+5. Generates `CONTEXT_IMPORT.md` pointing to the current directory.
+6. Appends claude-dev-kit entries to `.gitignore`.
+
+Detected values you will be asked to confirm:
+- Project name (defaults to directory name)
+- Tech stack and framework
+- Test, type check, dev server, build, install commands
+- Pipeline tier (suggested based on project size)
+
+**After running:** open Claude Code. Claude detects `CONTEXT_IMPORT.md` and runs Discovery on the current directory. See section 4.
+
+---
+
+## 4. Context Import — how Claude learns your project
+
+`CONTEXT_IMPORT.md` is a bridge file generated by the CLI. It contains:
+
+- **Import mode** — `from-context` or `in-place`
+- **Source repositories** — paths to cloned repos under `.claude/context/repos/`
+- **Source documents** — paths to copied docs under `.claude/context/docs/`
+- **Primary repository** — the main codebase for context priority
+
+On every Claude Code session, Claude reads this file first. If the status is `PENDING_DISCOVERY`, it runs the following workflow **before any other work**:
+
+### Discovery Workflow (6 steps)
+
+**Step 1 — Read source repositories**
+
+For each listed repo, Claude reads:
+- Root files: `README.md`, `package.json` / `requirements.txt` / `go.mod`, `CLAUDE.md`
+- Folder structure (1–2 levels deep)
+
+It extracts: tech stack, framework, key commands, folder conventions, naming conventions, roles/RBAC, state machines, known patterns, test setup.
+
+**Step 2 — Read source documents**
+
+For each listed document: extracts product requirements, business rules, user roles, workflows, data model hints, and potential ADRs.
+
+**Step 3 — Populate project files**
+
+Using the extracted information, Claude populates:
+
+- `CLAUDE.md` — project overview, tech stack, key commands, conventions
+- `.claude/rules/pipeline.md` — replaces `[TYPE_CHECK_COMMAND]`, `[TEST_COMMAND]`, `[BUILD_COMMAND]`, `[DEV_COMMAND]`
+- `.claude/settings.json` — replaces `[TEST_COMMAND]` in the Stop hook
+- `docs/requirements.md` (Tier M/L) — product requirements and key workflows
+- `docs/implementation-checklist.md` (Tier M/L) — initial planned blocks
+- `docs/adr/` — one ADR file per architectural decision found in source docs
+
+**Step 4 — Present discovery summary**
+
+Claude outputs a structured summary:
+```
+## Discovery Summary
+
+### Project: [name]
+**Stack**: [detected]
+**Framework**: [detected]
+**Architecture**: [pattern]
+
+### Key commands detected
+- Install: [command]
+- Dev: [command]
+- Build: [command]
+- Test: [command]
+- Type check: [command or N/A]
+
+### Roles / RBAC
+[roles found, or "None detected"]
+
+### State machines
+[workflows found, or "None detected"]
+
+### ADRs created
+[list, or "None"]
+
+### Files populated
+- CLAUDE.md ✓
+- .claude/settings.json ✓
+- docs/requirements.md ✓
+
+### Gaps — questions for you
+[anything that could not be inferred]
+```
+
+**Step 5 — Ask targeted gap questions**
+
+Claude asks about anything it could not infer: auth mechanism, deployment target, team size, permission model details.
+
+**Step 6 — Mark discovery complete**
+
+After you confirm the summary and answer gap questions, Claude updates `CONTEXT_IMPORT.md`: `Status: PENDING_DISCOVERY` → `Status: COMPLETE`.
+
+From that point on, `CONTEXT_IMPORT.md` is a historical record. Claude does not re-run the workflow.
+
+> **To trigger re-discovery** (e.g. after a major architecture change): delete the line `Status: COMPLETE` from `CONTEXT_IMPORT.md`. The next session will re-run the workflow.
+
+---
+
+## 5. The three pipeline tiers
+
+The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by editing `.claude/rules/pipeline.md` or running `npx claude-dev-kit upgrade`.
+
+### Tier S — Fast Lane
+
+**Use for**: bugfixes, ≤3 file changes, no migrations, no new patterns, no shared type changes.
+**Branch prefix**: `fix/description` — Claude detects this and switches to Fast Lane automatically.
+
+| Phase | Action |
+|---|---|
+| FL-0 | Confirm branch is `fix/*`. If on `main` / `staging`: stop. |
+| FL-1 | Implement the fix. Run type check + tests. Must be green. Commit. |
+| FL-2 | Merge to staging. Wait for deploy. Verify in 1–3 steps. |
+| FL-3 | Merge to main. Verify production deploy. |
+| FL-4 | Update checklist if fix closes a tracked item. Delete session file. |
+
+**No STOP gates.** Claude proceeds autonomously through all steps.
+
+If the fix scope expands beyond 3 files or requires a migration during FL-1, Claude escalates to Tier M and notifies you.
+
+---
+
+### Tier M — Standard
+
+**Use for**: feature blocks, 1–2 week changes, ≤15 files, no complex domain changes.
+**Branch prefix**: `feature/block-name`.
+
+| Phase | Action | Gate |
+|---|---|---|
+| 0 | Session orientation. Check CONTEXT_IMPORT.md, session file, branch. | — |
+| 1 | Requirements, dependency scan, file list, open questions. | ⏸ **STOP** |
+| 1.5 | Design review — data flow, trade-offs. *(skip for simple blocks)* | ⏸ **STOP** |
+| 2 | Implementation. Follows CLAUDE.md conventions. Security checklist. | — |
+| 3 | Type check + build + tests. Intermediate commit. | — |
+| 3b | API integration tests. *(if routes were added/modified)* | — |
+| 5 | Merge to staging. Smoke test. | — |
+| 6 | Outcome checklist with actual results. | ⏸ **STOP** |
+| 8 | Block closure: delete session file, update docs, promote to main. | — |
+
+**Two STOP gates** (Phases 1 and 6). Claude presents results at each and waits for your explicit confirmation before proceeding.
+
+---
+
+### Tier L — Full
+
+**Use for**: complex domain changes, long-running projects, teams of 3+, architectural decisions.
+**Branch prefix**: `feature/block-name`.
+
+| Phase | Action | Gate |
+|---|---|---|
+| 0 | Session orientation. CONTEXT_IMPORT.md check, session file, CLAUDE.local.md, MEMORY.md, branch. | — |
+| 1 | Requirements, full dependency scan (5 check categories), session file updates, open questions. | ⏸ **STOP** |
+| 1.5 | Design review — data flow, data structures, discarded alternatives. *(skip for simple blocks)* | ⏸ **STOP** |
+| 1.6 | Visual & UX design. ASCII wireframe + design system mapping + UX rationale. *(UI blocks only)* | ⏸ **STOP** |
+| Plan lock | EnterPlanMode → user enables auto-accept → ExitPlanMode → `/compact` | — |
+| 2 | Implementation. Migration rules, destructive migration rollback comments, security checklist. | — |
+| 3 | Type check + build + unit tests. Intermediate commit. | — |
+| 3b | API integration tests. | — |
+| 4 | E2E tests with Playwright/Cypress. *(significant UI flows)* | — |
+| 5 | Merge to staging. Smoke test (all roles). | — |
+| 6 | Outcome checklist: build/test + design system compliance + implemented features. | ⏸ **STOP** |
+| 8 | Block closure: session file, checklist, CLAUDE.md, requirements, ADR, MEMORY.md, commit sequence, main. | — |
+| 8.5 | Context file review (C1–C11 checks). `/compact`. | — |
+
+**Four STOP gates** (Phases 1, 1.5, 1.6, 6). The plan-lock step before Phase 2 ensures the full approved plan is locked before any code is written.
+
+---
+
+### Choosing the right tier
+
+When in doubt:
+
+- **Fix a bug** or make a small change you can fully describe in one sentence → Tier S
+- **Build a feature** you can scope in 1–2 weeks and describe in a paragraph → Tier M
+- **Redesign a domain**, make architectural decisions, add a new major entity, or work on a team of 3+ → Tier L
+
+You can also start at Tier M and escalate mid-block. Claude will notify you when scope expands.
+
+---
+
+## 6. Day-to-day workflow
+
+### Starting a new feature (Tier M example)
+
+```bash
+# 1. Create a branch
+git checkout staging && git pull
+git checkout -b feature/user-notifications
+
+# 2. Open Claude Code
+claude
+
+# 3. Describe the task
+# Claude starts at Phase 0 (session orientation)
+# → creates .claude/session/block-user-notifications.md
+# → confirms branch is feature/*
+# → reads MEMORY.md
+
+# 4. Claude presents Phase 1 requirements summary and file list
+# Review it. If correct: "confirmed, proceed"
+# If wrong: correct it. Claude updates the plan.
+
+# 5. Claude implements (Phase 2)
+# With auto-accept edits enabled: files are written without per-file prompts
+
+# 6. Claude runs tests (Phase 3)
+# If anything fails: Claude fixes and re-runs
+
+# 7. Claude merges to staging and smoke tests (Phase 5)
+
+# 8. Claude presents the outcome checklist (Phase 6)
+# Review it. If everything is correct: "confirmed, proceed"
+
+# 9. Claude closes the block (Phase 8)
+# → deletes session file
+# → updates implementation-checklist.md
+# → commits docs
+# → merges to main
+```
+
+### Starting a quick fix (Tier S)
+
+```bash
+git checkout -b fix/login-redirect-loop
+claude
+
+# Describe the fix. Claude proceeds through FL-0 → FL-4 autonomously.
+# No STOP gates. Done in minutes.
+```
+
+### Starting a session after an interruption
+
+Claude's first action in every session is to check `.claude/session/` for existing `block-*.md` files. If one exists, it resumes from the recorded state automatically. No manual re-orientation needed.
+
+### Enabling auto-accept edits
+
+For Tier L blocks, after Phase 1 approval, Claude asks you to enable **auto-accept edits** in the Claude Code UI before Phase 2 starts. This prevents the per-file approval dialog from blocking a multi-file implementation. You can re-disable it after Phase 3.
+
+In Claude Code: press `Shift+Tab` to toggle between default, auto-accept, and plan-only modes.
+
+---
+
+## 7. Governance files reference
+
+### CLAUDE.md
+
+The primary project context file. Claude reads it at the start of every session.
+
+**What to put in it:**
+- Project overview (2–4 sentences)
+- Tech stack with specific versions
+- Key commands: install, dev, build, test, type check
+- Folder conventions (where routes live, where utilities live)
+- Naming conventions (casing, file naming)
+- Known non-obvious patterns (things Claude would get wrong without being told)
+- RBAC / permission model if applicable
+
+**What not to put in it:**
+- Long explanations of standard patterns
+- Code samples for common patterns
+- Anything Claude can infer from reading the code
+
+**Size discipline**: keep it under 200 lines. Beyond that: extract stable patterns into `.claude/rules/` files.
+
+---
+
+### MEMORY.md (Tier M/L)
+
+Shared lessons and active project state. Updated at the end of every block.
+
+**Sections:**
+- **Active plan** — block-by-block status table. Updated every block.
+- **Key technical patterns** — non-obvious decisions worth preserving across sessions.
+- **Lessons** — things that went wrong and how to avoid them next time.
+
+**Size discipline**: keep under 150 lines. Extract topics into separate files in `.claude/` if it grows.
+
+---
+
+### .claude/settings.json
+
+Permissions and hooks.
+
+Key sections:
+```json
+{
+  "permissions": {
+    "allow": ["Bash(git *)", "Bash(npm *)", "Bash(npx *)"],
+    "deny": ["Bash(curl * | bash *)", "Bash(rm -rf /)"]
+  },
+  "hooks": {
+    "Stop": [{ "type": "command", "command": "npm test" }],
+    "PostToolUse": [{ "type": "command", "command": "..." }]
+  }
+}
+```
+
+**Stop hook** — runs your test command when Claude tries to declare a task complete. If tests fail, Claude is blocked and must fix the failure.
+
+**Do not disable the Stop hook** unless you are running a dry-run or documentation-only task.
+
+---
+
+### .claude/rules/pipeline.md
+
+The development workflow Claude follows. Tier-appropriate content is scaffolded at init time.
+
+You can add project-specific overrides at the bottom of this file. Example:
+```markdown
+## Project-specific rules
+
+- Always run `npm run db:migrate` before running tests.
+- Do not touch `lib/legacy/` — it is scheduled for deletion in Q3.
+```
+
+---
+
+### .claude/rules/security.md
+
+Path-scoped security rules. These load only when Claude works on files matching `src/api/**` or `lib/auth*`. Zero context cost during UI work.
+
+Contains: auth check requirements, input validation rules, RLS/ACL checklist, headers to include.
+
+---
+
+### .claude/rules/git.md
+
+Commit format, branch naming rules, PR conventions. Loaded for all git operations.
+
+---
+
+### .claude/rules/context-review.md (Tier L)
+
+End-of-block compliance checklist. Executed in Phase 8.5. Contains 11 checks (C1–C11):
+
+- C1: no credentials in MEMORY.md
+- C2: no untranslated strings in internal docs
+- C3: no stale field names
+- C4: no stale block references
+- C5: MEMORY.md qualifiers in pipeline.md
+- C6: no duplication between MEMORY.md and CLAUDE.md
+- C7: size compliance (both files < 150 lines)
+- C8: files-guide.md path accuracy
+- C9: active plan currency
+- C10: no dead file references
+- C11: refactoring backlog — completed items removed
+
+---
+
+### docs/adr/template.md
+
+Architecture Decision Record template. Use it for every significant architectural choice.
+
+The key addition vs. standard ADRs is the **AI Coding Guidance** section:
+
+```markdown
+## AI Coding Guidance
+
+When generating code in this area, Claude must:
+- Always use `createError()` from `lib/errors.ts` — never throw raw Error objects
+- Never access the database directly from route handlers — go through service functions
+- Every new route must have an auth check as the first line
+```
+
+This section is read by Claude and becomes a durable constraint — no need to repeat it in CLAUDE.md.
+
+---
+
+### .claude/session/ (gitignored)
+
+Session recovery files. One file per active block, named `block-[name].md`.
+
+Created at Phase 0, deleted at Phase 8 after confirmed block closure. If the session is interrupted, the file persists and Claude resumes from it automatically next session.
+
+Never commit these files — they are in `.gitignore` by design.
+
+---
+
+### CONTEXT_IMPORT.md (gitignored)
+
+Generated by the CLI for From context and In-place init modes. Contains the discovery workflow instructions and source paths. See section 4 for full details.
+
+---
+
+## 8. Audit skills
+
+Tier M and L scaffolds include five audit skills. Run them as slash commands in Claude Code:
+
+### /security-audit
+
+Security review of your API routes and data layer.
+
+**Checks:**
+- Auth guards on every route (no unauthenticated access)
+- Input validation coverage (Zod or equivalent)
+- Sensitive data exposure in responses
+- RLS / ACL completeness on new tables
+- Missing HTTP security headers
+
+**Placeholders to fill in `SKILL.md`:**
+- `[API_ROUTES_PATH]` — e.g. `src/api/` or `app/api/`
+- `[AUTH_HELPER]` — e.g. `lib/auth.ts` or `middleware/auth.js`
+- `[VALIDATION_LIB]` — e.g. `zod`, `joi`, `yup`
+- `[ROLE_ENUM]` — e.g. `admin | user | viewer`
+
+---
+
+### /skill-dev
+
+Code quality and technical debt audit.
+
+**Checks:**
+- Coupling (D1–D7): cross-module dependencies, circular imports, god objects
+- Duplication: copy-paste patterns that should be extracted
+- Dead code: unused exports, unreachable branches
+- Pattern inconsistencies: same problem solved differently in different parts of the codebase
+- Abstraction health: premature abstractions that hurt readability vs. missing abstractions causing repetition
+
+Output goes to `docs/backlog-refinement.md`.
+
+---
+
+### /skill-db
+
+Database schema and query quality audit.
+
+**Checks (S1–S6):** normalization, missing indexes, constraint gaps, RLS completeness, column type choices, table naming.
+
+**Query patterns (Q1–Q3):** N+1 patterns in route handlers, inefficient joins, missing pagination.
+
+**Migration quality (M1–M2):** rollback comments, idempotency.
+
+Requires `docs/db-map.md` as authoritative schema reference (fill it in manually or let Claude generate it from your migration files).
+
+---
+
+### /api-design
+
+API design consistency review.
+
+**Checks:**
+- N1–N5: endpoint naming (kebab-case, plural nouns, no verbs in paths)
+- HTTP verb correctness (GET for reads, POST for creates, PATCH for partial updates)
+- Response shape consistency (same envelope across all endpoints)
+- Error code standardization (4xx mapping)
+- Pagination patterns
+- Input validation presence
+
+---
+
+### /perf-audit
+
+Performance audit.
+
+**Checks:**
+- P1–P5: rendering strategy (server vs. client components), bundle size, unnecessary re-renders, image optimization, large dependency imports
+- Q1–Q3: N+1 query patterns in API routes, missing query result caching, unindexed filter columns
+
+---
+
+## 9. Governance mechanics
+
+### Stop hook
+
+The Stop hook runs your test command every time Claude tries to declare a task complete. If tests fail, the hook returns a block decision and Claude must fix the failure before it can proceed.
+
+Configuration in `.claude/settings.json`:
+```json
+"Stop": [{
+  "hooks": [{
+    "type": "command",
+    "command": "npm test || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before declaring complete.\"}'"
+  }]
+}]
+```
+
+Replace `npm test` with your actual test command. The command must exit 0 on success.
+
+---
+
+### Audit log
+
+Every tool use (file read, file write, bash command) is logged to `~/.claude/audit/<project>.jsonl`. The log is append-only. Each entry includes:
+
+- Timestamp
+- Tool name
+- Input parameters
+- Session ID
+
+This log is local to your machine. It is not committed to the repository.
+
+---
+
+### LLM security review (Tier L)
+
+At session close, a lightweight Haiku call checks:
+
+- Any hardcoded secrets or tokens in the changed files
+- Any new route without an authentication check
+- Any `eval()` or `exec()` call on user-provided input
+
+If issues are found, the session close is blocked and the findings are listed.
+
+---
+
+### AI commit attribution
+
+Every commit made during a Claude Code session includes:
+
+```
+Co-authored-by: Claude <noreply@anthropic.com>
+```
+
+This makes AI contributions visible in `git log` and GitHub's contributor history — without obscuring the human author.
+
+---
+
+### CODEOWNERS
+
+`.github/CODEOWNERS` requires tech lead review on `.claude/` changes:
+
+```
+.claude/ @your-org/tech-lead
+```
+
+This means no change to the governance layer itself (pipeline rules, settings, hooks) can be merged without a human review. Claude cannot silently modify its own constraints.
+
+---
+
+### Pre-commit hooks
+
+`.pre-commit-config.yaml` includes:
+
+- **gitleaks** — scans every commit for secrets (API keys, tokens, passwords)
+- **AI commit audit** — flags commits with `Co-authored-by: Claude` for team awareness
+
+To activate:
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+If gitleaks finds a secret: the commit is blocked. Fix by removing the secret and adding the file to `.gitignore`.
+
+---
+
+## 10. Conventions and non-negotiables
+
+These apply in all tiers:
+
+**Branch discipline**
+- Never commit directly to `main` or `staging`
+- Features: `feature/block-name`
+- Fixes: `fix/description`
+- Worktrees (parallel work): `worktree-block-name`
+
+**Conventional commits**
+```
+feat(scope): add user notifications
+fix(auth): handle expired token on refresh
+docs: update API guide
+chore: bump dependencies
+```
+- Imperative mood, under 72 characters
+- Scope is optional but encouraged for large codebases
+
+**STOP gates are hard stops**
+When Claude presents a STOP gate, it waits for your explicit confirmation. Do not say "yes continue" to a requirements summary you haven't read — the whole point of the gate is a human decision checkpoint.
+
+**Tests before declare-done**
+Claude cannot mark a task complete with failing tests. If you need to temporarily disable the hook (dry-run, docs-only task): set `"Stop": []` in `settings.json`, then restore it immediately after.
+
+**No unrequested changes**
+Claude implements only what was approved in Phase 1. If it notices a problem in an adjacent area, it notes it in the session file and the refactoring backlog — it does not fix it silently.
+
+**Secret hygiene**
+Never commit `.env`, `.env.local`, `.env.production`, or any file containing tokens, API keys, or passwords. These must be in `.gitignore`. The pre-commit hook enforces this, but `.gitignore` is the primary line of defense.
+
+---
+
+## 11. Maintaining the scaffold
+
+### Upgrading
+
+```bash
+npx claude-dev-kit upgrade
+```
+
+Non-destructive files are updated to the latest template version:
+- `.claude/rules/context-review.md`
+- `.claude/rules/security.md`
+- `.claude/rules/git.md`
+
+Files containing your customizations are **not overwritten** — they are flagged with a diff:
+- `CLAUDE.md`
+- `.claude/rules/pipeline.md`
+- `.claude/settings.json`
+
+Review the diff and apply the relevant parts manually.
+
+---
+
+### Checking setup health
+
+```bash
+npx claude-dev-kit doctor
+```
+
+Runs 10 checks and reports pass/fail:
+
+1. Claude Code CLI is installed and reachable
+2. CLAUDE.md exists and is under 200 lines
+3. `.claude/settings.json` is valid JSON
+4. Stop hook is configured with a non-empty command
+5. `.claude/rules/pipeline.md` exists
+6. `.github/CODEOWNERS` covers `.claude/`
+7. No placeholder values remain in `settings.json` (`[TEST_COMMAND]` etc.)
+8. No `*.env` files are tracked by git
+9. `MEMORY.md` is under 150 lines (if present)
+10. `.claude/session/` is gitignored
+
+---
+
+### Adding team-specific rules
+
+Do not edit the scaffolded rule files directly if you want to preserve upgrade compatibility. Instead:
+
+1. Create `.claude/rules/team.md` with your team-specific rules.
+2. Add it to `files-guide.md` so Claude knows it exists.
+3. Reference it from CLAUDE.md: `See .claude/rules/team.md for additional constraints.`
+
+---
+
+### CLAUDE.md vs. MEMORY.md vs. ADRs — what goes where
+
+| Content | Location |
+|---|---|
+| Stable project truths (stack, conventions, RBAC) | `CLAUDE.md` |
+| Active work state, in-progress lessons, recent patterns | `MEMORY.md` |
+| Architectural decisions + rationale + AI constraints | `docs/adr/NNNN-title.md` |
+| Non-obvious patterns stable enough to be permanent | `CLAUDE.md` Known Patterns section |
+| Block-specific state for session recovery | `.claude/session/block-name.md` |
+
+---
+
+## 12. Frequently asked questions
+
+**Q: Do I need to run `npx claude-dev-kit init` every time I start a session?**
+
+No. You run it once to scaffold the governance layer. After that, you just open Claude Code (`claude`) from the project root. The governance files load automatically.
+
+---
+
+**Q: What happens if Claude ignores the pipeline?**
+
+The Stop hook is a mechanical enforcement: it does not rely on Claude following instructions. Even if Claude tries to declare a task complete without running tests, the hook blocks it.
+
+The STOP gates rely on Claude respecting the instructions in `pipeline.md`. If you observe Claude skipping a gate, check that `pipeline.md` is being loaded (run `npx claude-dev-kit doctor`).
+
+---
+
+**Q: Can I use this with a non-Node.js project?**
+
+Yes. The CLI supports Python, Go, and "Other / mixed" stacks. The test command, type check command, and build command are all configurable. The pipeline itself is stack-agnostic.
+
+---
+
+**Q: My project already has a CLAUDE.md. Will in-place init overwrite it?**
+
+No. In-place mode uses safe scaffold mode: files that already exist are never overwritten. Your existing `CLAUDE.md`, `MEMORY.md`, `.gitignore`, and `README.md` are preserved. The governance files (pipeline, settings, rules) are created alongside them.
+
+---
+
+**Q: What is CONTEXT_IMPORT.md and can I delete it after discovery?**
+
+After Claude marks the status as `COMPLETE`, the file is a historical record. You can delete it — but it is useful to keep as a reference for what was imported and when. The pipeline templates check for `Status: PENDING_DISCOVERY` specifically, so a `COMPLETE` file does not trigger any workflow.
+
+---
+
+**Q: How do I handle multiple worktrees (parallel feature development)?**
+
+Create each worktree from `staging`, never from `main`:
+```bash
+git worktree add .claude/worktrees/feature-name -b worktree-feature-name staging
+```
+
+Rules:
+- Each worktree has its own branch.
+- Merge to `staging` sequentially — never two unrelated branches at once. Smoke-test the first before merging the second.
+- Migration numbering: check `ls supabase/migrations/` in the main repo before numbering a new migration in a worktree. Two worktrees must never use the same migration number.
+
+---
+
+**Q: Can I switch tiers on an existing project?**
+
+Yes. Edit `.claude/rules/pipeline.md` directly, or run `npx claude-dev-kit upgrade` which will show you a diff between your current pipeline and the latest template for the tier of your choice.
+
+---
+
+**Q: What is the difference between MEMORY.md at the project root and the auto-memory at `~/.claude/`?**
+
+- **Project-root `MEMORY.md`** — committed to the repo. Shared across the team. Contains the active block plan and stable lessons relevant to the project. Reviewed and updated by Claude at block closure.
+- **Auto-memory (`~/.claude/projects/.../memory/`)** — local to your machine, never committed. Claude Code manages this automatically. Contains session-specific patterns and per-developer notes.
+
+---
+
+**Q: The discovery workflow populated CLAUDE.md with wrong information. What do I do?**
+
+Edit `CLAUDE.md` directly — it is a regular Markdown file. Correct the wrong values. You do not need to re-run discovery. Discovery is a one-time bootstrap; you own the file after that.
+
+---
+
+**Q: How do I add a new audit skill?**
+
+Create a directory under `.claude/skills/your-skill-name/` containing a `SKILL.md` file. Follow the structure of the existing skills (header with scope + trigger conditions, numbered checks, output format). Add a row to `.claude/cheatsheet.md` if your project uses one.
+
+---
+
+*Last updated: 2026-03-17 — v0.2.0*

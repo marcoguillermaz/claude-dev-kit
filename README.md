@@ -21,11 +21,16 @@
 ## Quickstart
 
 ```bash
-# In an existing project directory or a new empty folder:
 npx claude-dev-kit init
 ```
 
-The wizard asks 8 questions and produces a ready-to-use scaffold.
+Three paths to choose from:
+
+| Path | Use when |
+|---|---|
+| **Greenfield** | Starting a new project from scratch |
+| **From context** | You have existing repos or docs — Claude reads them and populates your project files |
+| **In-place** | You're already inside a project — adds governance without overwriting anything |
 
 ### Validate your setup
 
@@ -61,7 +66,8 @@ Files with your customizations (CLAUDE.md, pipeline.md, settings.json) are flagg
 ```
 your-project/
 ├── CLAUDE.md                       ← project context (<200 lines, committed)
-├── MEMORY.md                       ← shared lessons (M/L only)
+├── MEMORY.md                       ← shared lessons and active plan (M/L only)
+├── CONTEXT_IMPORT.md               ← discovery bridge file (from-context / in-place only)
 │
 ├── .claude/
 │   ├── settings.json               ← permissions + governance hooks
@@ -70,6 +76,7 @@ your-project/
 │   │   ├── context-review.md       ← end-of-block compliance checklist
 │   │   ├── security.md             ← path-scoped: API/auth files only
 │   │   └── git.md                  ← commit format, branch rules
+│   ├── skills/                     ← audit skills: /security-audit /skill-dev /skill-db ... (M/L)
 │   ├── files-guide.md              ← reference: what every file does
 │   └── session/                    ← session recovery files (gitignored)
 │
@@ -86,6 +93,23 @@ your-project/
 ├── .pre-commit-config.yaml         ← gitleaks + AI commit audit
 └── README.md                       ← generated from wizard answers
 ```
+
+---
+
+## Context Import — how Claude populates your files
+
+When you use **From context** or **In-place** mode, the CLI generates `CONTEXT_IMPORT.md` in your project root.
+
+On the first Claude Code session, Claude reads this file and runs a structured Discovery Workflow:
+
+1. Reads each source repository (README, package.json, folder structure 1–2 levels deep)
+2. Reads any source documents (PDFs, Markdown, TXT)
+3. Extracts: tech stack, key commands, folder conventions, naming conventions, RBAC, state machines
+4. Populates `CLAUDE.md`, `docs/requirements.md`, pipeline placeholders
+5. Presents a discovery summary and asks targeted gap questions
+6. Marks `CONTEXT_IMPORT.md` as `COMPLETE`
+
+After that, the file is a historical record and Claude does not re-run discovery.
 
 ---
 
@@ -149,12 +173,19 @@ Architectural decisions become persistent constraints Claude respects across ses
 - Node.js ≥ 18
 - [Claude Code CLI](https://claude.ai/code)
 - Git
+- `gh` CLI (optional — needed for cloning private repos in From context mode)
+
+---
+
+## Documentation
+
+Full operational guide for your team: [`docs/operational-guide.docs`](docs/operational-guide.docs)
 
 ---
 
 ## Status
 
-`v0.1.0` — private. Templates stable, CLI functional. Publishing to npm pending.
+`v0.2.0` — private. Three-path init stable. Templates stable. Publishing to npm pending.
 
 ## License
 
