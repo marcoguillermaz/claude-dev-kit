@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "Co-authored-by: Claude <noreply@anthropic.com>",
+    "pr": "AI-assisted: requires human review before merging"
+  },
+  "includeGitInstructions": false,
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push origin main*)",
+      "Bash(rm -rf /*)",
+      "Bash(DROP TABLE*)",
+      "Bash(TRUNCATE*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $CLAUDE_PROJECT_DIR && [TEST_COMMAND] 2>&1 | tail -5 || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before completing the task. Fix failing tests first.\"}'",
+            "timeout": 60000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -nc --arg ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" --arg tool \"$CLAUDE_TOOL_NAME\" --arg input \"$CLAUDE_TOOL_INPUT\" '{timestamp: $ts, tool: $tool, input: ($input | .[:200])}' >> ~/.claude/audit/$(basename $CLAUDE_PROJECT_DIR).jsonl 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p ~/.claude/audit && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) SESSION_START project=$(basename $CLAUDE_PROJECT_DIR)\" >> ~/.claude/audit/sessions.log",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

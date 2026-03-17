@@ -1,0 +1,36 @@
+# CODEOWNERS — Required reviewers by directory
+#
+# Format: path  @owner
+# Paths are matched in order — last match wins.
+# Use GitHub usernames or team names (@org/team-name).
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything not listed below
+*                           @[TECH_LEAD]
+
+# Claude Code configuration — changes affect what AI can do
+# Always require tech lead or platform team review
+/.claude/                   @[TECH_LEAD]
+/.claude/settings.json      @[TECH_LEAD]
+/.claude/rules/             @[TECH_LEAD]
+/.mcp.json                  @[TECH_LEAD]
+
+# Database migrations — require DBA or backend lead
+/migrations/                @[BACKEND_LEAD]
+/supabase/migrations/       @[BACKEND_LEAD]
+/prisma/migrations/         @[BACKEND_LEAD]
+/db/migrations/             @[BACKEND_LEAD]
+
+# Auth and security-sensitive code
+/src/auth/                  @[TECH_LEAD] @[SECURITY_REVIEWER]
+/app/api/auth/              @[TECH_LEAD] @[SECURITY_REVIEWER]
+/lib/auth*                  @[TECH_LEAD]
+
+# CI/CD and deployment configuration
+/.github/workflows/         @[TECH_LEAD]
+/Dockerfile                 @[TECH_LEAD]
+/docker-compose*.yml        @[TECH_LEAD]
+
+# Architecture decisions — anyone can propose, tech lead must approve
+/docs/adr/                  @[TECH_LEAD]

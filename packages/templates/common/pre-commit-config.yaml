@@ -1,0 +1,62 @@
+# .pre-commit-config.yaml
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+# Update hooks: pre-commit autoupdate
+
+repos:
+  # ─── General file hygiene ───────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'staging', '--branch', 'master']
+
+  # ─── Secret scanning ────────────────────────────────────────────────
+  # Detects accidentally committed secrets and credentials
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # ─── AI commit audit ────────────────────────────────────────────────
+  # Warns when an AI-generated commit is detected (via attribution in commit message)
+  # so the team can ensure human review happened before merge
+  - repo: local
+    hooks:
+      - id: ai-commit-review-reminder
+        name: AI commit — verify human review
+        entry: bash -c 'git log -1 --format="%B" | grep -q "Co-authored-by: Claude" && echo "⚠️  AI-assisted commit detected. Ensure a human has reviewed the changes before merging." || true'
+        language: system
+        pass_filenames: false
+        stages: [commit-msg]
+
+  # ─── Add your language-specific hooks below ─────────────────────────
+  # JavaScript / TypeScript example:
+  # - repo: local
+  #   hooks:
+  #     - id: typecheck
+  #       name: TypeScript type check
+  #       entry: npx tsc --noEmit
+  #       language: system
+  #       pass_filenames: false
+  #     - id: lint
+  #       name: ESLint
+  #       entry: npx eslint --fix
+  #       language: system
+  #       types: [javascript, ts]
+
+  # Python example:
+  # - repo: https://github.com/astral-sh/ruff-pre-commit
+  #   rev: v0.4.4
+  #   hooks:
+  #     - id: ruff
+  #       args: [--fix]
+  #     - id: ruff-format
