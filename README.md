@@ -96,6 +96,26 @@ your-project/
 
 ---
 
+## Audit skills (Tier M / L)
+
+Five slash-command skills are scaffolded in `.claude/skills/`. Run them any time — no pipeline phase required.
+
+| Command | What it audits | Checks | Backlog ID |
+|---|---|---|---|
+| `/security-audit` | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3, headers | `SEC-n` |
+| `/skill-dev` | Coupling, duplication, dead code, magic values, oversized components, TypeScript suppressions | D1–D7, A1–A3 | `DEV-n` |
+| `/skill-db` | Schema normalization, indexes, access control, data types, N+1 queries, migration quality | S1–S6, Q1–Q3, M1–M2 | `DB-n` |
+| `/api-design` | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 | `API-n` |
+| `/perf-audit` | Rendering boundaries, bundle size, heavy imports, unoptimized images, serial awaits, over-fetching | P1–P5, Q1–Q3 | `PERF-n` |
+
+All skills are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md` with severity-ranked IDs.
+
+Before the first run, fill in the `## Configuration` placeholders at the top of each `SKILL.md` (e.g. `[API_ROUTES_PATH]`, `[AUTH_HELPER]`, `[DB_SYSTEM]`).
+
+Full check-by-check reference: [`docs/operational-guide.docs`](docs/operational-guide.docs) § Audit skills.
+
+---
+
 ## Context Import — how Claude populates your files
 
 When you use **From context** or **In-place** mode, the CLI generates `CONTEXT_IMPORT.md` in your project root.
