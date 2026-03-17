@@ -100,17 +100,23 @@ your-project/
 
 Five slash-command skills are scaffolded in `.claude/skills/`. Run them any time — no pipeline phase required.
 
-| Command | What it audits | Checks | Backlog ID |
-|---|---|---|---|
-| `/security-audit` | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3, headers | `SEC-n` |
-| `/skill-dev` | Coupling, duplication, dead code, magic values, oversized components, TypeScript suppressions | D1–D7, A1–A3 | `DEV-n` |
-| `/skill-db` | Schema normalization, indexes, access control, data types, N+1 queries, migration quality | S1–S6, Q1–Q3, M1–M2 | `DB-n` |
-| `/api-design` | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 | `API-n` |
-| `/perf-audit` | Rendering boundaries, bundle size, heavy imports, unoptimized images, serial awaits, over-fetching | P1–P5, Q1–Q3 | `PERF-n` |
+| Command | Tier | What it audits | Checks | Backlog ID |
+|---|---|---|---|---|
+| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6 | — |
+| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3, headers | `SEC-n` |
+| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, oversized components, TypeScript suppressions | D1–D7, A1–A3 | `DEV-n` |
+| `/skill-db` | M L | Schema normalization, indexes, access control, data types, N+1 queries, migration quality | S1–S6, Q1–Q3, M1–M2 | `DB-n` |
+| `/api-design` | M L | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 | `API-n` |
+| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, over-fetching | P1–P5, Q1–Q3 | `PERF-n` |
+| `/responsive-audit` | M L | Layout correctness at 375px / 768px / 1024px via Playwright screenshots | R1–R6 | — |
+| `/ux-audit` | M L | Task completion, interaction consistency, feedback, navigation, cognitive load | D1–D6 per flow | `UX-n` |
+| `/visual-audit` | M L | Typography, spacing, hierarchy, colour discipline, dark-mode polish, micro-polish | V1–V7 per page | — |
 
-All skills are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md` with severity-ranked IDs.
-
-Before the first run, fill in the `## Configuration` placeholders at the top of each `SKILL.md` (e.g. `[API_ROUTES_PATH]`, `[AUTH_HELPER]`, `[DB_SYSTEM]`).
+**Notes:**
+- `/arch-audit` is available in all tiers — it audits the governance layer itself, not the product code.
+- `/responsive-audit`, `/ux-audit`, `/visual-audit` require the dev server running on localhost and the Playwright MCP server configured.
+- All code-audit skills are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md`.
+- Before first run: fill in the `## Configuration` placeholders in each `SKILL.md` (paths, test accounts, route lists).
 
 Full check-by-check reference: [`docs/operational-guide.docs`](docs/operational-guide.docs) § Audit skills.
 
