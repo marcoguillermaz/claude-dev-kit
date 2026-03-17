@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[TEST_COMMAND] || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before Claude can complete a task. Fix the failing tests first.\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,20 +1,23 @@
 # claude-dev-kit
 
-> Governance-first project scaffold for Claude Code.
-> For developers who want to ship with AI without losing sight of what's happening.
+> Governance layer for Claude Code.
+> From "just exploring" to production-grade AI-assisted development — one scaffold, four tiers.
 
 ---
 
-## What it does
+## Who is this for?
 
-`claude-dev-kit` scaffolds the governance layer around [Claude Code](https://claude.ai/code):
+### Team just discovering Claude Code
 
-- **Tiered pipeline** — Fast Lane (S), Standard (M), or Full (L). Match process overhead to project complexity.
-- **Hooks pre-wired** — Claude cannot complete a task until your tests pass. Every file write is logged.
-- **Rules library** — path-scoped security and git rules that load only when relevant, keeping CLAUDE.md lean.
-- **ADR template** — architecture decisions with an "AI Coding Guidance" section so Claude respects them.
-- **PR template + CODEOWNERS** — AI-assisted commits are tagged and require human review on `.claude/` changes.
-- **Pre-commit config** — secret scanning and AI commit audit at the commit boundary.
+You've heard about Claude Code and want to try it on a real project. You don't need a pipeline yet — you need to get started and understand what the tool can do.
+
+**`npx claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
+
+### Team already using Claude Code
+
+You're shipping with Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always review. You want structure without slowing down.
+
+**`npx claude-dev-kit init`** → choose your tier (S / M / L) → full governance scaffold.
 
 ---
 
@@ -24,7 +27,15 @@
 npx claude-dev-kit init
 ```
 
-Three paths to choose from:
+The wizard asks one routing question first:
+
+```
+? How familiar is your team with Claude Code?
+  ▸ Just starting out — show me what's possible  (Discovery tier)
+    We use it and want guardrails                (Tier S / M / L)
+```
+
+Three init paths to choose from:
 
 | Path | Use when |
 |---|---|
@@ -49,19 +60,45 @@ npx claude-dev-kit upgrade
 Updates non-destructive files (context-review, security rules, git rules) to the latest template.
 Files with your customizations (CLAUDE.md, pipeline.md, settings.json) are flagged for manual review.
 
+### Upgrade your tier
+
+```bash
+npx claude-dev-kit upgrade --tier=s   # add Fast Lane pipeline
+npx claude-dev-kit upgrade --tier=m   # add Standard pipeline + docs
+npx claude-dev-kit upgrade --tier=l   # add Full governance + audit skills
+```
+
+Upgrade is non-destructive — adds new files without overwriting your existing ones.
+
 ---
 
 ## Tiers
 
-| Tier | Pipeline | Docs scaffolded | Use case |
+| Tier | Pipeline | Files created | Best for |
 |---|---|---|---|
+| **0 — Discovery** | None (Stop hook only) | 3 files | Team discovering Claude Code for the first time |
 | **S — Fast Lane** | 4 steps, no gates | Minimal | Bugfix, hotfix, ≤3 files |
 | **M — Standard** | 6 phases, 2 STOP gates | Core docs | Feature block, 1–2 weeks |
 | **L — Full** | 9 phases, 4 STOP gates | Full suite | Long-running project, team, complex domain |
 
+**The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. This is enforced by a Stop hook in `.claude/settings.json` — not just an instruction.
+
 ---
 
 ## What gets created
+
+### Tier 0 — Discovery
+
+```
+your-project/
+├── CLAUDE.md              ← project context: stack, commands, conventions
+├── GETTING_STARTED.md     ← your team's guide to the first session
+└── .claude/
+    ├── settings.json      ← Stop hook: tests must pass before Claude declares done
+    └── session/           ← session recovery files (gitignored)
+```
+
+### Tier S / M / L
 
 ```
 your-project/
@@ -98,22 +135,22 @@ your-project/
 
 ## Audit skills (Tier M / L)
 
-Five slash-command skills are scaffolded in `.claude/skills/`. Run them any time — no pipeline phase required.
+Slash-command skills scaffolded in `.claude/skills/`. Run any time — no pipeline phase required.
 
-| Command | Tier | What it audits | Checks | Backlog ID |
-|---|---|---|---|---|
-| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6 | — |
-| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3, headers | `SEC-n` |
-| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, oversized components, TypeScript suppressions | D1–D7, A1–A3 | `DEV-n` |
-| `/skill-db` | M L | Schema normalization, indexes, access control, data types, N+1 queries, migration quality | S1–S6, Q1–Q3, M1–M2 | `DB-n` |
-| `/api-design` | M L | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 | `API-n` |
-| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, over-fetching | P1–P5, Q1–Q3 | `PERF-n` |
-| `/responsive-audit` | M L | Layout correctness at 375px / 768px / 1024px via Playwright screenshots | R1–R6 | — |
-| `/ux-audit` | M L | Task completion, interaction consistency, feedback, navigation, cognitive load | D1–D6 per flow | `UX-n` |
-| `/visual-audit` | M L | Typography, spacing, hierarchy, colour discipline, dark-mode polish, micro-polish | V1–V7 per page | — |
+| Command | Tier | What it audits | Checks |
+|---|---|---|---|
+| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6 |
+| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3 |
+| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, oversized components | D1–D7, A1–A3 |
+| `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, migration quality | S1–S6, Q1–Q3 |
+| `/api-design` | M L | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 |
+| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, over-fetching | P1–P5, Q1–Q3 |
+| `/responsive-audit` | M L | Layout correctness at 375px / 768px / 1024px via Playwright screenshots | R1–R6 |
+| `/ux-audit` | M L | Task completion, interaction consistency, feedback, navigation, cognitive load | D1–D6 per flow |
+| `/visual-audit` | M L | Typography, spacing, hierarchy, colour discipline, dark-mode polish, micro-polish | V1–V7 per page |
 
 **Notes:**
-- `/arch-audit` is available in all tiers — it audits the governance layer itself, not the product code.
+- `/arch-audit` is available in all tiers (S/M/L) — it audits the governance layer itself, not your product code.
 - `/responsive-audit`, `/ux-audit`, `/visual-audit` require the dev server running on localhost and the Playwright MCP server configured.
 - All code-audit skills are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md`.
 - Before first run: fill in the `## Configuration` placeholders in each `SKILL.md` (paths, test accounts, route lists).
@@ -141,7 +178,7 @@ After that, the file is a historical record and Claude does not re-run discovery
 
 ## Governance model
 
-### How Claude is controlled
+### The one constraint that matters most
 
 **Stop hook** — Claude cannot declare a task complete until tests pass:
 ```json
@@ -149,6 +186,10 @@ After that, the file is a historical record and Claude does not re-run discovery
   "command": "npm test || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass first.\"}'"
 }] }]
 ```
+
+This is present in **every tier**, including Tier 0. It is the single most important governance control.
+
+### Additional controls (Tier S–L)
 
 **Audit log** — every tool use is appended to `~/.claude/audit/project.jsonl`.
 
@@ -170,13 +211,15 @@ paths: ["src/api/**", "lib/auth*"]
 
 ## Philosophy
 
-For developers who use Claude Code as a **controlled collaborator**, not an autonomous agent.
+**Claude generates, humans decide.**
 
-**Claude generates, humans decide.** Every meaningful action has a visible gate:
-- Requirements reviewed before implementation starts (STOP gate)
-- Tests must pass before Claude can declare completion (Stop hook)
-- AI-generated code tagged in git history (attribution)
-- Changes to Claude's own config require human review (CODEOWNERS)
+Every meaningful action has a visible gate:
+- Tests must pass before Claude can declare completion (Stop hook — every tier)
+- Requirements reviewed before implementation starts (STOP gate — Tier M/L)
+- AI-generated code tagged in git history (attribution — Tier S/M/L)
+- Changes to Claude's own config require human review (CODEOWNERS — Tier S/M/L)
+
+The goal is not to limit Claude — it's to keep humans in the loop at the moments that matter.
 
 ---
 
@@ -211,7 +254,7 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.2.0` — private. Three-path init stable. Templates stable. Publishing to npm pending.
+`v0.3.0` — private. Four-tier system stable. Three-path init stable. Publishing to npm pending.
 
 ## License
 

@@ -1,32 +1,34 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 0.2.0
-**Audience**: Development team members adopting Claude Code with structured governance
-**Format**: Reference + step-by-step. Read it once end-to-end, then use it as a lookup.
+**Version**: 0.3.0
+**Audience**: Any development team using Claude Code — from first-time explorers to teams wanting full governance
+**Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
 ---
 
 ## Table of Contents
 
 1. [What this is and why it exists](#1-what-this-is-and-why-it-exists)
-2. [Prerequisites](#2-prerequisites)
-3. [Installing the scaffold — three paths](#3-installing-the-scaffold--three-paths)
-   - 3a. Greenfield
-   - 3b. From context
-   - 3c. In-place
-4. [Context Import — how Claude learns your project](#4-context-import--how-claude-learns-your-project)
-5. [The three pipeline tiers](#5-the-three-pipeline-tiers)
+2. [Who is this for — two target audiences](#2-who-is-this-for--two-target-audiences)
+3. [Prerequisites](#3-prerequisites)
+4. [Installing the scaffold — three paths](#4-installing-the-scaffold--three-paths)
+   - 4a. Greenfield
+   - 4b. From context
+   - 4c. In-place
+5. [Context Import — how Claude learns your project](#5-context-import--how-claude-learns-your-project)
+6. [The four pipeline tiers](#6-the-four-pipeline-tiers)
+   - Tier 0 — Discovery
    - Tier S — Fast Lane
    - Tier M — Standard
    - Tier L — Full
-6. [Day-to-day workflow](#6-day-to-day-workflow)
-7. [Governance files reference](#7-governance-files-reference)
-8. [Audit skills](#8-audit-skills)
-9. [Governance mechanics](#9-governance-mechanics)
-10. [Conventions and non-negotiables](#10-conventions-and-non-negotiables)
-11. [Maintaining the scaffold](#11-maintaining-the-scaffold)
-12. [Frequently asked questions](#12-frequently-asked-questions)
+7. [Day-to-day workflow](#7-day-to-day-workflow)
+8. [Governance files reference](#8-governance-files-reference)
+9. [Audit skills](#9-audit-skills)
+10. [Governance mechanics](#10-governance-mechanics)
+11. [Conventions and non-negotiables](#11-conventions-and-non-negotiables)
+12. [Maintaining the scaffold](#12-maintaining-the-scaffold)
+13. [Frequently asked questions](#13-frequently-asked-questions)
 
 ---
 
@@ -38,6 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 
 **What you get:**
 
+- A one-question wizard that routes you to the right tier based on your team's experience level.
 - A development pipeline Claude follows strictly — requirements reviewed before code is written, tests verified before declaring done.
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions.
 - A tiered system to match process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature.
@@ -49,10 +52,49 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - It does not write your code for you — Claude Code does that. This tool governs how.
 - It does not enforce specific tech stack choices. Everything is configurable.
 - It does not slow you down for trivial changes. The Fast Lane (Tier S) has no gates.
+- It does not require governance knowledge upfront. Tier 0 gets you running in 5 minutes.
 
 ---
 
-## 2. Prerequisites
+## 2. Who is this for — two target audiences
+
+### Audience A: Team just discovering Claude Code
+
+You've heard about Claude Code and want to try it on a real project. You're not sure yet whether you need pipelines, STOP gates, or audit trails. You want to get started quickly and learn by doing.
+
+**Your path**: Tier 0 — Discovery.
+
+What you get: three files, one constraint (tests must pass), and a `GETTING_STARTED.md` that walks your team through the first session. Nothing else.
+
+When you're ready for more structure — usually after a few weeks, once Claude Code is part of the daily workflow — run:
+
+```bash
+npx claude-dev-kit upgrade --tier=s
+```
+
+This adds the Fast Lane pipeline non-destructively. Your existing files are not overwritten.
+
+**You do not need to understand the full governance model to start.** Read `GETTING_STARTED.md` and sections 4a and 6 (Tier 0) of this guide. That is all.
+
+---
+
+### Audience B: Team already using Claude Code, wanting guardrails
+
+You're shipping with Claude Code but the process is informal. Claude makes autonomous decisions you can't always trace. Tests sometimes get skipped. You want a structured workflow without inventing one from scratch.
+
+**Your path**: Tier S, M, or L depending on project complexity.
+
+| Signal | Suggested tier |
+|---|---|
+| Mostly bugfixes and small changes | Tier S — Fast Lane |
+| Feature blocks, 1–2 week cycles, 1–2 devs | Tier M — Standard |
+| Complex domain, long-running, team of 3+, architectural decisions | Tier L — Full |
+
+Read sections 4a, 5, 6 (your tier), 7, and 8 of this guide.
+
+---
+
+## 3. Prerequisites
 
 | Requirement | Version | Why |
 |---|---|---|
@@ -69,7 +111,7 @@ npm install -g @anthropic-ai/claude-code
 
 ---
 
-## 3. Installing the scaffold — three paths
+## 4. Installing the scaffold — three paths
 
 Run this from any directory:
 
@@ -81,13 +123,17 @@ You will be asked to choose one of three paths:
 
 ---
 
-### 3a. Greenfield — new project from scratch
+### 4a. Greenfield — new project from scratch
 
 **Use when**: you are starting a new project and there is no existing codebase.
 
-The wizard asks:
+The wizard asks first: **"How familiar is your team with Claude Code?"**
+- **Just starting out** → Tier 0 (Discovery). The remaining questions are simplified accordingly.
+- **We use it and want guardrails** → asks for tier (S / M / L).
+
+Then:
 - Project name and one-line description
-- Pipeline tier (S / M / L)
+- Pipeline tier (S / M / L) — only if experienced path
 - Tech stack (Node.js/TS, Node.js/JS, Python, Go, other)
 - Test command, type check command, dev server command
 - Whether to include pre-commit config and `.github/` files
@@ -102,7 +148,7 @@ Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, s
 
 ---
 
-### 3b. From context — populate from existing repos and docs
+### 4b. From context — populate from existing repos and docs
 
 **Use when**: you are starting a new governance project but want to bootstrap it from an existing codebase or documentation (e.g. an existing product you're about to extend, or a spec document).
 
@@ -124,7 +170,7 @@ What happens:
 
 ---
 
-### 3c. In-place — add governance to an existing project
+### 4c. In-place — add governance to an existing project
 
 **Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
 
@@ -146,7 +192,7 @@ Detected values you will be asked to confirm:
 
 ---
 
-## 4. Context Import — how Claude learns your project
+## 5. Context Import — how Claude learns your project
 
 `CONTEXT_IMPORT.md` is a bridge file generated by the CLI. It contains:
 
@@ -232,11 +278,40 @@ From that point on, `CONTEXT_IMPORT.md` is a historical record. Claude does not 
 
 ---
 
-## 5. The three pipeline tiers
+## 6. The four pipeline tiers
 
-The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by editing `.claude/rules/pipeline.md` or running `npx claude-dev-kit upgrade`.
+The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by upgrading: `npx claude-dev-kit upgrade --tier=m`.
+
+### Tier 0 — Discovery
+
+**Use for**: teams exploring Claude Code for the first time. No pipeline knowledge required.
+**What it provides**: one constraint (tests must pass) and project context (CLAUDE.md). Nothing else.
+
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` | Project context: stack, commands, conventions. Claude reads this every session. |
+| `.claude/settings.json` | Stop hook: tests must pass before Claude declares a task complete. |
+| `GETTING_STARTED.md` | Step-by-step guide for the first session. Share it with your team. |
+
+**The Stop hook is the only governance control in Tier 0** — and it's the most important one. Claude cannot skip tests. Fill in `CLAUDE.md` and start using Claude Code. Add more structure when you're ready.
+
+**After running init (Tier 0):**
+1. Edit `CLAUDE.md` — fill in the project description and verify the commands.
+2. Run `claude` from the project root. Your first session starts immediately.
+3. Read `GETTING_STARTED.md` for what to expect.
+
+**Upgrading from Tier 0:**
+```bash
+npx claude-dev-kit upgrade --tier=s   # adds branch discipline + commit rules
+npx claude-dev-kit upgrade --tier=m   # adds phased pipeline + review gates + docs
+npx claude-dev-kit upgrade --tier=l   # adds full governance + audit skills
+```
+Upgrade is non-destructive — it adds new files without overwriting your existing `CLAUDE.md` or `settings.json`.
+
+---
 
 ### Tier S — Fast Lane
+
 
 **Use for**: bugfixes, ≤3 file changes, no migrations, no new patterns, no shared type changes.
 **Branch prefix**: `fix/description` — Claude detects this and switches to Fast Lane automatically.
@@ -305,15 +380,16 @@ If the fix scope expands beyond 3 files or requires a migration during FL-1, Cla
 
 When in doubt:
 
+- **Never used Claude Code before** → Tier 0 (Discovery)
 - **Fix a bug** or make a small change you can fully describe in one sentence → Tier S
 - **Build a feature** you can scope in 1–2 weeks and describe in a paragraph → Tier M
 - **Redesign a domain**, make architectural decisions, add a new major entity, or work on a team of 3+ → Tier L
 
-You can also start at Tier M and escalate mid-block. Claude will notify you when scope expands.
+You can start at Tier 0 or S and escalate. Claude will notify you when scope expands beyond the current tier.
 
 ---
 
-## 6. Day-to-day workflow
+## 7. Day-to-day workflow
 
 ### Starting a new feature (Tier M example)
 
@@ -375,7 +451,7 @@ In Claude Code: press `Shift+Tab` to toggle between default, auto-accept, and pl
 
 ---
 
-## 7. Governance files reference
+## 8. Governance files reference
 
 ### CLAUDE.md
 
@@ -517,7 +593,7 @@ Generated by the CLI for From context and In-place init modes. Contains the disc
 
 ---
 
-## 8. Audit skills
+## 9. Audit skills
 
 Nine audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time — no pipeline phase required.
 
@@ -1024,7 +1100,7 @@ Note: the default scope excludes Lighthouse public scores, Core Web Vitals publi
 
 ---
 
-## 9. Governance mechanics
+## 10. Governance mechanics
 
 ### Stop hook
 
@@ -1110,7 +1186,7 @@ If gitleaks finds a secret: the commit is blocked. Fix by removing the secret an
 
 ---
 
-## 10. Conventions and non-negotiables
+## 11. Conventions and non-negotiables
 
 These apply in all tiers:
 
@@ -1144,7 +1220,7 @@ Never commit `.env`, `.env.local`, `.env.production`, or any file containing tok
 
 ---
 
-## 11. Maintaining the scaffold
+## 12. Maintaining the scaffold
 
 ### Upgrading
 
@@ -1209,7 +1285,7 @@ Do not edit the scaffolded rule files directly if you want to preserve upgrade c
 
 ---
 
-## 12. Frequently asked questions
+## 13. Frequently asked questions
 
 **Q: Do I need to run `npx claude-dev-kit init` every time I start a session?**
 

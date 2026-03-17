@@ -2,10 +2,41 @@ import fs from 'fs-extra';
 import path from 'path';
 
 /**
+ * Scaffold Tier 0 (Discovery) — minimal: CLAUDE.md, settings.json, GETTING_STARTED.md only.
+ * No pipeline, no docs folder, no pre-commit, no .github.
+ */
+export async function scaffoldTier0(targetDir, config, templatesDir) {
+  const tierDir = path.join(templatesDir, 'tier-0');
+
+  // Copy the three Tier 0 files with interpolation
+  const files = [
+    { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
+    { src: 'GETTING_STARTED.md', dest: 'GETTING_STARTED.md' },
+    { src: '.claude/settings.json', dest: '.claude/settings.json' },
+  ];
+
+  for (const { src, dest } of files) {
+    const srcPath = path.join(tierDir, src);
+    const destPath = path.join(targetDir, dest);
+    if (!(await fs.pathExists(srcPath))) continue;
+    await fs.ensureDir(path.dirname(destPath));
+    const content = await fs.readFile(srcPath, 'utf8');
+    await fs.writeFile(destPath, interpolate(content, config));
+  }
+
+  // Create session directory (used by Claude for session recovery)
+  await fs.ensureDir(path.join(targetDir, '.claude', 'session'));
+}
+
+/**
  * Scaffold a tier's template files into the target directory.
  * Copies common files first, then tier-specific files (tier overrides common).
  */
 export async function scaffoldTier(tier, targetDir, config, templatesDir) {
+  // Tier 0 is its own minimal path
+  if (tier === '0') {
+    return scaffoldTier0(targetDir, config, templatesDir);
+  }
   const commonDir = path.join(templatesDir, 'common');
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
@@ -170,11 +201,17 @@ async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userCon
  * Replace template placeholders with actual values from config.
  */
 function interpolate(content, config) {
-  const tier = (config.tier || 's').toUpperCase();
-  const tierLabel = { S: 'Fast Lane', M: 'Standard', L: 'Full' }[tier] || '';
+  const techStackLabels = {
+    'node-ts': 'Node.js + TypeScript',
+    'node-js': 'Node.js + JavaScript',
+    python: 'Python',
+    go: 'Go',
+    other: 'Mixed',
+  };
 
   return content
     .replace(/\[PROJECT_NAME\]/g, config.projectName || 'My Project')
+    .replace(/\[TECH_STACK_SUMMARY\]/g, techStackLabels[config.techStack] || config.techStack || 'Mixed')
     .replace(/\[TYPE_CHECK_COMMAND\]/g, config.typeCheckCommand || 'npx tsc --noEmit')
     .replace(/\[TEST_COMMAND\]/g, config.testCommand || 'npm test')
     .replace(/\[BUILD_COMMAND\]/g, config.buildCommand || 'npm run build')
