@@ -17,7 +17,9 @@ Branch prefix `feature/` activates the full pipeline automatically.
 
 ## Phase 0 — Session orientation
 
-**FIRST ACTION — session file**: check `.claude/session/` for existing `block-*.md` files.
+**FIRST**: check for `CONTEXT_IMPORT.md` in the project root. If it exists and contains `Status: PENDING_DISCOVERY`, run the Discovery Workflow inside that file **before any other work**. Do not proceed until discovery is marked `COMPLETE`.
+
+**Session file**: check `.claude/session/` for existing `block-*.md` files.
 - If one exists: read it — a previous session was interrupted. Resume from it. Do NOT create a new file.
 - If none: create `.claude/session/block-[name].md` with date + placeholder skeleton.
 - This is non-negotiable: the session file must exist before any other Phase 0 action.

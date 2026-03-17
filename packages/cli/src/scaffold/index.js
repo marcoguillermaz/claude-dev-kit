@@ -88,6 +88,85 @@ async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig)
 }
 
 /**
+ * Scaffold a tier's template files into the target directory — safe mode.
+ * Same as scaffoldTier but skips files that already exist at the target path.
+ * Used for in-place and from-context init modes to avoid overwriting the user's existing files.
+ */
+export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
+  const commonDir = path.join(templatesDir, 'common');
+  const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
+
+  await copyTemplateDirSafe(commonDir, targetDir, config, {
+    'gitignore': '.gitignore',
+    'pre-commit-config.yaml': '.pre-commit-config.yaml',
+    'adr-template.md': 'docs/adr/template.md',
+    'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
+    'CODEOWNERS': '.github/CODEOWNERS',
+    'context-review.md': '.claude/rules/context-review.md',
+    'files-guide.md': '.claude/files-guide.md',
+  }, config);
+
+  if (await fs.pathExists(tierDir)) {
+    await copyTemplateDirSafe(tierDir, targetDir, config, {}, config);
+  }
+
+  const commonRulesDir = path.join(commonDir, 'rules');
+  if (await fs.pathExists(commonRulesDir)) {
+    const rules = await fs.readdir(commonRulesDir);
+    for (const rule of rules) {
+      const src = path.join(commonRulesDir, rule);
+      const dest = path.join(targetDir, '.claude', 'rules', rule);
+      if (await fs.pathExists(dest)) continue;
+      await fs.ensureDir(path.dirname(dest));
+      const content = await fs.readFile(src, 'utf8');
+      await fs.writeFile(dest, interpolate(content, config));
+    }
+  }
+
+  await fs.ensureDir(path.join(targetDir, '.claude', 'session'));
+  await fs.ensureDir(path.join(targetDir, 'docs', 'adr'));
+
+  if (!config.includePreCommit) {
+    await fs.remove(path.join(targetDir, '.pre-commit-config.yaml'));
+  }
+  if (!config.includeGithub) {
+    await fs.remove(path.join(targetDir, '.github'));
+  }
+}
+
+async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig) {
+  if (!(await fs.pathExists(srcDir))) return;
+
+  const entries = await fs.readdir(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (entry.name === 'rules') continue;
+      const subSrc = path.join(srcDir, entry.name);
+      const subDest = path.join(destDir, entry.name);
+      await copyTemplateDirSafe(subSrc, subDest, config, {}, userConfig);
+      continue;
+    }
+
+    const destName = fileNameMap[entry.name] || entry.name;
+
+    if (!userConfig.includeGithub && (destName.startsWith('.github/') || destName === 'CODEOWNERS' || destName === 'PULL_REQUEST_TEMPLATE.md')) {
+      continue;
+    }
+
+    const src = path.join(srcDir, entry.name);
+    const dest = path.join(destDir, destName);
+
+    // Safe mode: skip if file already exists
+    if (await fs.pathExists(dest)) continue;
+
+    await fs.ensureDir(path.dirname(dest));
+    const content = await fs.readFile(src, 'utf8');
+    await fs.writeFile(dest, interpolate(content, config));
+  }
+}
+
+/**
  * Replace template placeholders with actual values from config.
  */
 function interpolate(content, config) {

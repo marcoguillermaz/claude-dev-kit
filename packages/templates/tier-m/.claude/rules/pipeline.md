@@ -17,6 +17,7 @@ Branch prefix `feature/` activates this pipeline automatically.
 
 ## Phase 0 — Session orientation
 
+- **FIRST**: check for `CONTEXT_IMPORT.md` in the project root. If it exists and contains `Status: PENDING_DISCOVERY`, run the Discovery Workflow inside that file **before any other work**. Do not proceed to Phase 1 until discovery is marked `COMPLETE`.
 - Check `.claude/session/` for existing `block-*.md` files. If one exists: resume from it.
 - If none: create `.claude/session/block-[name].md` with date + placeholder.
 - Read `MEMORY.md` (project root): Active plan + relevant Lessons.
