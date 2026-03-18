@@ -113,6 +113,9 @@ your-project/
 │   │   ├── context-review.md       ← end-of-block compliance checklist
 │   │   ├── security.md             ← path-scoped: API/auth files only
 │   │   └── git.md                  ← commit format, branch rules
+│   ├── agents/                     ← custom agent definitions (M/L)
+│   │   ├── dependency-scanner.md   ← Phase 1: parallel dependency scan (M/L)
+│   │   └── context-reviewer.md     ← Phase 8.5: C1-C3 grep checks (L only)
 │   ├── skills/                     ← audit skills: /security-audit /skill-dev /skill-db ... (M/L)
 │   ├── files-guide.md              ← reference: what every file does
 │   └── session/                    ← session recovery files (gitignored)
@@ -130,6 +133,19 @@ your-project/
 ├── .pre-commit-config.yaml         ← gitleaks + AI commit audit
 └── README.md                       ← generated from wizard answers
 ```
+
+---
+
+## Multi-agent orchestration (Tier M / L)
+
+Two custom agent definitions are scaffolded in `.claude/agents/`. They run as connected sub-processes invoked by Claude during specific pipeline phases — not as standalone tools.
+
+| Agent | Tier | Phase | Role |
+|---|---|---|---|
+| `dependency-scanner` | M L | Phase 1 | Runs all 6 dependency checks in parallel (route hrefs, import consumers, shared type consumers, test references, FK references, access control policies). Returns a structured report with exact file paths. Runs with `Glob`, `Grep`, `Read` only — no write access. |
+| `context-reviewer` | L | Phase 8.5 | Handles grep-only checks C1–C3 (credential patterns, Italian prose, field name staleness) in a single call. C4–C11 (judgment-required) remain in the main session. |
+
+**Design principle**: agents are used only where the work is genuinely parallelisable and read-only. Phase 2 (implementation) and all document-update phases remain monolithic — sequential, traceable, human-reviewable.
 
 ---
 
@@ -254,7 +270,7 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.3.0` — private. Four-tier system stable. Three-path init stable. Publishing to npm pending.
+`v0.4.0` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
 
 ## License
 

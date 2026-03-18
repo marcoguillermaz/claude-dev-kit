@@ -37,12 +37,9 @@ Then:
 - Read `docs/implementation-checklist.md` to verify block dependencies.
 - Read the relevant section of `docs/requirements.md`.
 - Check `docs/refactoring-backlog.md` for intersecting entries.
-- **Dependency scan** (mandatory): before declaring the file list, grep for ALL usages of affected entities. Minimum checks:
-  1. Every route being moved/modified → grep for hrefs and imports
-  2. Every component being modified → find all import consumers
-  3. Every shared type or utility → grep import count across codebase
-  4. Check `e2e/` and `__tests__/` for files referencing affected routes or selectors
-  5. Every table being modified → check FK references and access control policies
+- **Dependency scan** (mandatory — delegate all 6 checks in a single agent call):
+  Invoke the `dependency-scanner` agent via the Agent tool. Pass the full list of affected routes, components, types/utilities, and DB tables in one prompt. The agent runs all 6 checks in parallel and returns a structured report with exact file paths and line numbers. Do not run the checks manually in the main session — that fills the context window unnecessarily.
+  Every file listed under "Mandatory additions" in the agent's report must be added to the file list before the STOP gate.
 - **All clarification questions must use `AskUserQuestion` tool** — never inline.
 - Expected output: feature summary, **complete** file list verified by dependency scan, open questions.
 
@@ -157,8 +154,13 @@ Only after explicit confirmation:
 
 ## Phase 8.5 — Context review + compact
 
-Execute checks C1–C11 from `.claude/rules/context-review.md` in order.
+**C1–C3** (grep-only checks — delegate to agent):
+Invoke the `context-reviewer` agent via the Agent tool. It runs C1 (credential patterns), C2 (Italian prose), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. If any check fails, apply the fix in the main session before proceeding.
+
+**C4–C11** (judgment-required — run in main session):
+Execute checks C4 through C11 from `.claude/rules/context-review.md` in order.
 Apply any fix found before moving to the next check.
+
 Run `/compact` after all checks pass.
 
 ---
@@ -170,7 +172,7 @@ Run `/compact` after all checks pass.
 - **Green before commit**: type check + tests must pass before every commit.
 - **Conventional commits**: `feat(scope):`, `fix(scope):`, `docs:`, `chore:` — imperative, under 72 chars.
 - **No unrequested changes**: implement only what was approved in Phase 1.
-- **Dependency scan is mandatory**: never produce a file list without first grepping for all usages of affected entities.
+- **Dependency scan is mandatory**: always delegate to the `dependency-scanner` agent in Phase 1. Never produce a file list without first running the full scan. An incomplete scan is an incomplete file list — this is a process error.
 - **Context hygiene**: if context window reaches ~50% during Phase 2, run `/compact` before continuing. Re-read `.claude/CLAUDE.local.md` after compact to restore active overrides.
 - **Secret hygiene**: never commit `.env*` files, tokens, or credentials.
 - **Immediate migration**: every migration file must be applied to the remote DB immediately after writing. Never leave a written migration unapplied before running tests.

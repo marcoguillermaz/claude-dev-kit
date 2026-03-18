@@ -28,7 +28,9 @@ Branch prefix `feature/` activates this pipeline automatically.
 - Read `docs/implementation-checklist.md` to verify block dependencies.
 - Read the relevant section of `docs/requirements.md`.
 - Check `docs/refactoring-backlog.md` for intersecting entries.
-- **Dependency scan**: grep for all usages of affected components/routes/types before writing the file list.
+- **Dependency scan** (mandatory — delegate all 6 checks in a single agent call):
+  Invoke the `dependency-scanner` agent via the Agent tool. Pass the full list of affected routes, components, types/utilities, and DB tables in one prompt. Do not run the checks manually in the main session.
+  Every file listed under "Mandatory additions" in the agent's report must be added to the file list before the STOP gate.
 - Ask all clarification questions using `AskUserQuestion` tool — never inline.
 - Output: feature summary, complete file list, open questions resolved.
 

@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 0.3.0
+**Version**: 0.4.0
 **Audience**: Any development team using Claude Code — from first-time explorers to teams wanting full governance
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -25,10 +25,11 @@
 7. [Day-to-day workflow](#7-day-to-day-workflow)
 8. [Governance files reference](#8-governance-files-reference)
 9. [Audit skills](#9-audit-skills)
-10. [Governance mechanics](#10-governance-mechanics)
-11. [Conventions and non-negotiables](#11-conventions-and-non-negotiables)
-12. [Maintaining the scaffold](#12-maintaining-the-scaffold)
-13. [Frequently asked questions](#13-frequently-asked-questions)
+10. [Multi-agent orchestration](#10-multi-agent-orchestration-tier-m--l)
+11. [Governance mechanics](#11-governance-mechanics)
+12. [Conventions and non-negotiables](#12-conventions-and-non-negotiables)
+13. [Maintaining the scaffold](#13-maintaining-the-scaffold)
+14. [Frequently asked questions](#14-frequently-asked-questions)
 
 ---
 
@@ -1100,7 +1101,57 @@ Note: the default scope excludes Lighthouse public scores, Core Web Vitals publi
 
 ---
 
-## 10. Governance mechanics
+## 10. Multi-agent orchestration (Tier M / L)
+
+Two custom agent definitions are scaffolded in `.claude/agents/`. They are invoked by Claude during specific pipeline phases as connected sub-processes — not as standalone tools.
+
+### Design principle
+
+Agents are used only where tasks are **genuinely independent and read-only**. The pipeline deliberately keeps Phase 2 (implementation) and all document-update phases monolithic. This is not a limitation — it is intentional. Sequential, single-agent writes are traceable and human-reviewable. Parallel writes across agents introduce synchronisation complexity that the governance model cannot easily audit.
+
+### dependency-scanner (Tier M + L — Phase 1)
+
+**File**: `.claude/agents/dependency-scanner.md`
+**Tools available**: `Glob`, `Grep`, `Read` (no `Write`, no `Bash`)
+**Invoked**: Phase 1, after reading reference documents, before the STOP gate
+
+The dependency scan has 6 checks that are structurally independent — no check depends on the output of another. Today, run sequentially in the main session, they consume 20–40% of the context window before a single line of code is written. Delegated to this agent in a single call, they run in parallel and return a structured report with file paths and line numbers.
+
+The agent receives all affected entities in one prompt:
+- Routes being moved, modified, or removed
+- Components being changed
+- Shared types and utilities
+- DB tables and columns
+
+It returns a report structured by check (C1–C6) with a "Mandatory additions" section listing any files not already in the proposed file list.
+
+**The orchestrator adds every file from "Mandatory additions" to the file list before presenting the Phase 1 STOP gate.**
+
+### context-reviewer (Tier L — Phase 8.5)
+
+**File**: `.claude/agents/context-reviewer.md`
+**Tools available**: `Grep`, `Read`
+**Invoked**: Phase 8.5, for checks C1–C3 only
+
+Checks C1–C3 of the context review are pure grep operations:
+- C1: credential pattern scan in MEMORY.md
+- C2: Italian prose in CLAUDE.md and MEMORY.md
+- C3: field name staleness against the latest migration
+
+These have no dependencies on each other and require no judgment — pass/fail is deterministic from the grep output. Checks C4–C11 require reasoning about the current block's state and remain in the main session.
+
+### What stays monolithic — and why
+
+| Phase | Reason |
+|---|---|
+| Phase 2 — Implementation | Writes have cross-file dependencies; sequential authorship is auditable |
+| Phase 3 — Build + tests | Sequential toolchain constraint (type check → build → test) |
+| Phase 8 — Block closure | Document updates have content dependencies between them |
+| Phase 8.5 C4–C11 | Require judgment about the current block's state |
+
+---
+
+## 11. Governance mechanics
 
 ### Stop hook
 
@@ -1186,7 +1237,7 @@ If gitleaks finds a secret: the commit is blocked. Fix by removing the secret an
 
 ---
 
-## 11. Conventions and non-negotiables
+## 12. Conventions and non-negotiables
 
 These apply in all tiers:
 
@@ -1220,7 +1271,7 @@ Never commit `.env`, `.env.local`, `.env.production`, or any file containing tok
 
 ---
 
-## 12. Maintaining the scaffold
+## 13. Maintaining the scaffold
 
 ### Upgrading
 
@@ -1285,7 +1336,7 @@ Do not edit the scaffolded rule files directly if you want to preserve upgrade c
 
 ---
 
-## 13. Frequently asked questions
+## 14. Frequently asked questions
 
 **Q: Do I need to run `npx claude-dev-kit init` every time I start a session?**
 
