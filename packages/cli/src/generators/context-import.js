@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATE_PATH = path.resolve(__dirname, '../../../../templates/common/CONTEXT_IMPORT.md');
+const TEMPLATE_PATH = path.resolve(__dirname, '../../templates/common/CONTEXT_IMPORT.md');
 
 /**
  * Generate CONTEXT_IMPORT.md from the template, injecting actual source info.

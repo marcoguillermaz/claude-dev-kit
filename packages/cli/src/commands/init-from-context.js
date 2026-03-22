@@ -10,7 +10,7 @@ import { generateContextImport } from '../generators/context-import.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.resolve(__dirname, '../../../templates');
+const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 export async function initFromContext(options) {
   console.log();

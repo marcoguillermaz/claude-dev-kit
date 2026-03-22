@@ -8,7 +8,7 @@
   },
   "files": [
     "src/",
-    "../../packages/templates"
+    "templates/"
   ],
   "scripts": {
     "start": "node src/index.js",
