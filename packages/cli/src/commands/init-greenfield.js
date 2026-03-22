@@ -9,7 +9,7 @@ import { scaffoldTier } from '../scaffold/index.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.resolve(__dirname, '../../../templates');
+const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 function suggestTierFromDiagnostics(answers) {
   if (answers.workScope === 'bugfix') return 's';
