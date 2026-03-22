@@ -74,14 +74,16 @@ Upgrade is non-destructive — adds new files without overwriting your existing 
 
 ## Tiers
 
-| Tier | Pipeline | Files created | Best for |
+| Tier | Pipeline | Gates | Best for |
 |---|---|---|---|
-| **0 — Discovery** | None (Stop hook only) | 3 files | Team discovering Claude Code for the first time |
-| **S — Fast Lane** | 4 steps, no gates | Minimal | Bugfix, hotfix, ≤3 files |
-| **M — Standard** | 6 phases, 2 STOP gates | Core docs | Feature block, 1–2 weeks |
-| **L — Full** | 9 phases, 4 STOP gates | Full suite | Long-running project, team, complex domain |
+| **0 — Discovery** | Stop hook only | — | Team discovering Claude Code for the first time |
+| **S — Fast Lane** | 4 steps, 1 compact scope-confirm | — | Bugfix, hotfix, ≤3 files |
+| **M — Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Feature block, 1–2 weeks |
+| **L — Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | Long-running project, team, complex domain |
 
-**The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. This is enforced by a Stop hook in `.claude/settings.json` — not just an instruction.
+**The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. Enforced by a Stop hook in `.claude/settings.json` — not just an instruction.
+
+**Every tier also shares**: a weekly arch-audit reminder (SessionStart hook checks if `/arch-audit` was run in the last 7 days), audit logging of all file changes, and branch discipline rules.
 
 ---
 
@@ -207,7 +209,13 @@ This is present in **every tier**, including Tier 0. It is the single most impor
 
 ### Additional controls (Tier S–L)
 
-**Audit log** — every tool use is appended to `~/.claude/audit/project.jsonl`.
+**Audit log** — every tool use appended to `~/.claude/audit/project.jsonl`.
+
+**Weekly arch-audit reminder** — `SessionStart` hook checks timestamp; if `/arch-audit` hasn't run in 7 days, prints a reminder at session open. Keeps governance files aligned with Anthropic releases.
+
+**PostCompact reminder** — if `.claude/CLAUDE.local.md` exists, Claude is reminded to re-read it after every `/compact`. Prevents active overrides from being silently lost.
+
+**InstructionsLoaded logging** — raw hook payload appended to `/tmp/claude-instructions-YYYYMMDD.log` for debugging which context files were loaded.
 
 **LLM security review** (Tier L) — Haiku checks every session close for hardcoded secrets and missing auth.
 
@@ -232,8 +240,12 @@ paths: ["src/api/**", "lib/auth*"]
 Every meaningful action has a visible gate:
 - Tests must pass before Claude can declare completion (Stop hook — every tier)
 - Requirements reviewed before implementation starts (STOP gate — Tier M/L)
+- Scope explicitly confirmed before the dependency scan runs (scope gate — Tier M/L)
 - AI-generated code tagged in git history (attribution — Tier S/M/L)
 - Changes to Claude's own config require human review (CODEOWNERS — Tier S/M/L)
+- Context files audited at every block close (C1–C11 — Tier M/L)
+
+**Interaction Protocol**: all non-trivial requests follow a plan-then-confirm cycle. Claude lists every intended action and waits for an explicit execution keyword (`Execute` · `Proceed` · `Confirmed`) before proceeding. Read-only operations (`Read`, `Grep`, `git status`) are always free.
 
 The goal is not to limit Claude — it's to keep humans in the loop at the moments that matter.
 
@@ -270,7 +282,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.4.0` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+`v0.5.0` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+
+**v0.5.0 changes**: session recovery (`.claude/session/`), scope gate with Tier 1/2 sweep auto-selection, Interaction Protocol in CLAUDE.md templates, three new settings hooks (arch-audit reminder, InstructionsLoaded, PostCompact), Phase 8.5 mandatory closing message, Phase 8 3-commit sequence, Phase 5b/5c/5d block-scoped quality audits (Tier L), Structural Requirements Changes pipeline R1–R4 (Tier L), Fast Lane session file + escalation rule + scope-confirm gate, evolved C1–C11 context review with explicit grep commands.
 
 ## License
 
