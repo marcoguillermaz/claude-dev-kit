@@ -10,7 +10,7 @@ labels: bug
 
 ## Steps to reproduce
 
-1. Run `npx claude-dev-kit ...`
+1. Run `npx @marcoguillermaz/claude-dev-kit ...`
 2. ...
 
 ## Expected behavior

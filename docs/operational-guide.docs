@@ -72,7 +72,7 @@ What you get: three files, one hard constraint (tests must pass before Claude de
 When you're ready for more structure — usually after a few sessions, once Claude Code is part of the daily workflow — run:
 
 ```bash
-npx claude-dev-kit upgrade --tier=s
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=s
 ```
 
 This adds the Fast Lane pipeline non-destructively. Your existing files are not overwritten.
@@ -119,7 +119,7 @@ npm install -g @anthropic-ai/claude-code
 Run this from any directory:
 
 ```bash
-npx claude-dev-kit init
+npx @marcoguillermaz/claude-dev-kit init
 ```
 
 You will be asked to choose one of three paths:
@@ -289,7 +289,7 @@ From that point on, `CONTEXT_IMPORT.md` is a historical record. Claude does not 
 
 ## 6. The four pipeline tiers
 
-The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by upgrading: `npx claude-dev-kit upgrade --tier=m`.
+The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by upgrading: `npx @marcoguillermaz/claude-dev-kit upgrade --tier=m`.
 
 ### Tier 0 — Discovery
 
@@ -311,9 +311,9 @@ The pipeline is the sequence of phases Claude follows for every development task
 
 **Upgrading from Tier 0:**
 ```bash
-npx claude-dev-kit upgrade --tier=s   # adds branch discipline + commit rules
-npx claude-dev-kit upgrade --tier=m   # adds phased pipeline + review gates + docs
-npx claude-dev-kit upgrade --tier=l   # adds full governance + audit skills
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=s   # adds branch discipline + commit rules
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=m   # adds phased pipeline + review gates + docs
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=l   # adds full governance + audit skills
 ```
 Upgrade is non-destructive — it adds new files without overwriting your existing `CLAUDE.md` or `settings.json`.
 
@@ -1349,7 +1349,7 @@ Never commit `.env`, `.env.local`, `.env.production`, or any file containing tok
 ### Upgrading
 
 ```bash
-npx claude-dev-kit upgrade
+npx @marcoguillermaz/claude-dev-kit upgrade
 ```
 
 Non-destructive files are updated to the latest template version:
@@ -1369,9 +1369,9 @@ Review the diff and apply the relevant parts manually.
 ### Checking setup health
 
 ```bash
-npx claude-dev-kit doctor           # interactive report (default)
-npx claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
-npx claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
+npx @marcoguillermaz/claude-dev-kit doctor           # interactive report (default)
+npx @marcoguillermaz/claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
+npx @marcoguillermaz/claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
 Runs 11 checks and reports pass/fail:
@@ -1430,7 +1430,7 @@ Do not edit the scaffolded rule files directly if you want to preserve upgrade c
 
 ## 14. Frequently asked questions
 
-**Q: Do I need to run `npx claude-dev-kit init` every time I start a session?**
+**Q: Do I need to run `npx @marcoguillermaz/claude-dev-kit init` every time I start a session?**
 
 No. You run it once to scaffold the governance layer. After that, you just open Claude Code (`claude`) from the project root. The governance files load automatically.
 
@@ -1440,7 +1440,7 @@ No. You run it once to scaffold the governance layer. After that, you just open 
 
 The Stop hook is a mechanical enforcement: it does not rely on Claude following instructions. Even if Claude tries to declare a task complete without running tests, the hook blocks it.
 
-The STOP gates rely on Claude respecting the instructions in `pipeline.md`. If you observe Claude skipping a gate, check that `pipeline.md` is being loaded (run `npx claude-dev-kit doctor`).
+The STOP gates rely on Claude respecting the instructions in `pipeline.md`. If you observe Claude skipping a gate, check that `pipeline.md` is being loaded (run `npx @marcoguillermaz/claude-dev-kit doctor`).
 
 ---
 
@@ -1478,7 +1478,7 @@ Rules:
 
 **Q: Can I switch tiers on an existing project?**
 
-Yes. Edit `.claude/rules/pipeline.md` directly, or run `npx claude-dev-kit upgrade` which will show you a diff between your current pipeline and the latest template for the tier of your choice.
+Yes. Edit `.claude/rules/pipeline.md` directly, or run `npx @marcoguillermaz/claude-dev-kit upgrade` which will show you a diff between your current pipeline and the latest template for the tier of your choice.
 
 ---
 

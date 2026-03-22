@@ -131,7 +131,7 @@ After the developer confirms the summary and all gap questions are answered:
 **Gaps resolved**: [list of questions answered by developer]
 ```
 
-3. Run `npx claude-dev-kit doctor` to validate the setup.
+3. Run `npx @marcoguillermaz/claude-dev-kit doctor` to validate the setup.
 
 ---
 
