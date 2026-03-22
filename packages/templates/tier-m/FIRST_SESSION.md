@@ -107,7 +107,7 @@ You can always override the selection. The Tier 2 sweep adds EARS-style analysis
 | `/security-audit` | Reviews API routes and auth guards |
 | `/skill-dev` | Code quality and tech debt audit |
 | `/compact` | Frees context window (run at Phase 8.5) |
-| `npx @marcoguillermaz/claude-dev-kit doctor` | Checks your scaffold setup |
+| `npx mg-claude-dev-kit doctor` | Checks your scaffold setup |
 
 ---
 

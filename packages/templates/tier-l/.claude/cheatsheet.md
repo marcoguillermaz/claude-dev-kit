@@ -69,5 +69,5 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 cat ~/.claude/audit/[PROJECT_NAME].jsonl | tail -20 | jq .
 
 # Validate Claude setup
-npx @marcoguillermaz/claude-dev-kit doctor
+npx mg-claude-dev-kit doctor
 ```
