@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.resolve(__dirname, '../../../templates');
+const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 // Files that are safe to upgrade (non-destructive — they don't contain user content)
 const UPGRADEABLE_FILES = [

@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.resolve(__dirname, '../../../../templates');
+const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 /**
  * Generate CLAUDE.md from the tier template, applying wizard answers.
