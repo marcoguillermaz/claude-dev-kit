@@ -294,7 +294,7 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.0.0` — public stable release. Four-tier system stable. Multi-agent orchestration. Three-path init stable. Publishing to npm pending.
+`v1.0.0` — public stable release. Published on npm. Four-tier system stable. Multi-agent orchestration. Three-path init stable.
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
