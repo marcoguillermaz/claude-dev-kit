@@ -3,7 +3,7 @@
 # Verifies that the claude-dev-kit scaffold is present and not bypassed.
 # Add this to your project's .github/workflows/ to enforce governance at PR time.
 #
-# What it checks (mirrors `npx @marcoguillermaz/claude-dev-kit doctor`):
+# What it checks (mirrors `npx mg-claude-dev-kit doctor`):
 #   - .claude/settings.json exists
 #   - Stop hook is configured and contains no unfilled [TEST_COMMAND] placeholder
 #   - CLAUDE.md is present
@@ -35,7 +35,7 @@ jobs:
           node-version: '20'
 
       - name: Run claude-dev-kit doctor
-        run: npx @marcoguillermaz/claude-dev-kit@latest doctor --report
+        run: npx mg-claude-dev-kit@latest doctor --report
         # --report: outputs JSON compliance report + exits 1 if any check fails
         # Use --ci for silent mode (no output, just exit code)
 
@@ -47,7 +47,7 @@ jobs:
           fi
           if grep -q '\[TEST_COMMAND\]' .claude/settings.json; then
             echo "ERROR: Stop hook contains unfilled [TEST_COMMAND] placeholder"
-            echo "Run: npx @marcoguillermaz/claude-dev-kit doctor to see all issues"
+            echo "Run: npx mg-claude-dev-kit doctor to see all issues"
             exit 1
           fi
           echo "OK: Stop hook is configured"

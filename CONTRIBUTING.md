@@ -75,7 +75,7 @@ packages/
 ## Reporting bugs
 
 Use the **Bug Report** issue template. Include:
-- What you ran (`npx @marcoguillermaz/claude-dev-kit init`, `doctor`, etc.)
+- What you ran (`npx mg-claude-dev-kit init`, `doctor`, etc.)
 - What you expected vs what happened
 - Node.js version (`node --version`)
 - OS
