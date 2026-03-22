@@ -8,12 +8,12 @@ import chalk from 'chalk';
 
 program
   .name('claude-dev-kit')
-  .description('Governance-first project scaffold for Claude Code')
+  .description('Scaffold for legible, reviewable AI-assisted development')
   .version('0.1.0');
 
 program
   .command('init')
-  .description('Initialize a new project with Claude Code governance scaffold')
+  .description('Initialize a new project with a legible, reviewable development scaffold')
   .option('--tier <tier>', 'Skip tier selection prompt (s, m, or l)')
   .option('--dry-run', 'Show what would be created without writing any files')
   .action(init);

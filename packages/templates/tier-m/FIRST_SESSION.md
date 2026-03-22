@@ -1,6 +1,6 @@
 # First Session Guide — [PROJECT_NAME]
 
-Your governance scaffold is ready. This guide walks through setup and your first block cycle under the Standard Pipeline (Tier M).
+Your development scaffold is ready. This guide walks through setup and your first block cycle under the Standard Pipeline (Tier M).
 
 ---
 
@@ -107,7 +107,7 @@ You can always override the selection. The Tier 2 sweep adds EARS-style analysis
 | `/security-audit` | Reviews API routes and auth guards |
 | `/skill-dev` | Code quality and tech debt audit |
 | `/compact` | Frees context window (run at Phase 8.5) |
-| `npx claude-dev-kit doctor` | Checks your governance setup |
+| `npx claude-dev-kit doctor` | Checks your scaffold setup |
 
 ---
 

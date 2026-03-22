@@ -69,7 +69,7 @@ Files with your customizations (CLAUDE.md, pipeline.md, settings.json) are flagg
 ```bash
 npx claude-dev-kit upgrade --tier=s   # add Fast Lane pipeline
 npx claude-dev-kit upgrade --tier=m   # add Standard pipeline + docs
-npx claude-dev-kit upgrade --tier=l   # add Full governance + audit skills
+npx claude-dev-kit upgrade --tier=l   # add Full pipeline + audit skills
 ```
 
 Upgrade is non-destructive — adds new files without overwriting your existing ones.
@@ -289,9 +289,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.5.4` — public. Four-tier system stable. Multi-agent orchestration. Three-path init stable. Publishing to npm pending.
+`v1.0.0` — public stable release. Four-tier system stable. Multi-agent orchestration. Three-path init stable. Publishing to npm pending.
 
-**v0.5.4 changes**: `doctor --report` (JSON compliance output for CI pipelines), `doctor --ci` (silent mode for GitHub Actions), `.github/workflows/claude-dev-kit-verify.yml` CI enforcement template. Positioning update: primary target clarified as Builder PM and tech lead; tier boundaries reframed around blast radius and collaborator count.
+**v1.0.0 changes**: scope refined after cross-model critique (GPT, Gemini, Perplexity, Grok, Mistral). Primary target clarified as Builder PM and tech lead. Tier boundaries reframed around blast radius and collaborator count. `doctor --report` (JSON compliance output for CI), `doctor --ci` (silent mode for GitHub Actions), `.github/workflows/claude-dev-kit-verify.yml` CI enforcement template. All "governance layer" positioning language removed — replaced with "scaffold for legible, reviewable AI-assisted development."
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 

@@ -1,6 +1,6 @@
 # Fast Lane Pipeline
 
-Use for: changes touching ≤3 files, no migrations, no new patterns, no shared type changes.
+Use for: low blast radius tasks — single dev, reversible in minutes, no shared system impact. No migrations, no new patterns, no shared type changes.
 Branch prefix `fix/` activates this pipeline automatically.
 
 ---

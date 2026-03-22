@@ -1,6 +1,6 @@
 # First Session Guide — [PROJECT_NAME]
 
-Your governance scaffold is ready. This guide walks through setup and your first block cycle under the Full Pipeline (Tier L).
+Your development scaffold is ready. This guide walks through setup and your first block cycle under the Full Pipeline (Tier L).
 
 ---
 
@@ -124,7 +124,7 @@ At the scope gate, Claude also declares whether **Phase 4 E2E** and **Phase 5d q
 | `/responsive-audit` | Breakpoint correctness (375px / 768px / 1024px) |
 | `/perf-audit` | Rendering boundaries, bundle size, N+1 patterns |
 | `/compact` | Frees context window (run at Phase 8.5) |
-| `npx claude-dev-kit doctor` | Checks your governance setup |
+| `npx claude-dev-kit doctor` | Checks your scaffold setup |
 
 ---
 

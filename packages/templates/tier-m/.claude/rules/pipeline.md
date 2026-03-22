@@ -1,6 +1,6 @@
 # Standard Development Pipeline — Tier M
 
-Use for: feature blocks, 1–2 week changes, ≤15 files, no complex domain model changes.
+Use for: single feature blocks with moderate blast radius — 1–2 collaborators, no complex domain model changes, impact contained to the current feature area.
 Branch prefix `feature/` activates this pipeline automatically.
 
 ---
@@ -9,9 +9,9 @@ Branch prefix `feature/` activates this pipeline automatically.
 
 | Work type | Branch | Pipeline |
 |---|---|---|
-| Bugfix / 1–3 file change | `fix/description` | Fast Lane (Tier S) |
-| Feature block / 1–2 weeks | `feature/block-name` | This pipeline |
-| Complex domain / long-running | — | Tier L (full pipeline) |
+| Low blast radius, single dev, reversible in minutes | `fix/description` | Fast Lane (Tier S) |
+| Single feature, moderate impact, 1–2 collaborators | `feature/block-name` | This pipeline |
+| High blast radius, team, complex domain, shared systems | — | Tier L (full pipeline) |
 
 ---
 

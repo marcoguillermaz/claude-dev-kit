@@ -78,7 +78,7 @@ These notes persist across sessions. Claude reads them every time.
 
 ## Step 5 — When you're ready for more structure
 
-Tier 0 (what you have now) gives you the minimum viable governance layer:
+Tier 0 (what you have now) gives you the minimum viable scaffold:
 - Claude knows your project via `CLAUDE.md`
 - Tests must pass before Claude declares a task complete
 
@@ -87,7 +87,7 @@ When your team grows or your project complexity increases, upgrade to a higher t
 ```bash
 npx claude-dev-kit upgrade --tier=s   # Fast Lane: branch discipline + commit rules
 npx claude-dev-kit upgrade --tier=m   # Standard: phased pipeline with review gates
-npx claude-dev-kit upgrade --tier=l   # Full: audit skills, security review, full governance
+npx claude-dev-kit upgrade --tier=l   # Full: audit skills, security review, multi-agent
 ```
 
 Upgrade is non-destructive — it adds new files without overwriting your existing ones.
@@ -102,7 +102,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | Give Claude context | Edit `CLAUDE.md` |
 | Run tests manually | `[TEST_COMMAND]` |
 | See what Claude can do | Ask: "What slash commands are available?" |
-| Add more governance | `npx claude-dev-kit upgrade --tier=s` |
+| Add more structure | `npx claude-dev-kit upgrade --tier=s` |
 
 ---
 
