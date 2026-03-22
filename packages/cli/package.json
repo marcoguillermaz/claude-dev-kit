@@ -4,7 +4,7 @@
   "description": "Scaffold for legible, reviewable AI-assisted development",
   "type": "module",
   "bin": {
-    "claude-dev-kit": "./src/index.js"
+    "claude-dev-kit": "src/index.js"
   },
   "files": [
     "src/",
