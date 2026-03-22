@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+vendor/
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.egg-info/
+
+# Secrets and environment
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+secrets/
+credentials/
+
+# Claude Code — personal overrides (never share)
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+.claude/session/
+.claude/worktrees/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+htmlcov/
+
+# Logs
+*.log
+npm-debug.log*
+
+# npm
+packages/cli/package-lock.json

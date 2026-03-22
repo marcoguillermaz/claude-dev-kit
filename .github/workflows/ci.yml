@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verify CLI
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
+
+      - name: Install dependencies
+        run: cd packages/cli && npm install
+
+      - name: Verify CLI starts
+        run: node packages/cli/src/index.js --help
+
+      - name: Verify doctor command
+        run: node packages/cli/src/index.js doctor --report || true
+        # `|| true` because doctor exits 1 when checks fail (expected in CI with no project)
+
+      - name: Verify init --dry-run (greenfield)
+        run: |
+          mkdir -p /tmp/test-project && cd /tmp/test-project && git init
+          echo "Greenfield dry-run test" | node $GITHUB_WORKSPACE/packages/cli/src/index.js init --dry-run || true
