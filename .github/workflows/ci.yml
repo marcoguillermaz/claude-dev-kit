@@ -23,8 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
 
       - name: Install dependencies
         run: cd packages/cli && npm install
@@ -32,11 +30,9 @@ jobs:
       - name: Verify CLI starts
         run: node packages/cli/src/index.js --help
 
-      - name: Verify doctor command
+      - name: Verify doctor --report
         run: node packages/cli/src/index.js doctor --report || true
-        # `|| true` because doctor exits 1 when checks fail (expected in CI with no project)
+        # doctor exits 1 when checks fail — expected in CI context (no project scaffold here)
 
-      - name: Verify init --dry-run (greenfield)
-        run: |
-          mkdir -p /tmp/test-project && cd /tmp/test-project && git init
-          echo "Greenfield dry-run test" | node $GITHUB_WORKSPACE/packages/cli/src/index.js init --dry-run || true
+      - name: Verify doctor --ci
+        run: node packages/cli/src/index.js doctor --ci || true

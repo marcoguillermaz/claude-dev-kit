@@ -22,6 +22,8 @@ jobs:
   verify:
     name: Verify claude-dev-kit scaffold
     runs-on: ubuntu-latest
+    # Skip in the claude-dev-kit source repository — this workflow is for user projects
+    if: ${{ github.repository != 'marcoguillermaz/claude-dev-kit' }}
 
     steps:
       - name: Checkout
