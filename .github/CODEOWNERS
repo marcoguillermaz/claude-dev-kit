@@ -1,0 +1,15 @@
+# CODEOWNERS — claude-dev-kit
+#
+# Changes to these paths require review from the maintainer.
+
+# CLI source and templates — core product
+/packages/cli/src/       @marcoguillermaz
+/packages/templates/     @marcoguillermaz
+
+# CI/CD and GitHub config
+/.github/                @marcoguillermaz
+
+# Documentation
+/README.md               @marcoguillermaz
+/docs/                   @marcoguillermaz
+/CHANGELOG.md            @marcoguillermaz

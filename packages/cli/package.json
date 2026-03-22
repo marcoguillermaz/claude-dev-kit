@@ -6,6 +6,10 @@
   "bin": {
     "claude-dev-kit": "./src/index.js"
   },
+  "files": [
+    "src/",
+    "../../packages/templates"
+  ],
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
@@ -20,6 +24,28 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["claude", "claude-code", "ai", "developer-tools", "scaffold"],
-  "license": "MIT"
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "developer-tools",
+    "scaffold",
+    "ai-assisted-development",
+    "builder",
+    "pipeline",
+    "governance"
+  ],
+  "author": {
+    "name": "Marco Guillermaz",
+    "url": "https://github.com/marcoguillermaz"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcoguillermaz/claude-dev-kit.git"
+  },
+  "homepage": "https://github.com/marcoguillermaz/claude-dev-kit#readme",
+  "bugs": {
+    "url": "https://github.com/marcoguillermaz/claude-dev-kit/issues"
+  }
 }
