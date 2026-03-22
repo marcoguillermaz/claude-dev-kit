@@ -217,7 +217,7 @@ export async function initGreenfield(options) {
     console.log(`  2. Run ${chalk.cyan('claude')} from this directory to start your first session`);
     console.log(`  3. Read ${chalk.cyan('GETTING_STARTED.md')} — or share it with your team`);
     console.log();
-    console.log(chalk.dim("When you're ready for more structure: npx claude-dev-kit upgrade --tier=s"));
+    console.log(chalk.dim("When you're ready for more structure: npx @marcoguillermaz/claude-dev-kit upgrade --tier=s"));
   } else {
     console.log(chalk.green.bold('✓ Greenfield scaffold complete'));
     console.log();

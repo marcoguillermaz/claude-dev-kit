@@ -47,7 +47,7 @@ export function printNextSteps(config) {
     console.log('  3. Claude will detect ' + chalk.cyan('CONTEXT_IMPORT.md') + ' and start the discovery pass automatically');
     console.log('     It will read your source repos and docs, then populate CLAUDE.md and docs/');
     console.log('  4. Confirm the discovery summary and answer any gap questions');
-    console.log('  5. Run ' + chalk.cyan('npx claude-dev-kit doctor') + ' after discovery completes');
+    console.log('  5. Run ' + chalk.cyan('npx @marcoguillermaz/claude-dev-kit doctor') + ' after discovery completes');
   }
 
   if (mode === 'in-place') {
@@ -55,7 +55,7 @@ export function printNextSteps(config) {
     console.log('  2. Claude will detect ' + chalk.cyan('CONTEXT_IMPORT.md') + ' and start the discovery pass automatically');
     console.log('     It will read the existing codebase and populate CLAUDE.md, requirements.md, etc.');
     console.log('  3. Confirm the discovery summary and answer any gap questions');
-    console.log('  4. Run ' + chalk.cyan('npx claude-dev-kit doctor') + ' after discovery completes');
+    console.log('  4. Run ' + chalk.cyan('npx @marcoguillermaz/claude-dev-kit doctor') + ' after discovery completes');
     if (config.includePreCommit) {
       console.log('  5. Run ' + chalk.cyan('pip install pre-commit && pre-commit install') + ' to activate secret scanning');
     }

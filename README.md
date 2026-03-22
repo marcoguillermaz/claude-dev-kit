@@ -1,6 +1,6 @@
 # claude-dev-kit
 
-[![npm version](https://img.shields.io/npm/v/claude-dev-kit.svg)](https://www.npmjs.com/package/claude-dev-kit)
+[![npm version](https://img.shields.io/npm/v/@marcoguillermaz/claude-dev-kit.svg)](https://www.npmjs.com/package/@marcoguillermaz/claude-dev-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js ≥ 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
@@ -16,20 +16,20 @@
 
 You want to build end-to-end with Claude Code — or evaluate it for your team. You don't need a full pipeline yet. You need to get started, understand what the tool can do, and have a process you can actually review.
 
-**`npx claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
+**`npx @marcoguillermaz/claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
 
 ### Team already shipping with Claude Code
 
 You're using Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always trace. You want a structured, reviewable workflow without inventing one from scratch.
 
-**`npx claude-dev-kit init`** → choose your tier (S / M / L) → full development scaffold.
+**`npx @marcoguillermaz/claude-dev-kit init`** → choose your tier (S / M / L) → full development scaffold.
 
 ---
 
 ## Quickstart
 
 ```bash
-npx claude-dev-kit init
+npx @marcoguillermaz/claude-dev-kit init
 ```
 
 The wizard asks one routing question first:
@@ -51,9 +51,9 @@ Three init paths to choose from:
 ### Validate your setup
 
 ```bash
-npx claude-dev-kit doctor          # interactive report
-npx claude-dev-kit doctor --report # JSON output for CI pipelines
-npx claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
+npx @marcoguillermaz/claude-dev-kit doctor          # interactive report
+npx @marcoguillermaz/claude-dev-kit doctor --report # JSON output for CI pipelines
+npx @marcoguillermaz/claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 ```
 
 11 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS.
@@ -63,7 +63,7 @@ npx claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 ### Keep up to date
 
 ```bash
-npx claude-dev-kit upgrade
+npx @marcoguillermaz/claude-dev-kit upgrade
 ```
 
 Updates non-destructive files (context-review, security rules, git rules) to the latest template.
@@ -72,9 +72,9 @@ Files with your customizations (CLAUDE.md, pipeline.md, settings.json) are flagg
 ### Upgrade your tier
 
 ```bash
-npx claude-dev-kit upgrade --tier=s   # add Fast Lane pipeline
-npx claude-dev-kit upgrade --tier=m   # add Standard pipeline + docs
-npx claude-dev-kit upgrade --tier=l   # add Full pipeline + audit skills
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=s   # add Fast Lane pipeline
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=m   # add Standard pipeline + docs
+npx @marcoguillermaz/claude-dev-kit upgrade --tier=l   # add Full pipeline + audit skills
 ```
 
 Upgrade is non-destructive — adds new files without overwriting your existing ones.
@@ -300,13 +300,13 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 **v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
 
-**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
+**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx @marcoguillermaz/claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
 **v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
 
-**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
+**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx @marcoguillermaz/claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
 
 **v0.5.0 changes**: session recovery (`.claude/session/`), scope gate with Tier 1/2 sweep auto-selection, Interaction Protocol in CLAUDE.md templates, three new settings hooks (arch-audit reminder, InstructionsLoaded, PostCompact), Phase 8.5 mandatory closing message, Phase 8 3-commit sequence, Phase 5b/5c/5d block-scoped quality audits (Tier L), Structural Requirements Changes pipeline R1–R4 (Tier L), Fast Lane session file + escalation rule + scope-confirm gate, evolved C1–C11 context review with explicit grep commands.
 
