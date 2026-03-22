@@ -291,8 +291,6 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 `v1.0.0` — public stable release. Four-tier system stable. Multi-agent orchestration. Three-path init stable. Publishing to npm pending.
 
-**v1.0.0 changes**: scope refined after cross-model critique (GPT, Gemini, Perplexity, Grok, Mistral). Primary target clarified as Builder PM and tech lead. Tier boundaries reframed around blast radius and collaborator count. `doctor --report` (JSON compliance output for CI), `doctor --ci` (silent mode for GitHub Actions), `.github/workflows/claude-dev-kit-verify.yml` CI enforcement template. All "governance layer" positioning language removed — replaced with "scaffold for legible, reviewable AI-assisted development."
-
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
 **v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
