@@ -1,7 +1,7 @@
 # claude-dev-kit
 
 > Scaffold for legible, reviewable AI-assisted development.
-> From first exploration to production-grade delivery — one scaffold, four tiers.
+> From first exploration to production-grade delivery - one scaffold, four tiers.
 
 ---
 
