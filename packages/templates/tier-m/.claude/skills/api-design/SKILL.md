@@ -3,6 +3,7 @@ name: api-design
 description: API design consistency review. Checks endpoint naming conventions, HTTP verb correctness, response shape consistency, error code standardization, pagination patterns, and input validation presence. Does not cover auth implementation (use /security-audit) or performance (use /perf-audit).
 user-invocable: true
 model: sonnet
+context: fork
 ---
 
 You are performing an API design consistency review of the project's API routes.

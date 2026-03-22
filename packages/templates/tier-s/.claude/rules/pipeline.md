@@ -5,18 +5,24 @@ Branch prefix `fix/` activates this pipeline automatically.
 
 ---
 
-## FL-0 — Branch check
+## FL-0 — Branch check + session file
 
+- **Session file**: check `.claude/session/` for existing `fix-*.md` files.
+  - If one exists: read it — a previous fix session was interrupted. Resume from it. Do NOT create a new file.
+  - If none: create `.claude/session/fix-[description].md` with a one-line description and the current date.
 - Confirm current branch starts with `fix/`. If not: `git checkout -b fix/description`.
 - Never commit directly to `main` or `staging`.
+- **Escalation check**: if the fix touches a shared utility or type with >5 import consumers, stop — notify the user and escalate to Tier M (full pipeline). A fix with wide-impact shared changes is not a fast-lane operation.
 
 ## FL-1 — Implement
 
-- No requirements gate. Write the fix.
+- **Scope confirmation (compact)**: before writing any code, state the exact files to modify, the specific change in each, and flag any irreversible operation. Wait for an execution keyword (`Execute` · `Proceed` · `Confirmed` · `Go ahead`) before proceeding.
+- Write the fix. No dependency scan (unless a shared utility is touched — then do a quick grep).
 - Run type check: `[TYPE_CHECK_COMMAND]`
 - Run tests: `[TEST_COMMAND]`
 - Both must be green before committing.
 - Commit: `git add … && git commit -m "fix(scope): description"`
+- No intermediate docs update unless `CLAUDE.md` genuinely needs a pattern correction.
 
 ## FL-2 — Deploy to staging + smoke test
 
@@ -34,10 +40,14 @@ Branch prefix `fix/` activates this pipeline automatically.
 
 - Update `docs/implementation-checklist.md` only if the fix closes a tracked item.
 - Update `CLAUDE.md` only if the fix reveals a non-obvious pattern worth documenting.
+- **Delete session file**: remove `.claude/session/fix-[description].md`.
+  - Proceed only if the fix is confirmed working in production.
+  - If outcome is ambiguous: ask explicitly before deleting.
 - Delete local fix branch: `git branch -d fix/description`
+- Output a one-line summary: `fix complete ✅ — [description] · type check ✅ · tests N/N ✅`
 
-> Fast Lane has no STOP gates. If scope expands beyond 3 files or requires a migration,
-> escalate to Tier M or Tier L and notify the user.
+> Fast Lane has one compact scope-confirm gate in FL-1. Escalate to Tier M or Tier L if:
+> scope expands beyond 3 files, a migration is required, or a shared utility with >5 consumers is touched.
 
 ---
 

@@ -3,6 +3,7 @@ name: perf-audit
 description: Performance audit. Checks server/client rendering boundaries, bundle size, unnecessary re-renders, image optimization, N+1 query patterns in API routes, and unbounded data fetching. Internal app — Core Web Vitals public scoring, SEO meta tags, and Lighthouse public metrics are out of scope.
 user-invocable: true
 model: sonnet
+context: fork
 ---
 
 You are performing a performance audit of the project.

@@ -3,6 +3,7 @@ name: skill-dev
 description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, and missing or premature abstractions. Uses docs/sitemap.md as structural guide. Outputs findings to docs/backlog-refinement.md.
 user-invocable: true
 model: sonnet
+context: fork
 ---
 
 You are performing a code quality and technical debt audit of the project codebase.

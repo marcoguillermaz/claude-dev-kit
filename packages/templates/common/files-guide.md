@@ -109,28 +109,58 @@ All endpoints must validate input. Never return raw errors.
 | `Stop` | Yes | Quality gate before task completion |
 | `UserPromptSubmit` | Yes | Block off-topic prompts; inject context |
 | `SessionStart` | No | Inject environment-specific context |
+| `InstructionsLoaded` | No | Debug logging of loaded context files |
+| `PostCompact` | No | Restore session state reminders after compaction |
 
 **The `Stop` hook is the most impactful governance control**: when configured with a test
 command, Claude cannot declare a task complete until all tests pass — without any manual
 discipline required.
 
+**Hooks configured in this project's settings.json** (Tier M/L):
+- `Stop`: runs `[TEST_COMMAND]` — blocks completion if tests fail
+- `PostToolUse`: audit logging of all Write/Edit/Bash calls to `~/.claude/audit/`
+- `SessionStart`: session logging + weekly arch-audit reminder (⚠️ if >7 days since last `/arch-audit`)
+- `InstructionsLoaded`: appends raw payload to `/tmp/claude-instructions-YYYYMMDD.log` (async, non-blocking — inspect to debug which CLAUDE.md/rules files were loaded)
+- `PostCompact`: reminds Claude to re-read `.claude/CLAUDE.local.md` if active overrides exist
+
 ---
 
 ## MEMORY.md — Session memory (two distinct files)
 
+**Do not confuse these two files — they coexist in every project:**
+
 | File | Path | Committed? | Loaded by | Purpose |
 |---|---|---|---|---|
 | Project `MEMORY.md` | `./MEMORY.md` | ✅ yes | Pipeline Phase 0 (explicit read) | Shared team knowledge: Active plan + Lessons |
-| Auto-memory | `~/.claude/projects/.../memory/MEMORY.md` | ❌ no | Claude Code system (injected) | Claude's private persistent patterns |
+| Auto-memory | `~/.claude/projects/.../memory/MEMORY.md` | ❌ no | Claude Code system (auto-injected) | Claude's private persistent patterns |
 
 **Project MEMORY.md** — two sections:
-- **Active plan**: current step, status, next action, open questions
-- **Lessons/Patterns**: concrete findings from past blocks (bugs, pitfalls, workarounds)
+- **Active plan**: current step, status, next action, open questions. Updated every block.
+- **Lessons/Patterns**: concrete findings from past blocks (bugs, pitfalls, workarounds). Specific: observation + root cause + fix.
 
 **Rules**:
-- Keep under ~150 active lines
-- No duplication with CLAUDE.md
-- Lessons must be specific: observation + root cause + fix
+- Keep under ~150 active lines. Beyond that: extract a topic into a separate file and link it.
+- No duplication with CLAUDE.md. If a lesson becomes a stable project truth → move it to CLAUDE.md.
+- Project-root MEMORY.md is committed and shared. Auto-memory is never committed.
+- Never put tokens, credentials, or sensitive data in either file.
+
+---
+
+## .claude/CLAUDE.local.md — Personal/temporary overrides
+
+**Official Anthropic feature**: yes — auto-loaded at session start. Gitignored.
+
+**What it is**: personal override file for instructions that should NOT be shared with the team.
+Useful for: temporary phase suspensions, personal preferences, machine-specific instructions.
+
+**What belongs here**:
+- Temporary instructions active only during a specific phase of work
+- Personal preferences that differ from team defaults
+- Machine-specific settings (e.g. a different local port)
+
+**What does NOT belong here**: permanent rules → put those in `pipeline.md` or `CLAUDE.md`.
+
+**PostCompact hook**: the `settings.json` PostCompact hook reminds you to re-read this file after context compaction, since it is gitignored and not automatically re-surfaced.
 
 ---
 

@@ -3,6 +3,7 @@ name: security-audit
 description: Security review of API routes and data layer. Checks authentication guards, authorization completeness, input validation coverage, sensitive data exposure in responses, and HTTP security headers. Does not cover auth implementation architecture (business logic) or performance.
 user-invocable: true
 model: sonnet
+context: fork
 ---
 
 You are performing a security audit of the project's API routes and data layer.

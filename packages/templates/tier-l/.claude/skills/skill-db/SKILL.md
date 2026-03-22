@@ -3,6 +3,7 @@ name: skill-db
 description: Database schema and query quality audit. Reviews normalization, index coverage, access control completeness, constraint gaps, N+1 query patterns in API routes, and data type choices. Uses docs/db-map.md as authoritative schema reference. Outputs findings to docs/backlog-refinement.md.
 user-invocable: true
 model: sonnet
+context: fork
 ---
 
 You are performing a database quality audit of the project's database schema and query layer.

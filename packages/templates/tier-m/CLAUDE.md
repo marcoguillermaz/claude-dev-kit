@@ -45,6 +45,22 @@
 <!-- Add non-obvious gotchas here as you discover them. -->
 <!-- Format: what → why it matters → how to handle it -->
 
+## Interaction Protocol — Plan-then-Confirm
+
+**Default behavior for all non-trivial requests**: before taking any action that modifies files, configuration, or external systems, Claude must:
+
+1. Confirm understanding of the full scope (what is requested, what is NOT, any ambiguities)
+2. List every intended action: file paths, what changes, tools used, irreversible operations
+3. Flag missing information — ask before acting
+4. Wait for an explicit execution keyword before proceeding
+
+**Execution keywords** (the only phrases that authorize autonomous action):
+- `Execute` · `Proceed` · `Confirmed` · `Go ahead`
+
+**Exception — active Phase 2**: once a plan is confirmed and an execution keyword was given, Claude proceeds autonomously through implementation without re-confirming each file edit.
+
+**Exception — read-only operations**: `Read`, `Grep`, `Glob`, `git status/log/diff` may run without prior confirmation.
+
 ## Reference Documents
 - **Requirements**: `docs/requirements.md`
 - **Progress tracker**: `docs/implementation-checklist.md`
