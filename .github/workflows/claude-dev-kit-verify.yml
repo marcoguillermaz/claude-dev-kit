@@ -33,9 +33,9 @@ jobs:
           node-version: '20'
 
       - name: Run claude-dev-kit doctor
-        run: npx claude-dev-kit@latest doctor --ci
-        # --ci flag: exits with code 1 if any check fails, no interactive output
-        # Remove --ci to see the full interactive report instead
+        run: npx claude-dev-kit@latest doctor --report
+        # --report: outputs JSON compliance report + exits 1 if any check fails
+        # Use --ci for silent mode (no output, just exit code)
 
       - name: Verify Stop hook is configured
         run: |

@@ -163,43 +163,82 @@ const checks = [
   },
 ];
 
-export async function doctor() {
+export async function doctor(options = {}) {
   const cwd = process.cwd();
-  console.log();
-  console.log(chalk.bold('claude-dev-kit doctor') + chalk.dim(` — ${cwd}`));
-  console.log();
+  const ciMode = options.ci === true;
+  const reportMode = options.report === true;
 
+  const results = [];
   let passed = 0;
   let warned = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const item of checks) {
     const result = item.check(cwd);
 
-    if (result.skip) continue;
+    if (result.skip) {
+      skipped++;
+      results.push({ id: item.id, label: item.label, status: 'skip' });
+      continue;
+    }
 
     if (result.pass) {
-      const info = result.info ? chalk.dim(` (${result.info})`) : '';
-      console.log(`  ${chalk.green('✓')} ${item.label}${info}`);
       passed++;
+      results.push({ id: item.id, label: item.label, status: 'pass', info: result.info || null });
     } else if (result.warn) {
-      console.log(`  ${chalk.yellow('⚠')} ${item.label}`);
-      console.log(`    ${chalk.dim(result.fix)}`);
       warned++;
+      results.push({ id: item.id, label: item.label, status: 'warn', fix: result.fix });
     } else {
-      console.log(`  ${chalk.red('✗')} ${item.label}`);
-      console.log(`    ${chalk.dim(result.fix)}`);
       failed++;
+      results.push({ id: item.id, label: item.label, status: 'fail', fix: result.fix });
+    }
+  }
+
+  // --report: emit JSON and exit
+  if (reportMode) {
+    const report = {
+      timestamp: new Date().toISOString(),
+      cwd,
+      summary: { passed, warned, failed, skipped },
+      checks: results,
+    };
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    if (failed > 0) process.exit(1);
+    return;
+  }
+
+  // --ci: silent mode — no output, just exit code
+  if (ciMode) {
+    if (failed > 0) process.exit(1);
+    return;
+  }
+
+  // interactive mode (default)
+  console.log();
+  console.log(chalk.bold('claude-dev-kit doctor') + chalk.dim(` — ${cwd}`));
+  console.log();
+
+  for (const r of results) {
+    if (r.status === 'skip') continue;
+    if (r.status === 'pass') {
+      const info = r.info ? chalk.dim(` (${r.info})`) : '';
+      console.log(`  ${chalk.green('✓')} ${r.label}${info}`);
+    } else if (r.status === 'warn') {
+      console.log(`  ${chalk.yellow('⚠')} ${r.label}`);
+      console.log(`    ${chalk.dim(r.fix)}`);
+    } else {
+      console.log(`  ${chalk.red('✗')} ${r.label}`);
+      console.log(`    ${chalk.dim(r.fix)}`);
     }
   }
 
   console.log();
-  const total = passed + warned + failed;
   console.log(
-    chalk.bold(`Results: `) +
+    chalk.bold('Results: ') +
     chalk.green(`${passed} passed`) + ' · ' +
-    (warned > 0 ? chalk.yellow(`${warned} warnings`) : chalk.dim(`0 warnings`)) + ' · ' +
-    (failed > 0 ? chalk.red(`${failed} failed`) : chalk.dim(`0 failed`))
+    (warned > 0 ? chalk.yellow(`${warned} warnings`) : chalk.dim('0 warnings')) + ' · ' +
+    (failed > 0 ? chalk.red(`${failed} failed`) : chalk.dim('0 failed'))
   );
 
   if (failed > 0) {
@@ -210,7 +249,7 @@ export async function doctor() {
 
   if (warned > 0) {
     console.log();
-    console.log(chalk.yellow('Address warnings to reach full governance coverage.'));
+    console.log(chalk.yellow('Address warnings to reach full scaffold coverage.'));
   }
 
   console.log();

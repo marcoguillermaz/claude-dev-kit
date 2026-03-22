@@ -46,10 +46,14 @@ Three init paths to choose from:
 ### Validate your setup
 
 ```bash
-npx claude-dev-kit doctor
+npx claude-dev-kit doctor          # interactive report
+npx claude-dev-kit doctor --report # JSON output for CI pipelines
+npx claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 ```
 
 11 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS.
+
+`--report` outputs machine-readable JSON — consumable by CI pipelines and external audit systems. Each check returns `id`, `status` (pass / warn / fail / skip), and `fix` message.
 
 ### Keep up to date
 
@@ -285,9 +289,15 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.5.3` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+`v0.5.4` — public. Four-tier system stable. Multi-agent orchestration. Three-path init stable. Publishing to npm pending.
 
-**Positioning update (2026-03-22)**: scope refined after cross-model critique. Primary target clarified as Builder PM and tech lead — people with enough technical background to work end-to-end with Claude Code and who need a reproducible, reviewable process to do it reliably. Tier boundaries reframed around blast radius and collaborator count rather than file count and duration.
+**v0.5.4 changes**: `doctor --report` (JSON compliance output for CI pipelines), `doctor --ci` (silent mode for GitHub Actions), `.github/workflows/claude-dev-kit-verify.yml` CI enforcement template. Positioning update: primary target clarified as Builder PM and tech lead; tier boundaries reframed around blast radius and collaborator count.
+
+**v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
+
+**v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
+
+**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 

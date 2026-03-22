@@ -21,6 +21,8 @@ program
 program
   .command('doctor')
   .description('Validate the Claude Code setup in the current project')
+  .option('--report', 'Output machine-readable JSON compliance report (for CI)')
+  .option('--ci', 'Silent mode: exit 1 if any check fails, no interactive output')
   .action(doctor);
 
 program

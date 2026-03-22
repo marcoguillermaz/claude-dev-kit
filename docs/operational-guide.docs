@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 0.5.3
+**Version**: 0.5.4
 **Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -321,7 +321,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 
 ### Tier S — Fast Lane
 
-**Use for**: bugfixes, ≤3 file changes, no migrations, no new patterns, no shared type changes.
+**Use for**: low blast radius tasks — single dev, reversible in minutes, no shared system impact. Bugfixes, isolated changes, hotfixes.
 **Branch prefix**: `fix/description` — Claude detects this and switches to Fast Lane automatically.
 
 | Phase | Action |
@@ -1369,7 +1369,9 @@ Review the diff and apply the relevant parts manually.
 ### Checking setup health
 
 ```bash
-npx claude-dev-kit doctor
+npx claude-dev-kit doctor           # interactive report (default)
+npx claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
+npx claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
 Runs 11 checks and reports pass/fail:
@@ -1385,6 +1387,22 @@ Runs 11 checks and reports pass/fail:
 9. Stop hook is configured with a non-empty command
 10. `.github/CODEOWNERS` covers `.claude/`
 11. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
+
+**`--report` output format** — machine-readable JSON consumed by CI systems or external audit tools:
+
+```json
+{
+  "timestamp": "2026-03-22T10:00:00.000Z",
+  "cwd": "/path/to/project",
+  "summary": { "passed": 9, "warned": 1, "failed": 0, "skipped": 1 },
+  "checks": [
+    { "id": "stop-hook", "label": "Stop hook configured", "status": "pass", "info": null },
+    { "id": "codeowners", "label": "CODEOWNERS includes .claude/", "status": "warn", "fix": "..." }
+  ]
+}
+```
+
+**CI integration** — add `.github/workflows/claude-dev-kit-verify.yml` (scaffolded by `init`, also available as a standalone template) to run the doctor on every PR. Prevents merging when the scaffold is broken or bypassed.
 
 ---
 

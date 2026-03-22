@@ -1,7 +1,7 @@
 {
   "name": "claude-dev-kit",
-  "version": "0.5.3",
-  "description": "Governance-first project scaffold for Claude Code",
+  "version": "0.5.4",
+  "description": "Scaffold for legible, reviewable AI-assisted development",
   "type": "module",
   "bin": {
     "claude-dev-kit": "./src/index.js"
