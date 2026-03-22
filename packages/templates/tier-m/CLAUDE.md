@@ -33,6 +33,7 @@
 [BUILD_COMMAND]
 [TEST_COMMAND]
 [TYPE_CHECK_COMMAND]
+[E2E_COMMAND]
 ```
 
 ## Coding Conventions

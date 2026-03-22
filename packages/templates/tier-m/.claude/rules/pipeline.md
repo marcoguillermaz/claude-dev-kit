@@ -53,6 +53,10 @@ Branch prefix `feature/` activates this pipeline automatically.
   - **Optional / role-gated** `WHERE`: what is conditional on role or config?
   - **Pre-mortem**: if this plan fails in implementation due to scope ambiguity, what caused it?
 
+  Also declare explicitly at scope gate: **does this block include critical UI flows?** (yes/no). This determines whether Phase 4 — E2E tests activates.
+  - If **yes** and `[E2E_COMMAND]` is configured: ask the user to list the specific user journeys to cover in Phase 4 (numbered, 1–5 scenarios, e.g. "1. Login → navigate to X → perform Y → verify Z"). These become the mandatory test scenarios for Phase 4. Claude must not invent scenarios — it tests exactly what the user defines here.
+  - If **no** or `[E2E_COMMAND]` is `# not configured`: Phase 4 is skipped. State this explicitly.
+
   Compose one `AskUserQuestion` with all open items. Do NOT proceed to the dependency scan until an execution keyword is received (`Execute` · `Proceed` · `Confirmed` · `Go ahead`).
 
 - **Dependency scan** (mandatory — always delegate to the `dependency-scanner` agent):
@@ -97,6 +101,20 @@ Branch prefix `feature/` activates this pipeline automatically.
   - DB state: after write, verify expected record with a privileged client
 - Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).
 - Run `[TEST_COMMAND] [API_TESTS_PATH]` — all green before proceeding.
+
+## Phase 4 — UAT / E2E tests *(conditional — read before skipping)*
+
+**This phase activates only when both conditions hold**:
+1. `[E2E_COMMAND]` is set in CLAUDE.md Key Commands (not `# not configured`)
+2. At the Phase 1 scope gate, the user confirmed critical UI flows and defined the UAT scenarios
+
+If either condition is false: **skip this phase and state so explicitly** — do not proceed silently.
+
+- Implement exactly the numbered UAT scenarios defined by the user at the Phase 1 scope gate. Do not add, remove, or reinterpret scenarios.
+- Use `data-*` attribute selectors — never CSS color classes or positional selectors.
+- Each scenario becomes one test: scenario title as test name, steps as the test body.
+- Run: `[E2E_COMMAND]`
+- Output: summary line only (`✓ N/N`). On failure: list the failing scenario by name.
 
 ## Phase 5b — Test data setup *(before smoke test)*
 

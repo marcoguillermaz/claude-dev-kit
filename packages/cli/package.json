@@ -1,6 +1,6 @@
 {
   "name": "claude-dev-kit",
-  "version": "0.1.0",
+  "version": "0.5.3",
   "description": "Governance-first project scaffold for Claude Code",
   "type": "module",
   "bin": {

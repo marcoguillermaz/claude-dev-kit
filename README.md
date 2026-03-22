@@ -49,7 +49,7 @@ Three init paths to choose from:
 npx claude-dev-kit doctor
 ```
 
-10 checks: Claude CLI, CLAUDE.md size, settings.json, Stop hook, CODEOWNERS, secret hygiene.
+11 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS.
 
 ### Keep up to date
 
@@ -81,6 +81,8 @@ Upgrade is non-destructive — adds new files without overwriting your existing 
 | **M — Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Feature block, 1–2 weeks |
 | **L — Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | Long-running project, team, complex domain |
 
+**E2E / UAT testing (Tier M / L)**: at init time you can provide an optional E2E test command (Playwright/Cypress). When configured, Phase 4 activates per block only when the scope gate confirms critical UI flows are in scope **and the user explicitly lists the UAT scenarios to test** (numbered, 1–5 journeys). Claude implements exactly those scenarios — it does not invent test cases. If not configured or no UI flows declared, Phase 4 is skipped automatically.
+
 **The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. Enforced by a Stop hook in `.claude/settings.json` — not just an instruction.
 
 **Every tier also shares**: a weekly arch-audit reminder (SessionStart hook checks if `/arch-audit` was run in the last 7 days), audit logging of all file changes, and branch discipline rules.
@@ -105,6 +107,7 @@ your-project/
 ```
 your-project/
 ├── CLAUDE.md                       ← project context (<200 lines, committed)
+├── FIRST_SESSION.md                ← first session guide for your team (M/L only, remove after)
 ├── MEMORY.md                       ← shared lessons and active plan (M/L only)
 ├── CONTEXT_IMPORT.md               ← discovery bridge file (from-context / in-place only)
 │
@@ -282,7 +285,13 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v0.5.0` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+`v0.5.3` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+
+**v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
+
+**v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
+
+**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
 
 **v0.5.0 changes**: session recovery (`.claude/session/`), scope gate with Tier 1/2 sweep auto-selection, Interaction Protocol in CLAUDE.md templates, three new settings hooks (arch-audit reminder, InstructionsLoaded, PostCompact), Phase 8.5 mandatory closing message, Phase 8 3-commit sequence, Phase 5b/5c/5d block-scoped quality audits (Tier L), Structural Requirements Changes pipeline R1–R4 (Tier L), Fast Lane session file + escalation rule + scope-confirm gate, evolved C1–C11 context review with explicit grep commands.
 

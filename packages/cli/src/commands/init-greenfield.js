@@ -11,6 +11,13 @@ import { printPlan, printNextSteps } from '../utils/print-plan.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../../templates');
 
+function suggestTierFromDiagnostics(answers) {
+  if (answers.workScope === 'bugfix') return 's';
+  if (answers.workScope === 'complex') return 'l';
+  if (answers.teamSize === 'large') return 'l';
+  return 'm';
+}
+
 export async function initGreenfield(options) {
   // First question: gauge familiarity to route beginners to Tier 0
   const { familiarity } = await inquirer.prompt([
@@ -47,16 +54,47 @@ export async function initGreenfield(options) {
       message: 'Short description (one line):',
       validate: (v) => v.trim().length > 0 || 'Required',
     },
-    // Tier selection only for experienced users
+    // Diagnostic tier selection for experienced users
+    {
+      type: 'list',
+      name: 'teamSize',
+      message: 'How many engineers will regularly use Claude Code on this project?',
+      when: () => !isDiscovery && !options.tier,
+      choices: [
+        { name: 'Just me', value: 'solo' },
+        { name: 'Small team (2–5)', value: 'small' },
+        { name: 'Larger team (6+)', value: 'large' },
+      ],
+    },
+    {
+      type: 'list',
+      name: 'workScope',
+      message: 'What kind of work will you primarily do?',
+      when: () => !isDiscovery && !options.tier,
+      choices: [
+        { name: 'Bugfixes and small patches (≤3 files)', value: 'bugfix' },
+        { name: 'Feature blocks (1–2 week chunks)', value: 'feature' },
+        { name: 'Complex features or long-running projects', value: 'complex' },
+      ],
+    },
     {
       type: 'list',
       name: 'tier',
-      message: 'Pipeline tier:',
-      when: !isDiscovery && !options.tier,
+      message: (a) => {
+        const suggested = suggestTierFromDiagnostics(a);
+        const tierDesc = {
+          s: 'S — Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
+          m: 'M — Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
+          l: 'L — Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
+        };
+        return `Suggested: ${tierDesc[suggested]}\n  Pipeline tier:`;
+      },
+      when: () => !isDiscovery && !options.tier,
+      default: (a) => suggestTierFromDiagnostics(a),
       choices: [
-        { name: 'S — Fast Lane    (bugfixes, ≤3 files, no gates)', value: 's' },
-        { name: 'M — Standard     (feature blocks, 1–2 week changes)', value: 'm' },
-        { name: 'L — Full         (complex domain, long-running, full governance)', value: 'l' },
+        { name: 'S — Fast Lane    (bugfixes, ≤3 files, 1 gate)', value: 's' },
+        { name: 'M — Standard     (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
+        { name: 'L — Full         (complex domain, full governance, 4 gates)', value: 'l' },
       ],
     },
     {
@@ -103,6 +141,17 @@ export async function initGreenfield(options) {
           go: 'go run .',
           other: 'npm run dev',
         })[a.techStack] || 'npm run dev',
+    },
+    {
+      type: 'input',
+      name: 'e2eCommand',
+      message: 'E2E test command (Playwright/Cypress — leave blank to skip):',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      default: '',
     },
     {
       type: 'confirm',

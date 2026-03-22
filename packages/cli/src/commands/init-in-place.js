@@ -92,6 +92,16 @@ export async function initInPlace(options) {
       ],
     },
     {
+      type: 'input',
+      name: 'e2eCommand',
+      message: 'E2E test command (Playwright/Cypress — leave blank to skip):',
+      when: (a) => {
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      default: '',
+    },
+    {
       type: 'confirm',
       name: 'includePreCommit',
       message: 'Include pre-commit config (secret scanning + AI commit audit)?',

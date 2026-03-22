@@ -58,6 +58,10 @@ Then:
   - All Tier 1 dimensions (roles, data, error conditions, UI states, integrations, reversibility, exclusions)
   - **Pre-mortem**: if this plan fails in Phase 2 due to scope ambiguity, what caused it?
 
+  Also declare explicitly at scope gate: **does this block include critical UI flows?** (yes/no). This determines whether Phase 4 — E2E tests activates.
+  - If **yes** and `[E2E_COMMAND]` is configured: ask the user to list the specific user journeys to cover in Phase 4 (numbered, 1–5 scenarios, e.g. "1. Login → navigate to X → perform Y → verify Z"). These become the mandatory UAT scenarios for Phase 4. Claude must not invent scenarios — it tests exactly what the user defines here.
+  - If **no** or `[E2E_COMMAND]` is `# not configured`: Phase 4 is skipped. State this explicitly.
+
   Compose one `AskUserQuestion` with all open items. The user — not Claude — declares when scope is complete.
 
 - **Dependency scan** (mandatory — always delegate to the `dependency-scanner` agent):
@@ -122,11 +126,19 @@ Then:
 - Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).
 - Output: summary line only (`✓ N/N`).
 
-## Phase 4 — E2E tests *(if block has significant UI flows)*
+## Phase 4 — UAT / E2E tests *(conditional — read before skipping)*
 
-- Write Playwright or Cypress tests for critical user journeys.
-- Use `data-*` attribute selectors — never CSS color classes.
-- Output: summary line only.
+**This phase activates only when both conditions hold**:
+1. `[E2E_COMMAND]` is set in CLAUDE.md Key Commands (not `# not configured`)
+2. At the Phase 1 scope gate, the user confirmed critical UI flows and defined the UAT scenarios
+
+If either condition is false: **skip this phase and state so explicitly** — do not proceed silently.
+
+- Implement exactly the numbered UAT scenarios defined by the user at the Phase 1 scope gate. Do not add, remove, or reinterpret scenarios.
+- Use `data-*` attribute selectors — never CSS color classes or positional selectors.
+- Each scenario becomes one test: scenario title as test name, steps as the test body.
+- Run: `[E2E_COMMAND]`
+- Output: summary line only (`✓ N/N`). On failure: list the failing scenario by name.
 
 ## Phase 5b — Test data setup *(MANDATORY — must complete before Phase 5c)*
 

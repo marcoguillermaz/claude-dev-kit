@@ -36,6 +36,7 @@
 [TEST_COMMAND]
 [TYPE_CHECK_COMMAND]
 [MIGRATION_COMMAND]
+[E2E_COMMAND]
 ```
 
 ## Navigation by Role

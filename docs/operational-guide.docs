@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 0.5.0
+**Version**: 0.5.3
 **Audience**: Any development team using Claude Code — from first-time explorers to teams wanting full governance
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -130,22 +130,27 @@ You will be asked to choose one of three paths:
 
 The wizard asks first: **"How familiar is your team with Claude Code?"**
 - **Just starting out** → Tier 0 (Discovery). The remaining questions are simplified accordingly.
-- **We use it and want guardrails** → asks for tier (S / M / L).
+- **We use it and want guardrails** → continues to the experienced path below.
 
-Then:
+For experienced users, the wizard asks:
 - Project name and one-line description
-- Pipeline tier (S / M / L) — only if experienced path
+- **3 diagnostic questions → auto-suggest tier**:
+  1. "How many engineers will use Claude Code on this project?" (solo / small team / larger team)
+  2. "What kind of work will you primarily do?" (bugfixes / feature blocks / complex/long-running)
+  3. The wizard suggests a tier with a description (phases, gates, overhead) — you confirm or pick a different one
 - Tech stack (Node.js/TS, Node.js/JS, Python, Go, other)
 - Test command, type check command, dev server command
+- **E2E test command (Playwright/Cypress — optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
 - Whether to include pre-commit config and `.github/` files
 
-Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code.
+Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code. Tier M/L also include `FIRST_SESSION.md` — a step-by-step guide to the first block cycle.
 
 **After running:**
-1. Review `CLAUDE.md` — it has placeholder values. Fill in the project-specific details.
-2. Update `.github/CODEOWNERS` with real GitHub usernames.
-3. If you enabled pre-commit: run `pip install pre-commit && pre-commit install`.
-4. Open Claude Code: `claude` from the project root.
+1. Read `FIRST_SESSION.md` (Tier M/L) — your team's guide to the first session.
+2. Review `CLAUDE.md` — it has placeholder values. Fill in the project-specific details.
+3. Update `.github/CODEOWNERS` with real GitHub usernames.
+4. If you enabled pre-commit: run `pip install pre-commit && pre-commit install`.
+5. Open Claude Code: `claude` from the project root.
 
 ---
 
@@ -187,6 +192,7 @@ Detected values you will be asked to confirm:
 - Project name (defaults to directory name)
 - Tech stack and framework
 - Test, type check, dev server, build, install commands
+- E2E test command (optional — leave blank to skip; if configured, Phase 4 activates conditionally in Tier M/L)
 - Pipeline tier (suggested based on project size)
 
 **After running:** open Claude Code. Claude detects `CONTEXT_IMPORT.md` and runs Discovery on the current directory. See section 4.
@@ -298,8 +304,8 @@ The pipeline is the sequence of phases Claude follows for every development task
 
 **After running init (Tier 0):**
 1. Edit `CLAUDE.md` — fill in the project description and verify the commands.
-2. Run `claude` from the project root. Your first session starts immediately.
-3. Read `GETTING_STARTED.md` for what to expect.
+2. Read `GETTING_STARTED.md` for what to expect.
+3. Run `claude` from the project root. Your first session starts immediately.
 
 **Upgrading from Tier 0:**
 ```bash
@@ -338,22 +344,29 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | Phase | Action | Gate |
 |---|---|---|
 | 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | — |
-| 1 | **Scope gate** (auto-selects Tier 1 Standard Sweep or Tier 2 Deep Sweep). Requirements, dependency scan (delegated to agent), file list. | ⏸ **STOP** |
+| 1 | **Scope gate** (auto-selects Tier 1 Standard Sweep or Tier 2 Deep Sweep + declares Phase 4 applicability). Requirements, dependency scan (delegated to agent), file list. | ⏸ **STOP** |
 | 1.5 | Design review — data flow, trade-offs, discarded alternatives. *(skip for ≤3 files, no migrations)* | ⏸ **STOP** |
 | 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | — |
 | 3 | Type check + build + tests. Intermediate commit. | — |
 | 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state). *(if routes were added/modified)* | — |
+| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | — |
 | 5b | Test data setup — insert representative records for all relevant states. | — |
 | 5c | Staging deploy + smoke test (both themes if UI changes). | — |
 | 6 | Outcome checklist with actual results. | ⏸ **STOP** |
 | 8 | Block closure: session file (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main. | — |
 | 8.5 | Context review C1–C11. Mandatory closing message. `/compact`. | — |
 
+**After running init (Tier M):**
+1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle.
+2. Fill in `CLAUDE.md` placeholders and `docs/requirements.md` with planned blocks.
+3. Run `claude` from the project root. Claude orients itself in Phase 0 automatically.
+
 **Two STOP gates** (Phases 1 and 6). Claude presents results at each and waits for an explicit execution keyword before proceeding.
 
-**Scope gate in Phase 1**: Claude auto-selects the review depth:
+**Scope gate in Phase 1**: Claude auto-selects the review depth and declares Phase 4 applicability:
 - **Tier 1 — Standard Sweep** (≤5 files, single entity, no migration, no new pattern): 8 dimensions.
 - **Tier 2 — Deep Sweep** (>5 files, new entity, migration, multi-role): Tier 1 + states/conditions/pre-mortem.
+- At the scope gate, Claude declares: "does this block include critical UI flows?" (yes/no). If yes and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5, e.g. "1. Login → navigate to X → perform Y → verify Z"). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
 
 ---
 
@@ -372,7 +385,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | 2 | Implementation. Destructive migration rollback comments. Security checklist (5 checks). `/simplify`. | — |
 | 3 | Type check + build + unit tests. Intermediate commit. | — |
 | 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state, cleanup). | — |
-| 4 | E2E tests with Playwright/Cypress. *(significant UI flows)* | — |
+| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | — |
 | 5b | Test data setup — cleanup-first, all relevant states. | — |
 | 5c | Staging deploy + smoke test (all roles, both themes if UI). | — |
 | 5d | **Block-scoped quality audit** — `/ui-audit`, `/visual-audit`, `/ux-audit`, `/responsive-audit` scoped to block routes. Severity: Critical → fix before Phase 6; Major → flag in checklist; Minor → backlog. | — |
@@ -380,7 +393,15 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | — |
 | 8.5 | C1–C3 via context-reviewer agent. C4–C11 in main session. **Mandatory closing message**. `/compact`. | — |
 
+**After running init (Tier L):**
+1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle (covers R1–R4 and all 11 phases).
+2. Fill in `CLAUDE.md` placeholders — especially RBAC, key workflows, and `[E2E_COMMAND]` if applicable.
+3. Fill in `docs/requirements.md` with planned blocks and acceptance criteria.
+4. Run `claude` from the project root. Claude orients itself in Phase 0 automatically.
+
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before any code is written.
+
+**Scope gate in Phase 1**: EARS Tier 1 or Tier 2 sweep + dependency agent. At the scope gate, Claude also declares: "does this block include critical UI flows?" (yes/no) and "does this block have UI changes requiring Phase 5d audit?" If yes on UI flows and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
 
 **Structural Requirements Changes (R1–R4)** — separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
 - **R1**: update requirements section by section, STOP for approval
@@ -467,6 +488,14 @@ In Claude Code: press `Shift+Tab` to toggle between default, auto-accept, and pl
 
 ## 8. Governance files reference
 
+### FIRST_SESSION.md (Tier M/L — remove after first block)
+
+Scaffolded by the CLI for Tier M and Tier L. A practical guide to the first block cycle: what was created, how to fill in CLAUDE.md, how to start the first session, what each pipeline phase does, and recovery procedures.
+
+**Remove this file** once your team completes the first full block cycle — it is only needed at the start.
+
+---
+
 ### CLAUDE.md
 
 The primary project context file. Claude reads it at the start of every session.
@@ -474,7 +503,7 @@ The primary project context file. Claude reads it at the start of every session.
 **What to put in it:**
 - Project overview (2–4 sentences)
 - Tech stack with specific versions
-- Key commands: install, dev, build, test, type check
+- Key commands: install, dev, build, test, type check, migration (if applicable), E2E (if applicable — `# not configured` if none)
 - Folder conventions (where routes live, where utilities live)
 - Naming conventions (casing, file naming)
 - Known non-obvious patterns (things Claude would get wrong without being told)
@@ -1341,18 +1370,19 @@ Review the diff and apply the relevant parts manually.
 npx claude-dev-kit doctor
 ```
 
-Runs 10 checks and reports pass/fail:
+Runs 11 checks and reports pass/fail:
 
 1. Claude Code CLI is installed and reachable
-2. CLAUDE.md exists and is under 200 lines
-3. `.claude/settings.json` is valid JSON
-4. Stop hook is configured with a non-empty command
+2. `CLAUDE.md` is present
+3. `CLAUDE.md` is under 200 lines
+4. `.claude/settings.json` is present and valid JSON
 5. `.claude/rules/pipeline.md` exists
-6. `.github/CODEOWNERS` covers `.claude/`
-7. No placeholder values remain in `settings.json` (`[TEST_COMMAND]` etc.)
-8. No `*.env` files are tracked by git
-9. `MEMORY.md` is under 150 lines (if present)
-10. `.claude/session/` is gitignored
+6. `.claude/rules/security.md` exists
+7. `.env` files are covered by `.gitignore`
+8. No secrets (API keys, tokens) found in `CLAUDE.md`
+9. Stop hook is configured with a non-empty command
+10. `.github/CODEOWNERS` covers `.claude/`
+11. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
 
 ---
 
@@ -1445,10 +1475,20 @@ Edit `CLAUDE.md` directly — it is a regular Markdown file. Correct the wrong v
 
 ---
 
+**Q: How do I enable or disable E2E / UAT tests after init?**
+
+Edit `CLAUDE.md` → Key Commands section. The `[E2E_COMMAND]` line determines whether Phase 4 is available:
+- To **enable**: replace `# not configured` with your actual command (e.g. `npx playwright test`)
+- To **disable**: set it back to `# not configured`
+
+Phase 4 requires three conditions: (1) a real command configured, (2) scope gate confirming critical UI flows for this block, and (3) the user explicitly defining the UAT scenarios at the scope gate (numbered user journeys). Claude implements exactly those scenarios — it never invents test cases.
+
+---
+
 **Q: How do I add a new audit skill?**
 
 Create a directory under `.claude/skills/your-skill-name/` containing a `SKILL.md` file. Follow the structure of the existing skills (header with scope + trigger conditions, numbered checks, output format). Add a row to `.claude/cheatsheet.md` if your project uses one.
 
 ---
 
-*Last updated: 2026-03-17 — v0.2.0*
+*Last updated: 2026-03-22 — v0.5.3*

@@ -124,6 +124,30 @@ const checks = [
     },
   },
   {
+    id: 'stop-hook-placeholder',
+    label: 'Stop hook uses a real test command (no unfilled placeholder)',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      try {
+        const settings = JSON.parse(fs.readFileSync(p, 'utf8'));
+        const stopHooks = settings?.hooks?.Stop || [];
+        if (stopHooks.length === 0) return { pass: true, skip: true };
+        const hasPlaceholder = stopHooks.some((entry) =>
+          (entry?.hooks || []).some(
+            (h) => typeof h.command === 'string' && h.command.includes('[TEST_COMMAND]')
+          )
+        );
+        return {
+          pass: !hasPlaceholder,
+          fix: 'The Stop hook still contains [TEST_COMMAND] placeholder. Edit .claude/settings.json and replace it with your actual test command (e.g. "npm test").',
+        };
+      } catch {
+        return { pass: true, skip: true };
+      }
+    },
+  },
+  {
     id: 'codeowners',
     label: '.github/CODEOWNERS includes .claude/',
     check: (cwd) => {

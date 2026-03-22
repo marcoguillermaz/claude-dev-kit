@@ -18,6 +18,16 @@
     ]
   },
   "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[TEST_COMMAND] || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before declaring complete.\"}'"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",

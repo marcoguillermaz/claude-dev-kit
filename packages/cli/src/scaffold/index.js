@@ -219,5 +219,6 @@ function interpolate(content, config) {
     .replace(/\[INSTALL_COMMAND\]/g, config.installCommand || 'npm install')
     .replace(/\[TECH_LEAD\]/g, config.techLead || 'tech-lead')
     .replace(/\[BACKEND_LEAD\]/g, config.backendLead || 'backend-lead')
-    .replace(/\[SECURITY_REVIEWER\]/g, config.securityReviewer || 'security-reviewer');
+    .replace(/\[SECURITY_REVIEWER\]/g, config.securityReviewer || 'security-reviewer')
+    .replace(/\[E2E_COMMAND\]/g, config.e2eCommand || '# not configured');
 }

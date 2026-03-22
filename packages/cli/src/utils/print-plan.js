@@ -27,13 +27,18 @@ export function printNextSteps(config) {
   const mode = config.mode || 'greenfield';
 
   if (mode === 'greenfield') {
-    console.log('  1. Fill in the ' + chalk.cyan('CLAUDE.md') + ' placeholders');
-    console.log('  2. Replace ' + chalk.cyan('[TEST_COMMAND]') + ' in ' + chalk.cyan('.claude/settings.json') + ' Stop hook');
-    console.log('  3. Update ' + chalk.cyan('.github/CODEOWNERS') + ' with real GitHub usernames');
-    if (config.includePreCommit) {
-      console.log('  4. Run ' + chalk.cyan('pip install pre-commit && pre-commit install') + ' to activate secret scanning');
+    const tier = (config.tier || 's').toUpperCase();
+    if (tier === 'M' || tier === 'L') {
+      console.log('  1. Read ' + chalk.cyan('FIRST_SESSION.md') + ' — your team\'s guide to the first session');
     }
-    console.log('  5. Open Claude Code — run ' + chalk.cyan('/arch-audit') + ' to verify setup');
+    const step = (tier === 'M' || tier === 'L') ? 2 : 1;
+    console.log(`  ${step}. Fill in the ` + chalk.cyan('CLAUDE.md') + ' placeholders');
+    console.log(`  ${step + 1}. Replace ` + chalk.cyan('[TEST_COMMAND]') + ' in ' + chalk.cyan('.claude/settings.json') + ' Stop hook');
+    console.log(`  ${step + 2}. Update ` + chalk.cyan('.github/CODEOWNERS') + ' with real GitHub usernames');
+    if (config.includePreCommit) {
+      console.log(`  ${step + 3}. Run ` + chalk.cyan('pip install pre-commit && pre-commit install') + ' to activate secret scanning');
+    }
+    console.log(`  ${step + (config.includePreCommit ? 4 : 3)}. Open Claude Code — run ` + chalk.cyan('/arch-audit') + ' to verify setup');
   }
 
   if (mode === 'from-context') {
@@ -82,13 +87,13 @@ function getFilePlan(config) {
     base.push('CONTEXT_IMPORT.md  ← Claude reads this and fills in the rest');
   }
 
-  if (mode !== 'greenfield' || tier !== 'S') {
-    if (mode === 'greenfield') base.push('MEMORY.md');
+  if (mode === 'greenfield' && (tier === 'M' || tier === 'L')) {
+    base.push('MEMORY.md');
   }
 
   if (tier === 'M' || tier === 'L') {
     if (mode === 'greenfield') {
-      base.push('docs/requirements.md', 'docs/implementation-checklist.md', 'docs/refactoring-backlog.md');
+      base.push('FIRST_SESSION.md  ← start here', 'docs/requirements.md', 'docs/implementation-checklist.md', 'docs/refactoring-backlog.md');
     } else {
       base.push('docs/  (populated by Claude during discovery)');
     }
