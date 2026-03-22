@@ -2,7 +2,7 @@
 # claude-dev-kit — Operational Guide
 
 **Version**: 0.5.3
-**Audience**: Any development team using Claude Code — from first-time explorers to teams wanting full governance
+**Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
 ---
@@ -35,9 +35,9 @@
 
 ## 1. What this is and why it exists
 
-Claude Code is a powerful CLI assistant that can read, write, and reason about your entire codebase. Without structure, it makes autonomous decisions that are hard to track and harder to review.
+Claude Code is a powerful CLI assistant that can read, write, and reason about your entire codebase. Without shared process, it makes autonomous decisions that are hard to track and harder to review.
 
-`claude-dev-kit` installs a governance layer on top of Claude Code. It does not limit what Claude can do — it makes every meaningful action visible, auditable, and reversible.
+`claude-dev-kit` scaffolds a legible, reviewable development process on top of Claude Code. It does not limit what Claude can do — it makes every meaningful action visible, auditable, and reversible.
 
 **What you get:**
 
@@ -57,17 +57,19 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 
 ---
 
-## 2. Who is this for — two target audiences
+## 2. Who is this for
 
-### Audience A: Team just discovering Claude Code
+### Audience A: Builder PM or tech lead exploring Claude Code
 
-You've heard about Claude Code and want to try it on a real project. You're not sure yet whether you need pipelines, STOP gates, or audit trails. You want to get started quickly and learn by doing.
+You want to build end-to-end with Claude Code — or evaluate it for your team. You may be a Product Manager with enough technical background to work in a terminal, a tech lead assessing the tool for your team, or a solo developer wanting a process before shipping anything real.
+
+You don't need a full pipeline yet. You need to get started, understand what Claude Code can do, and have a process you can review.
 
 **Your path**: Tier 0 — Discovery.
 
-What you get: three files, one constraint (tests must pass), and a `GETTING_STARTED.md` that walks your team through the first session. Nothing else.
+What you get: three files, one hard constraint (tests must pass before Claude declares done), and a `GETTING_STARTED.md` that walks you through the first session. Nothing else.
 
-When you're ready for more structure — usually after a few weeks, once Claude Code is part of the daily workflow — run:
+When you're ready for more structure — usually after a few sessions, once Claude Code is part of the daily workflow — run:
 
 ```bash
 npx claude-dev-kit upgrade --tier=s
@@ -75,21 +77,21 @@ npx claude-dev-kit upgrade --tier=s
 
 This adds the Fast Lane pipeline non-destructively. Your existing files are not overwritten.
 
-**You do not need to understand the full governance model to start.** Read `GETTING_STARTED.md` and sections 4a and 6 (Tier 0) of this guide. That is all.
+**You do not need to understand the full tier model to start.** Read `GETTING_STARTED.md` and sections 4a and 6 (Tier 0) of this guide. That is all.
 
 ---
 
-### Audience B: Team already using Claude Code, wanting guardrails
+### Audience B: Team already shipping with Claude Code
 
-You're shipping with Claude Code but the process is informal. Claude makes autonomous decisions you can't always trace. Tests sometimes get skipped. You want a structured workflow without inventing one from scratch.
+You're using Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always trace. Tests sometimes get skipped. You want a structured, reviewable workflow without building one from scratch.
 
 **Your path**: Tier S, M, or L depending on project complexity.
 
 | Signal | Suggested tier |
 |---|---|
-| Mostly bugfixes and small changes | Tier S — Fast Lane |
-| Feature blocks, 1–2 week cycles, 1–2 devs | Tier M — Standard |
-| Complex domain, long-running, team of 3+, architectural decisions | Tier L — Full |
+| Low blast radius, single dev, reversible in minutes | Tier S — Fast Lane |
+| Single feature, moderate impact, 1–2 collaborators | Tier M — Standard |
+| High blast radius, team of 3+, complex domain, shared systems | Tier L — Full |
 
 Read sections 4a, 5, 6 (your tier), 7, and 8 of this guide.
 

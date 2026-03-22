@@ -1,23 +1,23 @@
 # claude-dev-kit
 
-> Governance layer for Claude Code.
-> From "just exploring" to production-grade AI-assisted development — one scaffold, four tiers.
+> Scaffold for legible, reviewable AI-assisted development.
+> From first exploration to production-grade delivery — one scaffold, four tiers.
 
 ---
 
 ## Who is this for?
 
-### Team just discovering Claude Code
+### Builder PM or tech lead exploring Claude Code
 
-You've heard about Claude Code and want to try it on a real project. You don't need a pipeline yet — you need to get started and understand what the tool can do.
+You want to build end-to-end with Claude Code — or evaluate it for your team. You don't need a full pipeline yet. You need to get started, understand what the tool can do, and have a process you can actually review.
 
 **`npx claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
 
-### Team already using Claude Code
+### Team already shipping with Claude Code
 
-You're shipping with Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always review. You want structure without slowing down.
+You're using Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always trace. You want a structured, reviewable workflow without inventing one from scratch.
 
-**`npx claude-dev-kit init`** → choose your tier (S / M / L) → full governance scaffold.
+**`npx claude-dev-kit init`** → choose your tier (S / M / L) → full development scaffold.
 
 ---
 
@@ -41,7 +41,7 @@ Three init paths to choose from:
 |---|---|
 | **Greenfield** | Starting a new project from scratch |
 | **From context** | You have existing repos or docs — Claude reads them and populates your project files |
-| **In-place** | You're already inside a project — adds governance without overwriting anything |
+| **In-place** | You're already inside a project — adds structure without overwriting anything |
 
 ### Validate your setup
 
@@ -76,10 +76,10 @@ Upgrade is non-destructive — adds new files without overwriting your existing 
 
 | Tier | Pipeline | Gates | Best for |
 |---|---|---|---|
-| **0 — Discovery** | Stop hook only | — | Team discovering Claude Code for the first time |
-| **S — Fast Lane** | 4 steps, 1 compact scope-confirm | — | Bugfix, hotfix, ≤3 files |
-| **M — Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Feature block, 1–2 weeks |
-| **L — Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | Long-running project, team, complex domain |
+| **0 — Discovery** | Stop hook only | — | First exploration — zero process assumptions |
+| **S — Fast Lane** | 4 steps, 1 compact scope-confirm | — | Low blast radius, single dev, reversible in minutes |
+| **M — Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Single feature, moderate impact, 1–2 collaborators |
+| **L — Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | High blast radius, team, complex domain, shared systems |
 
 **E2E / UAT testing (Tier M / L)**: at init time you can provide an optional E2E test command (Playwright/Cypress). When configured, Phase 4 activates per block only when the scope gate confirms critical UI flows are in scope **and the user explicitly lists the UAT scenarios to test** (numbered, 1–5 journeys). Claude implements exactly those scenarios — it does not invent test cases. If not configured or no UI flows declared, Phase 4 is skipped automatically.
 
@@ -197,9 +197,9 @@ After that, the file is a historical record and Claude does not re-run discovery
 
 ---
 
-## Governance model
+## Process controls
 
-### The one constraint that matters most
+### The one hard constraint every tier shares
 
 **Stop hook** — Claude cannot declare a task complete until tests pass:
 ```json
@@ -208,7 +208,7 @@ After that, the file is a historical record and Claude does not re-run discovery
 }] }]
 ```
 
-This is present in **every tier**, including Tier 0. It is the single most important governance control.
+This is present in **every tier**, including Tier 0. It is the only mechanically enforced control — not an instruction, a hard block.
 
 ### Additional controls (Tier S–L)
 
@@ -286,6 +286,8 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 ## Status
 
 `v0.5.3` — public. Four-tier system stable. Multi-agent orchestration (dependency-scanner + context-reviewer). Three-path init stable. Publishing to npm pending.
+
+**Positioning update (2026-03-22)**: scope refined after cross-model critique. Primary target clarified as Builder PM and tech lead — people with enough technical background to work end-to-end with Claude Code and who need a reproducible, reviewable process to do it reliably. Tier boundaries reframed around blast radius and collaborator count rather than file count and duration.
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 

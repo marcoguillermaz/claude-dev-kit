@@ -1,0 +1,67 @@
+# claude-dev-kit — CI verification workflow
+#
+# Verifies that the claude-dev-kit scaffold is present and not bypassed.
+# Add this to your project's .github/workflows/ to enforce governance at PR time.
+#
+# What it checks (mirrors `npx claude-dev-kit doctor`):
+#   - .claude/settings.json exists
+#   - Stop hook is configured and contains no unfilled [TEST_COMMAND] placeholder
+#   - CLAUDE.md is present
+#   - .github/CODEOWNERS is present
+#
+# This is the enforcement layer that moves governance outside Claude's context window.
+# A PR cannot merge if the scaffold is missing or broken.
+
+name: claude-dev-kit verify
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    name: Verify claude-dev-kit scaffold
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run claude-dev-kit doctor
+        run: npx claude-dev-kit@latest doctor --ci
+        # --ci flag: exits with code 1 if any check fails, no interactive output
+        # Remove --ci to see the full interactive report instead
+
+      - name: Verify Stop hook is configured
+        run: |
+          if [ ! -f ".claude/settings.json" ]; then
+            echo "ERROR: .claude/settings.json not found"
+            exit 1
+          fi
+          if grep -q '\[TEST_COMMAND\]' .claude/settings.json; then
+            echo "ERROR: Stop hook contains unfilled [TEST_COMMAND] placeholder"
+            echo "Run: npx claude-dev-kit doctor to see all issues"
+            exit 1
+          fi
+          echo "OK: Stop hook is configured"
+
+      - name: Verify CLAUDE.md is present
+        run: |
+          if [ ! -f "CLAUDE.md" ]; then
+            echo "ERROR: CLAUDE.md not found — scaffold may be missing"
+            exit 1
+          fi
+          echo "OK: CLAUDE.md present"
+
+      - name: Verify CODEOWNERS is present
+        run: |
+          if [ ! -f ".github/CODEOWNERS" ]; then
+            echo "WARN: .github/CODEOWNERS not found — .claude/ changes will not require tech lead review"
+          else
+            echo "OK: CODEOWNERS present"
+          fi
