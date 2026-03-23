@@ -16,7 +16,9 @@ Branch prefix `fix/` activates this pipeline automatically.
 
 ## FL-1 — Implement
 
-- **Scope confirmation (compact)**: before writing any code, state the exact files to modify, the specific change in each, and flag any irreversible operation. Wait for an execution keyword (`Execute` · `Proceed` · `Confirmed` · `Go ahead`) before proceeding.
+- **Scope confirmation (compact)**: before writing any code, state the exact files to modify, the specific change in each, and flag any irreversible operation.
+
+***** STOP — wait for an execution keyword (`Execute` · `Proceed` · `Confirmed` · `Go ahead`) before writing any code. *****
 - Write the fix. No dependency scan (unless a shared utility is touched — then do a quick grep).
 - Run type check: `[TYPE_CHECK_COMMAND]`
 - Run tests: `[TEST_COMMAND]`
@@ -38,7 +40,7 @@ Branch prefix `fix/` activates this pipeline automatically.
 
 ## FL-4 — Cleanup
 
-- Update `docs/implementation-checklist.md` only if the fix closes a tracked item.
+- Update `docs/implementation-checklist.md` only if the fix closes a tracked item (if the file exists).
 - Update `CLAUDE.md` only if the fix reveals a non-obvious pattern worth documenting.
 - **Delete session file**: remove `.claude/session/fix-[description].md`.
   - Proceed only if the fix is confirmed working in production.
