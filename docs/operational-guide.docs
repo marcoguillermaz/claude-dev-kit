@@ -346,7 +346,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | Phase | Action | Gate |
 |---|---|---|
 | 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | — |
-| 1 | **Scope gate** (auto-selects Tier 1 Standard Sweep or Tier 2 Deep Sweep + declares Phase 4 applicability). Requirements, dependency scan (delegated to agent), file list. | ⏸ **STOP** |
+| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (agent) + spec doc if Mode A. | ⏸ **STOP** |
 | 1.5 | Design review — data flow, trade-offs, discarded alternatives. *(skip for ≤3 files, no migrations)* | ⏸ **STOP** |
 | 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | — |
 | 3 | Type check + build + tests. Intermediate commit. | — |
@@ -365,10 +365,19 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 
 **Two STOP gates** (Phases 1 and 6). Claude presents results at each and waits for an explicit execution keyword before proceeding.
 
-**Scope gate in Phase 1**: Claude auto-selects the review depth and declares Phase 4 applicability:
+**Phase 1 — mode selection + scope gate**:
+
+At the start of every block, Claude asks how you want to define scope (per block, not at init time):
+
+- **Mode A — Spec-first**: Claude generates `docs/specs/[block-name].md` before any implementation. The spec contains: goal (one sentence), acceptance criteria (EARS format: WHEN/IF/WHILE + MUST/SHALL, 3–5 criteria), in-scope file list (from dependency scan), explicit out-of-scope, and definition of done. The STOP gate becomes a spec review — no code until the spec is approved. Completed specs are archived to `docs/specs/archive/` at block close.
+- **Mode B — Scope-confirm**: standard structured sweep (current behavior), then proceed.
+
+Claude suggests A or B based on the block description. The user confirms.
+
+**Scope sweep** (both modes): Claude auto-selects Tier 1 or Tier 2:
 - **Tier 1 — Standard Sweep** (≤5 files, single entity, no migration, no new pattern): 8 dimensions.
 - **Tier 2 — Deep Sweep** (>5 files, new entity, migration, multi-role): Tier 1 + states/conditions/pre-mortem.
-- At the scope gate, Claude declares: "does this block include critical UI flows?" (yes/no). If yes and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5, e.g. "1. Login → navigate to X → perform Y → verify Z"). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
+- Claude declares: "does this block include critical UI flows?" (yes/no). If yes and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
 
 ---
 
@@ -380,7 +389,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | Phase | Action | Gate |
 |---|---|---|
 | 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | — |
-| 1 | **Scope gate** (Tier 1 Standard or Tier 2 EARS Deep Sweep). Requirements, full dependency scan (agent), session file updates. | ⏸ **STOP** |
+| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (agent) + spec doc if Mode A. | ⏸ **STOP** |
 | 1.5 | Design review — data flow, data structures, discarded alternatives. *(skip for ≤3 files)* | ⏸ **STOP** |
 | 1.6 | Visual & UX design. ASCII wireframe + component map + UX rationale. *(UI blocks only)* | ⏸ **STOP** |
 | Plan lock | EnterPlanMode → user enables auto-accept → ExitPlanMode → `/compact` | — |
@@ -403,7 +412,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before any code is written.
 
-**Scope gate in Phase 1**: EARS Tier 1 or Tier 2 sweep + dependency agent. At the scope gate, Claude also declares: "does this block include critical UI flows?" (yes/no) and "does this block have UI changes requiring Phase 5d audit?" If yes on UI flows and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
+**Phase 1 — mode selection + scope gate**: same as Tier M (see above). Mode A (spec-first) is the recommended default for Tier L blocks — domain model changes and multi-component work benefit most from a formal spec before implementation. Claude also declares: "does this block have UI changes requiring Phase 5d audit?" in addition to the UAT scenario declaration.
 
 **Structural Requirements Changes (R1–R4)** — separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
 - **R1**: update requirements section by section, STOP for approval

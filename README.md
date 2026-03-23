@@ -90,6 +90,8 @@ Upgrade is non-destructive — adds new files without overwriting your existing 
 | **M — Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Single feature, moderate impact, 1–2 collaborators |
 | **L — Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | High blast radius, team, complex domain, shared systems |
 
+**Spec-driven mode (Tier M / L)**: at the start of every block, Claude asks how you want to define scope. **Spec-first (Mode A)**: Claude generates `docs/specs/[block-name].md` — goal, EARS-format acceptance criteria, in-scope / out-of-scope — before writing a single line of code. The STOP gate becomes a spec review. **Scope-confirm (Mode B)**: the current structured sweep, then proceed. You choose per block — not at init time.
+
 **E2E / UAT testing (Tier M / L)**: at init time you can provide an optional E2E test command (Playwright/Cypress). When configured, Phase 4 activates per block only when the scope gate confirms critical UI flows are in scope **and the user explicitly lists the UAT scenarios to test** (numbered, 1–5 journeys). Claude implements exactly those scenarios — it does not invent test cases. If not configured or no UI flows declared, Phase 4 is skipped automatically.
 
 **The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. Enforced by a Stop hook in `.claude/settings.json` — not just an instruction.
@@ -138,7 +140,9 @@ your-project/
 │   ├── adr/template.md             ← ADR template with AI Coding Guidance section
 │   ├── requirements.md             ← product spec (M/L)
 │   ├── implementation-checklist.md ← block progress (M/L)
-│   └── refactoring-backlog.md      ← tech debt tracker (M/L)
+│   ├── refactoring-backlog.md      ← tech debt tracker (M/L)
+│   └── specs/                      ← per-block spec documents (M/L, spec-first mode)
+│       └── archive/                ← implemented specs moved here at block close
 │
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md    ← with AI disclosure checklist
@@ -252,7 +256,7 @@ paths: ["src/api/**", "lib/auth*"]
 Every meaningful action has a visible gate:
 - Tests must pass before Claude can declare completion (Stop hook — every tier)
 - Requirements reviewed before implementation starts (STOP gate — Tier M/L)
-- Scope explicitly confirmed before the dependency scan runs (scope gate — Tier M/L)
+- Scope defined before implementation starts — spec document or structured sweep (Phase 1 mode selection — Tier M/L)
 - AI-generated code tagged in git history (attribution — Tier S/M/L)
 - Changes to Claude's own config require human review (CODEOWNERS — Tier S/M/L)
 - Context files audited at every block close (C1–C11 — Tier M/L)
@@ -294,7 +298,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.0.0` — public stable release. Published on npm. Four-tier system stable. Multi-agent orchestration. Three-path init stable.
+`v1.1.0` — spec-driven mode (Mode A / Mode B) added to Tier M/L Phase 1. Published on npm. Four-tier system stable. Multi-agent orchestration. Three-path init stable.
+
+**v1.1.0 changes**: spec-driven mode selection at Phase 1 (Tier M/L) — per block, Claude asks whether to use Spec-first (generates `docs/specs/[block-name].md` with EARS acceptance criteria before implementation) or Scope-confirm (existing structured sweep). `docs/specs/archive/` tracks implemented specs. Bug fix: `pipeline.md` was never copied to tier S/M/L scaffold (critical scaffold regression).
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
