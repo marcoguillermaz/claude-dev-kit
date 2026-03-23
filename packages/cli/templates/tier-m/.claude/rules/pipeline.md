@@ -34,7 +34,16 @@ Branch prefix `feature/` activates this pipeline automatically.
 - Read `docs/implementation-checklist.md` to verify block dependencies.
 - Read the relevant section of `docs/requirements.md`.
 - Check `docs/refactoring-backlog.md` for intersecting entries.
-- **Scope confirmation gate** — apply the Interaction Protocol (CLAUDE.md § Plan-then-Confirm). Select the tier based on block signals, declare it, and allow the user to override:
+
+- **Block mode selection** — before defining scope, present the working mode choice:
+
+  > "How do you want to define scope for this block?"
+  > **A — Spec-first**: I generate `docs/specs/[block-name].md` — goal, acceptance criteria (EARS format), scope, out-of-scope — for your review before any implementation. Best for: new features, API changes, multi-component work.
+  > **B — Scope-confirm**: Quick structured sweep of open questions, then we proceed. Best for: refactors, bug fixes, changes with clearly bounded scope.
+
+  Suggest A or B based on the block description with a one-line rationale. Wait for the user to confirm the mode before proceeding.
+
+- **Scope sweep** — select Tier 1 or Tier 2 based on block signals, declare it, allow the user to override:
 
   **Tier 1 — Standard Sweep** (≤5 files, single entity, no migration, no new pattern):
   - **Roles & permissions**: which roles are in scope? Any implicit inclusion?
@@ -53,18 +62,45 @@ Branch prefix `feature/` activates this pipeline automatically.
   - **Optional / role-gated** `WHERE`: what is conditional on role or config?
   - **Pre-mortem**: if this plan fails in implementation due to scope ambiguity, what caused it?
 
-  Also declare explicitly at scope gate: **does this block include critical UI flows?** (yes/no). This determines whether Phase 4 — E2E tests activates.
-  - If **yes** and `[E2E_COMMAND]` is configured: ask the user to list the specific user journeys to cover in Phase 4 (numbered, 1–5 scenarios, e.g. "1. Login → navigate to X → perform Y → verify Z"). These become the mandatory test scenarios for Phase 4. Claude must not invent scenarios — it tests exactly what the user defines here.
+  Also declare: **does this block include critical UI flows?** (yes/no). Determines whether Phase 4 activates.
+  - If **yes** and `[E2E_COMMAND]` is configured: ask the user to list numbered UAT scenarios (1–5). Claude tests exactly those — no invented scenarios.
   - If **no** or `[E2E_COMMAND]` is `# not configured`: Phase 4 is skipped. State this explicitly.
 
-  Compose one `AskUserQuestion` with all open items. Do NOT proceed to the dependency scan until an execution keyword is received (`Execute` · `Proceed` · `Confirmed` · `Go ahead`).
+  Compose one `AskUserQuestion` with all open items from the sweep. Do NOT proceed to the dependency scan until an execution keyword is received.
 
 - **Dependency scan** (mandatory — always delegate to the `dependency-scanner` agent):
-  Invoke the `dependency-scanner` agent via the Agent tool. Pass the full list of affected routes, components, types/utilities, and DB tables in one prompt. Do not run the checks manually in the main session — an incomplete scan is an incomplete file list, which is a process error.
-  Every file listed under "Mandatory additions" in the agent's report must be in the file list before the STOP gate.
-- Output: feature summary, complete file list verified by dependency scan.
+  Invoke the `dependency-scanner` agent via the Agent tool. Pass the full list of affected routes, components, types/utilities, and DB tables. Every file listed under "Mandatory additions" must be in the file list before the STOP gate.
 
-***** STOP — present requirements summary. Wait for explicit confirmation. *****
+- **Path A — Spec-first**: generate `docs/specs/[block-name].md` using this structure:
+
+  ```markdown
+  # Spec — [block-name]
+  **Date**: [date]  **Sweep**: [Tier 1 / Tier 2]  **Mode**: Spec-first
+
+  ## Goal
+  [One sentence: what changes for the user when this block ships.]
+
+  ## Acceptance Criteria
+  - WHEN [trigger], the system MUST [outcome] [measurable constraint]
+  - WHEN [trigger], the system MUST [outcome]
+  - IF [precondition], THEN [behavior]
+  (3–5 criteria. EARS format: WHEN/IF/WHILE + MUST/SHALL.)
+
+  ## Scope
+  **In scope** (confirmed by dependency scan): [file or component list]
+  **Out of scope** (explicit): [what is NOT being done]
+
+  ## Definition of Done
+  - [ ] All acceptance criteria verified manually
+  - [ ] Tests cover the criteria above
+  - [ ] Phase 6 checklist signed off
+  ```
+
+  Present the spec. Do not proceed to Phase 2 until the spec is explicitly approved.
+
+- **Path B — Scope-confirm**: output feature summary + complete file list verified by dependency scan. Present for confirmation.
+
+***** STOP — Path A: spec review. Path B: requirements summary. Wait for explicit confirmation before Phase 2. *****
 
 ## Phase 1.5 — Design review *(blocks touching >5 files or introducing new patterns)*
 
@@ -166,8 +202,9 @@ Only after explicit confirmation:
 2. Update `docs/implementation-checklist.md`: mark ✅, add Log row.
 3. Update `CLAUDE.md` only if block introduces non-obvious patterns or changes conventions.
 4. Update `docs/requirements.md` if spec changed during implementation.
-5. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
-6. **Commit sequence**:
+5. If Mode A was used: move `docs/specs/[block-name].md` → `docs/specs/archive/[block-name].md` and mark as `Status: IMPLEMENTED`.
+6. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
+7. **Commit sequence**:
    - **Commit 1** (already done in Phase 3): source files only.
    - **Commit 2 — docs**: `docs/` changes + `README.md` if updated.
    - **Commit 3 — context** (only if updated): `CLAUDE.md` and/or `MEMORY.md` — never mixed with code or docs.
