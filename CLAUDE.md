@@ -26,7 +26,7 @@ CLI tool that installs a governance layer on top of Claude Code. Four tiers from
 - **Runtime**: Node.js ≥ 18, ESM modules
 - **CLI framework**: Commander + Inquirer + Chalk + Ora
 - **Package**: `packages/cli/` — main CLI source
-- **Templates**: `packages/templates/` — tier-specific scaffold files
+- **Templates**: `packages/cli/templates/` — tier-specific scaffold files
 
 ## Key Commands
 ```bash
@@ -38,17 +38,18 @@ node packages/cli/src/index.js --help      # list all commands
 ## Project Structure
 ```
 packages/
-  cli/src/
-    commands/     ← init-greenfield.js, init-in-place.js, doctor.js, upgrade.js
-    scaffold/     ← index.js (interpolate + copyTemplateDir)
-    generators/   ← claude-md.js, readme.js, context-import.js
-    utils/        ← print-plan.js, detect-stack.js
-  templates/
-    tier-0/       ← Discovery: 3 files only
-    tier-s/       ← Fast Lane: 4-step pipeline
-    tier-m/       ← Standard: 8 phases, 2 STOP gates
-    tier-l/       ← Full: 11 phases, 4 STOP gates + R1–R4
-    common/       ← shared files (context-review.md, files-guide.md, rules/)
+  cli/
+    src/
+      commands/     ← init-greenfield.js, init-in-place.js, doctor.js, upgrade.js
+      scaffold/     ← index.js (interpolate + copyTemplateDir)
+      generators/   ← claude-md.js, readme.js, context-import.js
+      utils/        ← print-plan.js, detect-stack.js
+    templates/
+      tier-0/       ← Discovery: 3 files only
+      tier-s/       ← Fast Lane: 4-step pipeline
+      tier-m/       ← Standard: 8 phases, 2 STOP gates
+      tier-l/       ← Full: 11 phases, 4 STOP gates + R1–R4
+      common/       ← shared files (context-review.md, files-guide.md, rules/)
 ```
 
 ## Conventions
@@ -75,4 +76,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v0.5.3` — all four tiers stable, publishing to npm pending.
+`v1.1.0` — published on npm as `mg-claude-dev-kit`. Four tiers stable. Spec-driven mode (Mode A/B) in Tier M/L.
