@@ -40,9 +40,8 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   const commonDir = path.join(templatesDir, 'common');
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
-  // Copy common files
+  // Copy common files — skip rules/ here, handled separately below
   await copyTemplateDir(commonDir, targetDir, config, {
-    // Map template filenames to target filenames
     'gitignore': '.gitignore',
     'pre-commit-config.yaml': '.pre-commit-config.yaml',
     'adr-template.md': 'docs/adr/template.md',
@@ -50,11 +49,11 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     'CODEOWNERS': '.github/CODEOWNERS',
     'context-review.md': '.claude/rules/context-review.md',
     'files-guide.md': '.claude/files-guide.md',
-  }, config);
+  }, config, ['rules']);
 
-  // Copy tier-specific files (these override anything from common with the same target path)
+  // Copy tier-specific files (includes tier rules/ like pipeline.md)
   if (await fs.pathExists(tierDir)) {
-    await copyTemplateDir(tierDir, targetDir, config, {}, config);
+    await copyTemplateDir(tierDir, targetDir, config, {}, config, []);
   }
 
   // Copy rules/ subdirectory from common
@@ -85,18 +84,17 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   }
 }
 
-async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig) {
+async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
   if (!(await fs.pathExists(srcDir))) return;
 
   const entries = await fs.readdir(srcDir, { withFileTypes: true });
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
-      // Recursively copy subdirectories (except 'rules' — handled separately)
-      if (entry.name === 'rules') continue;
+      if (skipDirs.includes(entry.name)) continue;
       const subSrc = path.join(srcDir, entry.name);
       const subDest = path.join(destDir, entry.name);
-      await copyTemplateDir(subSrc, subDest, config, {}, userConfig);
+      await copyTemplateDir(subSrc, subDest, config, {}, userConfig, []);
       continue;
     }
 
@@ -135,10 +133,10 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
     'CODEOWNERS': '.github/CODEOWNERS',
     'context-review.md': '.claude/rules/context-review.md',
     'files-guide.md': '.claude/files-guide.md',
-  }, config);
+  }, config, ['rules']);
 
   if (await fs.pathExists(tierDir)) {
-    await copyTemplateDirSafe(tierDir, targetDir, config, {}, config);
+    await copyTemplateDirSafe(tierDir, targetDir, config, {}, config, []);
   }
 
   const commonRulesDir = path.join(commonDir, 'rules');
@@ -165,17 +163,17 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   }
 }
 
-async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig) {
+async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
   if (!(await fs.pathExists(srcDir))) return;
 
   const entries = await fs.readdir(srcDir, { withFileTypes: true });
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
-      if (entry.name === 'rules') continue;
+      if (skipDirs.includes(entry.name)) continue;
       const subSrc = path.join(srcDir, entry.name);
       const subDest = path.join(destDir, entry.name);
-      await copyTemplateDirSafe(subSrc, subDest, config, {}, userConfig);
+      await copyTemplateDirSafe(subSrc, subDest, config, {}, userConfig, []);
       continue;
     }
 
