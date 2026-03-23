@@ -58,6 +58,14 @@ packages/
 - Tier boundaries are strict: no Tier L features in Tier M templates
 - `doctor.js` check count must match what README + operational-guide document
 
+## Integration Tests
+Run before every release to validate all tier/mode combinations:
+```bash
+node packages/cli/test/integration/run.js
+# Add --verbose for per-check output
+```
+98 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation. Output is gitignored (`packages/cli/test/integration/output/`).
+
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
 
