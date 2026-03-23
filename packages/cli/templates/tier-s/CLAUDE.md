@@ -27,6 +27,14 @@
 <!-- Add non-obvious gotchas here as you discover them. -->
 <!-- Format: pattern description → why it matters → how to handle it -->
 
+## Interaction Protocol — Plan-then-Confirm
+
+Before any action that modifies files, configuration, or external systems:
+1. List every intended action and flag irreversible operations
+2. Wait for an explicit execution keyword: `Execute` · `Proceed` · `Confirmed` · `Go ahead`
+
+**Exception**: `Read`, `Grep`, `Glob`, `git status/log/diff` are always free — no confirmation needed.
+
 ## Environment
 - `.env.local` — never commit. Contains [list key env vars without values].
 - [Any non-obvious environment setup.]

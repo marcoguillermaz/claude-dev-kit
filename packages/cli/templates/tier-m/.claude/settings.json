@@ -82,6 +82,17 @@
           }
         ]
       }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) STOP_FAILURE session=$(basename $CLAUDE_PROJECT_DIR)\" >> ~/.claude/audit/sessions.log 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

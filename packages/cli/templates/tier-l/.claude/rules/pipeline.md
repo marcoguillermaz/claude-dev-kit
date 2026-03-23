@@ -38,13 +38,19 @@ Then:
 - Read `docs/implementation-checklist.md` to verify block dependencies.
 - Read the relevant section of `docs/requirements.md`.
 - Check `docs/refactoring-backlog.md` for intersecting entries.
-- **Block mode selection** — before defining scope, present the working mode choice:
+- **Block mode selection** — auto-select based on block signals, declare the selected mode with a one-line rationale, then proceed. User can override at any point before the STOP gate.
 
-  > "How do you want to define scope for this block?"
-  > **A — Spec-first**: I generate `docs/specs/[block-name].md` — goal, acceptance criteria (EARS format), scope, out-of-scope — for your review before any implementation. Best for: new features, API changes, domain model changes, multi-component work.
-  > **B — Scope-confirm**: Structured sweep of open questions, then we proceed. Best for: refactors, bug fixes, changes with clearly bounded scope.
+  **Mode A — Spec-first** (auto-selected when any signal is present):
+  - Tier 2 sweep is triggered (>5 files, new entity, migration, multi-role change)
+  - New feature with unclear or evolving shape
+  - New API endpoint, contract change, or domain model change
+  - Multi-component work
 
-  Suggest A or B based on the block description with a one-line rationale. Wait for the user to confirm the mode before proceeding.
+  **Mode B — Scope-confirm** (auto-selected when all signals are absent):
+  - Tier 1 sweep (≤5 files, single entity, no migration, no new pattern)
+  - Refactor, bug fix, or isolated change with clearly bounded scope
+
+  Declare: *"Mode A — Spec-first [or B — Scope-confirm]: [one-line rationale]. Override if needed."* Then proceed immediately to the scope sweep.
 
 - **Scope sweep** — auto-select Tier 1 or Tier 2 based on block signals, declare it, allow user to override. Do NOT proceed to dependency scan until an execution keyword is received:
 
