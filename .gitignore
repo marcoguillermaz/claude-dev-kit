@@ -47,3 +47,6 @@ npm-debug.log*
 
 # npm
 packages/cli/package-lock.json
+
+# Integration test output (local only)
+packages/cli/test/integration/output/
