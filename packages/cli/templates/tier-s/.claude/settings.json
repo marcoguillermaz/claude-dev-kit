@@ -50,6 +50,28 @@
           }
         ]
       }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/CLAUDE.local.md ] && echo '📌 CLAUDE.local.md exists — re-read it to restore active overrides.' || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat >> /tmp/claude-instructions-$(date +%Y%m%d).log 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

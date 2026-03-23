@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node packages/cli/test/integration/run.js 2>/dev/null || echo '{\"decision\": \"block\", \"reason\": \"Integration tests must pass before declaring complete. Run: node packages/cli/test/integration/run.js\"}'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "LAST=$(cat ~/.claude/projects/-Users-MarcoG-Projects-claude-dev-kit/last-audit 2>/dev/null || echo 0); NOW=$(date +%s); AGE=$(( (NOW - LAST) / 86400 )); [ $AGE -ge 7 ] && echo \"⚠️  Arch audit overdue ($AGE days). Run /arch-audit before starting.\" || true"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/CLAUDE.local.md ] && echo '📌 CLAUDE.local.md exists — re-read it to restore active overrides.' || true"
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date -Iseconds) instructions-loaded\" >> /tmp/claude-instructions-$(date +%Y%m%d).log"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:addyosmani.com)",
+      "WebFetch(domain:github.blog)"
+    ]
+  }
+}

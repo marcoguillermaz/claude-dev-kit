@@ -367,12 +367,10 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 
 **Phase 1 — mode selection + scope gate**:
 
-At the start of every block, Claude asks how you want to define scope (per block, not at init time):
+At the start of every block, Claude auto-selects the working mode based on block signals and declares it with a one-line rationale. You can override before the STOP gate — no explicit confirmation required to proceed.
 
-- **Mode A — Spec-first**: Claude generates `docs/specs/[block-name].md` before any implementation. The spec contains: goal (one sentence), acceptance criteria (EARS format: WHEN/IF/WHILE + MUST/SHALL, 3–5 criteria), in-scope file list (from dependency scan), explicit out-of-scope, and definition of done. The STOP gate becomes a spec review — no code until the spec is approved. Completed specs are archived to `docs/specs/archive/` at block close.
-- **Mode B — Scope-confirm**: standard structured sweep (current behavior), then proceed.
-
-Claude suggests A or B based on the block description. The user confirms.
+- **Mode A — Spec-first** (auto-selected when any signal is present: Tier 2 sweep triggered, new feature with unclear shape, new API endpoint or contract change, domain model change, multi-component work): Claude generates `docs/specs/[block-name].md` before any implementation. The spec contains: goal (one sentence), acceptance criteria (EARS format: WHEN/IF/WHILE + MUST/SHALL, 3–5 criteria), in-scope file list (from dependency scan), explicit out-of-scope, and definition of done. The STOP gate becomes a spec review — no code until the spec is approved. Completed specs are archived to `docs/specs/archive/` at block close.
+- **Mode B — Scope-confirm** (auto-selected when all signals are absent: Tier 1 sweep, refactor, bug fix, isolated change with clearly bounded scope): standard structured sweep, then proceed.
 
 **Scope sweep** (both modes): Claude auto-selects Tier 1 or Tier 2:
 - **Tier 1 — Standard Sweep** (≤5 files, single entity, no migration, no new pattern): 8 dimensions.
@@ -412,7 +410,7 @@ Claude suggests A or B based on the block description. The user confirms.
 
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before any code is written.
 
-**Phase 1 — mode selection + scope gate**: same as Tier M (see above). Mode A (spec-first) is the recommended default for Tier L blocks — domain model changes and multi-component work benefit most from a formal spec before implementation. Claude also declares: "does this block have UI changes requiring Phase 5d audit?" in addition to the UAT scenario declaration.
+**Phase 1 — mode selection + scope gate**: same as Tier M (see above). For Tier L, Mode A will be auto-selected for nearly all blocks — domain model changes, multi-component work, and API contract changes are all Tier 2 sweep triggers. Mode B may apply to isolated refactors or bug fixes that don't touch shared contracts. Claude also declares: "does this block have UI changes requiring Phase 5d audit?" in addition to the UAT scenario declaration.
 
 **Structural Requirements Changes (R1–R4)** — separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
 - **R1**: update requirements section by section, STOP for approval
