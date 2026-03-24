@@ -209,7 +209,8 @@ Only after explicit confirmation:
 3. Update `CLAUDE.md` only if block introduces non-obvious patterns or changes conventions.
 4. Update `docs/requirements.md` if spec changed during implementation.
 5. If Mode A was used: move `docs/specs/[block-name].md` → `docs/specs/archive/[block-name].md` and mark as `Status: IMPLEMENTED`.
-6. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
+6. **Lessons capture**: review corrections received during this block. Add any non-obvious pattern rule to `tasks/lessons.md` (rule + why it exists). Do not wait for the next block.
+7. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
 7. **Commit sequence**:
    - **Commit 1** (already done in Phase 3): source files only.
    - **Commit 2 — docs**: `docs/` changes + `README.md` if updated.

@@ -51,6 +51,16 @@ node packages/cli/test/integration/run.js
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
 
+## Agentic Behavior
+
+**Plan Mode Default**: use `EnterPlanMode` for any task with 3+ steps or architectural decisions. If execution goes off track → STOP and re-plan before continuing.
+
+**Subagent Strategy**: keep main context window clean. Offload research, codebase exploration, and parallel analysis to subagents. One focused task per subagent.
+
+**Verification Gate**: before marking any task complete — run integration tests, diff behavior, ask "Would a staff engineer approve this?" No green = not done.
+
+**Lessons Capture**: after any user correction, check if the pattern is non-obvious. If so, save it as a feedback memory immediately.
+
 ## Reference Documents
 - `README.md` — public-facing, must stay in sync with all template/CLI changes
 - `docs/operational-guide.docs` — full reference, must stay in sync
