@@ -65,7 +65,13 @@ Flag: any write route without explicit validation.
 **CHECK N5 — Consistent error response shape**
 Pattern: all error responses must use the same JSON shape.
 Grep: in route `catch` blocks and error returns, identify the response shape used (`{ error: message }`, `{ message }`, `{ errors: [] }`, etc.).
-Flag: routes using a different error shape from the majority."
+Flag: routes using a different error shape from the majority.
+
+**CHECK N6 — Top-level array response**
+Pattern: no route should return a bare array as the top-level JSON response.
+Grep: `Response\.json\(\s*\[|json\(\s*\[` across all route files.
+Expected: 0 matches. All list responses must be wrapped in an object (`{ items: [...] }`, not `[...]`). This allows adding `meta`, `pagination`, or `error` fields later without a breaking change.
+Flag: any route returning a top-level array."
 
 ---
 
@@ -79,14 +85,15 @@ Read 10 representative route handlers (mix of GET, POST, PATCH, DELETE):
 - 200: success with body
 - 201: resource created (POST that creates)
 - 204: success with no body (DELETE, PATCH with no return)
-- 400: validation error
-- 401: not authenticated
-- 403: not authorized
+- 400: malformed request — bad JSON, validation failure, missing required field
+- 401: not authenticated (no valid session)
+- 403: authenticated but lacks permission
 - 404: resource not found
-- 409: conflict (duplicate)
-- 500: unexpected server error
+- 409: valid request conflicts with current server state (e.g., duplicate, state machine conflict — approving an already-approved record)
+- 422: semantically invalid data that passes schema validation but violates a business rule
+- 500: unexpected server error (no internal details in response)
 
-Flag: routes returning 200 for errors, 500 for validation errors, 200 for deletes, etc.
+Flag: routes returning 200 for errors, 500 for validation errors, 400 for state-conflict scenarios (should be 409), or 200 on deletes.
 
 **R3 — Pagination pattern**: for routes returning lists, verify a consistent pagination approach (offset/limit, cursor-based, or page/size) is used. Flag any list route with no pagination (unbounded response).
 
@@ -107,6 +114,7 @@ Output format:
 | N3 Path vs query params | N | ✅/❌ |
 | N4 Missing validation | N | ✅/❌ |
 | N5 Inconsistent error shape | N | ✅/❌ |
+| N6 Top-level array response | N | ✅/❌ |
 
 ### Response Consistency
 | Check | Issues found | Verdict |
@@ -127,6 +135,6 @@ For each High finding, append to `docs/backlog-refinement.md`:
 - Priority index entry + full detail section
 
 ### Severity guide
-- **High**: GET route mutating state; missing validation on write route; unbounded list with no pagination
-- **Medium**: inconsistent error shape; wrong HTTP status code; ID in query param instead of path
-- **Low**: naming inconsistency (singular vs plural); envelope shape deviation on one route
+- **High**: GET route mutating state; missing validation on write route; unbounded list with no pagination; N6 top-level array response
+- **Medium**: inconsistent error shape; wrong HTTP status code (incl. 400 used for state conflicts instead of 409); ID in query param instead of path
+- **Low**: naming inconsistency (singular vs plural); 422 vs 400 distinction for business rule violations; envelope shape deviation on one route

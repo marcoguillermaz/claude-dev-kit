@@ -116,6 +116,33 @@ Run: check each referenced path. Report any that resolve to "No such file or dir
 Expected: all paths resolve. Any missing = FAIL.
 RECOMMEND if failing.
 
+**C7 — CLAUDE.md is gitignored**
+Check: `CLAUDE.md` must be listed in `.gitignore` (project convention: personal CLAUDE.md is never committed — exposes internal context, causes commit history pollution).
+Run: `git check-ignore -q CLAUDE.md && echo "PASS" || echo "FAIL"`
+Expected: "PASS" (exit 0). "FAIL" = FAIL.
+RECOMMEND if failing — requires user to add `CLAUDE.md` to `.gitignore` explicitly.
+
+**C8 — CLAUDE.md line budget**
+Check: `CLAUDE.md` must stay within 200 lines. Beyond this threshold, instruction adherence degrades — lower-priority rules get silently ignored.
+Run: `wc -l CLAUDE.md | awk '{print $1}'`
+Expected: ≤ 200. Any count above 200 = WARN.
+RECOMMEND if failing: identify sections to remove or convert to `@import` references. Do not auto-fix — pruning requires judgment.
+
+**C9 — Deprecated model IDs**
+Check: no `SKILL.md` file or `.claude/settings.json` should reference deprecated model IDs.
+Run: `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet" .claude/skills/ .claude/settings.json 2>/dev/null`
+Expected: 0 matches. Any match = FAIL.
+AUTO-FIX: replace deprecated IDs with current equivalents:
+- `claude-3-haiku-*` or `claude-3-5-haiku-*` → `claude-haiku-4-5-20251001`
+- `claude-3-opus-*` → `claude-opus-4-6`
+- `claude-3-sonnet-*` or `claude-3-5-sonnet-*` → `claude-sonnet-4-6`
+
+**C10 — `allowed-tools` frontmatter on MCP-dependent skills**
+Check: any `SKILL.md` that calls `mcp__*` tools in its instructions must declare those tools in `allowed-tools:` frontmatter. This ensures Claude requests the correct permissions upfront, preventing mid-execution permission prompts.
+Run: `for f in .claude/skills/*/SKILL.md; do if grep -q "mcp__" "$f" && ! grep -q "allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`
+Expected: 0 MISSING lines. Any match = FAIL.
+AUTO-FIX: for each failing skill, read the `mcp__*` tool names from its body and add `allowed-tools: [mcp__tool1, mcp__tool2, ...]` to its frontmatter after the `context:` line.
+
 ---
 
 ## Step 3c — Anthropic Prompting Guide compliance
@@ -196,13 +223,17 @@ Output a structured report in this exact format:
 ### ✓ Compliant (no action needed)
 - [area]: [brief confirmation]
 
-### Ecosystem consistency (C1–C6)
+### Ecosystem consistency (C1–C10)
 - C1 Hook integrity: [PASS/FAIL — list missing hooks if any]
 - C2 Stop hook: [PASS/FAIL]
 - C3 STOP gate count: [PASS/FAIL — actual count]
 - C4 context:fork coverage: [PASS/FAIL — list missing skills if any]
 - C5 Interaction Protocol: [PASS/FAIL]
 - C6 Dead path refs: [PASS/FAIL — list missing paths if any]
+- C7 CLAUDE.md gitignored: [PASS/FAIL]
+- C8 CLAUDE.md line budget: [PASS/WARN — actual count]
+- C9 Deprecated model IDs: [PASS/FAIL — list matches if any]
+- C10 allowed-tools on MCP skills: [PASS/FAIL — list missing skills if any]
 
 ### Prompting compliance (P1–P5) — judgment-based, PASS/WARN only
 - P1 CLAUDE.md content type: [PASS/WARN — note any sections failing Anthropic's inclusion test]
