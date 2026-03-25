@@ -119,6 +119,7 @@ Then:
 - Present data flow, data structures, main trade-offs.
 - State discarded alternatives and rationale.
 - For simple blocks (≤3 files, no shared types, no migration, no new patterns): skip, stating so.
+- **All clarification questions arising during design review must use the `AskUserQuestion` tool** — no inline open questions.
 
 ***** STOP — wait for design confirmation before writing code. *****
 
@@ -198,14 +199,23 @@ If either condition is false: **skip this phase and state so explicitly** — do
 - Output: "smoke test OK" or describe the problem and fix before proceeding.
 - Fix on `feature/` branch, re-merge if issues found.
 
-## Phase 5d — Block-scoped quality audit *(blocks with UI changes)*
+## Phase 5d — Block-scoped quality audit *(blocks with UI or API changes)*
 
+**Track A — UI audit** *(if block adds/modifies UI routes or components — runs on localhost)*
 - Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, accessibility, empty states).
 - Run `/visual-audit` scoped to the block's new/modified pages (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish).
 - Run `/ux-audit` scoped to the block's user flows (task completion, feedback clarity, cognitive load).
 - Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
 - **Execution order**: `/ui-audit` is static — launch it concurrently with the first Playwright-based skill. Then: `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the Playwright session).
-- **Severity actions**: fix all **Critical** issues before Phase 6. Flag **Major** issues in the Phase 6 checklist. Log **Minor** issues in `docs/refactoring-backlog.md`.
+
+**Track B — API/DB audit** *(if block creates/modifies API routes or applies migrations — static analysis, no dev server needed)*
+- Run `/security-audit` if the block creates or modifies any API route. Run `/api-design` if the block adds new API routes. Both are static — run them concurrently.
+- Run `/skill-db` only if the block applies migrations.
+
+**Severity handling — both tracks**:
+- **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
+- **Major**: flag in Phase 6 checklist with planned resolution sprint.
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP
@@ -262,7 +272,7 @@ Only after explicit confirmation:
 ## Phase 8.5 — Context review + compact
 
 **C1–C3** (grep-only — delegate to agent):
-Invoke the `context-reviewer` agent via the Agent tool. It runs C1 (credential patterns), C2 (non-English prose), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
+Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. It runs C1 (credential patterns), C2 (non-English prose), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
 
 **C4–C11** (judgment-required — run in main session):
 Execute checks C4 through C11 from `.claude/rules/context-review.md` in order.

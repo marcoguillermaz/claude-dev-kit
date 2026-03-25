@@ -113,6 +113,7 @@ Branch prefix `feature/` activates this pipeline automatically.
 - Present data flow, data structures, main trade-offs.
 - State discarded alternatives and rationale.
 - Skip for simple blocks (≤3 files, no shared types, no migration, no new patterns).
+- **All clarification questions arising during design review must use the `AskUserQuestion` tool** — no inline open questions.
 
 ***** STOP — wait for design confirmation before writing code. *****
 
@@ -173,6 +174,26 @@ If either condition is false: **skip this phase and state so explicitly** — do
 - Output: "smoke test OK" or describe the problem and fix before proceeding.
 - Fix issues on `feature/` branch, re-merge if needed.
 
+## Phase 5d — Block-scoped quality audit *(blocks with UI or API changes)*
+
+**Track A — UI audit** *(if block adds/modifies UI routes or components)*
+- Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, accessibility, empty states).
+- Run `/visual-audit` scoped to the block's new/modified pages (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish).
+- Run `/ux-audit` scoped to the block's user flows (task completion, feedback clarity, cognitive load).
+- Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
+- **Execution order**: `/ui-audit` is static — launch it concurrently with the first Playwright-based skill. Then: `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the Playwright session).
+
+**Track B — API/DB audit** *(if block creates/modifies API routes or applies migrations — static analysis, no dev server needed)*
+- Run `/security-audit` if the block creates or modifies any API route.
+- Run `/api-design` if the block adds new API routes. Both are static — run them concurrently.
+- Run `/skill-db` only if the block applies migrations.
+
+**Severity handling — both tracks**:
+- **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
+- **Major**: flag in Phase 6 checklist with planned resolution sprint.
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`).
+- Output per skill: one-paragraph summary only.
+
 ## Phase 6 — Outcome checklist ⏸ STOP
 
 Present this checklist with actual results:
@@ -219,7 +240,11 @@ Only after explicit confirmation:
 
 ## Phase 8.5 — Context review + compact
 
-Execute checks C1 through C11 from `.claude/rules/context-review.md` in order.
+**C1–C3** (grep-only — delegate to agent):
+Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. Pass the exact grep commands from `.claude/rules/context-review.md` for C1–C3 and the relevant file paths. Collect results; apply any fix in the main session before proceeding.
+
+**C4–C11** (judgment-required — run in main session):
+Execute checks C4 through C11 from `.claude/rules/context-review.md` in order.
 Apply any fix before moving to the next check.
 **Complete only when all checks pass.**
 
@@ -232,6 +257,8 @@ Apply any fix before moving to the next check.
 - Next: [next block name] OR "No next block defined"
 ```
 
+This message is **non-negotiable** — never skip it, even if the block was small or the session is long.
+
 Then run `/compact` to free the session context.
 
 ---
@@ -241,6 +268,7 @@ Then run `/compact` to free the session context.
 - **Never commit to `main` or `staging` directly.**
 - **STOP gates are hard stops** — not suggestions. Never proceed to the next phase without explicit confirmation.
 - **Execution keywords**: `Execute` · `Proceed` · `Confirmed` · `Go ahead` — these are the only phrases that authorize autonomous action after a STOP gate.
+- **Exception — active Phase 2**: once a plan is confirmed and an execution keyword was given, proceed autonomously through implementation without re-confirming each file edit. The confirmation covers the approved plan, not each step.
 - **Green before commit**: type check + tests must pass before every commit.
 - **Conventional commits**: `feat(scope):`, `fix(scope):`, `docs:`, `chore:` — imperative, under 72 chars.
 - **No unrequested changes**: implement only what was approved in Phase 1.
