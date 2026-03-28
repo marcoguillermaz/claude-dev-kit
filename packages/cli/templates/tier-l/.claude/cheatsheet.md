@@ -24,7 +24,7 @@
 | Quick fix (≤3 files) | `git checkout -b fix/description` — use Fast Lane |
 | Session interrupted | Check `.claude/session/` for recovery file |
 | Context window ~50% | Run `/compact` before continuing |
-| End of block | Run context review (C1–C11) then `/compact` |
+| End of block | Run context review (C1–C12) then `/compact` |
 
 ---
 

@@ -82,6 +82,47 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   if (!config.includeGithub) {
     await fs.remove(path.join(targetDir, '.github'));
   }
+
+  // Conditionally remove skills that are not applicable for this project
+  if (tier === 'm' || tier === 'l') {
+    await pruneSkills(targetDir, config);
+  }
+}
+
+/**
+ * Remove skill directories that are not applicable based on project feature flags.
+ * Skills are only pruned when a feature flag is explicitly set to false (not undefined).
+ */
+async function pruneSkills(targetDir, config) {
+  const skillsDir = path.join(targetDir, '.claude', 'skills');
+  if (!(await fs.pathExists(skillsDir))) return;
+
+  const skipSkills = new Set();
+
+  if (config.hasApi === false) {
+    skipSkills.add('api-design');
+    skipSkills.add('security-audit');
+  }
+
+  if (config.hasDatabase === false) {
+    skipSkills.add('skill-db');
+  }
+
+  if (config.hasFrontend === false) {
+    skipSkills.add('responsive-audit');
+    skipSkills.add('visual-audit');
+    skipSkills.add('ux-audit');
+    skipSkills.add('ui-audit');
+  }
+
+  // ui-audit additionally requires a design system
+  if (config.hasFrontend !== false && config.hasDesignSystem === false) {
+    skipSkills.add('ui-audit');
+  }
+
+  for (const skill of skipSkills) {
+    await fs.remove(path.join(skillsDir, skill));
+  }
 }
 
 async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
@@ -161,6 +202,10 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   if (!config.includeGithub) {
     await fs.remove(path.join(targetDir, '.github'));
   }
+
+  if (tier === 'm' || tier === 'l') {
+    await pruneSkills(targetDir, config);
+  }
 }
 
 async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
@@ -218,5 +263,12 @@ function interpolate(content, config) {
     .replace(/\[TECH_LEAD\]/g, config.techLead || 'tech-lead')
     .replace(/\[BACKEND_LEAD\]/g, config.backendLead || 'backend-lead')
     .replace(/\[SECURITY_REVIEWER\]/g, config.securityReviewer || 'security-reviewer')
-    .replace(/\[E2E_COMMAND\]/g, config.e2eCommand || '# not configured');
+    .replace(/\[E2E_COMMAND\]/g, config.e2eCommand || '# not configured')
+    .replace(/\[HAS_API\]/g, config.hasApi === false ? 'false' : 'true')
+    .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
+    .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
+    .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
+    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || 'sonnet')
+    .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
+    .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false');
 }

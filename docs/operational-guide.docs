@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 1.0.0
+**Version**: 1.2.0
 **Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -143,6 +143,14 @@ For experienced users, the wizard asks:
 - Tech stack (Node.js/TS, Node.js/JS, Python, Go, other)
 - Test command, type check command, dev server command
 - **E2E test command (Playwright/Cypress — optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
+- **Feature flags (Tier M/L only)** — 7 questions that determine which audit skills are installed and set an `## Active Skills` section in CLAUDE.md:
+  - "Does your project have an API layer?" → installs `/api-design`, `/security-audit`
+  - "Does your project use a database?" → installs `/skill-db`
+  - "Does your project have a frontend / UI?" → installs `/responsive-audit`, `/visual-audit`, `/ux-audit`
+  - "Do you use a component library or design system?" (if frontend) → installs `/ui-audit`
+  - "Design system name?" (if design system) → populates `[DESIGN_SYSTEM_NAME]` placeholder in ui-audit
+  - "Preferred model for heavy audit skills?" (if frontend) → `sonnet` (faster) or `opus` (thorough); populates `[AUDIT_MODEL]` frontmatter
+  - "Track a PRD per block?" → determines if `docs/prd/prd.md` is referenced in context review C12
 - Whether to include pre-commit config and `.github/` files
 
 Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code. Tier M/L also include `FIRST_SESSION.md` — a step-by-step guide to the first block cycle.
@@ -356,7 +364,7 @@ Upgrade is non-destructive — it adds new files without overwriting your existi
 | 5c | Staging deploy + smoke test (both themes if UI changes). | — |
 | 6 | Outcome checklist with actual results. | ⏸ **STOP** |
 | 8 | Block closure: session file (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main. | — |
-| 8.5 | Context review C1–C11. Mandatory closing message. `/compact`. | — |
+| 8.5 | Context review C1–C12. Mandatory closing message. `/compact`. | — |
 
 **After running init (Tier M):**
 1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle.
@@ -400,7 +408,7 @@ At the start of every block, Claude auto-selects the working mode based on block
 | 5d | **Block-scoped quality audit** — `/ui-audit`, `/visual-audit`, `/ux-audit`, `/responsive-audit` scoped to block routes. Severity: Critical → fix before Phase 6; Major → flag in checklist; Minor → backlog. | — |
 | 6 | Outcome checklist: build/test + design system compliance + features + audit results. | ⏸ **STOP** |
 | 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | — |
-| 8.5 | C1–C3 via context-reviewer agent. C4–C11 in main session. **Mandatory closing message**. `/compact`. | — |
+| 8.5 | C1–C3 via context-reviewer agent. C4–C12 in main session. **Mandatory closing message**. `/compact`. | — |
 
 **After running init (Tier L):**
 1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle (covers R1–R4 and all 11 phases).
@@ -589,14 +597,32 @@ Commit format, branch naming rules, PR conventions. Loaded for all git operation
 
 ---
 
+### .claude/rules/output-style.md (Tier M/L)
+
+Communication rules for Claude in this project. No sycophantic openers ("Certainly!", "Great question!"), no AI disclosure markers, plain vocabulary, directness-first, hyphen not em-dash. These rules apply to all of Claude's text output — not just code comments.
+
+---
+
+### .claude/rules/claudemd-standards.md (Tier M/L)
+
+Standards for maintaining `CLAUDE.md` itself. S1–S9 cover: size limit (≤200 lines), content filter (WHY/WHAT/HOW only — no code), progressive disclosure via @-imports, hook enforcement patterns, MCP instruction budget, and memory hygiene. Aligned with Anthropic documentation and Simon Willison's CLAUDE.md practices.
+
+---
+
+### .claude/rules/pipeline-standards.md (Tier M/L)
+
+Engineering best practices reference. S1–S8 cover: phase gates (pass/fail exits), test pyramid (unit → API → E2E), code quality gates, environment isolation, LLM-specific patterns (scope gates, context management, verification back-pressure), hotfix discipline, documentation requirements, and Conventional Commits 1.0.0. Sources: Google Engineering Practices, Martin Fowler, DORA, Anthropic building-effective-agents.
+
+---
+
 ### .claude/rules/context-review.md (Tier M/L)
 
-End-of-block compliance checklist. Executed in Phase 8.5 (Tier M/L) and FL-4 (Tier S). Contains 11 checks (C1–C11), each with an explicit grep command, pass condition, and false-positive notes:
+End-of-block compliance checklist. Executed in Phase 8.5 (Tier M/L) and FL-4 (Tier S). Contains 12 checks (C1–C12), each with an explicit grep command, pass condition, and false-positive notes:
 
 | Check | What it verifies | How |
 |---|---|---|
 | C1 | No credentials or tokens in auto-memory | Targeted grep for actual value strings (not property names) |
-| C2 | No non-English prose in CLAUDE.md or auto-memory | grep for explanatory text patterns |
+| C2 | No unresolved `[PLACEHOLDER_NAME]` patterns in active files | grep for `[A-Z_]{3,}` in brackets in CLAUDE.md and pipeline.md |
 | C3 | No stale field/config key names in CLAUDE.md | Cross-check against latest migration or config |
 | C4 | No forward-looking references to closed blocks | grep for `Block N` patterns |
 | C5 | Every `MEMORY.md` mention in pipeline.md qualified | grep to confirm `(project root)` or `auto-memory` qualifier |
@@ -606,11 +632,12 @@ End-of-block compliance checklist. Executed in Phase 8.5 (Tier M/L) and FL-4 (Ti
 | C9 | Active plan in project-root MEMORY.md is current | Row-by-row status check |
 | C10 | No dead file references in CLAUDE.md / pipeline.md | grep for `docs/` and `.claude/` paths, verify each |
 | C11 | No completed items remain in refactoring-backlog.md | Cross-check against current block's log row |
+| C12 | Canonical docs current (sitemap, db-map, PRD) | Skip checks for docs not present in the project; update any that exist |
 
-**In Tier L**: C1–C3 are delegated to the `context-reviewer` agent (grep-only, parallel). C4–C11 run in the main session (require judgment).
-**In Tier M**: all 11 checks run in the main session.
+**In Tier L**: C1–C3 are delegated to the `context-reviewer` agent (grep-only, parallel). C4–C12 run in the main session (require judgment).
+**In Tier M**: all 12 checks run in the main session.
 
-**Phase complete only when all 11 checks pass.** Then Claude posts the mandatory closing message and runs `/compact`.
+**Phase complete only when all 12 checks pass.** Then Claude posts the mandatory closing message and runs `/compact`.
 
 ---
 
@@ -668,30 +695,35 @@ Generated by the CLI for From context and In-place init modes. Contains the disc
 
 ## 9. Audit skills
 
-Nine audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time — no pipeline phase required.
+Eleven audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time — no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
-**Tier availability:**
+**Tier availability and install conditions:**
 
-| Command | S | M | L | Requires |
-|---|---|---|---|---|
-| `/arch-audit` | ✓ | ✓ | ✓ | Internet access (fetches Anthropic docs) |
-| `/security-audit` | — | ✓ | ✓ | — |
-| `/skill-dev` | — | ✓ | ✓ | `docs/sitemap.md` |
-| `/skill-db` | — | ✓ | ✓ | `docs/db-map.md` |
-| `/api-design` | — | ✓ | ✓ | — |
-| `/perf-audit` | — | ✓ | ✓ | `docs/sitemap.md` |
-| `/responsive-audit` | — | ✓ | ✓ | Dev server + Playwright MCP |
-| `/ux-audit` | — | ✓ | ✓ | Dev server + Playwright MCP |
-| `/visual-audit` | — | ✓ | ✓ | Dev server + Playwright MCP |
+| Command | S | M | L | Install condition | Requires |
+|---|---|---|---|---|---|
+| `/arch-audit` | ✓ | ✓ | ✓ | always | Internet access (fetches Anthropic docs) |
+| `/commit` | ✓ | ✓ | ✓ | always | — |
+| `/security-audit` | — | ✓ | ✓ | `hasApi=true` | — |
+| `/skill-dev` | — | ✓ | ✓ | always | — |
+| `/skill-db` | — | ✓ | ✓ | `hasDatabase=true` | — |
+| `/api-design` | — | ✓ | ✓ | `hasApi=true` | — |
+| `/perf-audit` | — | ✓ | ✓ | always | — |
+| `/responsive-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/ux-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/visual-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/ui-audit` | — | ✓ | ✓ | `hasFrontend=true` AND `hasDesignSystem=true` | Dev server + Playwright MCP |
 
 **General rules:**
-- Code-audit skills (`/security-audit`, `/skill-dev`, `/skill-db`, `/api-design`, `/perf-audit`) are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md` with severity-ranked IDs.
-- Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
+- Code-audit skills are **audit-only** — no code is modified. Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
+- Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
 - Each skill runs in an isolated context fork (`context: fork`) — it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
 - Before first run: fill in the `## Configuration` placeholders at the top of each `SKILL.md`.
 
-**Block-scoped audit in Phase 5d (Tier L)**: after the smoke test and before the outcome checklist, Claude runs the four audit skills **scoped to the block's new/modified routes only** — not a full-site scan. Execution order is fixed to avoid Playwright session conflicts: `/ui-audit` (static, concurrent) → `/visual-audit` → `/ux-audit` → `/responsive-audit` (sequential). Severity actions: Critical must be fixed before Phase 6; Major flagged in checklist; Minor logged in backlog.
+**Block-scoped audit in Phase 5d (Tier M/L)**: after the smoke test and before the outcome checklist, two tracks run in parallel:
+- **Track A (UI)** — if the block touches UI routes: `/ui-audit` (static, concurrent with first Playwright skill) → `/visual-audit` → `/ux-audit` → `/responsive-audit` (sequential, shared Playwright session).
+- **Track B (API/DB)** — if the block touches API routes or applies migrations: `/security-audit` and `/api-design` (concurrent, static); `/skill-db` (if migration applied).
+Severity actions: Critical must be fixed before Phase 6; Major flagged in checklist; Minor logged in backlog.
 
 **Severity actions for all skills:**
 - **Critical**: fix before merging. Claude will not proceed to Phase 6 with open Critical issues.
@@ -1215,10 +1247,10 @@ It returns a report structured by check (C1–C6) with a "Mandatory additions" s
 
 Checks C1–C3 of the context review are pure grep operations:
 - C1: credential pattern scan in MEMORY.md
-- C2: Italian prose in CLAUDE.md and MEMORY.md
-- C3: field name staleness against the latest migration
+- C2: unresolved `[PLACEHOLDER_NAME]` patterns in CLAUDE.md and pipeline.md
+- C3: field name staleness against the latest schema/migration file (multi-framework: SQL migrations, Prisma, Drizzle, Rails — C3 is N/A if no schema file is found)
 
-These have no dependencies on each other and require no judgment — pass/fail is deterministic from the grep output. Checks C4–C11 require reasoning about the current block's state and remain in the main session.
+These have no dependencies on each other and require no judgment — pass/fail is deterministic from the grep output. Checks C4–C12 require reasoning about the current block's state and remain in the main session.
 
 ### What stays monolithic — and why
 
@@ -1227,7 +1259,7 @@ These have no dependencies on each other and require no judgment — pass/fail i
 | Phase 2 — Implementation | Writes have cross-file dependencies; sequential authorship is auditable |
 | Phase 3 — Build + tests | Sequential toolchain constraint (type check → build → test) |
 | Phase 8 — Block closure | Document updates have content dependencies between them |
-| Phase 8.5 C4–C11 | Require judgment about the current block's state |
+| Phase 8.5 C4–C12 | Require judgment about the current block's state |
 
 ---
 
@@ -1363,13 +1395,19 @@ Non-destructive files are updated to the latest template version:
 - `.claude/rules/context-review.md`
 - `.claude/rules/security.md`
 - `.claude/rules/git.md`
+- `.claude/rules/output-style.md`
+- `.claude/rules/claudemd-standards.md`
+- `.claude/rules/pipeline-standards.md`
+- `.claude/files-guide.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
 
-Files containing your customizations are **not overwritten** — they are flagged with a diff:
+Files containing your customizations are **not overwritten** — they are flagged for manual review:
 - `CLAUDE.md`
 - `.claude/rules/pipeline.md`
 - `.claude/settings.json`
+- All `SKILL.md` files (you may have added project-specific config after init)
 
-Review the diff and apply the relevant parts manually.
+Review each flagged file against the latest template and apply the relevant parts manually.
 
 ---
 
@@ -1381,7 +1419,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 11 checks and reports pass/fail:
+Runs 19 checks and reports pass/fail:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1394,6 +1432,14 @@ Runs 11 checks and reports pass/fail:
 9. Stop hook is configured with a non-empty command
 10. `.github/CODEOWNERS` covers `.claude/`
 11. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
+12. `.claude/rules/output-style.md` present (tier M/L — warn if missing)
+13. `.claude/rules/claudemd-standards.md` present (tier M/L — warn if missing)
+14. `.claude/rules/pipeline-standards.md` present (tier M/L — warn if missing)
+15. `.claude/skills/commit/` present (tier M/L — warn if missing)
+16. Skills using Playwright declare `allowed-tools` frontmatter (warn if missing)
+17. `.claude/rules/context-review.md` includes C12 (warn if not present — upgrade needed)
+18. (checks 12–17 are skipped with `pass/skip` when the project has no `pipeline.md` — i.e. Tier 0)
+19. (reserved for future checks)
 
 **`--report` output format** — machine-readable JSON consumed by CI systems or external audit tools:
 

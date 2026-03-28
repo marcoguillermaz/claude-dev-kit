@@ -153,6 +153,100 @@ export async function initGreenfield(options) {
       },
       default: '',
     },
+    // Feature flags — tier M/L only
+    {
+      type: 'list',
+      name: 'hasApi',
+      message: 'Does your project have an API layer?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+    },
+    {
+      type: 'list',
+      name: 'hasDatabase',
+      message: 'Does your project use a database?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+    },
+    {
+      type: 'list',
+      name: 'hasFrontend',
+      message: 'Does your project have a frontend / UI?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+    },
+    {
+      type: 'list',
+      name: 'hasDesignSystem',
+      message: 'Do you use a component library or design system?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+      },
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+    },
+    {
+      type: 'input',
+      name: 'designSystemName',
+      message: 'Design system name (e.g. shadcn/ui, MUI, Ant Design):',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return (tier === 'm' || tier === 'l') && a.hasFrontend === true && a.hasDesignSystem === true;
+      },
+      default: 'component library',
+    },
+    {
+      type: 'list',
+      name: 'auditModel',
+      message: 'Preferred model for heavy audit skills (ux-audit, visual-audit)?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+      },
+      choices: [
+        { name: 'Sonnet — faster, lower cost  (recommended)', value: 'sonnet' },
+        { name: 'Opus   — more thorough, higher cost', value: 'opus' },
+      ],
+      default: 'sonnet',
+    },
+    {
+      type: 'confirm',
+      name: 'hasPrd',
+      message: 'Track a Product Requirements Document (PRD) per block?',
+      when: (a) => {
+        if (isDiscovery) return false;
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      default: false,
+    },
     {
       type: 'confirm',
       name: 'includePreCommit',
@@ -178,6 +272,14 @@ export async function initGreenfield(options) {
     isDiscovery,
     includePreCommit: isDiscovery ? false : answers.includePreCommit,
     includeGithub: isDiscovery ? false : answers.includeGithub,
+    hasE2E: answers.e2eCommand ? answers.e2eCommand.trim() !== '' : false,
+    hasApi: answers.hasApi,
+    hasDatabase: answers.hasDatabase,
+    hasFrontend: answers.hasFrontend,
+    hasDesignSystem: answers.hasDesignSystem,
+    designSystemName: answers.designSystemName || 'component library',
+    auditModel: answers.auditModel || 'sonnet',
+    hasPrd: answers.hasPrd ?? false,
   };
 
   if (options.dryRun) {

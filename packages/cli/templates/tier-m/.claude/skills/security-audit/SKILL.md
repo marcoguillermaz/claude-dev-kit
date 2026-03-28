@@ -1,28 +1,35 @@
 ---
 name: security-audit
-description: Security review of API routes and data layer. Checks authentication guards, authorization completeness, input validation coverage, sensitive data exposure in responses, and HTTP security headers. Does not cover auth implementation architecture (business logic) or performance.
+description: Security review of API routes and data layer. Checks authentication guards, authorization completeness, input validation coverage, sensitive data exposure in responses, environment variable leakage, service credentials in client code, storage signed URL compliance, open redirect, mass assignment, dependency CVE audit, and HTTP security headers. Does not cover auth implementation architecture (business logic) or performance.
 user-invocable: true
 model: sonnet
 context: fork
+effort: high
+argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 ---
 
 You are performing a security audit of the project's API routes and data layer.
 
-**Scope**: API routes, middleware/proxy, access control policies, input validation, response shapes, HTTP headers.
+**Scope**: API routes, middleware/proxy, access control policies, input validation, response shapes, environment variables, dependencies, HTTP headers.
 **Out of scope**: SEO, public indexing, performance, auth architecture design.
 **Do NOT make code changes. Audit only.**
 **All findings go to `docs/backlog-refinement.md`.**
 
 ---
 
-## Configuration (adapt before first run)
+## Step 0 — Target resolution
 
-> Replace these placeholders with the real paths for this project:
-> - `[API_ROUTES_PATH]` — e.g. `app/api/`, `routes/`, `src/handlers/`
-> - `[AUTH_HELPER]` — e.g. `getSession`, `auth()`, `verifyToken`, `requireAuth`
-> - `[VALIDATION_LIB]` — e.g. `zod`, `yup`, `joi`, `pydantic`
-> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md` or `docs/api-routes.md`
-> - `[ROLE_ENUM]` — e.g. `admin`, `editor`, `viewer` (your role names)
+Parse `$ARGUMENTS` for a `target:` token.
+
+| Pattern | Meaning |
+|---|---|
+| `target:page:/api/users` | Restrict scope to that route only |
+| `target:role:admin` | Focus on routes accessible/relevant to the admin role |
+| `target:section:export` | Focus on all export/bulk-data routes |
+| No argument | Full audit — all API routes |
+
+Announce: `Running security-audit — scope: [FULL | target: <resolved>]`
+Apply the target filter to the route inventory built in Step 1.
 
 ---
 
@@ -34,24 +41,31 @@ Also read:
 - Auth helper file (`[AUTH_HELPER]`) — understand session/token mechanics
 - `docs/backlog-refinement.md` — avoid reporting duplicates
 
-Output: list of routes grouped as: Public (no auth required) / Protected (auth required) / Role-specific.
+Output: list of routes grouped as:
+- **Public** (no auth required)
+- **Protected** (auth required, any role)
+- **Role-specific** (grouped by role)
+- **Cron/job routes** (background jobs — typically bypass normal auth layer)
+- **Export routes** (bulk data endpoints returning CSV, XLSX, or PDF)
+
+Apply target scope from Step 0 before proceeding.
 
 ---
 
-## Step 2 — Auth & authorization checks (Explore subagent)
+## Step 2 — Auth, authorization, and injection checks (Explore subagent)
 
 Launch a **single Explore subagent** (model: haiku) with the full route file list:
 
-"Run all 5 checks on the provided route files:
+"Run all 12 checks on the provided route files and adjacent files as noted.
 
 **CHECK A1 — Missing auth check at route entry**
 Pattern: route handler does NOT call `[AUTH_HELPER]` or equivalent within the first 15 lines.
 Flag: any route where no auth check appears near the top of the handler.
-Note: service-role or internal routes must still verify caller identity.
+Note: service-role or internal routes must still verify caller identity — their auth is different, not absent.
 
 **CHECK A2 — Role check present on privileged routes**
 Pattern: routes under admin/management paths must contain an explicit role assertion (`role === '[ROLE_ENUM]'` or equivalent).
-Flag: any privileged route without a role check.
+Flag: any privileged route without an explicit role check.
 
 **CHECK A3 — Input validation on write endpoints**
 Pattern: POST/PUT/PATCH handlers must import `[VALIDATION_LIB]` or contain a schema parse call.
@@ -59,87 +73,188 @@ Flag: any write route without schema validation.
 
 **CHECK A4 — Raw user input in queries**
 Pattern: template literals or string concatenation used to build DB queries with user-supplied values.
-Flag: any parameterized query built via string concatenation instead of parameterized API.
+Flag: any parameterized query built via string concatenation instead of the parameterized API (e.g. `.eq('column', variable)` is correct; `.filter('column=' + variable)` is not).
 
 **CHECK A5 — Sensitive fields in API responses**
-Pattern: routes that select all columns (`SELECT *` or `.select('*')`) and return the full result.
-Flag: any route that may include internal fields (password hashes, tokens, internal flags) in the response."
+Pattern: routes that select all columns (`SELECT *` or equivalent) and return the full result.
+Flag: any route that may include internal fields (password hashes, tokens, internal flags) in the response without explicit field filtering.
+
+**CHECK A6 — Cron/job routes missing secret check**
+Scope: all background job or cron route files.
+Pattern: these routes typically bypass the normal auth layer. They MUST verify the request using a cron/job secret token.
+Grep: in each job route file, check for presence of: `CRON_SECRET|authorization|x-cron|Authorization` or an equivalent secret-based verification.
+Flag: any job route that does NOT contain one of these patterns.
+
+**CHECK A7 — Export routes missing role check**
+Scope: any route file whose path contains 'export' or that returns `Content-Type: text/csv`, `application/vnd.openxmlformats`, or `application/pdf`.
+Grep: files containing `text/csv|Content-Disposition.*attachment|application/vnd.openxml|application/pdf`.
+For each match: verify the route also contains a role check.
+Flag: any export route without an explicit role assertion.
+
+**CHECK A8 — Secret environment variable exposure (client-side)**
+Scope: all source files, environment config files, and framework config files.
+Pattern: environment variable names containing secret-like suffixes (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*_PASSWORD`) that are prefixed or configured to be exposed to the client (e.g. `NEXT_PUBLIC_`, `VITE_`, or equivalent for the project's framework).
+Flag: any client-exposed variable name that contains secret-like suffixes. These are inlined into the client bundle and visible to all users.
+Note: public/anon keys for services designed to be used client-side are expected and safe — exclude those if documented as safe in the project.
+
+**CHECK A9 — Service/admin credentials in client-side code**
+Scope: all files marked as client-side (e.g. `'use client'`, browser entry points, client modules).
+Pattern: grep for service role keys, admin credentials, or credential variable names: `SERVICE_ROLE|service_role|ADMIN_KEY|adminCredential|serviceKey`.
+Flag: any match. Admin/service credentials bypass access control — their presence in client-side code exposes them in the browser bundle.
+
+**CHECK A10 — Storage/file URLs for private resources**
+Scope: all API route files and utility files that handle file/document/attachment operations.
+Pattern: calls to `getPublicUrl` or equivalent (generating permanent public URLs) in files that reference private storage buckets (documents, attachments, contracts, receipts).
+Flag: any public URL generation call for what appears to be a private-bucket asset. Private buckets must use signed/time-limited URLs with a TTL.
+Note: publicly intended assets (e.g. avatars bucket explicitly marked public) should be excluded from flagging.
+
+**CHECK A11 — Open redirect**
+Scope: all middleware and API route files containing `redirect`.
+Pattern: lines with a redirect call where the URL argument is NOT a hardcoded string literal but derives from user-controlled input (`searchParams.get|req.body|params.|query.`) without an explicit allowlist check.
+Flag: any redirect where the target URL is constructed from user-controlled input without validation against an allowlist of safe destinations.
+
+**CHECK A12 — Mass assignment**
+Scope: all API route files handling POST/PUT/PATCH.
+Pattern:
+  Step 1: find lines that parse the full request body (e.g. `await req.json()`, `request.body`)
+  Step 2: in the same file, check if the raw body object is passed directly to a DB write (`.insert(body)`, `.update(body)`, or equivalent) without explicit field destructuring.
+Flag: any route where the raw request body object is passed wholesale to a DB write without explicit field allowlisting.
+Note: routes that pass a validated schema result (not the raw body) to the DB write are safe — exclude those."
 
 ---
 
-## Step 3 — Response shape review
+## Step 3 — Response shape review (main context)
 
-For the 5–10 most-used routes (pick highest-traffic from sitemap):
+For the 5–10 most-used routes (pick highest-traffic from sitemap or route list):
 
-**R1 — PII exposure**: verify that sensitive personal data (SSN, banking details, passwords) is NOT returned to non-owner callers.
+**R1 — PII exposure**: verify that sensitive personal data (email if non-owner, SSN, banking details, passwords) is NOT returned to non-owner callers.
 
 **R2 — Error message verbosity**: inspect `catch` blocks. Verify internal DB errors are NOT forwarded to the client response. Expected: generic message only, error logged server-side.
 
 **R3 — Privilege escalation via response**: verify that response objects don't include fields that reveal other users' data or internal system state to unprivileged callers.
 
+**R4 — Rate limiting on high-value endpoints**: check server config, middleware, and any platform config for rate limiting on: admin write routes that create users or modify roles, password change endpoints, export/bulk-data routes. Flag if no rate limiting is found at any layer.
+Note: absence of rate limiting is a Medium finding for an internal app.
+
+---
+
+## Step 3b — Dependency CVE audit
+
+Run in the project root:
+```bash
+npm audit --json --omit=dev 2>/dev/null
+```
+
+Parse the JSON output for vulnerabilities with `severity: "high"` or `severity: "critical"`.
+
+For each finding, record:
+- Package name and affected version range
+- CVE ID (if available)
+- Brief description
+- Whether a `fixAvailable` patch exists
+
+Flag any `critical` CVE in a production dependency as a **Critical** finding.
+Flag any `high` CVE as a **High** finding.
+`moderate` and `low` → note in report but do not add to backlog unless directly exploitable in this app's context.
+
+If `npm audit` exits with non-zero but the JSON output is parseable, continue. If the command is not available or fails to produce parseable output, note it and skip.
+
 ---
 
 ## Step 4 — HTTP security headers
 
-Read the server config file (e.g. `next.config.ts`, `server.ts`, `nginx.conf`). Check for:
+**Static check**: read the server config file (e.g. `next.config.ts`, `server.ts`, `nginx.conf`). Verify these headers are configured:
 
 | Header | Expected | Risk if missing |
 |---|---|---|
+| `Content-Security-Policy` | Present (even permissive) | XSS escalation |
 | `X-Frame-Options` | `DENY` or `SAMEORIGIN` | Clickjacking |
 | `X-Content-Type-Options` | `nosniff` | MIME sniffing |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Data leakage |
-| `Content-Security-Policy` | Present | XSS escalation |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Referrer data leakage |
+| `Permissions-Policy` | camera/mic/geolocation denied | Feature abuse |
 
-Note: `Strict-Transport-Security` is typically handled by the hosting platform — skip if using Vercel/Fly/Railway.
+Note: `Strict-Transport-Security` is typically handled by the hosting platform — skip if on a managed platform that enforces HTTPS.
+
+**Live check** (if a staging/dev URL is available): run:
+```bash
+curl -sI [STAGING_URL] | grep -i "x-frame\|x-content-type\|referrer-policy\|content-security\|permissions-policy"
+```
+Compare actual headers received vs configuration. A header present in config but absent in the live response indicates a route-pattern mismatch (e.g. only applying to `/` not all paths).
+
+Flag: any header present in config but absent in live response — this means the config is ineffective for that path.
 
 ---
 
 ## Step 5 — Produce report and update backlog
 
-Output format:
+### Output format
 
 ```
-## Security Audit — [DATE]
+## Security Audit — [DATE] — [TARGET]
 
-### Auth & Authorization
-| Check | Routes flagged | Verdict |
-|---|---|---|
-| A1 Missing auth check | N | ✅/❌ |
-| A2 Missing role check | N | ✅/❌ |
-| A3 Missing validation | N | ✅/❌ |
-| A4 Raw input in queries | N | ✅/❌ |
-| A5 Sensitive fields in response | N | ✅/❌ |
+### Auth & Authorization (API routes)
+| # | Check | Routes flagged | Severity | Verdict |
+|---|---|---|---|---|
+| A1 | Missing auth check | N | Critical | ✅/❌ |
+| A2 | Missing role check (privileged routes) | N | Critical | ✅/❌ |
+| A3 | Missing input validation | N | High | ✅/❌ |
+| A4 | Raw input in queries | N | Critical | ✅/❌ |
+| A5 | Sensitive fields in responses | N | High | ✅/❌ |
+| A6 | Cron routes missing secret | N | Critical | ✅/❌ |
+| A7 | Export routes missing role check | N | High | ✅/❌ |
+| A8 | Secret env var exposed client-side | N | Critical | ✅/❌ |
+| A9 | Service/admin credentials in client code | N | Critical | ✅/❌ |
+| A10 | Private storage using public URLs | N | High | ✅/❌ |
+| A11 | Open redirect | N | High | ✅/❌ |
+| A12 | Mass assignment | N | High | ✅/❌ |
 
-### Response Shape
-| Check | Verdict | Notes |
-|---|---|---|
-| R1 PII exposure | ✅/❌ | |
-| R2 Error verbosity | ✅/❌ | |
-| R3 Privilege escalation | ✅/❌ | |
+### Response Shape Review
+| # | Check | Verdict | Notes |
+|---|---|---|---|
+| R1 | PII exposure | ✅/❌ | |
+| R2 | Error message verbosity | ✅/❌ | |
+| R3 | Privilege escalation via response | ✅/❌ | |
+| R4 | Rate limiting on high-value endpoints | ✅/❌ | |
+
+### Dependency CVEs
+| Package | Version | Severity | CVE | Fix available |
+|---|---|---|---|---|
+| [name] | [range] | critical/high | [id] | yes/no |
 
 ### HTTP Headers
-| Header | Present | Verdict |
-|---|---|---|
-| X-Frame-Options | ✅/❌ | |
-| X-Content-Type-Options | ✅/❌ | |
-| Referrer-Policy | ✅/❌ | |
-| Content-Security-Policy | ✅/❌ | |
+| Header | In config | In live response | Verdict |
+|---|---|---|---|
+| Content-Security-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
+| X-Frame-Options | ✅/❌ | ✅/❌ | ✅/❌ |
+| X-Content-Type-Options | ✅/❌ | ✅/❌ | ✅/❌ |
+| Referrer-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
+| Permissions-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
 
-### ❌ Critical findings (N)
-[route — issue — exploit scenario — fix]
+### ❌ Critical findings ([N])
+[route/file — check# — issue — exploit scenario — recommended fix]
 
-### ⚠️ Medium findings (N)
-[route — issue — fix]
+### ⚠️ High findings ([N])
+[route/file — check# — issue — recommended fix]
+
+### 🔶 Medium findings ([N])
+[route/file — check# — issue — recommended fix]
+
+### ℹ️ Low / Informational ([N])
+[route/file — check# — note]
 ```
 
-For each Critical or Medium finding, append to `docs/backlog-refinement.md`:
-- ID: `SEC-[n]`
-- Add to priority index + full detail section
+### Write to backlog
+
+For each Critical or High finding, append to `docs/backlog-refinement.md`:
+- Assign ID: `SEC-[n]`
+- Add to priority index
+- Add full detail section with exploit scenario and recommended fix
 
 ### Severity guide
-- **Critical**: unauthenticated route that exposes or modifies data; raw input in query
-- **High**: privileged route without role check; PII exposed to non-owner
-- **Medium**: missing validation on write route; DB error leaked to client; missing security header
-- **Low**: informational over-exposure; header best-practice gap
+
+- **Critical**: unauthenticated route exposing or modifying data; access control bypass; service/admin credentials in client code; client-exposed secret env vars; cron route with no secret check; raw input in queries; critical CVE in production dependency
+- **High**: privileged route without role check; PII exposed to non-owner; export route without role check; private storage using public URLs; open redirect; mass assignment; high CVE in production dependency
+- **Medium**: missing validation on write route; error message leaking DB internals; missing security header; no rate limiting on high-value endpoints
+- **Low**: header best-practice gap; moderate/low CVE not directly exploitable
 
 After the report, ask: "Do you want me to implement fixes for Critical/High findings?"

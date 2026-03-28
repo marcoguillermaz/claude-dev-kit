@@ -10,26 +10,26 @@ Claude generates, humans decide.
 
 ## Core problem solved
 
-Mancanza di processo condiviso — non è un problema di Claude né dell'umano, è l'assenza di un accordo esplicito su come collaborare. Claude Code amplifica il process debt preesistente.
+Lack of shared process — the issue is neither Claude nor the human, it is the absence of an explicit agreement on how to collaborate. Claude Code amplifies pre-existing process debt.
 
 ## Target users
 
-**Primario**: il Builder PM e il tech lead — persone con abbastanza background tecnico per lavorare end-to-end con Claude Code e che hanno bisogno di un processo riproducibile e revisionabile per farlo in modo affidabile. Il creatore del progetto è un PM: questo non è un target aspirazionale, è il target reale.
+**Primary**: the Builder PM and tech lead — people with enough technical background to work end-to-end with Claude Code who need a reproducible and reviewable process to do so reliably. The project creator is a PM: this is not an aspirational target, it is the real one.
 
-**Secondario**: il team di engineering che usa Claude Code e vuole struttura senza inventarsela da zero.
+**Secondary**: the engineering team using Claude Code that wants structure without having to invent it from scratch.
 
-**Pitch duale**: chi già usa Claude Code ha bisogno di struttura e reviewability. Chi lo valuta ha bisogno di fiducia nel processo. Due messaggi, un prodotto.
+**Dual pitch**: those already using Claude Code need structure and reviewability. Those evaluating it need confidence in the process. Two messages, one product.
 
 ## Product scope (perimeter)
 
-- **Stack**: agnostico di default. Template specializzati (Next.js, Supabase, FastAPI...) come estensioni opzionali — non nel core.
-- **Tier model**: progressione lineare per progetto (si parte da 0, si sale di tier con la complessità). Il Fast Lane esiste sempre per task rapidi in parallelo.
-- **Governance processo + qualità**: intenzionalmente inseparabili. Le audit skills sono parte del processo di chiusura blocco, non un modulo separato.
-- **Permissions**: area di valore ancora inesplorata — da sviluppare, specialmente per Tier L.
-- **Familiarity assumption**: i tier stessi guidano il livello di familiarità atteso. Tier 0 = zero assunzioni. Tier L = utente esperto.
+- **Stack**: agnostic by default. Specialised templates (Next.js, Supabase, FastAPI…) as optional extensions — not in the core.
+- **Tier model**: linear progression per project (start at 0, move up tiers with complexity). The Fast Lane always exists for quick parallel tasks.
+- **Process + quality governance**: intentionally inseparable. Audit skills are part of the block-closure process, not a separate module.
+- **Permissions**: a value area still unexplored — to be developed, especially for Tier L.
+- **Familiarity assumption**: the tiers themselves guide the expected familiarity level. Tier 0 = zero assumptions. Tier L = experienced user.
 
 ## Roadmap
 
-- **Context Builder** — tool separato che PRECEDE claude-dev-kit. Intervista guidata tra Claude e l'utente (PM, Dev, Designer) per definire stack, team, obiettivi, vincoli. Output: contesto strutturato che claude-dev-kit consuma per scaffoldare il tier giusto automaticamente. Questo è il prodotto che abbassa la barriera di ingresso per il Product Trio non-developer.
-- Template specializzati per stack comuni (estensioni, non core)
-- Espansione governance permessi (settings.json allow/deny tier-appropriate)
+- **Context Builder** — a separate tool that PRECEDES claude-dev-kit. A guided interview between Claude and the user (PM, Dev, Designer) to define stack, team, goals, and constraints. Output: structured context that claude-dev-kit consumes to scaffold the right tier automatically. This is the product that lowers the entry barrier for the non-developer Product Trio.
+- Specialised templates for common stacks (extensions, not core)
+- Permissions governance expansion (settings.json allow/deny tier-appropriate)

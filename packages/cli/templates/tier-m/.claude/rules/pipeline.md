@@ -121,7 +121,7 @@ Branch prefix `feature/` activates this pipeline automatically.
 
 - Update `docs/requirements.md` with the approved plan before writing any code.
 - Follow all coding conventions in `CLAUDE.md`.
-- **After every new migration**: apply to remote DB immediately + verify + log in `docs/migrations-log.md`.
+- **After every new migration**: apply to remote DB immediately + verify + log in your project's migrations log (e.g. `docs/migrations-log.md`) if one is tracked.
 - **Security checklist** (before intermediate commit): for every new/modified API route: (1) auth check before any operation, (2) input validated, (3) no sensitive data exposed in response, (4) access control not bypassed. For every new DB table: (5) row-level security enabled and at least one policy covers each relevant role.
 - Run `/simplify` on changed files after writing (skip for trivial 1-file changes).
 
@@ -191,7 +191,7 @@ If either condition is false: **skip this phase and state so explicitly** — do
 **Severity handling — both tracks**:
 - **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
 - **Major**: flag in Phase 6 checklist with planned resolution sprint.
-- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`).
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP
@@ -232,19 +232,23 @@ Only after explicit confirmation:
 5. If Mode A was used: move `docs/specs/[block-name].md` → `docs/specs/archive/[block-name].md` and mark as `Status: IMPLEMENTED`.
 6. **Lessons capture**: review corrections received during this block. Add any non-obvious pattern rule to `tasks/lessons.md` (rule + why it exists). Do not wait for the next block.
 7. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
-7. **Commit sequence**:
+7. **Canonical doc updates** (conditional — only update docs that exist in the project):
+   - If `docs/sitemap.md` exists and the block added/removed routes: update it now.
+   - If `docs/db-map.md` exists and the block changed the schema: update it now.
+   - If `docs/prd/prd.md` exists: update it to reflect this block's outcomes.
+8. **Commit sequence**:
    - **Commit 1** (already done in Phase 3): source files only.
    - **Commit 2 — docs**: `docs/` changes + `README.md` if updated.
    - **Commit 3 — context** (only if updated): `CLAUDE.md` and/or `MEMORY.md` — never mixed with code or docs.
-7. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
+9. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
 
 ## Phase 8.5 — Context review + compact
 
 **C1–C3** (grep-only — delegate to agent):
 Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. Pass the exact grep commands from `.claude/rules/context-review.md` for C1–C3 and the relevant file paths. Collect results; apply any fix in the main session before proceeding.
 
-**C4–C11** (judgment-required — run in main session):
-Execute checks C4 through C11 from `.claude/rules/context-review.md` in order.
+**C4–C12** (judgment-required — run in main session):
+Execute checks C4 through C12 from `.claude/rules/context-review.md` in order.
 Apply any fix before moving to the next check.
 **Complete only when all checks pass.**
 

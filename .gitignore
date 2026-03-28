@@ -50,3 +50,6 @@ packages/cli/package-lock.json
 
 # Integration test output (local only)
 packages/cli/test/integration/output/
+
+# Local-only scripts (not part of published CLI)
+packages/cli/src/commands/sync-from-pilot.js

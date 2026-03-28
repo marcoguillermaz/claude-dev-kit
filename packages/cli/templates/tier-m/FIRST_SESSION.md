@@ -11,7 +11,7 @@ Your development scaffold is ready. This guide walks through setup and your firs
 | `CLAUDE.md` | Project context — fill this in first |
 | `MEMORY.md` | Active plan + lessons (updated by Claude, not by hand) |
 | `.claude/rules/pipeline.md` | 8-phase development pipeline |
-| `.claude/rules/context-review.md` | End-of-block compliance checklist (C1–C11) |
+| `.claude/rules/context-review.md` | End-of-block compliance checklist (C1–C12) |
 | `.claude/settings.json` | Hooks: test gate, weekly arch-audit reminder |
 | `docs/requirements.md` | Product specification |
 | `docs/implementation-checklist.md` | Block-by-block progress tracker |
@@ -80,7 +80,7 @@ Read-only operations (Read, Grep, git status/log) always run without confirmatio
 | 5c — Staging deploy | Merge to staging + smoke test | — |
 | 6 — Outcome checklist | Full verification report | ⏸ STOP |
 | 8 — Block closure | Session file deleted, docs updated, 3-commit sequence | — |
-| 8.5 — Context review | C1–C11 checks + `/compact` | — |
+| 8.5 — Context review | C1–C12 checks + `/compact` | — |
 
 **STOP gates** are hard stops — Claude waits for your explicit confirmation before proceeding.
 

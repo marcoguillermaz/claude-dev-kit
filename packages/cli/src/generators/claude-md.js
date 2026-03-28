@@ -29,6 +29,12 @@ export async function generateClaudeMd(config, targetDir) {
   const commands = buildCommandsBlock(config);
   content = content.replace(/```bash[\s\S]*?```/, commands);
 
+  // Inject rule @-imports and Active Skills section for tier M/L
+  if (tier === 'm' || tier === 'l') {
+    content = injectRuleImports(content);
+    content = injectActiveSkills(content, config);
+  }
+
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
 }
 
@@ -52,6 +58,48 @@ function buildCommandsBlock(config) {
   if (config.typeCheckCommand) lines.push(`${config.typeCheckCommand}  # type check`);
   lines.push('```');
   return lines.join('\n');
+}
+
+/**
+ * Append @-imports for the three shared rule files before the first ##-heading
+ * that doesn't already have them. If they already exist, skip.
+ */
+function injectRuleImports(content) {
+  const imports = [
+    '@.claude/rules/output-style.md',
+    '@.claude/rules/claudemd-standards.md',
+    '@.claude/rules/pipeline-standards.md',
+  ];
+  // If any import already present, skip (idempotent)
+  if (imports.every(i => content.includes(i))) return content;
+
+  const importBlock = '\n' + imports.join('\n') + '\n';
+  // Insert after the first heading line (# ...)
+  return content.replace(/^(# .+)$/m, `$1${importBlock}`);
+}
+
+/**
+ * Append an Active Skills section listing which skills are installed,
+ * based on feature flags from the wizard.
+ */
+function injectActiveSkills(content, config) {
+  // Always installed
+  const active = ['arch-audit', 'skill-dev', 'perf-audit', 'commit'];
+
+  if (config.hasApi !== false) active.push('api-design', 'security-audit');
+  if (config.hasDatabase !== false) active.push('skill-db');
+  if (config.hasFrontend !== false) {
+    active.push('responsive-audit', 'visual-audit', 'ux-audit');
+    if (config.hasDesignSystem !== false) active.push('ui-audit');
+  }
+
+  const section = `\n## Active Skills\n${active.map(s => `- \`/${s}\``).join('\n')}\n`;
+
+  // Append before Environment section, or at end of file
+  if (content.includes('\n## Environment')) {
+    return content.replace('\n## Environment', section + '\n## Environment');
+  }
+  return content + section;
 }
 
 function getMinimalTemplate() {

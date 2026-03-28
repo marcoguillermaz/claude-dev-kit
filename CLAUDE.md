@@ -67,4 +67,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.1.0` — published on npm as `mg-claude-dev-kit`. Four tiers stable. Spec-driven mode (Mode A/B) in Tier M/L.
+`v1.2.0` — published on npm as `mg-claude-dev-kit`. Four tiers stable. Spec-driven mode (Mode A/B) in Tier M/L. Governance layer upgrade: 3 new shared rules, 2 new skills, feature flags, 126 integration checks.
