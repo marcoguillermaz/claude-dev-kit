@@ -4,7 +4,6 @@ import { program } from 'commander';
 import { init } from './commands/init.js';
 import { doctor } from './commands/doctor.js';
 import { upgrade } from './commands/upgrade.js';
-import { syncFromPilot } from './commands/sync-from-pilot.js';
 import chalk from 'chalk';
 
 program
@@ -32,15 +31,6 @@ program
   .description('Update template files to the latest claude-dev-kit version')
   .option('--dry-run', 'Show what would change without writing any files')
   .action(upgrade);
-
-program
-  .command('sync-from-pilot')
-  .description('Extract agnostic governance updates from a pilot project and apply them to CDK templates')
-  .requiredOption('--source <path>', 'Path to the pilot project root')
-  .option('--tier <tier>', 'Target tier(s) to update: m or l (default: both)')
-  .option('--dry-run', 'Show what would change without writing any files')
-  .option('--verbose', 'Show skipped files')
-  .action(syncFromPilot);
 
 program.on('command:*', () => {
   console.error(chalk.red(`Unknown command: ${program.args.join(' ')}`));
