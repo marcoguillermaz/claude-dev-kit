@@ -84,9 +84,12 @@ All endpoints must validate input. Never return raw errors.
 
 **This project uses**:
 - `pipeline.md` — the development workflow (phases, gates, cross-cutting rules)
-- `context-review.md` — the Phase 8.5 compliance checklist (C1–C11)
+- `context-review.md` — the Phase 8.5 compliance checklist (C1–C12)
 - `security.md` — security rules, path-scoped to API/auth files
 - `git.md` — git conventions, commit format, branch rules
+- `output-style.md` — communication rules (Tier M/L)
+- `claudemd-standards.md` — CLAUDE.md hygiene standards S1–S9 (Tier M/L)
+- `pipeline-standards.md` — engineering best practices reference S1–S8 (Tier M/L)
 
 ---
 

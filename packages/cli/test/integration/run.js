@@ -92,6 +92,8 @@ const WIZARD_PLACEHOLDERS = [
   'BACKEND_LEAD',
   'SECURITY_REVIEWER',
   'E2E_COMMAND',
+  'AUDIT_MODEL',
+  'DESIGN_SYSTEM_NAME',
 ];
 // All other placeholders (skill config, ADR template, state machines, etc.)
 // are intentionally left for the user/Claude to fill in at first session.
@@ -216,6 +218,15 @@ const BASE = {
   backendLead: 'backend-lead',
   securityReviewer: 'security-reviewer',
   mode: 'greenfield',
+  // Feature flags (default: all enabled — full install)
+  hasApi: true,
+  hasDatabase: true,
+  hasFrontend: true,
+  hasDesignSystem: true,
+  designSystemName: 'Test UI',
+  auditModel: 'sonnet',
+  hasPrd: false,
+  hasE2E: false,
 };
 
 // ── Scenarios ────────────────────────────────────────────────────────────────
@@ -297,7 +308,7 @@ async function scenarioTierS_minimal() {
 
 async function scenarioTierM() {
   section('Tier M — Greenfield (Standard)');
-  const config = { ...BASE, tier: 'm', isDiscovery: false, e2eCommand: 'npx playwright test' };
+  const config = { ...BASE, tier: 'm', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
   const dir = await scaffold('tier-m', 'm', config);
 
   // Core
@@ -307,6 +318,11 @@ async function scenarioTierM() {
   assertExists(dir, 'MEMORY.md');
   assertExists(dir, '.claude/settings.json');
   assertExists(dir, '.claude/rules/pipeline.md');
+
+  // New shared rule files (tier M/L)
+  assertExists(dir, '.claude/rules/output-style.md');
+  assertExists(dir, '.claude/rules/claudemd-standards.md');
+  assertExists(dir, '.claude/rules/pipeline-standards.md');
 
   // Docs
   assertExists(dir, 'docs/requirements.md');
@@ -318,16 +334,15 @@ async function scenarioTierM() {
   assertExists(dir, '.claude/agents/dependency-scanner.md');
   assertNotExists(dir, '.claude/agents/context-reviewer.md');
 
-  // Skills (M has full set except visual/responsive/ux which are also in M actually)
+  // Skills (M has full set — all flags enabled in BASE)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
-
-  // L-only agent must not appear
-  assertNotExists(dir, '.claude/agents/context-reviewer.md');
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+  assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
 
   assertStopHookPresent(dir);
   assertStopHookResolved(dir);
@@ -336,7 +351,7 @@ async function scenarioTierM() {
 
 async function scenarioTierL() {
   section('Tier L — Greenfield (Full)');
-  const config = { ...BASE, tier: 'l', isDiscovery: false, e2eCommand: 'npx playwright test' };
+  const config = { ...BASE, tier: 'l', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
   const dir = await scaffold('tier-l', 'l', config);
 
   // Core
@@ -346,11 +361,16 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/settings.json');
   assertExists(dir, '.claude/rules/pipeline.md');
 
+  // New shared rule files (tier M/L)
+  assertExists(dir, '.claude/rules/output-style.md');
+  assertExists(dir, '.claude/rules/claudemd-standards.md');
+  assertExists(dir, '.claude/rules/pipeline-standards.md');
+
   // Both agents
   assertExists(dir, '.claude/agents/dependency-scanner.md');
   assertExists(dir, '.claude/agents/context-reviewer.md');
 
-  // Full skill set
+  // Full skill set (all flags enabled in BASE)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
@@ -360,6 +380,8 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertExists(dir, '.claude/skills/ux-audit/SKILL.md');
   assertExists(dir, '.claude/skills/visual-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+  assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
 
   assertStopHookPresent(dir);
   assertStopHookResolved(dir);
@@ -433,6 +455,72 @@ async function scenarioStopHookContent() {
   }
 }
 
+async function scenarioSkillPruning() {
+  section('Skill pruning — no API, no DB, no frontend');
+  const config = {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+    hasApi: false,
+    hasDatabase: false,
+    hasFrontend: false,
+  };
+  const dir = await scaffold('tier-m-pruned', 'm', config);
+
+  // Skills that must be absent
+  assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
+  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+  assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
+  assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
+  assertNotExists(dir, '.claude/skills/ux-audit/SKILL.md');
+  assertNotExists(dir, '.claude/skills/ui-audit/SKILL.md');
+
+  // Skills that must always be present
+  assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
+  assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+}
+
+async function scenarioUiAuditPruning() {
+  section('Skill pruning — frontend yes, design system no → ui-audit absent');
+  const config = {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+    hasFrontend: true,
+    hasDesignSystem: false,
+  };
+  const dir = await scaffold('tier-m-no-design-system', 'm', config);
+
+  // ui-audit requires design system — must be absent
+  assertNotExists(dir, '.claude/skills/ui-audit/SKILL.md');
+
+  // Other frontend skills must be present
+  assertExists(dir, '.claude/skills/responsive-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/visual-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/ux-audit/SKILL.md');
+}
+
+async function scenarioCommitSkillAllTiers() {
+  section('Commit skill — present in tier S');
+  const config = { ...BASE, tier: 's', isDiscovery: false };
+  const dir = await scaffold('tier-s-commit', 's', config);
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+}
+
+async function scenarioNewRuleFiles() {
+  section('New rule files — output-style, claudemd-standards, pipeline-standards in tier S');
+  const config = { ...BASE, tier: 's', isDiscovery: false };
+  const dir = await scaffold('tier-s-rules', 's', config);
+
+  // Tier S also gets the shared rules via common/rules/ copy
+  assertExists(dir, '.claude/rules/output-style.md');
+  assertExists(dir, '.claude/rules/claudemd-standards.md');
+  assertExists(dir, '.claude/rules/pipeline-standards.md');
+}
+
 async function scenarioPipelineGateCount() {
   section('Pipeline gate counts per tier');
 
@@ -482,6 +570,10 @@ async function main() {
   await scenarioInPlaceSafe();
   await scenarioStopHookContent();
   await scenarioPipelineGateCount();
+  await scenarioSkillPruning();
+  await scenarioUiAuditPruning();
+  await scenarioCommitSkillAllTiers();
+  await scenarioNewRuleFiles();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

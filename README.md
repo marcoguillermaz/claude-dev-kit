@@ -56,7 +56,7 @@ npx mg-claude-dev-kit doctor --report # JSON output for CI pipelines
 npx mg-claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 ```
 
-11 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS.
+19 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS, output-style.md, claudemd-standards.md, pipeline-standards.md, commit skill, skills with allowed-tools frontmatter, context-review.md includes C12.
 
 `--report` outputs machine-readable JSON — consumable by CI pipelines and external audit systems. Each check returns `id`, `status` (pass / warn / fail / skip), and `fix` message.
 
@@ -66,8 +66,8 @@ npx mg-claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 npx mg-claude-dev-kit upgrade
 ```
 
-Updates non-destructive files (context-review, security rules, git rules) to the latest template.
-Files with your customizations (CLAUDE.md, pipeline.md, settings.json) are flagged for manual review.
+Updates non-destructive files (context-review, security rules, git rules, output-style, claudemd-standards, pipeline-standards) to the latest template.
+Files with your customizations (CLAUDE.md, pipeline.md, settings.json, all SKILL.md files) are flagged for manual review.
 
 ### Upgrade your tier
 
@@ -126,9 +126,12 @@ your-project/
 │   ├── settings.json               ← permissions + governance hooks
 │   ├── rules/
 │   │   ├── pipeline.md             ← development workflow (tier-appropriate)
-│   │   ├── context-review.md       ← end-of-block compliance checklist
+│   │   ├── context-review.md       ← end-of-block compliance checklist (C1–C12)
 │   │   ├── security.md             ← path-scoped: API/auth files only
-│   │   └── git.md                  ← commit format, branch rules
+│   │   ├── git.md                  ← commit format, branch rules
+│   │   ├── output-style.md         ← communication rules (no openers, plain vocabulary)
+│   │   ├── claudemd-standards.md   ← CLAUDE.md hygiene standards (S1–S9)
+│   │   └── pipeline-standards.md   ← engineering best practices reference (S1–S8)
 │   ├── agents/                     ← custom agent definitions (M/L)
 │   │   ├── dependency-scanner.md   ← Phase 1: parallel dependency scan (M/L)
 │   │   └── context-reviewer.md     ← Phase 8.5: C1-C3 grep checks (L only)
@@ -161,7 +164,7 @@ Two custom agent definitions are scaffolded in `.claude/agents/`. They run as co
 | Agent | Tier | Phase | Role |
 |---|---|---|---|
 | `dependency-scanner` | M L | Phase 1 | Runs all 6 dependency checks in parallel (route hrefs, import consumers, shared type consumers, test references, FK references, access control policies). Returns a structured report with exact file paths. Runs with `Glob`, `Grep`, `Read` only — no write access. |
-| `context-reviewer` | L | Phase 8.5 | Handles grep-only checks C1–C3 (credential patterns, Italian prose, field name staleness) in a single call. C4–C11 (judgment-required) remain in the main session. |
+| `context-reviewer` | L | Phase 8.5 | Handles grep-only checks C1–C3 (credential patterns, unresolved placeholders, field name staleness) in a single call. C4–C12 (judgment-required) remain in the main session. |
 
 **Design principle**: agents are used only where the work is genuinely parallelisable and read-only. Phase 2 (implementation) and all document-update phases remain monolithic — sequential, traceable, human-reviewable.
 
@@ -173,20 +176,24 @@ Slash-command skills scaffolded in `.claude/skills/`. Run any time — no pipeli
 
 | Command | Tier | What it audits | Checks |
 |---|---|---|---|
-| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6 |
-| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers | A1–A5, R1–R3 |
-| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, oversized components | D1–D7, A1–A3 |
-| `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, migration quality | S1–S6, Q1–Q3 |
-| `/api-design` | M L | URL naming, HTTP verbs, response envelope consistency, status codes, pagination | N1–N5, R1–R3 |
-| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, over-fetching | P1–P5, Q1–Q3 |
-| `/responsive-audit` | M L | Layout correctness at 375px / 768px / 1024px via Playwright screenshots | R1–R6 |
-| `/ux-audit` | M L | Task completion, interaction consistency, feedback, navigation, cognitive load | D1–D6 per flow |
-| `/visual-audit` | M L | Typography, spacing, hierarchy, colour discipline, dark-mode polish, micro-polish | V1–V7 per page |
+| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6, C1–C10, P1–P5, T1–T3 |
+| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers, CVE scan | A1–A12, R1–R4 |
+| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, TS suppressions, useEffect antipatterns | D1–D10, J1–J5 |
+| `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, unused indexes, migration quality | S1–S7, Q1–Q5 |
+| `/api-design` | M L | URL naming, HTTP verbs, response envelope, status codes, pagination, validation consistency | N1–N10, P1–P4, V1–V3 |
+| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, query efficiency, tree-shaking | P1–P5, Q1–Q3 |
+| `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, sidebar collapse | BP0, R1–R9 |
+| `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, wasted-click detection | H1–H10, BF1–BF6, D1–D7 |
+| `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, 4px grid, micro-polish | V1–V8 per page |
+| `/commit` | S M L | Conventional Commits 1.0.0 — auto-detects type, scope, description. Three-commit block pattern. | — |
+| `/ui-audit` | M L | Design token compliance, component adoption, accessibility, empty states (requires design system) | Checks 1–17, S1–S8 |
 
 **Notes:**
-- `/arch-audit` is available in all tiers (S/M/L) — it audits the governance layer itself, not your product code.
-- `/responsive-audit`, `/ux-audit`, `/visual-audit` require the dev server running on localhost and the Playwright MCP server configured.
-- All code-audit skills are **audit-only** — no code is modified. Findings go to `docs/backlog-refinement.md`.
+- `/arch-audit` and `/commit` are available in all tiers (S/M/L).
+- `/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit` require the dev server running on localhost and the Playwright MCP server configured.
+- `/ui-audit` is only installed when you answer **Yes** to "Do you use a component library or design system?" at init time.
+- Skills are conditionally installed based on wizard answers: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
+- All code-audit skills are **audit-only** — no code is modified. Findings go to `docs/refactoring-backlog.md`.
 - Before first run: fill in the `## Configuration` placeholders in each `SKILL.md` (paths, test accounts, route lists).
 
 Full check-by-check reference: [`docs/operational-guide.docs`](docs/operational-guide.docs) § Audit skills.
@@ -259,7 +266,7 @@ Every meaningful action has a visible gate:
 - Scope defined before implementation starts — spec document or structured sweep (Phase 1 mode selection — Tier M/L)
 - AI-generated code tagged in git history (attribution — Tier S/M/L)
 - Changes to Claude's own config require human review (CODEOWNERS — Tier S/M/L)
-- Context files audited at every block close (C1–C11 — Tier M/L)
+- Context files audited at every block close (C1–C12 — Tier M/L)
 
 **Interaction Protocol**: all non-trivial requests follow a plan-then-confirm cycle. Claude lists every intended action and waits for an explicit execution keyword (`Execute` · `Proceed` · `Confirmed`) before proceeding. Read-only operations (`Read`, `Grep`, `git status`) are always free.
 
@@ -298,7 +305,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.1.0` — spec-driven mode (Mode A / Mode B) added to Tier M/L Phase 1. Published on npm. Four-tier system stable. Multi-agent orchestration. Three-path init stable.
+`v1.2.0` — governance layer upgrade: new shared rule files, 2 new skills, 7 feature flags, conditional skill installation, context review expanded to C12, doctor expanded to 19 checks. Published on npm. Four-tier system stable.
+
+**v1.2.0 changes**: 3 new shared rule files (`output-style.md`, `claudemd-standards.md`, `pipeline-standards.md`) in `common/rules/` loaded by tier M/L; 2 new skills (`/commit` for all tiers, `/ui-audit` conditional on design system); 7 wizard feature flags (`hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`, `auditModel`, `hasPrd`, `hasE2E`) that conditionally install skills and set `Active Skills` section in CLAUDE.md; all 9 existing skills upgraded with deeper checks (APCA contrast, ISO 9241-11, WCAG 1.4.10, Conventional Commits, CVE scanning, unused indexes, structural judgment); context-reviewer agent updated from Italian prose check to unresolved-placeholder check; context-review C12 added (canonical docs currency); doctor expanded from 13 to 19 checks; integration tests 98 → 126.
 
 **v1.1.0 changes**: spec-driven mode selection at Phase 1 (Tier M/L) — per block, Claude asks whether to use Spec-first (generates `docs/specs/[block-name].md` with EARS acceptance criteria before implementation) or Scope-confirm (existing structured sweep). `docs/specs/archive/` tracks implemented specs. Bug fix: `pipeline.md` was never copied to tier S/M/L scaffold (critical scaffold regression).
 

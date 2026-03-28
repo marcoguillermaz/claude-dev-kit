@@ -144,7 +144,7 @@ Then:
 
 - **First action**: update `docs/requirements.md` with the approved plan before writing code.
 - Follow all coding conventions in `CLAUDE.md`.
-- **After every new migration**: apply to remote DB immediately + verify + log in `docs/migrations-log.md`.
+- **After every new migration**: apply to remote DB immediately + verify + log in your project's migrations log (e.g. `docs/migrations-log.md`) if one is tracked.
 - **Destructive migrations** (`DROP COLUMN`, `DROP TABLE`): write rollback SQL in a comment block at the top of the migration file before applying.
 - **Security checklist** (before intermediate commit): (1) auth check before any operation, (2) input validated, (3) no sensitive data in response, (4) access control not bypassed; (5) new tables have row-level security enabled.
 - Run `/simplify` on changed files after writing (skip for trivial 1-file changes).
@@ -215,7 +215,7 @@ If either condition is false: **skip this phase and state so explicitly** — do
 **Severity handling — both tracks**:
 - **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
 - **Major**: flag in Phase 6 checklist with planned resolution sprint.
-- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`).
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP
@@ -232,8 +232,8 @@ If either condition is false: **skip this phase and state so explicitly** — do
 
 ### Design System compliance (UI blocks)
 - [ ] No hardcoded color values on interactive elements
-- [ ] Empty states use EmptyState component, not bare <p>
-- [ ] New page routes have loading.tsx / skeleton
+- [ ] Empty states handled with a dedicated component, not bare text
+- [ ] New async routes have loading/skeleton states
 - [ ] Icon-only buttons have aria-label
 - [ ] Verified in both light and dark mode
 
@@ -263,21 +263,26 @@ Only after explicit confirmation:
 5. Write ADR in `docs/adr/` if an architectural decision was made.
 6. **Lessons capture**: review corrections received during this block. Add any non-obvious pattern rule to `tasks/lessons.md` (rule + why it exists). Do not wait for the next block.
 7. Update `MEMORY.md` (project root) only if new lessons emerged not already documented.
-7. **Commit sequence** — up to 3 commits, never mixed:
+7. **Canonical doc updates** (conditional — only update docs that exist in the project):
+   - If `docs/sitemap.md` exists and the block added/removed routes: update it now.
+   - If `docs/db-map.md` exists and the block changed the schema: update it now.
+   - If `docs/prd/prd.md` exists: update it to reflect this block's outcomes.
+   - If `docs/contracts/` exists and the block modified a domain entity: update the relevant contract.
+8. **Commit sequence** — up to 3 commits, never mixed:
    - **Commit 1** (already done in Phase 3): source files only.
    - **Commit 2 — docs**: `docs/` changes + `README.md` if updated — separate commit.
    - **Commit 3 — context** (only if updated): `CLAUDE.md` and/or `MEMORY.md` — never mixed with code or docs.
-8. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
+9. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
 
 ## Phase 8.5 — Context review + compact
 
 **C1–C3** (grep-only — delegate to agent):
-Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. It runs C1 (credential patterns), C2 (non-English prose), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
+Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. It runs C1 (credential patterns), C2 (unresolved placeholders), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
 
-**C4–C11** (judgment-required — run in main session):
-Execute checks C4 through C11 from `.claude/rules/context-review.md` in order.
+**C4–C12** (judgment-required — run in main session):
+Execute checks C4 through C12 from `.claude/rules/context-review.md` in order.
 Apply any fix before moving to the next check.
-**Phase complete only when all 11 checks pass** — not when the review "seems thorough".
+**Phase complete only when all 12 checks pass** — not when the review "seems thorough".
 
 **Mandatory closing message** (before `/compact`):
 

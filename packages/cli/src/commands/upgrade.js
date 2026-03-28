@@ -11,6 +11,9 @@ const UPGRADEABLE_FILES = [
   { template: 'common/context-review.md', target: '.claude/rules/context-review.md' },
   { template: 'common/rules/security.md', target: '.claude/rules/security.md' },
   { template: 'common/rules/git.md', target: '.claude/rules/git.md' },
+  { template: 'common/rules/output-style.md', target: '.claude/rules/output-style.md' },
+  { template: 'common/rules/claudemd-standards.md', target: '.claude/rules/claudemd-standards.md' },
+  { template: 'common/rules/pipeline-standards.md', target: '.claude/rules/pipeline-standards.md' },
   { template: 'common/files-guide.md', target: '.claude/files-guide.md' },
   { template: 'common/PULL_REQUEST_TEMPLATE.md', target: '.github/PULL_REQUEST_TEMPLATE.md' },
 ];
@@ -21,6 +24,18 @@ const REVIEW_REQUIRED = [
   '.claude/settings.json',
   'CLAUDE.md',
   'MEMORY.md',
+  // Skills (may contain project-specific customizations added after init)
+  '.claude/skills/arch-audit/SKILL.md',
+  '.claude/skills/visual-audit/SKILL.md',
+  '.claude/skills/ux-audit/SKILL.md',
+  '.claude/skills/responsive-audit/SKILL.md',
+  '.claude/skills/security-audit/SKILL.md',
+  '.claude/skills/skill-dev/SKILL.md',
+  '.claude/skills/skill-db/SKILL.md',
+  '.claude/skills/perf-audit/SKILL.md',
+  '.claude/skills/api-design/SKILL.md',
+  '.claude/skills/commit/SKILL.md',
+  '.claude/skills/ui-audit/SKILL.md',
 ];
 
 export async function upgrade(options) {

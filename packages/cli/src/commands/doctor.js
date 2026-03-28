@@ -161,6 +161,102 @@ const checks = [
       };
     },
   },
+  {
+    id: 'output-style-rule',
+    label: '.claude/rules/output-style.md present (tier M/L)',
+    check: (cwd) => {
+      const hasPipeline = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline.md'));
+      if (!hasPipeline) return { pass: true, skip: true };
+      const exists = fs.existsSync(path.join(cwd, '.claude', 'rules', 'output-style.md'));
+      return {
+        pass: exists,
+        warn: true,
+        fix: 'Run `claude-dev-kit upgrade` to add output-style.md, or copy from the template.',
+      };
+    },
+  },
+  {
+    id: 'claudemd-standards-rule',
+    label: '.claude/rules/claudemd-standards.md present (tier M/L)',
+    check: (cwd) => {
+      const hasPipeline = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline.md'));
+      if (!hasPipeline) return { pass: true, skip: true };
+      const exists = fs.existsSync(path.join(cwd, '.claude', 'rules', 'claudemd-standards.md'));
+      return {
+        pass: exists,
+        warn: true,
+        fix: 'Run `claude-dev-kit upgrade` to add claudemd-standards.md, or copy from the template.',
+      };
+    },
+  },
+  {
+    id: 'pipeline-standards-rule',
+    label: '.claude/rules/pipeline-standards.md present (tier M/L)',
+    check: (cwd) => {
+      const hasPipeline = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline.md'));
+      if (!hasPipeline) return { pass: true, skip: true };
+      const exists = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline-standards.md'));
+      return {
+        pass: exists,
+        warn: true,
+        fix: 'Run `claude-dev-kit upgrade` to add pipeline-standards.md, or copy from the template.',
+      };
+    },
+  },
+  {
+    id: 'commit-skill',
+    label: '.claude/skills/commit/ present (tier M/L)',
+    check: (cwd) => {
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      if (!fs.existsSync(skillsDir)) return { pass: true, skip: true };
+      const exists = fs.existsSync(path.join(skillsDir, 'commit', 'SKILL.md'));
+      return {
+        pass: exists,
+        warn: true,
+        fix: 'Run `claude-dev-kit upgrade` to add the commit skill, or copy from the template.',
+      };
+    },
+  },
+  {
+    id: 'skill-allowed-tools',
+    label: 'Skills using Playwright declare allowed-tools frontmatter',
+    check: (cwd) => {
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      if (!fs.existsSync(skillsDir)) return { pass: true, skip: true };
+      const missingTools = [];
+      try {
+        const skills = fs.readdirSync(skillsDir);
+        for (const skill of skills) {
+          const skillFile = path.join(skillsDir, skill, 'SKILL.md');
+          if (!fs.existsSync(skillFile)) continue;
+          const content = fs.readFileSync(skillFile, 'utf8');
+          const usesPlaywright = content.includes('Playwright') || content.includes('browser_');
+          const hasAllowedTools = content.startsWith('---') && content.includes('allowed-tools');
+          if (usesPlaywright && !hasAllowedTools) missingTools.push(skill);
+        }
+      } catch { return { pass: true, skip: true }; }
+      return {
+        pass: missingTools.length === 0,
+        warn: true,
+        info: missingTools.length > 0 ? missingTools.join(', ') : undefined,
+        fix: `Add 'allowed-tools: Playwright' frontmatter to: ${missingTools.join(', ')}`,
+      };
+    },
+  },
+  {
+    id: 'context-review-c12',
+    label: 'context-review.md includes C12 (canonical docs currency)',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'rules', 'context-review.md');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      const content = fs.readFileSync(p, 'utf8');
+      return {
+        pass: content.includes('C12'),
+        warn: true,
+        fix: 'Run `claude-dev-kit upgrade` to update context-review.md to include C12 (canonical docs currency check).',
+      };
+    },
+  },
 ];
 
 export async function doctor(options = {}) {

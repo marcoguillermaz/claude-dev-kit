@@ -1,26 +1,43 @@
 ---
 name: api-design
-description: API design consistency review. Checks endpoint naming conventions, HTTP verb correctness, response shape consistency, error code standardization, pagination patterns, and input validation presence. Does not cover auth implementation (use /security-audit) or performance (use /perf-audit).
+description: API design consistency review. Checks endpoint naming conventions, HTTP verb correctness, response shape consistency, error code standardization (400/409/422 distinction), pagination patterns, input validation presence, schema validation safety (safeParse vs parse), request body parsing safety, top-level array responses, and RFC 9457 error shape compliance. Does not cover auth implementation (use /security-audit) or performance (use /perf-audit).
 user-invocable: true
 model: sonnet
 context: fork
+argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 ---
 
 You are performing an API design consistency review of the project's API routes.
 
-**Scope**: endpoint naming, HTTP verbs, response shapes, error codes, pagination, validation placement.
+**Scope**: endpoint naming, HTTP verbs, response shapes, error codes, pagination, validation, schema validation safety, request body parsing safety.
 **Out of scope**: auth implementation → `/security-audit` | performance → `/perf-audit` | DB schema → `/skill-db`.
 **Do NOT make code changes. Audit only.**
 **All findings go to `docs/backlog-refinement.md`.**
 
+### Status code reference (source: MDN + RFC 9457)
+- **400** — malformed request: bad JSON, schema parse failure, missing required field
+- **401** — not authenticated (no valid session)
+- **403** — authenticated but lacks permission
+- **404** — resource not found
+- **409** — valid request conflicts with current server state (e.g., approving an already-approved record, duplicate unique value)
+- **422** — semantically invalid data that passes schema validation but violates a business rule
+- **500** — unexpected server error (no internal details in response)
+
 ---
 
-## Configuration (adapt before first run)
+## Step 0 — Target resolution
 
-> Replace these placeholders:
-> - `[API_ROUTES_PATH]` — e.g. `app/api/`, `routes/`, `src/handlers/`
-> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`, `docs/api-routes.md`
-> - `[VALIDATION_LIB]` — e.g. `zod`, `yup`, `joi`, `pydantic`
+Parse `$ARGUMENTS` for a `target:` token.
+
+| Pattern | Meaning |
+|---|---|
+| `target:section:<name>` | Only routes in that functional section (derive from sitemap) |
+| `target:role:<role>` | Routes relevant to that role |
+| `target:page:<route>` | Only that specific route |
+| No argument | Full audit — all API routes |
+
+Announce: `Running api-design — scope: [FULL | target: <resolved>]`
+Apply the target filter to the route inventory in Step 1.
 
 ---
 
@@ -31,27 +48,29 @@ Read `[SITEMAP_OR_ROUTE_LIST]` API routes section. For each route build:
 - Expected request body shape (infer from sitemap or read the route file)
 - Expected response shape
 
-Also read current `docs/backlog-refinement.md` to avoid duplicates.
+Group routes by functional area (derived from sitemap). Also read current `docs/backlog-refinement.md` to avoid duplicates.
 
 ---
 
-## Step 2 — Naming and verb checks (Explore subagent)
+## Step 2 — Naming, verb, and contract checks (Explore subagent)
 
-Launch a **single Explore subagent** (model: haiku) with the full route file list:
+Launch a **single Explore subagent** (model: haiku) with all API route files in scope:
 
-"Run all 5 checks on the provided route files:
+"Run all 10 checks on the provided API route files. For each check: report total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
 
-**CHECK N1 — URL naming consistency**
-Pattern: REST URLs should use kebab-case, plural nouns for collections, and consistent nesting depth.
-Grep: list all route paths. Flag: camelCase or snake_case in URLs, singular resource names for collections (e.g. `/api/user` instead of `/api/users`), inconsistent nesting (some routes 2 levels deep, others 4 levels for the same resource type).
+**CHECK N1 — HTTP verb / action alignment**
+For each route file, identify the exported handler names (GET, POST, PUT, PATCH, DELETE).
+Flag mismatches:
+- POST used for read-only operations (should be GET)
+- PUT used for partial updates (should be PATCH — PUT implies full replacement)
+- DELETE used with a required request body (non-standard)
+- GET handlers that modify DB state (write to DB)
 
-**CHECK N2 — HTTP verb correctness**
-Pattern:
-- GET: must be idempotent and have no body. Never use GET for mutations.
-- POST: create a new resource or trigger an action.
-- PUT: full replace of a resource. PATCH: partial update.
-- DELETE: remove a resource.
-Grep: identify any route handlers where the HTTP method does not match the operation (e.g. GET handler that modifies DB state, POST that fetches without side effects).
+**CHECK N2 — URL structure consistency**
+From route file paths, flag:
+- Inconsistent pluralization (e.g. `/api/user/` vs `/api/users/` mixed across the project)
+- Nested routes that skip a level (e.g. `/api/documents/sign` but also `/api/documents/[id]/sign` for the same resource)
+- Action verbs in URLs that should be HTTP verbs (e.g. `/api/records/approve` should be `PATCH /api/records/[id]` with an action body)
 
 **CHECK N3 — Query parameter vs path parameter usage**
 Pattern: resource identifiers belong in the path (`/api/users/[id]`), not query params (`/api/users?id=...`). Filters and pagination belong in query params, not the path.
@@ -59,19 +78,39 @@ Flag: IDs passed as query params; filter values baked into the URL path.
 
 **CHECK N4 — Validation library usage on write routes**
 Pattern: POST/PUT/PATCH handlers must import `[VALIDATION_LIB]` or contain a schema parse.
-Grep: in all write route files, check for validation import or `safeParse|validate|schema.parse`.
-Flag: any write route without explicit validation.
+Grep: in all write route files, check for validation import or `safeParse|validate|schema.parse|Schema.parse`.
+Flag: any write route without explicit input validation.
 
 **CHECK N5 — Consistent error response shape**
 Pattern: all error responses must use the same JSON shape.
 Grep: in route `catch` blocks and error returns, identify the response shape used (`{ error: message }`, `{ message }`, `{ errors: [] }`, etc.).
-Flag: routes using a different error shape from the majority.
+Flag: routes using a different error shape from the majority. The current project standard should be noted in the report.
 
-**CHECK N6 — Top-level array response**
+**CHECK N6 — Error detail format**
+Pattern: API errors should expose a structured issues array (or equivalent) when validation fails — not raw error objects or opaque messages.
+Grep: validation error catch blocks. Verify errors return `{ error: '...', issues: [...] }` or equivalent structured detail, not raw thrown error objects (`{ error: err }`) or just `{ error: 'Invalid' }` with no field detail.
+Flag: any validation error response that does not identify the failing field.
+
+**CHECK N7 — Framework-specific route parameter handling**
+Pattern: if the framework requires async access to route parameters (e.g. frameworks where `params` is a Promise object), verify that all dynamic route files resolve params asynchronously before destructuring.
+Grep: in files with dynamic path segments (`[id]`, `[slug]`, etc.): direct destructuring from `params` or `context.params` without `await` where the framework requires it.
+Flag: any synchronous `params` access in a framework that requires async access. Note this as a framework-specific check — verify against the project's framework version.
+
+**CHECK N8 — Schema validation safety (.parse() vs .safeParse())**
+Pattern: calling `.parse()` at the API boundary (outside a try/catch block) throws an unhandled exception on invalid input, producing a 500 instead of a 400.
+Grep: `Schema\.parse\(|schema\.parse\(|z\.object.*\.parse\(` outside of `try {` blocks.
+Exclude: `.parse()` calls that are explicitly inside a `try { ... } catch` where `ZodError` (or equivalent) is specifically handled.
+Flag: any bare `.parse()` at the route handler level outside try/catch. Correct pattern: use `.safeParse()` and check `result.success`.
+
+**CHECK N9 — Request body parsing safety**
+Pattern: `await request.json()` or `await req.json()` (or equivalent body parsing) outside a try/catch. A malformed JSON body throws a `SyntaxError` which becomes an unhandled 500 text response.
+Grep: `await request\.json\(\)|await req\.json\(\)|request\.body|req\.body` — for each match, check if it is inside a `try {` block (search within ±10 lines).
+Flag: any body parsing call NOT inside a try/catch.
+
+**CHECK N10 — Top-level array response**
 Pattern: no route should return a bare array as the top-level JSON response.
-Grep: `Response\.json\(\s*\[|json\(\s*\[` across all route files.
-Expected: 0 matches. All list responses must be wrapped in an object (`{ items: [...] }`, not `[...]`). This allows adding `meta`, `pagination`, or `error` fields later without a breaking change.
-Flag: any route returning a top-level array."
+Grep: `Response\.json\(\s*\[|NextResponse\.json\(\s*\[|res\.json\(\s*\[|json\(\s*\[` across all route files.
+Flag: any route returning a bare array at the top level. All list responses must be wrapped in an object (`{ items: [...] }`) — this allows adding `meta`, `pagination`, or `error` fields later without a breaking change."
 
 ---
 
@@ -79,62 +118,137 @@ Flag: any route returning a top-level array."
 
 Read 10 representative route handlers (mix of GET, POST, PATCH, DELETE):
 
-**R1 — Success response envelope**: verify all success responses use the same envelope shape. Expected: consistent pattern like `{ data: ... }` or `{ result: ... }` or direct object — flag any route that deviates.
+**R1 — Success response envelope**: verify all success responses use the same envelope shape. Flag any route that deviates from the project's established pattern (e.g. `{ data: ... }` or `{ result: ... }` or direct object — flag inconsistencies within the project, not against an external standard).
 
 **R2 — HTTP status code correctness**:
 - 200: success with body
 - 201: resource created (POST that creates)
 - 204: success with no body (DELETE, PATCH with no return)
-- 400: malformed request — bad JSON, validation failure, missing required field
+- 400: malformed request — bad JSON, schema validation failure, missing required field
 - 401: not authenticated (no valid session)
 - 403: authenticated but lacks permission
 - 404: resource not found
-- 409: valid request conflicts with current server state (e.g., duplicate, state machine conflict — approving an already-approved record)
+- 409: valid request conflicts with current server state (duplicate, state machine conflict)
 - 422: semantically invalid data that passes schema validation but violates a business rule
 - 500: unexpected server error (no internal details in response)
 
 Flag: routes returning 200 for errors, 500 for validation errors, 400 for state-conflict scenarios (should be 409), or 200 on deletes.
 
-**R3 — Pagination pattern**: for routes returning lists, verify a consistent pagination approach (offset/limit, cursor-based, or page/size) is used. Flag any list route with no pagination (unbounded response).
+**R3 — RFC 9457 compliance note**: check if the project uses RFC 9457 "Problem Details for HTTP APIs" format (`{ type, title, status, detail }`). Note whether the current error shape is consistent with or diverges from RFC 9457. Do not flag as a violation if the project has a consistent non-RFC-9457 shape — note it as an informational recommendation.
 
 ---
 
-## Step 4 — Produce report and update backlog
+## Step 4 — Pagination consistency check (main context)
 
-Output format:
+From the sitemap, identify all `GET` collection endpoints (paths without a single-resource identifier). Read each GET handler. Verify:
+
+**P1 — Consistent pagination shape**
+Expected: a consistent documented project standard, e.g. `{ items: T[], total: number, page: number, pageSize: number }` or cursor-based equivalent.
+Flag any list endpoint using a different shape or returning a bare array (overlap with N10).
+Flag any list endpoint with no pagination at all (returning all records unboundedly).
+
+**P2 — Consistent pagination parameter names**
+Check if all paginated endpoints use the same query param names (e.g. `page`/`pageSize` vs `limit`/`offset` vs `cursor` — pick one convention and apply consistently).
+Flag: mixed pagination parameter naming across endpoints.
+
+**P3 — Default page size**
+Check if a missing page size param falls back to a safe default (e.g. 50). Flag any endpoint with no default that could return unbounded results when the param is omitted.
+
+**P4 — Total count as number (not string)**
+Some DB clients return count values as strings. Verify that paginated endpoints explicitly convert count to a number type before including it in the response.
+Flag: any endpoint returning `total` without an explicit numeric conversion where the source is a DB count query.
+
+---
+
+## Step 5 — Validation consistency check (main context)
+
+Identify all write routes (POST, PUT, PATCH). For each:
+
+**V1 — Input validation completeness**
+Check that the validation schema covers all required fields (fields that are NOT NULL in the DB with no default). Flag any required field missing from the schema.
+
+**V2 — Validation before DB**
+Check that validation always happens BEFORE any DB query. Flag: any handler that reads from DB before validating input.
+
+**V3 — Validation error quality**
+Check that validation failures return `status: 400` with field-level error detail — not just a generic "bad request".
+Preferred response shape: `{ error: 'Validation failed', issues: [...] }` or `flattenError(result.error)` for form-facing endpoints.
+
+---
+
+## Step 6 — Produce report and update backlog
+
+### Output format
 
 ```
-## API Design Audit — [DATE]
+## API Design Audit — [DATE] — [TARGET]
+### Scope: [N] API routes
+### Sources: RFC 9457, MDN HTTP status codes, schema validation library docs
 
-### Naming & Verbs
-| Check | Issues found | Verdict |
-|---|---|---|
-| N1 URL naming consistency | N | ✅/❌ |
-| N2 HTTP verb correctness | N | ✅/❌ |
-| N3 Path vs query params | N | ✅/❌ |
-| N4 Missing validation | N | ✅/❌ |
-| N5 Inconsistent error shape | N | ✅/❌ |
-| N6 Top-level array response | N | ✅/❌ |
+### Pattern Checks (Explore agent)
+| # | Check | Issues | Severity | Verdict |
+|---|---|---|---|---|
+| N1 | HTTP verb alignment | N | Medium | ✅/⚠️ |
+| N2 | URL structure | N | Low | ✅/⚠️ |
+| N3 | Path vs query params | N | Low | ✅/⚠️ |
+| N4 | Missing input validation | N | High | ✅/⚠️ |
+| N5 | Error shape consistency | N | High | ✅/⚠️ |
+| N6 | Error detail format (field-level) | N | Medium | ✅/⚠️ |
+| N7 | Framework param handling | N | High | ✅/⚠️ |
+| N8 | .parse() without safeParse | N | High | ✅/⚠️ |
+| N9 | request.json() without try/catch | N | High | ✅/⚠️ |
+| N10 | Top-level array response | N | Medium | ✅/⚠️ |
 
 ### Response Consistency
-| Check | Issues found | Verdict |
-|---|---|---|
-| R1 Success envelope consistency | N | ✅/❌ |
-| R2 HTTP status code correctness | N | ✅/❌ |
-| R3 Pagination present on lists | N | ✅/❌ |
+| # | Check | Issues | Verdict |
+|---|---|---|---|
+| R1 | Success envelope consistency | N | ✅/⚠️ |
+| R2 | HTTP status code correctness | N | ✅/⚠️ |
+| R3 | RFC 9457 compliance note | — | ℹ️ |
 
-### High findings (N)
-[route — issue — fix]
+### Pagination
+| # | Check | Verdict | Notes |
+|---|---|---|---|
+| P1 | Pagination shape | ✅/⚠️ | |
+| P2 | Parameter names | ✅/⚠️ | |
+| P3 | Default page size | ✅/⚠️ | |
+| P4 | Total count as number | ✅/⚠️ | |
 
-### Medium findings (N)
-[route — issue — fix]
+### Validation
+| # | Check | Verdict | Notes |
+|---|---|---|---|
+| V1 | Input validation completeness | ✅/⚠️ | |
+| V2 | Validation before DB | ✅/⚠️ | |
+| V3 | Validation error quality | ✅/⚠️ | |
+
+### Error Shape Consistency Note
+Current project standard: [identify from audit]. RFC 9457 standard: `{ type, title, status, detail }`.
+Verdict: [Consistent / Inconsistent — N routes diverge]
+Recommendation: [keep current if consistent | standardize to minimum `{ error, status }` | adopt RFC 9457]
+
+### ⚠️ Findings requiring action ([N] total)
+[route — check# — issue — standard to apply — fix]
 ```
 
-For each High finding, append to `docs/backlog-refinement.md`:
-- ID: `API-[n]`
-- Priority index entry + full detail section
+### Write to backlog
+
+For each finding with severity High or above, append to `docs/backlog-refinement.md`:
+- Assign ID: `API-[n]`
+- Add to priority index
+- Add full detail section
 
 ### Severity guide
-- **High**: GET route mutating state; missing validation on write route; unbounded list with no pagination; N6 top-level array response
-- **Medium**: inconsistent error shape; wrong HTTP status code (incl. 400 used for state conflicts instead of 409); ID in query param instead of path
-- **Low**: naming inconsistency (singular vs plural); 422 vs 400 distinction for business rule violations; envelope shape deviation on one route
+
+- **Critical**: framework param handling producing runtime errors (N7); unhandled schema validation throw producing 500 instead of 400 (N8); unhandled body parsing SyntaxError producing 500 (N9)
+- **High**: write route with no input validation (N4); divergent error shapes that client code may silently mishandle (N5); 200 returned with error body; unbounded list endpoint with no pagination (P1/P3)
+- **Medium**: N10 top-level array response; POST not returning 201 on create (R2); 400 used for state-conflict scenarios instead of 409 (R2); N6 error responses without field-level detail; missing validation before DB (V2); mixed pagination param names (P2)
+- **Low**: URL structure issues (N2); ID in query param instead of path (N3); PUT vs PATCH mismatch; total count not converted to number; minor status code pedantry; RFC 9457 divergence when project shape is at least consistent
+
+---
+
+## Execution notes
+
+- Do NOT make any route changes.
+- Do NOT audit auth logic (covered by `/security-audit`).
+- If a pattern is used consistently project-wide (even if non-standard), note it as "consistent but non-standard" — don't flag as a violation unless it causes actual client-side issues.
+- After the report, ask: "Do you want me to align the endpoints that show inconsistencies?"

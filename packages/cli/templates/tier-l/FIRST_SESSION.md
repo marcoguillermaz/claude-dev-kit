@@ -11,7 +11,7 @@ Your development scaffold is ready. This guide walks through setup and your firs
 | `CLAUDE.md` | Project context — fill this in first |
 | `MEMORY.md` | Active plan + lessons (updated by Claude, not by hand) |
 | `.claude/rules/pipeline.md` | 11-phase development pipeline + R1–R4 |
-| `.claude/rules/context-review.md` | End-of-block compliance checklist (C1–C11) |
+| `.claude/rules/context-review.md` | End-of-block compliance checklist (C1–C12) |
 | `.claude/agents/dependency-scanner.md` | Phase 1: parallel dependency scan agent |
 | `.claude/agents/context-reviewer.md` | Phase 8.5: C1–C3 grep checks agent |
 | `.claude/settings.json` | Hooks: test gate, weekly arch-audit reminder, PostCompact |

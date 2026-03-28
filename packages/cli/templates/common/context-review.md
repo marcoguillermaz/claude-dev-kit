@@ -16,12 +16,13 @@ Each check has a specific, verifiable pass/fail condition.
 
 ---
 
-## C2 — Language: no non-English prose in context files
+## C2 — No unresolved placeholders in active files
 
-**Scope**: every non-code-block line in CLAUDE.md and auto-memory MEMORY.md.
-**Allowed**: DB column names, enum values, route paths, UI labels inside quotes, product-specific terms.
-**Pass**: 0 matches of non-English explanatory prose.
-**Fail**: translate flagged text to English.
+**Scope**: every non-code-block line in CLAUDE.md, pipeline.md, and active `.claude/rules/` files.
+**What**: placeholders in the format `[PLACEHOLDER_NAME]` must all be resolved after init. Any remaining `[ALL_CAPS_BRACKETS]` pattern indicates an unfilled wizard value.
+**Run**: `grep -rn "\[[A-Z_]\{3,\}\]" CLAUDE.md .claude/rules/ 2>/dev/null`
+**Pass**: 0 matches (or only matches inside code blocks that are intentional examples).
+**Fail**: fill the placeholder or remove the rule that references it.
 
 ---
 
@@ -106,16 +107,40 @@ For each path found, verify it exists.
 ## C11 — Refactoring backlog: completed items
 
 **What**: items in `docs/refactoring-backlog.md` that correspond to work completed in the current block must be removed. Completed items inflate the backlog and dilute attention on real open issues.
-**Run**: read the current block's Log row in `docs/implementation-checklist.md`. Grep `docs/refactoring-backlog.md` for any ID or topic matching completed work.
+**Run**: read the current block's log row in `docs/implementation-checklist.md`. Grep `docs/refactoring-backlog.md` for any ID or topic matching completed work.
 **Pass**: no completed item remains open.
 **Fail**: remove from priority index AND delete the corresponding detail section.
 
 ---
 
+## C12 — Canonical docs currency
+
+**What**: verify that project canonical docs are up to date with the current codebase state.
+**Scope**: only applies to docs that exist in the project. Skip checks for docs not present.
+
+**If `docs/sitemap.md` exists**:
+- After any block that adds or removes routes, verify every route in the codebase has a corresponding entry in `docs/sitemap.md`.
+- **Pass**: sitemap matches current route inventory.
+- **Fail**: add missing routes (path, roles, layout, key components) before closing.
+
+**If `docs/db-map.md` exists**:
+- After any block that changes the schema, verify the "Last synced" marker at the top of `docs/db-map.md` matches the latest migration.
+- **Pass**: Last synced migration matches the highest-numbered migration file.
+- **Fail**: update Tables, indexes, and access control sections for any migration applied since the last sync.
+
+**If `docs/prd/prd.md` exists**:
+- Verify the PRD reflects the current block's outcomes. A block is not closed until the PRD is current.
+- **Pass**: PRD describes the current state of the feature.
+- **Fail**: update before closing.
+
+**Note**: this check is a backstop — Phase 8 steps are the primary enforcement point. C12 catches drift that slipped through.
+
+---
+
 ## Execution order and completion condition
 
-Run C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10 → C11 in sequence.
+Run C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10 → C11 → C12 in sequence.
 Apply any fix before moving to the next check.
-**The phase is complete when C1–C11 have all passed.** Then run `/compact`.
+**The phase is complete when C1–C12 have all passed.** Then run `/compact`.
 
 > If a check reveals a pattern worth adding to CLAUDE.md or auto-memory, add it before C6 (duplication check) so the dedup pass catches any overlap.
