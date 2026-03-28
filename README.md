@@ -14,7 +14,7 @@
 
 ### Builder PM or tech lead exploring Claude Code
 
-You want to build end-to-end with Claude Code — or evaluate it for your team. You don't need a full pipeline yet. You need to get started, understand what the tool can do, and have a process you can actually review.
+You want to build end-to-end with Claude Code - or evaluate it for your team. You don't need a full pipeline yet. You need to get started, understand what the tool can do, and have a process you can actually review.
 
 **`npx mg-claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
 
