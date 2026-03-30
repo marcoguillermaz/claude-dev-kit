@@ -176,15 +176,15 @@ Slash-command skills scaffolded in `.claude/skills/`. Run any time — no pipeli
 
 | Command | Tier | What it audits | Checks |
 |---|---|---|---|
-| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6, C1–C10, P1–P5, T1–T3 |
-| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers, CVE scan | A1–A12, R1–R4 |
-| `/skill-dev` | M L | Coupling, duplication, dead code, magic values, TS suppressions, useEffect antipatterns | D1–D10, J1–J5 |
+| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6, C1–C17, P1–P5, T1–T5, PE1–PE12, H1a–H1f |
+| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers, CVE scan | A1–A13, R1–R4 |
+| `/skill-dev` | M L | Coupling, duplication, dead code, TS suppressions, useEffect antipatterns, debt-density escalation | D1–D10, J1–J5 |
 | `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, unused indexes, migration quality | S1–S7, Q1–Q5 |
-| `/api-design` | M L | URL naming, HTTP verbs, response envelope, status codes, pagination, validation consistency | N1–N10, P1–P4, V1–V3 |
+| `/api-design` | M L | URL naming, HTTP verbs, response envelope, status codes, pagination, validation, naming conventions | N1–N13, P1–P4, V1–V3 |
 | `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, query efficiency, tree-shaking | P1–P5, Q1–Q3 |
-| `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, sidebar collapse | BP0, R1–R9 |
-| `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, wasted-click detection | H1–H10, BF1–BF6, D1–D7 |
-| `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, 4px grid, micro-polish | V1–V8 per page |
+| `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, VR1–VR6 visual checks | BP0, R1–R9, VR1–VR6 |
+| `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, user confidence framework C1–C5 | H1–H10, BF1–BF6, D1–D7 |
+| `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, Gestalt, typographic quality, interaction states | V1–V11 per page |
 | `/commit` | S M L | Conventional Commits 1.0.0 — auto-detects type, scope, description. Three-commit block pattern. | — |
 | `/ui-audit` | M L | Design token compliance, component adoption, accessibility, empty states (requires design system) | Checks 1–17, S1–S8 |
 
@@ -305,7 +305,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.2.0` — governance layer upgrade: new shared rule files, 2 new skills, 7 feature flags, conditional skill installation, context review expanded to C12, doctor expanded to 19 checks. Published on npm. Four-tier system stable.
+`v1.3.0` — agnostic audit depth upgrade: all 8 code-audit skills expanded with deeper checks, maturity assessments, and backlog decision gates. Integration tests 126 (unchanged — agnostic content only, no new files or wizard changes).
+
+**v1.3.0 changes**: `/arch-audit` expanded from C1–C10 to C1–C17 with two-tier execution (grep-tier haiku batch + judgment-tier main context), PE1–PE12 pipeline compliance, H1a–H1f hook compliance, T4/T5 skill model fitness; `/visual-audit` adds V9 Gestalt compliance, V10 Typographic quality, V11 Interaction state design (score /40 → /55); `/responsive-audit` adds VR1–VR6 visual checks via screenshot analysis; `/skill-dev` adds debt-density escalation + regression risk classification + backlog decision gate; `/api-design` adds N11–N13 naming/resource-modeling, API Maturity Assessment, mode system (audit/remediation/apply); `/perf-audit` adds Performance Maturity Assessment, Quick wins / Strategic refactors sections, mode system; `/security-audit` adds A13 (IDOR), Security Maturity Assessment, AC-1/AC-2 access control table analysis; `/ux-audit` adds D7 user-confidence framework C1–C5 (cancel paths, destructive guards, positive feedback). All `docs/backlog-refinement.md` references normalized to `docs/refactoring-backlog.md`. v1.4.0 planned: `stackProfile` for stack-specific checks (first target: `next-supabase`).
 
 **v1.2.0 changes**: 3 new shared rule files (`output-style.md`, `claudemd-standards.md`, `pipeline-standards.md`) in `common/rules/` loaded by tier M/L; 2 new skills (`/commit` for all tiers, `/ui-audit` conditional on design system); 7 wizard feature flags (`hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`, `auditModel`, `hasPrd`, `hasE2E`) that conditionally install skills and set `Active Skills` section in CLAUDE.md; all 9 existing skills upgraded with deeper checks (APCA contrast, ISO 9241-11, WCAG 1.4.10, Conventional Commits, CVE scanning, unused indexes, structural judgment); context-reviewer agent updated from Italian prose check to unresolved-placeholder check; context-review C12 added (canonical docs currency); doctor expanded from 13 to 19 checks; integration tests 98 → 126.
 

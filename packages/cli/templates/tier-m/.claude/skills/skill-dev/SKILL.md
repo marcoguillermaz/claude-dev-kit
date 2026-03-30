@@ -1,6 +1,6 @@
 ---
 name: skill-dev
-description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, missing or premature abstractions, TypeScript type safety gaps (any, suppressions, floating promises), React antipatterns (useEffect misuse, derived state in effect), silent failure patterns, and structural quality issues (over-large components, prop drilling, client/server boundaries, utility consolidation). Uses docs/sitemap.md as structural guide. Outputs findings to docs/backlog-refinement.md.
+description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, missing or premature abstractions, TypeScript type safety gaps (any, suppressions, floating promises), React antipatterns (useEffect misuse, derived state in effect), silent failure patterns, and structural quality issues (over-large components, prop drilling, client/server boundaries, utility consolidation). Uses docs/sitemap.md as structural guide. Outputs findings to docs/refactoring-backlog.md.
 user-invocable: true
 model: sonnet
 context: fork
@@ -9,11 +9,15 @@ argument-hint: [target:section:<section>|target:page:<route>]
 
 You are performing a code quality and technical debt audit of the project codebase.
 
+**Operating mode**: Audit only — no code changes. Anchor every finding to concrete file paths and code evidence. Do not inflate severity. Distinguish facts from inferences.
+
+**Non-regression constraint — mandatory evaluation criterion**: every proposed fix must preserve the observable behavior and user experience of the affected code. A fix that changes an external API contract, a UI flow, an error message, a side effect (DB write, email send, redirect), or any user-visible output is not a technical debt fix — it is a behavioral change requiring a dedicated pipeline block. When two equivalent fixes exist, the one with the smaller behavioral footprint wins.
+
 **Critical constraints**:
 - `docs/sitemap.md` is the authoritative inventory of every page and component. Use it to build your file target list. Do NOT scan the filesystem freely.
 - Do NOT make code changes. Audit only.
 - Do NOT report issues already in `docs/refactoring-backlog.md` — check for duplicates first.
-- All new findings go to `docs/backlog-refinement.md`.
+- All new findings go to `docs/refactoring-backlog.md`.
 
 ---
 
@@ -46,15 +50,18 @@ Apply the target filter to the file list in Step 1.
 Read in order:
 1. `docs/sitemap.md` — build target file list (pages + key components per route + lib files referenced)
 2. `docs/refactoring-backlog.md` — note existing entries to avoid duplicates
-3. `docs/backlog-refinement.md` — note existing entries to avoid duplicates
 
-Output: structured file list (pages + components + lib utilities). Do not proceed until complete.
+Use the backlog for two purposes:
+- **Deduplication**: do not re-report a finding already present (including resolved ✅ entries — they confirm a fix was applied, not that the pattern cannot recur elsewhere).
+- **Debt density context**: for each file in the target list, count how many open entries it has. A file with 3+ open entries is a **high-debt zone** — new findings there carry elevated priority regardless of check category.
+
+Output: (a) structured file list, (b) high-debt zone map (file → open entry count). Do not proceed until both files are read.
 
 ---
 
 ## Step 2 — Delegate pattern checks to Explore subagent
 
-Launch a **single Explore subagent** (model: haiku) with the full file list from Step 1:
+Launch a **single Explore subagent** (model: haiku) with the full file list from Step 1 — use `run_in_background: true` so Step 3 structural checks can run in parallel:
 
 "Run all 10 checks below on ONLY the provided files. For each check: state total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
 
@@ -118,9 +125,13 @@ Pattern B — console.log in production code:
 Grep: `console\.log\(|console\.warn\(|console\.error\(` in `app/` and `lib/` equivalent directories (excluding test files).
 Expected: 0 matches outside intentional error boundaries. `console.error` in catch blocks is acceptable if also returning an error response."
 
+**Proceed to Step 3 immediately after launching — do not wait for the agent.**
+
 ---
 
 ## Step 3 — Structural judgment checks (main context)
+
+**Begin immediately after launching the Step 2 agent — do not wait for it.**
 
 These require reading and reasoning, not just pattern matching:
 
@@ -139,7 +150,10 @@ Also check for "data clumps" — groups of 3+ related variables always passed to
 Check 1 — 'use client' (or equivalent) at page/layout level when only a subcomponent needs it:
 If a page or layout file is marked as a client component but only uses client-specific features in one subcomponent, it should instead split the interactive part into a named client component and keep the page as a server component. Marking the whole page as a client component forces ALL its imports into the client bundle.
 Check 2 — Context providers placed too high in the component tree when they could be lower.
-Check 3 — Files with server secrets (non-public env vars) imported into client-side files — these should have a server-only guard or be split.
+Check 3 — Server secrets imported into client-side files:
+Grep: any client-marked file (e.g. `'use client'` or equivalent) importing from a utility that accesses environment variables for non-public variables. These utilities need a server-only guard or must be split.
+Check 4 — Missing server-action markers on exported async functions:
+Flag: each exported async function in a non-API file (Server Actions or equivalent) that is missing the appropriate server-execution marker. Without it, the function may be incorrectly treated as a client function.
 Flag each issue with: file path, current placement, recommended refactor.
 
 **J4 — Utility consolidation**
@@ -154,7 +168,9 @@ Read the project's types file(s) (e.g. `lib/types.ts`, `src/types/`). Flag:
 
 ---
 
-## Step 4 — Produce report and update backlog
+## Step 4 — Wait for Step 2 agent, then produce combined report
+
+**Wait for the Step 2 Explore agent to complete before producing the report.**
 
 ### Output format
 
@@ -190,18 +206,48 @@ Read the project's types file(s) (e.g. `lib/types.ts`, `src/types/`). Flag:
 [file:line — check# — issue — suggested fix for each]
 ```
 
-### Write to backlog
-
-For each finding with severity Medium or above, append to `docs/backlog-refinement.md`:
-- Assign ID: `DEV-[n]` (increment from last DEV entry)
-- Add row to priority index table
-- Add full detail section
+For each finding, apply severity modifiers in this order:
+1. **Base severity** — from the check category (Severity guide below)
+2. **Debt-density escalation** — if the finding's file is in the high-debt zone (3+ open entries), escalate by one level (Low → Medium, Medium → High, High → Critical). Document: "Debt-density escalation: N open entries in this file." Do not escalate above Critical.
+3. **Regression risk downgrade** — if the `Regression risk` field is Behavior-adjacent, downgrade severity by one level from step 2. The final severity is what gets written to the backlog.
 
 ### Severity guide
 
-- **Critical**: `@ts-ignore` on a security or data path (D8); floating promise in an auth or data-write event handler (D8)
-- **High**: `any` usage in shared lib utilities; `useEffect` with no dependency array (D9C); empty catch on a DB write (D10); N+1 in a hot path (D3)
+- **Critical**: production/data/security risk or correctness failure; `@ts-ignore` on a security or data path (D8); floating promise in an auth or data-write event handler (D8)
+- **High**: `any` in shared lib utilities; `useEffect` with no dependency array (D9C); empty catch on a DB write (D10); N+1 in a hot path (D3); dead export in shared lib
 - **Medium**: `useEffect` derived-state antipattern (D9A); over-large component >300 lines with 4+ responsibilities (J1); client component marker at page level when only a subcomponent needs it (J3); magic business-rule numbers (D4); console.log in production (D10); data clumps >3 always-grouped props (J2)
 - **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings with existing type definitions; single dead export
 
-After producing the report, ask: "Do you want me to implement the High/Critical fixes identified?"
+### Backlog decision gate
+
+Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
+
+```
+Found N findings Medium or above. Which to add to the backlog?
+[1] [CRITICAL] DEV-? — file:line — one-line description
+[2] [HIGH]     DEV-? — file:line — one-line description
+[3] [MEDIUM]   DEV-? — file:line — one-line description
+...
+```
+
+Reply with the numbers to include (e.g. "1 2 4"), "all", or "none".
+**Wait for explicit user response before writing anything.**
+
+Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
+- Check existing entries first to avoid duplicates — assign `DEV-[n]` incrementing from the last DEV entry
+- Add row to the priority index table
+- Add full detail section using this format:
+
+### [ID] — [Title]
+**Skill**: /skill-dev
+**Severity**: Critical | High | Medium | Low
+**File(s)**: path/to/file.ts:line
+**Finding**: concrete description anchored to file:line evidence
+**Suggested fix**: smallest behavior-preserving change
+**Regression risk**: Behavior-preserving | Behavior-adjacent
+**Debt context**: [N open entries in this file — debt-density escalation applied | No prior debt]
+**Added**: [YYYY-MM-DD]
+
+Each entry **must** include a `Regression risk` field:
+- **Behavior-preserving** (pure refactoring — no change to external contracts, UI, DB writes): proceed at the assigned severity.
+- **Behavior-adjacent** (fix touches a path that could affect observable output): downgrade severity by one level AND add note `"Requires dedicated pipeline block — not a fast-lane fix."` List existing tests that cover the affected path — if none, add `"No coverage — regression risk unverifiable."` and treat as Critical regardless of check category.

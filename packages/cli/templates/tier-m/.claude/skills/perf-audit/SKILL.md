@@ -4,7 +4,7 @@ description: Performance audit. Checks server/client rendering boundaries, bundl
 user-invocable: true
 model: sonnet
 context: fork
-argument-hint: [target:section:<section>|target:page:<route>]
+argument-hint: [target:section:<section>|target:page:<route>|mode:audit|mode:apply]
 ---
 
 You are performing a performance audit of the project.
@@ -12,7 +12,7 @@ You are performing a performance audit of the project.
 **Scope**: rendering architecture, bundle size, re-renders, image handling, API query efficiency, caching patterns.
 **Out of scope**: Lighthouse public scores, Core Web Vitals public metrics, SEO, robots.txt — adapt scope based on whether this is a public or internal app.
 **Do NOT make code changes. Audit only.**
-**All findings go to `docs/backlog-refinement.md`.**
+**All findings go to `docs/refactoring-backlog.md`.**
 
 ---
 
@@ -26,7 +26,13 @@ Parse `$ARGUMENTS` for a `target:` token.
 | `target:page:<route>` | Focus on the page and its component tree |
 | No argument | Full audit — all files from sitemap |
 
-Announce: `Running perf-audit — scope: [FULL | target: <resolved>]`
+**Operating modes:**
+| Mode | Behavior |
+|---|---|
+| `mode:audit` (default) | Report only — no code changes |
+| `mode:apply` | Apply focused, non-breaking fixes (lazy loading wrappers, `Promise.all` parallelization). Describe each change before applying. |
+
+Announce: `Running perf-audit — scope: [FULL | target: <resolved>] — mode: [audit | apply]`
 Apply the target filter to the file list in Step 1.
 
 ---
@@ -49,7 +55,7 @@ Read `[SITEMAP_OR_ROUTE_LIST]` — note:
 - Server vs client component markers (e.g. `'use client'`) if using a framework with a client/server split
 - Data fetching patterns per route
 
-Read `docs/backlog-refinement.md` to avoid duplicates.
+Read `docs/refactoring-backlog.md` to avoid duplicates.
 
 ---
 
@@ -73,9 +79,11 @@ Grep: `import.*from` in client component files. Flag any imports of known-heavy 
 Flag: each import with the library name and whether a server-side alternative pattern exists.
 
 **CHECK B3 — Data fetching in client components**
-Pattern: `useEffect` with a fetch or DB call inside a client component, when the same data could be fetched server-side.
-Grep: `useEffect` blocks containing `fetch(`, `await`, or ORM/DB client calls. Flag any that perform data loading (not event-driven updates).
-These defeat server rendering. Consider server components with Suspense, or a client-side data fetching library with proper caching.
+Two-pass approach:
+Pass 1 — grep `useEffect` in all client component files to find files with useEffect usage.
+Pass 2 — for each file found, read up to 10 lines after each `useEffect(` call. Flag any useEffect whose callback body contains `fetch(`, `.from(`, or equivalent DB client call within those 10 lines.
+The single-line regex misses multi-line patterns where the fetch call is on the line after the opening brace.
+Flag: `useEffect` calls that fetch data — these defeat server rendering. Consider Server Components with Suspense, or a client-side data fetching library with proper caching.
 
 **CHECK B4 — Unstable callbacks on memoized child components**
 Grep: inline `() =>` arrow functions passed as props to components that are known to be memoized (check if child is wrapped in `memo()`). Pattern: `onX={()=>` where the prop is passed to a component declared with `memo(`.
@@ -84,10 +92,8 @@ Note: do NOT flag `onClick` on native HTML elements.
 
 **CHECK B5 — Serial await waterfall in server-side code**
 Pattern: multiple consecutive `await` calls for independent data sources in the same async function.
-Grep in server-side files (files WITHOUT client component markers): lines matching `const .* = await (fetch|db\.|svc\.)` that appear consecutively (within 5 lines of each other) where the first result is not an input to the second call.
-Flag: each pair of sequential awaits that could be parallelised with `Promise.all`. Sequential waterfall adds full latency of each call one after the other.
-Example of violation: `const a = await getA(); const b = await getB();` where b doesn't depend on a.
-Example of correct: `const [a, b] = await Promise.all([getA(), getB()]);`
+Grep in server-side files: lines matching `const .* = await (fetch|db\.|svc\.|[A-Z][a-zA-Z]+\.get|[A-Z][a-zA-Z]+\.find)` that appear consecutively (within 5 lines of each other) without the first result being an input to the second call.
+Flag: each pair of sequential awaits that could be parallelised with `Promise.all`. A sequential waterfall adds full latency of each call; `Promise.all` runs them concurrently.
 
 **CHECK B6 — Missing caching on server-side data fetching calls**
 Pattern: server-side data fetches that run on every request without any caching mechanism.
@@ -181,15 +187,44 @@ Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list �
 | Q2 | Select * | N | ✅/⚠️ |
 | Q3 | N+1 patterns | N | ✅/⚠️ |
 
+### Performance maturity assessment
+| Dimension | Score | Notes |
+|---|---|---|
+| Client bundle health (B1, B2) | 🟢/🟡/🔴 | [summary] |
+| Data-fetching quality (B3, B5, B6) | 🟢/🟡/🔴 | [summary] |
+| Async/query efficiency (Q1, Q2, Q3) | 🟢/🟡/🔴 | [summary] |
+| Image/layout stability (B7) | 🟢/🟡/🔴 | [summary] |
+
+Scoring: 🟢 = 0 High/Critical findings · 🟡 = 1-2 Medium findings · 🔴 = any High or Critical finding
+
+### Quick wins (implement in < 1 hour each)
+[findings that are isolated, low-risk, and self-contained — e.g. add Promise.all, add lazy loading wrapper]
+
+### Strategic refactors (require planning)
+[findings that affect multiple files or need architectural decisions — e.g. move data fetch to Server Component]
+
 ### Findings requiring action ([N] total)
 [file:line — check# — issue — impact — suggested fix for each]
 ```
 
-### Write to backlog
+### Backlog decision gate
 
-For each finding with severity Medium or above, append to `docs/backlog-refinement.md`:
-- ID: `PERF-[n]`
-- Priority index entry + full detail section
+Present all findings with severity Medium or above as a numbered decision list:
+
+```
+Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+[1] [CRITICAL] PERF-? — file:line — one-line description
+[2] [HIGH]     PERF-? — file:line — one-line description
+[3] [MEDIUM]   PERF-? — file:line — one-line description
+```
+
+Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+**Wait for explicit user response before writing anything.**
+
+Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
+- Assign ID: `PERF-[n]`
+- Add row to the priority index table
+- Add full detail section: `### PERF-N — [title]` with File, Issue, Impact, Suggested fix
 
 ### Severity guide
 - **Critical**: server-only library (document processing, PDF, spreadsheet) discovered in client bundle (B2); N+1 in dashboard/list endpoints under expected load (Q3)
@@ -198,3 +233,5 @@ For each finding with severity Medium or above, append to `docs/backlog-refineme
 - **Low**: unstable callbacks on memoized children (B4); minor code-splitting opportunities; bundle analyzer not configured (P1)
 
 After the report, ask: "Do you want me to implement the High/Critical optimizations identified?"
+- In `mode:audit` (default): do NOT make any code changes. After the report, ask: "Do you want me to implement the High/Critical optimizations?"
+- In `mode:apply`: apply only the fixes listed in Quick wins. Describe each change before writing it. Do not apply Strategic refactors without explicit user confirmation.

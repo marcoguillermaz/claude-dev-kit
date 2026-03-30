@@ -13,7 +13,7 @@ You are performing a security audit of the project's API routes and data layer.
 **Scope**: API routes, middleware/proxy, access control policies, input validation, response shapes, environment variables, dependencies, HTTP headers.
 **Out of scope**: SEO, public indexing, performance, auth architecture design.
 **Do NOT make code changes. Audit only.**
-**All findings go to `docs/backlog-refinement.md`.**
+**All findings go to `docs/refactoring-backlog.md`.**
 
 ---
 
@@ -39,7 +39,7 @@ Read `[SITEMAP_OR_ROUTE_LIST]` to extract the full list of API routes.
 Also read:
 - Middleware or proxy file — understand the auth layer and what it protects
 - Auth helper file (`[AUTH_HELPER]`) — understand session/token mechanics
-- `docs/backlog-refinement.md` — avoid reporting duplicates
+- `docs/refactoring-backlog.md` — avoid reporting duplicates
 
 Output: list of routes grouped as:
 - **Public** (no auth required)
@@ -56,7 +56,7 @@ Apply target scope from Step 0 before proceeding.
 
 Launch a **single Explore subagent** (model: haiku) with the full route file list:
 
-"Run all 12 checks on the provided route files and adjacent files as noted.
+"Run all 13 checks on the provided route files and adjacent files as noted.
 
 **CHECK A1 — Missing auth check at route entry**
 Pattern: route handler does NOT call `[AUTH_HELPER]` or equivalent within the first 15 lines.
@@ -119,7 +119,14 @@ Pattern:
   Step 1: find lines that parse the full request body (e.g. `await req.json()`, `request.body`)
   Step 2: in the same file, check if the raw body object is passed directly to a DB write (`.insert(body)`, `.update(body)`, or equivalent) without explicit field destructuring.
 Flag: any route where the raw request body object is passed wholesale to a DB write without explicit field allowlisting.
-Note: routes that pass a validated schema result (not the raw body) to the DB write are safe — exclude those."
+Note: routes that pass a validated schema result (not the raw body) to the DB write are safe — exclude those.
+
+**CHECK A13 — Horizontal access control / IDOR**
+For each dynamic route (routes with path parameters like `[id]`, `[slug]`, etc.):
+Step 1 — Verify that the DB query filters by the caller's identity OR ownership, not just by the URL parameter alone.
+Insecure pattern: `.eq('id', params.id)` as the ONLY filter — any authenticated user can access any record by guessing or enumerating IDs.
+Secure pattern: `.eq('id', params.id).eq('owner_id', session.user.id)` or equivalent ownership/scope filter.
+Flag: each route where ownership/scope is not enforced server-side in the query."
 
 ---
 
@@ -161,6 +168,20 @@ If `npm audit` exits with non-zero but the JSON output is parseable, continue. I
 
 ---
 
+## Step 3c — Code-level access control completeness check
+
+Complement the dependency CVE audit (Step 3b) with a grep-based check on your project's data access layer.
+
+**AC-1 — Tables or resources with access control disabled**
+Grep migration files or ORM model definitions for table/collection creation. For each, check if a corresponding access control policy (RLS, row-level security, or equivalent) is enabled.
+Flag: any table where access control is absent and the table contains user data or sensitive business data.
+
+**AC-2 — Write policies missing enforcement clause**
+For databases that support it (PostgreSQL RLS, etc.): check if INSERT/UPDATE policies include both a visibility clause (USING) AND a write enforcement clause (WITH CHECK).
+Flag: any write policy with only USING but no WITH CHECK — this allows inserting/updating rows the user cannot see.
+
+---
+
 ## Step 4 — HTTP security headers
 
 **Static check**: read the server config file (e.g. `next.config.ts`, `server.ts`, `nginx.conf`). Verify these headers are configured:
@@ -192,6 +213,16 @@ Flag: any header present in config but absent in live response — this means th
 ```
 ## Security Audit — [DATE] — [TARGET]
 
+### Security maturity assessment
+| Dimension | Rating | Notes |
+|---|---|---|
+| Auth coverage | low / medium / high | [summary] |
+| Authorization quality (RBAC + ownership) | low / medium / high | [summary] |
+| Input validation coverage | low / medium / high | [summary] |
+| Data exposure control | low / medium / high | [summary] |
+| Config hardening (headers) | low / medium / high | [summary] |
+| Release readiness | low / medium / high | [summary] |
+
 ### Auth & Authorization (API routes)
 | # | Check | Routes flagged | Severity | Verdict |
 |---|---|---|---|---|
@@ -207,6 +238,7 @@ Flag: any header present in config but absent in live response — this means th
 | A10 | Private storage using public URLs | N | High | ✅/❌ |
 | A11 | Open redirect | N | High | ✅/❌ |
 | A12 | Mass assignment | N | High | ✅/❌ |
+| A13 | Horizontal access control / IDOR | N | High | ✅/❌ |
 
 ### Response Shape Review
 | # | Check | Verdict | Notes |
@@ -241,11 +273,29 @@ Flag: any header present in config but absent in live response — this means th
 
 ### ℹ️ Low / Informational ([N])
 [route/file — check# — note]
+
+### Quick wins
+[findings that are isolated, low-risk fixes — e.g. add ownership filter, add Zod enum on query param]
+
+### Strategic refactors
+[findings requiring broader changes — e.g. state machine enforcement across all transition routes, centralized response serializers]
 ```
 
-### Write to backlog
+### Backlog decision gate
 
-For each Critical or High finding, append to `docs/backlog-refinement.md`:
+Present all findings with severity Medium or above as a numbered decision list:
+
+```
+Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+[1] [CRITICAL] SEC-? — route/file — one-line description
+[2] [HIGH]     SEC-? — route/file — one-line description
+[3] [MEDIUM]   SEC-? — route/file — one-line description
+```
+
+Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+**Wait for explicit user response before writing anything.**
+
+Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - Assign ID: `SEC-[n]`
 - Add to priority index
 - Add full detail section with exploit scenario and recommended fix

@@ -4,7 +4,7 @@ description: API design consistency review. Checks endpoint naming conventions, 
 user-invocable: true
 model: sonnet
 context: fork
-argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
+argument-hint: [target:section:<section>|target:role:<role>|mode:audit|mode:remediation|mode:apply]
 ---
 
 You are performing an API design consistency review of the project's API routes.
@@ -12,7 +12,7 @@ You are performing an API design consistency review of the project's API routes.
 **Scope**: endpoint naming, HTTP verbs, response shapes, error codes, pagination, validation, schema validation safety, request body parsing safety.
 **Out of scope**: auth implementation → `/security-audit` | performance → `/perf-audit` | DB schema → `/skill-db`.
 **Do NOT make code changes. Audit only.**
-**All findings go to `docs/backlog-refinement.md`.**
+**All findings go to `docs/refactoring-backlog.md`.**
 
 ### Status code reference (source: MDN + RFC 9457)
 - **400** — malformed request: bad JSON, schema parse failure, missing required field
@@ -36,7 +36,14 @@ Parse `$ARGUMENTS` for a `target:` token.
 | `target:page:<route>` | Only that specific route |
 | No argument | Full audit — all API routes |
 
-Announce: `Running api-design — scope: [FULL | target: <resolved>]`
+**Mode** (controls whether changes are made):
+| Token | Behavior |
+|---|---|
+| `mode:audit` (default) | Report findings only. No code changes. Write to backlog. |
+| `mode:remediation` | Produce a prioritized improvement plan with migration guidance. No code changes. |
+| `mode:apply` | Make focused, non-breaking fixes to routes only. Prefer one-liner diffs. Breaking changes require explicit user confirmation. |
+
+Announce: `Running api-design — scope: [FULL | target: <resolved>] — mode: [audit|remediation|apply]`
 Apply the target filter to the route inventory in Step 1.
 
 ---
@@ -48,15 +55,17 @@ Read `[SITEMAP_OR_ROUTE_LIST]` API routes section. For each route build:
 - Expected request body shape (infer from sitemap or read the route file)
 - Expected response shape
 
-Group routes by functional area (derived from sitemap). Also read current `docs/backlog-refinement.md` to avoid duplicates.
+Group routes by functional area (derived from sitemap). Also read current `docs/refactoring-backlog.md` to avoid duplicates.
 
 ---
 
-## Step 2 — Naming, verb, and contract checks (Explore subagent)
+## Step 2 — Pattern checks (two Explore subagents, run in parallel)
 
-Launch a **single Explore subagent** (model: haiku) with all API route files in scope:
+Split into two parallel Explore subagents (model: haiku) to stay within context budget. Launch both at once.
 
-"Run all 10 checks on the provided API route files. For each check: report total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
+**Subagent A** handles: N1, N2, N3, N4, N5, N6, N7
+
+"Run checks N1–N7 on the provided API route files. For each check: report total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
 
 **CHECK N1 — HTTP verb / action alignment**
 For each route file, identify the exported handler names (GET, POST, PUT, PATCH, DELETE).
@@ -94,23 +103,57 @@ Flag: any validation error response that does not identify the failing field.
 **CHECK N7 — Framework-specific route parameter handling**
 Pattern: if the framework requires async access to route parameters (e.g. frameworks where `params` is a Promise object), verify that all dynamic route files resolve params asynchronously before destructuring.
 Grep: in files with dynamic path segments (`[id]`, `[slug]`, etc.): direct destructuring from `params` or `context.params` without `await` where the framework requires it.
-Flag: any synchronous `params` access in a framework that requires async access. Note this as a framework-specific check — verify against the project's framework version.
+Flag: any synchronous `params` access in a framework that requires async access. Note this as a framework-specific check — verify against the project's framework version."
+
+**Subagent B** handles: N8, N9, N10, N11, N12, N13
+
+"Run checks N8–N13 on the provided API route files. For each check: report total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
 
 **CHECK N8 — Schema validation safety (.parse() vs .safeParse())**
-Pattern: calling `.parse()` at the API boundary (outside a try/catch block) throws an unhandled exception on invalid input, producing a 500 instead of a 400.
-Grep: `Schema\.parse\(|schema\.parse\(|z\.object.*\.parse\(` outside of `try {` blocks.
-Exclude: `.parse()` calls that are explicitly inside a `try { ... } catch` where `ZodError` (or equivalent) is specifically handled.
-Flag: any bare `.parse()` at the route handler level outside try/catch. Correct pattern: use `.safeParse()` and check `result.success`.
+Pattern: calling `.parse()` outside a try/catch block throws an unhandled exception on invalid input.
+Two-pass approach:
+1. Grep for `.parse(` to get candidate lines.
+2. For each candidate: check if the SAME FILE contains at least one `try {` that precedes it. If the file has zero `try {` blocks → definite violation. If the file has try blocks → mark as "review needed" (cannot determine nesting without AST).
+Flag: files with no try/catch at all as definite violations. Others as "review needed".
 
 **CHECK N9 — Request body parsing safety**
-Pattern: `await request.json()` or `await req.json()` (or equivalent body parsing) outside a try/catch. A malformed JSON body throws a `SyntaxError` which becomes an unhandled 500 text response.
-Grep: `await request\.json\(\)|await req\.json\(\)|request\.body|req\.body` — for each match, check if it is inside a `try {` block (search within ±10 lines).
-Flag: any body parsing call NOT inside a try/catch.
+Two-pass approach (avoids false positives from ±10 line heuristic):
+Pass 1: Grep all files containing `await request\.json\(\)|await req\.json\(\)` — collect file list.
+Pass 2: For each file, check if the file also contains `try {`.
+- File has `request.json()` AND zero `try {` blocks → **definite violation** — flag.
+- File has `request.json()` AND has `try {` blocks → **mark as "review needed"** (try may wrap json or may not).
+Report separately: N definite violations + M files needing review.
 
 **CHECK N10 — Top-level array response**
 Pattern: no route should return a bare array as the top-level JSON response.
 Grep: `Response\.json\(\s*\[|NextResponse\.json\(\s*\[|res\.json\(\s*\[|json\(\s*\[` across all route files.
-Flag: any route returning a bare array at the top level. All list responses must be wrapped in an object (`{ items: [...] }`) — this allows adding `meta`, `pagination`, or `error` fields later without a breaking change."
+Flag: any route returning a bare array at the top level. All list responses must be wrapped in an object (`{ items: [...] }`) — this allows adding `meta`, `pagination`, or `error` fields later without a breaking change.
+
+**CHECK N11 — Filtering and sorting parameter naming conventions**
+Step 1 — Inventory: collect ALL query parameter names used across routes. Group by semantic role:
+- Pagination: `page`, `pageSize`, `limit`, `offset`, `cursor`
+- Sort: `sort`, `sortBy`, `order`, `orderBy`
+- Filter: any domain-field name used as filter
+- Search/text: `q`, `search`, `query`, `keyword`
+Step 2 — Convention derivation: count usage frequency for each semantic role. The most-used name in each group IS the project convention.
+Step 3 — Flag deviations: any param name in a semantic group that differs from the majority convention.
+Step 4 — Case style: if the majority of params are camelCase, flag any snake_case param (and vice versa).
+Report the derived convention and list all deviations from it.
+
+**CHECK N12 — Field naming consistency in request/response bodies**
+For each route file: extract field names from Zod schema declarations (POST/PATCH body schemas) for request fields. For response keys, read the JSON response object structure.
+Flag:
+- Boolean field naming: inconsistent prefix (`is_`, `has_`) usage within the same entity type
+- Note: DB column names (snake_case) are NOT violations. Only flag fields in the JSON request/response contract layer.
+
+**CHECK N13 — Resource modeling: action endpoint overuse and nesting depth**
+From route file paths (no code read needed), analyze URL structure:
+Flag action endpoints that could be replaced by a resource + HTTP verb:
+- Pattern: `/api/[resource]/[id]/[verb]` where verb is `approve`, `reject`, `sign`, `send`, `publish`, `archive`, `restore`, `revoke` — note these as ACCEPTED if the verb maps to a single state transition
+- Pattern: `/api/[resource]/[verb]-bulk` or `/api/[resource]/bulk-[verb]` — flag naming inversion if inconsistent across resources
+Flag deep nesting (3+ levels):
+- Pattern: `/api/[a]/[id]/[b]/[id]/[c]` — challenge whether nesting is justified by strict ownership
+Count total action-style path segments vs total resource segments. Report ratio."
 
 ---
 
@@ -198,6 +241,9 @@ Preferred response shape: `{ error: 'Validation failed', issues: [...] }` or `fl
 | N8 | .parse() without safeParse | N | High | ✅/⚠️ |
 | N9 | request.json() without try/catch | N | High | ✅/⚠️ |
 | N10 | Top-level array response | N | Medium | ✅/⚠️ |
+| N11 | Filtering/sorting param conventions | N | Low | ✅/⚠️ |
+| N12 | Field naming consistency | N | Medium | ✅/⚠️ |
+| N13 | Action endpoint overuse & nesting depth | N | Low | ✅/⚠️ |
 
 ### Response Consistency
 | # | Check | Issues | Verdict |
@@ -226,16 +272,45 @@ Current project standard: [identify from audit]. RFC 9457 standard: `{ type, tit
 Verdict: [Consistent / Inconsistent — N routes diverge]
 Recommendation: [keep current if consistent | standardize to minimum `{ error, status }` | adopt RFC 9457]
 
+### API Design Maturity Assessment
+| Dimension | Rating | Notes |
+|---|---|---|
+| HTTP semantics | low / medium / high | [summary] |
+| Response contract quality | low / medium / high | [summary] |
+| Error model quality | low / medium / high | [summary] |
+| Pagination consistency | low / medium / high | [summary] |
+| Field naming consistency | low / medium / high | [summary] |
+| Resource modeling | low / medium / high | [summary] |
+
+### Detected API Conventions (current project state)
+- Routing style: [e.g. REST resource-oriented]
+- Naming style: [e.g. camelCase params]
+- Error format: [e.g. { error: string } — consistent/inconsistent]
+- Pagination pattern: [e.g. { items, total, page, pageSize } — partial/full]
+- Validation strategy: [e.g. Zod safeParse before DB — X% of write routes]
+
 ### ⚠️ Findings requiring action ([N] total)
 [route — check# — issue — standard to apply — fix]
 ```
 
-### Write to backlog
+### Backlog decision gate
 
-For each finding with severity High or above, append to `docs/backlog-refinement.md`:
-- Assign ID: `API-[n]`
-- Add to priority index
-- Add full detail section
+Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
+
+```
+Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+[1] [CRITICAL] API-? — route/file — one-line description
+[2] [HIGH]     API-? — route/file — one-line description
+[3] [MEDIUM]   API-? — route/file — one-line description
+```
+
+Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+**Wait for explicit user response before writing anything.**
+
+Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
+- Assign ID: `API-[n]` (increment from last API entry)
+- Add row to the priority index table
+- Add full detail section: `### API-N — [title]` with File, Issue, Impact, Suggested fix
 
 ### Severity guide
 
@@ -252,3 +327,5 @@ For each finding with severity High or above, append to `docs/backlog-refinement
 - Do NOT audit auth logic (covered by `/security-audit`).
 - If a pattern is used consistently project-wide (even if non-standard), note it as "consistent but non-standard" — don't flag as a violation unless it causes actual client-side issues.
 - After the report, ask: "Do you want me to align the endpoints that show inconsistencies?"
+- **Mode: audit / remediation**: Do NOT make any route changes.
+- **Mode: apply**: make only non-breaking, focused fixes (e.g. 200→201, error shape corrections). Flag every breaking change explicitly before touching it. Do not rewrite handler logic.

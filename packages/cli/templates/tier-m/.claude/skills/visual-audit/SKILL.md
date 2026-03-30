@@ -1,6 +1,6 @@
 ---
 name: visual-audit
-description: Evaluate the aesthetic quality and visual polish of app pages. Takes live screenshots via Playwright, analyses each on 8 visual dimensions (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish, contrast/legibility), runs computed browser checks (font scale, 8px grid, transition timing, contrast), and produces a scored report with concrete improvement suggestions. Use /skill-dev for code quality, /ux-audit for UX flows, /responsive-audit for breakpoints.
+description: Evaluate the aesthetic quality and visual polish of app pages. Takes live screenshots via Playwright, analyses each on 11 visual dimensions (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish, contrast/legibility, Gestalt compliance, typographic quality, interaction states), runs computed browser checks (font scale, 8px grid, transition timing, contrast), and produces a scored report with concrete improvement suggestions. Use /skill-dev for code quality, /ux-audit for UX flows, /responsive-audit for breakpoints.
 user-invocable: true
 model: sonnet
 context: fork
@@ -69,7 +69,7 @@ Record the base URL that responded — use it for all subsequent navigations.
 
 ## Step 3 — Visual evaluation framework
 
-Apply these 8 dimensions to every screenshot captured.
+Apply these 11 dimensions to every screenshot captured.
 
 | Dim | Name | What to look for | Target score |
 |---|---|---|---|
@@ -81,6 +81,9 @@ Apply these 8 dimensions to every screenshot captured.
 | **V6** | Dark-mode polish | Dark theme looks intentional, not inverted; borders visible without being harsh; badge colours adapt; no washed-out text; card backgrounds distinguishable from page background | ≥ 4 |
 | **V7** | Micro-polish | Hover/focus states visible; transitions not jarring; empty states and skeletons look professional; icon–text alignment clean. **Timing anchor**: transitions < 100ms are imperceptible; > 400ms feels sluggish. Flag when computed check reveals out-of-range transition durations on interactive elements. | ≥ 3 |
 | **V8** | Contrast & legibility | Computed contrast ratios for key text elements against their backgrounds in both light and dark themes. References APCA thresholds: Lc 75 preferred for body text, Lc 60 minimum, Lc 45 for large/label text, Lc 15 for non-text (borders, icons). Specifically checks muted foreground text on card backgrounds — a common silent failure in dark mode. Uses computed style values from browser_evaluate. | ≥ 4 |
+| **V9** | Gestalt compliance | 4 Gestalt principles: **Proximity** — label↔value gap must be visually smaller than section gap; **Figure/ground** — content distinguishable from chrome (background, borders, sidebars) in both themes; **Similarity** — same-function components (all primary CTAs, all status badges) must be visually identical cross-section; **Continuity** — lists and columns guide the eye linearly without visual interruption. | ≥ 3 |
+| **V10** | Typographic quality | 3 checks: **Line height** — `lineHeight/fontSize` ratio must be 1.4–1.8 on body and label text (below 1.4 = cramped, above 1.8 = floaty); **Letter spacing** — no negative `letterSpacing` on text smaller than 14px (negative tracking on small text reduces legibility); **Line length** — paragraphs and table cells must be ≤ 680px wide (≈ 75 characters, optimal readability limit). | ≥ 3 |
+| **V11** | Interaction state design | 5 mandatory interaction states — every interactive element must have: **hover** (background change ≥ 10 lightness points OR border appearance); **focus-visible** (visible focus ring on ALL backgrounds including brand-colored buttons); **active/pressed** (visually distinct from hover state); **disabled** (desaturated + opacity reduction — not opacity alone); **loading skeleton** (shape matches the expected content layout). | ≥ 4 |
 
 Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** = good · **5** = excellent
 
@@ -90,6 +93,11 @@ Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** =
 - Score 3 on V2, V5, V6, V7 → Minor finding
 - Write one concrete, actionable observation per dimension per page (not just a number)
 - **Never write a vague observation like "good overall"** — every line must name what specifically works or what specifically is wrong
+
+**V9-V11 scoring notes**:
+- V9 Gestalt: score 3 is acceptable for internal tools — flag each violated principle separately rather than averaging
+- V10 Typography: line height and line length violations are observable via computed check; negative letter-spacing requires visual confirmation
+- V11 Interaction states: a missing focus-visible ring on brand-colored elements is the most common failure — pay special attention to primary CTA buttons in both themes
 
 **Code-grounded scoring**: after reading a page's component files (Step 5a), if you see a class on a subtitle in the code but the screenshot shows it rendered too light, flag it. Conversely, if a brand-accent color appears on a row-level button in the code, flag it even if the screenshot looks acceptable — it is a systematic violation.
 
@@ -178,11 +186,15 @@ For each page in roster:
        .filter(Boolean)
    )].sort((a, b) => a - b);
 
-   // Spacing grid — spot check first Card-like container
-   const card = document.querySelector(
-     '[data-slot="card"], [class*="rounded"][class*="border"], main > div'
-   );
-   const cardPad = card ? parseInt(getComputedStyle(card).paddingTop) : null;
+   // Spacing grid — spot check 3 distinct card-like containers (not just 1)
+   const cardCandidates = [...document.querySelectorAll(
+     '[data-slot="card"], [class*="rounded"][class*="border"], main > section, main > div > div'
+   )].filter(el => el.getBoundingClientRect().height > 40).slice(0, 3);
+   const cardPaddings = cardCandidates.map(card => ({
+     paddingTop: parseInt(getComputedStyle(card).paddingTop),
+     isGridAligned: parseInt(getComputedStyle(card).paddingTop) % 4 === 0
+   }));
+   const cardPad = cardPaddings[0]?.paddingTop ?? null;
 
    // Transition timing — check interactive elements
    const transitions = [...document.querySelectorAll('button, a[href], [role="button"]')]
@@ -194,12 +206,13 @@ For each page in roster:
    const mutedEl = document.querySelector('[class*="muted-foreground"]') ||
                    document.querySelector('[class*="text-muted"]');
    const mutedColor = mutedEl ? getComputedStyle(mutedEl).color : null;
-   const cardBg = card ? getComputedStyle(card).backgroundColor : null;
+   const cardBg = cardCandidates[0] ? getComputedStyle(cardCandidates[0]).backgroundColor : null;
 
    return {
      fontSizeCount: fontSizes.length,
      fontSizes,
      cardPaddingTopPx: cardPad,
+     cardPaddingSpotCheck: cardPaddings, // array of 3 samples
      cardPaddingIsGridAligned: cardPad !== null ? cardPad % 4 === 0 : null,
      transitionCount: transitions.length,
      transitionsOutOfRange: transitions.filter(ms => ms > 0 && (ms < 100 || ms > 400)),
@@ -227,7 +240,7 @@ For each page in roster:
      ```
    - `browser_take_screenshot` → label `visual-[P##]-dark`
 
-9. **Immediately analyse** both screenshots + computed data against V1–V8 using the code context from Step 5a
+9. **Immediately analyse** both screenshots + computed data against V1–V11 using the code context from Step 5a
 
 > Do not batch all screenshots then analyse. Analyse immediately after each pair — avoids context overload and produces sharper observations.
 
@@ -265,8 +278,11 @@ For each page, produce:
 | V6 Dark-mode polish | N/5 | [specific observation from dark screenshot] | [fix or "none"] |
 | V7 Micro-polish | N/5 | [specific observation — reference transitionsOutOfRange from computed data] | [fix or "none"] |
 | V8 Contrast & legibility | N/5 | [specific observation — reference computed muted/card color pairs for both themes; flag if muted text appears to fall below Lc 45 anchor] | [fix or "none"] |
+| V9 Gestalt compliance | N/5 | [observe: Proximity — label↔value gaps vs section gaps; Figure/ground — content vs chrome distinction; Similarity — consistent same-function elements; Continuity — linear eye guide] | [fix or "none"] |
+| V10 Typographic quality | N/5 | [observe: line height ratio from computed; negative letterSpacing on small text; paragraph/td width vs 680px] | [fix or "none"] |
+| V11 Interaction states | N/5 | [observe: hover bg change; focus-visible ring on brand buttons; active/pressed distinct from hover; disabled desaturated+opacity; loading skeleton shape] | [fix or "none"] |
 
-**Page score**: [sum]/40 — [label: Excellent ≥32 | Good 24–31 | Needs work 16–23 | Poor <16]
+**Page score**: [sum]/55 — [label: Excellent ≥44 | Good 33–43 | Needs work 22–32 | Poor <22]
 **Critical findings on this page**: [list or "none"]
 ```
 
@@ -283,6 +299,8 @@ After all pages, identify:
 5. **Contrast gap**: average V8 score vs V6 → if V8 is lower in dark mode, token values need review
 6. **Typography discipline**: pages where fontSizeCount > 5 → systemic type scale violation
 7. **Code pattern violations**: list any systematic code patterns observed across pages that cause visual problems (e.g., "brand-accent on row buttons appears on N pages: [list]")
+8. **V9 Gestalt consistency**: check if Gestalt violations (especially Similarity — same-function elements inconsistent) recur across multiple pages → systemic pattern to address globally
+9. **V11 Interaction states**: if focus-visible ring missing on brand-colored elements across multiple pages → likely a global CSS gap, not per-page issue
 
 ---
 
@@ -308,6 +326,9 @@ After all pages, identify:
 | V6 Dark-mode polish | N.N/5 | ↑/→/↓ |
 | V7 Micro-polish | N.N/5 | ↑/→/↓ |
 | V8 Contrast & legibility | N.N/5 | ↑/→/↓ |
+| V9 Gestalt compliance | N.N/5 | ↑/→/↓ |
+| V10 Typographic quality | N.N/5 | ↑/→/↓ |
+| V11 Interaction states | N.N/5 | ↑/→/↓ |
 | **Total** | **N.N/5** | |
 
 ---
@@ -316,7 +337,7 @@ After all pages, identify:
 
 | Page | Route | Score | Weakest dim | Critical? |
 |---|---|---|---|---|
-| P01 Login | /login | N/40 | V[N] | yes/no |
+| P01 Login | /login | N/55 | V[N] | yes/no |
 ...
 
 ---
@@ -365,8 +386,8 @@ Critical first, then by impact (pages affected × dimension weight):
 
 ### Worst offenders (highest ROI)
 
-1. [Page]: score N/40 — [top 3 fixes that would most improve it]
-2. [Page]: score N/40 — [top 3 fixes]
+1. [Page]: score N/55 — [top 3 fixes that would most improve it]
+2. [Page]: score N/55 — [top 3 fixes]
 ```
 
 ---
@@ -392,4 +413,5 @@ After the report, offer to:
 - **V7 micro-polish on mobile**: not in scope for this skill — use `/responsive-audit` for that.
 - **Screenshots must be analysed fresh** — do not rely on memory from previous sessions. If a screenshot shows unexpected content (wrong role, empty state when data expected), note it and analyse what is visible.
 - **Preflight failures**: if more than 2 pages fail preflight, stop and report the issue before continuing — likely a dev server or auth problem, not a page-specific issue.
-- **Score denominator is /40** (8 dimensions × 5) — update any stored baselines accordingly.
+- **V11 focus-visible ring on brand backgrounds**: this is the single most common V11 failure. A focus ring that is visible on white backgrounds may be invisible on a brand-colored primary button. Always test with keyboard navigation in the screenshot to confirm.
+- **Score denominator is /55** (11 dimensions × 5) — update any stored baselines accordingly.

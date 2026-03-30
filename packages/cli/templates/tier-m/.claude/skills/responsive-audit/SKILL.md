@@ -2,10 +2,10 @@
 name: responsive-audit
 description: Verify that app pages render correctly across mobile, tablet, and desktop breakpoints. Uses docs/sitemap.md as the route inventory. Takes Playwright screenshots at 320px / 375px / 768px / 1024px. Produces a PASS/WARN/FAIL report per route × breakpoint with WCAG 1.4.10 reflow and 1.4.4 resize text compliance. Requires the dev server running on localhost.
 user-invocable: true
-model: sonnet
+model: opus
 context: fork
 argument-hint: [quick|full|wcag] [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: Read, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_type, mcp__playwright__browser_click, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate
+allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_type, mcp__playwright__browser_click, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate
 ---
 
 ## Configuration (fill in before first run)
@@ -38,6 +38,16 @@ Mode and target are **independent** — `full wcag target:section:invoices` = al
 
 Announce at start:
 `Running responsive-audit in [QUICK | FULL | WCAG] mode — scope: [FULL | target: <resolved description>]`
+
+---
+
+## Step 0.5 — Screenshot directory setup
+
+Before any navigation, create the temp screenshot directory:
+```bash
+mkdir -p /tmp/responsive-audit-screenshots
+```
+All screenshots during this session go into `/tmp/responsive-audit-screenshots/`. This keeps screenshots out of the project directory and simplifies cleanup.
 
 ---
 
@@ -292,6 +302,57 @@ From sidebar check:
 - `sidebarFound === true` AND `sidebarVisibleAtMobile === false` AND `hamburgerFound === true` → PASS.
 - `sidebarFound === false` → log as "no sidebar detected" — verify visually from screenshot.
 
+### Visual responsiveness checks (Opus screenshot analysis — BP0 + BP1 only)
+
+Apply to EVERY screenshot at mobile breakpoints. These are pure visual checks — no DOM queries needed. They are page-agnostic and apply equally to dashboards, forms, lists, detail pages, and content pages.
+
+**VR1 — Hero / header section reflow**
+If the page has a header or hero section (page title + metadata, profile card, avatar + name + date, greeting banner): does it reflow gracefully at the mobile breakpoint?
+Check for:
+- Multi-column layout in the header that has not collapsed to vertical stack at mobile
+- Secondary elements (date, role badge, metadata) floating without clear visual anchor
+- Avatar or icon competing for horizontal space with text content causing awkward wrapping
+Severity: FAIL if the header is visually broken or creates a confusing hierarchy. WARN if layout is intact but sub-optimal.
+
+**VR2 — Card content density**
+In any card, KPI tile, or list cell: are all labels, values, and subtitles readable at this viewport width?
+Check for:
+- Labels that are truncated with "..." where the truncated portion contains operationally important information
+- Label/value pairs where the value wraps unexpectedly below the label, breaking the intended structure
+- Cards so narrow that font-size, padding, and content no longer fit proportionally
+Severity: FAIL if content is unreadable or identifying information is lost. WARN if visual polish is degraded.
+
+**VR3 — Typography proportionality**
+Is the font size distribution proportional to the mobile viewport?
+Check for:
+- Any heading that consumes 3+ lines, dominating the viewport and pushing content below fold
+- Any body or label text that appears smaller than approximately 14px (too small to read comfortably on mobile)
+- Inconsistent text sizes within the same section that break visual rhythm
+Severity: WARN.
+
+**VR4 — Primary CTA above fold**
+Is the primary action for this page visible within the first viewport height without scrolling?
+Exception: pages that are explicitly long-form (wizard steps, long forms) where the CTA at the bottom is expected.
+Flag only if the CTA is non-obvious or the page appears to have no visible primary action above fold.
+Severity: WARN.
+
+**VR5 — Grid density at mobile**
+Any 2-column grid: are each of the cells visually readable? Minimum readable card width at 375px: ~140px.
+Check for:
+- Cells with labels that wrap or are cut off because the cell is too narrow
+- Numeric values or icons that appear crowded within their cell
+Severity: FAIL if content is unreadable. WARN if layout is intact but visually crowded.
+
+**VR6 — Content hierarchy at mobile**
+Does the page have a clear visual hierarchy at mobile? The most important content should be immediately visible; secondary content below.
+Check for:
+- Decorative or secondary sections appearing above primary content
+- Sections with no visible content (collapsed but no visible affordance to expand)
+- Equal visual weight between primary and secondary sections (no clear focus point)
+Severity: WARN.
+
+Severity scale for visual checks: **FAIL** = layout is broken or content is unreadable → fix before Phase 6. **WARN** = layout is functional but visually sub-optimal → flag in report, fix in dedicated UI improvement block.
+
 ---
 
 ## Step 5b — WCAG 1.4.4 Resize Text check (wcag mode only)
@@ -359,13 +420,14 @@ Log results in the WCAG compliance section of the report.
 | ... | | | | | | |
 
 Legend: PASS = no issues · WARN = minor (scroll container present, 44-47px targets, preflight skipped) · FAIL = broken (overflow, truncation, unusable layout) · WCAG✅ = passes 1.4.10 reflow · WCAG❌ = fails 1.4.10
+VR checks: apply visual analysis (VR1–VR6) to all BP0 and BP1 screenshots.
 
 ### Violations detail
 
 For each WARN or FAIL:
 - **Route**: [url] — **Role**: [role] — **Breakpoint**: [bp]
-- **Check**: R[N] — [check name]
-- **Detail**: [description — include overflowPx and offendingElements for R1/R2; gap values for R8; sidebar state for R9]
+- **Check**: R[N] or VR[N] — [check name]
+- **Detail**: [description — for R1/R2: include overflowPx and offendingElements; for R8: gap values; for VR checks: describe exactly what was observed in the screenshot]
 - **Screenshot**: [filename]
 - **Fix hint**: [suggested fix]
 
@@ -399,3 +461,13 @@ After the report, offer to implement the responsive fixes found. Options:
 - WCAG compliance pass: fix all 1.4.10 and 1.4.4 violations found in `wcag` mode
 
 **Do NOT apply any changes until confirmed.**
+
+---
+
+## Step 9 — Screenshot cleanup
+
+After the report is delivered and the improvement offer is presented, clean up the temp directory:
+```bash
+rm -rf /tmp/responsive-audit-screenshots
+```
+Run this unconditionally at session end.**
