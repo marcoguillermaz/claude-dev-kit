@@ -67,4 +67,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.2.0` — published on npm as `mg-claude-dev-kit`. Four tiers stable. Spec-driven mode (Mode A/B) in Tier M/L. Governance layer upgrade: 3 new shared rules, 2 new skills, feature flags, 126 integration checks.
+`v1.3.0` — agnostic audit depth upgrade. All 8 code-audit skills deepened: arch-audit C1–C17 + PE1–PE12 + H1a–H1f, visual-audit V9–V11 (/40→/55), responsive-audit VR1–VR6, skill-dev debt-density + regression risk, api-design N11–N13 + maturity assessment, security-audit A13, ux-audit D7 C1–C5 framework. Backlog path normalized to `docs/refactoring-backlog.md`. 126 integration checks (unchanged). v1.4.0 planned: `stackProfile` for stack-specific checks.
