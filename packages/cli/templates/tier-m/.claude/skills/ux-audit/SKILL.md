@@ -43,6 +43,16 @@ Announce at start:
 
 ---
 
+## Step 0.5 — Screenshot directory setup
+
+Before any navigation, create the temp screenshot directory:
+```bash
+mkdir -p /tmp/ux-audit-screenshots
+```
+All screenshots during this session go into `/tmp/ux-audit-screenshots/`. This keeps screenshots out of the project directory and simplifies cleanup.
+
+---
+
 ## Step 1 — Load architecture context
 
 Read in parallel:
@@ -78,7 +88,19 @@ Apply these 7 dimensions to every flow simulated. Dimensions are anchored to ISO
 | **D4 — Navigation clarity** | Efficiency | H4 Consistency · H6 Recognition | Does the user always know where they are? | Page titles, breadcrumbs, back affordances, active sidebar state, role-specific routes |
 | **D5 — Cognitive load** | Efficiency | H8 Minimalist design | How many decisions or pieces of info per screen? | Form fields per step, actions per card, info density, label clarity; Baymard optimal: ≤8 fields per step |
 | **D6 — Error recovery** | Effectiveness | H9 Recognize/diagnose/recover | When something goes wrong, is the path forward clear? | Validation messages, retry affordances, empty state guidance, rejection states |
-| **D7 — User confidence** | Satisfaction | H3 User control · H5 Error prevention | Does the user feel in control and certain of the outcome? | Confirmation dialogs before destructive/irreversible actions; cancel paths in all dialogs and forms; reassurance copy on irreversible operations; no silent success (action appears to work but no visible state change); positive feedback beyond toast (page reflects new state) |
+| **D7 — User confidence** | Satisfaction | H3 User control · H5 Error prevention | Does the user feel in control and certain of the outcome? | Confirmation dialogs before destructive/irreversible actions; cancel paths in all dialogs and forms; reassurance copy on irreversible operations; no silent success (action appears to work but no visible state change); positive feedback beyond toast (page reflects new state). **Apply C1–C5 checks per flow — see structured framework below.** |
+
+**D7 structured framework — apply per flow:**
+
+| Check | What to verify | PASS | FAIL |
+|---|---|---|---|
+| C1 — Cancel path | Every dialog and multi-step form has a functional Cancel button | Returns to correct state, no unintended side effect (no draft saved) | No cancel button, or cancel causes data loss |
+| C2 — Destructive guard | Irreversible actions trigger confirmation BEFORE execution | Confirmation dialog with action name + consequence description | Single-click execute without confirmation |
+| C3 — Silent success prevention | Every state-changing action has visible confirmation | Toast + page reflects new state | Toast absent OR page unchanged after action |
+| C4 — Constraint visibility | Read-only constraints explicitly communicated | Label, tooltip, or disabled button with explanation | Functionality silently absent without explanation |
+| C5 — Positive feedback | Multi-step flows confirm outcome explicitly | Explicit success state, not just redirect to list | Redirect to list with no success indication |
+
+Record per flow: `C1:[✅/❌/N/A] C2:[✅/❌/N/A] C3:[✅/❌/N/A] C4:[✅/❌/N/A] C5:[✅/❌/N/A]`
 
 **Severity scale:**
 - **Critical** — user cannot complete a core task (blocker)
@@ -250,6 +272,7 @@ Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Viola
 
 - **Task completion**: [steps taken] / [total clicks] clicks / [wasted clicks] wasted
 - **Form**: [field count] fields · Error messages: Specific ✅/Generic ⚠️/Absent ❌ · Cancel path: Yes/No · Confirmation on destructive: Yes/No/N/A
+- **D7 user confidence**: C1:[✅/❌/N/A] C2:[✅/❌/N/A] C3:[✅/❌/N/A] C4:[✅/❌/N/A] C5:[✅/❌/N/A]
 - **Baymard form**: BF1:[✅/⚠️] BF2:[✅/⚠️] BF3:[✅/⚠️] BF4:[✅/⚠️] BF5:[✅/⚠️] BF6:[✅/⚠️]
 - **Code context**: [key finding from reading the component — 2-3 bullet points]
 - **Outcome**: ✅ Completed without friction / ⚠️ Completed with friction / ❌ Could not complete
@@ -309,11 +332,22 @@ Order by severity, then by impact (flows affected):
 
 ## Step 9 — Final offer
 
-After the report, offer to:
-- Design a specific fix (ASCII wireframe or component sketch) via `/frontend-design`
-- Run a heuristic deep-dive on a specific heuristic across all pages (e.g. H5 on all flows with destructive actions)
-- Run an additional flow (list the flow with its steps)
-- Compare two sections for consistency
-- Generate a backlog checklist for `docs/refactoring-backlog.md`
+After the report:
 
-**Do NOT apply code changes directly.** UX findings must be validated with the user before implementation — they often require design decisions, not just code fixes.
+> "Would you like to explore any specific finding further? I can:
+> - **ASCII Wireframe**: propose the detailed design for a specific fix via `/frontend-design`
+> - **Heuristic deep-dive**: analyse a specific heuristic in detail across all pages (e.g. H5 on all flows with destructive actions)
+> - Compare two specific sections for pattern consistency
+> - Generate a fix checklist to integrate into the backlog (`docs/refactoring-backlog.md`)"
+
+**Do NOT apply code changes directly.** UX findings require design decisions before implementation.
+
+---
+
+## Step 10 — Screenshot cleanup
+
+After the report is delivered and the improvement offer is presented, clean up the temp directory:
+```bash
+rm -rf /tmp/ux-audit-screenshots
+```
+Run this unconditionally at session end — screenshots are only needed during analysis.
