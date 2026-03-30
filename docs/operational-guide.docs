@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 1.2.0
+**Version**: 1.3.0
 **Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -798,11 +798,13 @@ Note: `Strict-Transport-Security` is typically set by the hosting platform (Verc
 | Level | Examples |
 |---|---|
 | Critical | Unauthenticated route that exposes or modifies data; raw user input in query |
-| High | Privileged route without role check; PII exposed to non-owner caller |
+| High | Privileged route without role check; PII exposed to non-owner caller; IDOR (A13 horizontal access control) |
 | Medium | Missing validation on write route; DB error leaked to client; missing security header |
 | Low | Informational over-exposure; header best-practice gap |
 
-After the report, the skill asks: *"Do you want me to implement fixes for Critical/High findings?"*
+**A13 — Horizontal access control (IDOR)**: write routes missing a caller-ownership check that would prevent one authenticated user from modifying another user's records.
+
+After the report, the skill presents a numbered finding list and waits for user confirmation before writing to `docs/refactoring-backlog.md`.
 
 ---
 
@@ -824,7 +826,7 @@ After the report, the skill asks: *"Do you want me to implement fixes for Critic
 
 #### Steps and checks
 
-**Step 1** — reads `docs/sitemap.md` (file list), `docs/refactoring-backlog.md` and `docs/backlog-refinement.md` (to avoid duplicates).
+**Step 1** — reads `docs/sitemap.md` (file list), `docs/refactoring-backlog.md` (to avoid duplicates). Builds a **debt-density map**: files with 3+ open backlog entries are flagged as high-debt zones and findings in those files have severity escalated by one level.
 
 **Step 2 — Pattern checks (Explore subagent)**
 
@@ -941,6 +943,11 @@ After the report, the skill asks: *"Do you want me to implement fixes for Critic
 | N3 | Resource IDs passed as query params instead of path params; filter values baked into the URL path |
 | N4 | POST/PUT/PATCH handler without a validation library import or schema parse call |
 | N5 | `catch` blocks or error returns using a different JSON shape from the majority of routes |
+| N6–N7 | Missing error handling or inconsistent status code usage across grouped routes |
+| N8–N10 | Auth token exposure in response, over-returning fields, or missing Content-Type headers |
+| N11 | Inconsistent parameter naming conventions (camelCase vs snake_case in same API surface) |
+| N12 | Field naming inconsistency across related resources (e.g., `user_id` vs `userId`) |
+| N13 | Resource modeling / nesting depth > 3 levels deep |
 
 **Step 3 — Response shape consistency** (10 representative route handlers)
 
@@ -1042,6 +1049,16 @@ This skill audits the **governance layer itself** — not your product code. It 
 
 #### Checks per screenshot
 
+**Static pre-checks (no browser required)**
+
+| Check | What it catches |
+|---|---|
+| S1 | `text-[Xvw]` / `font-size: Xvw` — viewport-unit font sizes, disables user zoom (WCAG 1.4.4) |
+| S2 | `overflow: hidden` on `html`/`body` — masks horizontal scroll, breaks `position: sticky` |
+| S3 | `<img>` without `max-w-full`/`w-full` — non-responsive images |
+
+**Per-screenshot layout checks**
+
 | Check | What it catches |
 |---|---|
 | R1 | Horizontal overflow (HTML scroll width > viewport width) |
@@ -1050,6 +1067,17 @@ This skill audits the **governance layer itself** — not your product code. It 
 | R4 | Primary interactive elements with touch target < 44×44px (BP1 only) |
 | R5 | Multi-column grid not collapsing to single column at mobile |
 | R6 | Modal overflowing viewport or missing close affordance |
+
+**Visual responsiveness checks (BP0 320px + BP1 375px screenshots)**
+
+| Check | What it catches |
+|---|---|
+| VR1 | Hero/header reflow — multi-column layout not stacking vertically at mobile |
+| VR2 | Card content density — label truncation or value wrapping making content unreadable |
+| VR3 | Typography proportionality — headings > 2 lines or body text < 14px at mobile |
+| VR4 | Primary CTA not above the fold (invisible within 812px viewport height) |
+| VR5 | Grid density mobile — 2-column cells narrower than 140px |
+| VR6 | Content hierarchy mobile — secondary content appearing above primary |
 
 #### Report format
 
@@ -1105,6 +1133,7 @@ Evaluate: D1, D3, D5, D6
 | D4 — Navigation clarity | Does the user always know where they are? |
 | D5 — Cognitive load | How many decisions or pieces of info per screen? |
 | D6 — Error recovery | When something goes wrong, is the path forward clear? |
+| D7 — User confidence | 5-point framework: C1 cancel paths, C2 destructive guards, C3 silent success prevention, C4 constraint visibility, C5 positive feedback |
 
 **Severity**: Critical (blocker) / Major (friction) / Minor (polish)
 
@@ -1140,7 +1169,7 @@ After the report, the skill offers to design fixes, run additional flows, or gen
 - `page:/path` — single page deep-analysis
 - `role:name` — all pages for a given role
 
-#### Evaluation framework — 7 dimensions (score 1–5 each)
+#### Evaluation framework — 11 dimensions (score 1–5 each)
 
 | Dim | Name | Target |
 |---|---|---|
@@ -1151,10 +1180,14 @@ After the report, the skill offers to design fixes, run additional flows, or gen
 | V5 | Information density — appropriate for page type (list=dense, form=airy) | ≥ 3 |
 | V6 | Dark-mode polish — intentional dark theme, borders visible, badges adapt | ≥ 4 |
 | V7 | Micro-polish — hover/focus states, transitions, empty states, icon alignment | ≥ 3 |
+| V8 | APCA contrast — body Lc ≥ 75, secondary Lc ≥ 60, decorative Lc ≥ 15 | ≥ 4 |
+| V9 | Gestalt compliance — proximity, figure/ground, similarity, continuity | ≥ 3 |
+| V10 | Typographic quality — lineHeight/fontSize ratio 1.4–1.8, no negative letterSpacing <14px, paragraph ≤680px | ≥ 3 |
+| V11 | Interaction state design — hover, focus-visible, active/pressed, disabled, loading skeleton all distinct | ≥ 4 |
 
-**Scoring rules**: 1–2 on any dimension = Critical · 3 on V1/V3/V4 = Major · 3 on V2/V5/V6/V7 = Minor
+**Scoring rules**: 1–2 on any dimension = Critical · 3 on V1/V3/V4/V11 = Major · 3 on V2/V5/V6/V7/V9/V10 = Minor
 
-Per-page total out of 35: Excellent ≥ 28 · Good 21–27 · Needs work 14–20 · Poor < 14.
+Per-page total out of 55: Excellent ≥ 44 · Good 33–43 · Needs work 22–32 · Poor < 22.
 
 Cross-page analysis identifies systemic weaknesses (dimension ≤ 3 on ≥ 3 pages), best-in-class patterns, and worst offenders.
 
