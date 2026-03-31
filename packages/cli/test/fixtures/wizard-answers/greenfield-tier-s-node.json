@@ -1,0 +1,12 @@
+{
+  "mode": "greenfield",
+  "tier": "s",
+  "projectName": "Fast Lane Project",
+  "description": "A Tier S node project",
+  "techStack": "node-ts",
+  "testCommand": "npx vitest run",
+  "typeCheckCommand": "npx tsc --noEmit",
+  "devCommand": "npm run dev",
+  "includePreCommit": true,
+  "includeGithub": true
+}

@@ -15,6 +15,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execFileSync } from 'child_process';
 import { scaffoldTier, scaffoldTierSafe } from '../../src/scaffold/index.js';
 import { generateClaudeMd } from '../../src/generators/claude-md.js';
 import { generateReadme } from '../../src/generators/readme.js';
@@ -103,6 +104,10 @@ function assertNoUnfilledWizardPlaceholders(dir) {
   const hits = [];
 
   for (const f of allFiles) {
+    // CONTEXT_IMPORT.md intentionally references these patterns as instructions
+    // for Claude to fill in pipeline.md — not actual unfilled wizard placeholders
+    if (path.basename(f) === 'CONTEXT_IMPORT.md') continue;
+
     const ext = path.extname(f);
     if (!['.md', '.json', '.yaml', '.yml', ''].includes(ext)) continue;
     const content = fs.readFileSync(f, 'utf8');
@@ -224,7 +229,7 @@ const BASE = {
   hasFrontend: true,
   hasDesignSystem: true,
   designSystemName: 'Test UI',
-  auditModel: 'sonnet',
+  auditModel: 'claude-sonnet-4-6',
   hasPrd: false,
   hasE2E: false,
 };
@@ -469,7 +474,7 @@ async function scenarioSkillPruning() {
 
   // Skills that must be absent
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
-  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+  // security-audit is always included (generic check, not API-specific)
   assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
@@ -481,6 +486,7 @@ async function scenarioSkillPruning() {
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
+  assertExists(dir, '.claude/skills/security-audit/SKILL.md');
 }
 
 async function scenarioUiAuditPruning() {
@@ -550,6 +556,75 @@ async function scenarioPipelineGateCount() {
   }
 }
 
+async function scenarioNewStacks() {
+  section('New named stacks — placeholder resolution + basic structure');
+
+  const newStacks = [
+    { stack: 'swift',  testCmd: 'swift test',          devCmd: 'swift run',              buildCmd: 'swift build -c release', installCmd: 'swift package resolve', label: 'Swift / macOS' },
+    { stack: 'kotlin', testCmd: './gradlew test',       devCmd: './gradlew run',           buildCmd: './gradlew build',         installCmd: './gradlew dependencies', label: 'Kotlin / Android' },
+    { stack: 'rust',   testCmd: 'cargo test',           devCmd: 'cargo run',              buildCmd: 'cargo build --release',   installCmd: 'cargo build',            label: 'Rust' },
+    { stack: 'dotnet', testCmd: 'dotnet test',          devCmd: 'dotnet run',             buildCmd: 'dotnet build',            installCmd: 'dotnet restore',          label: '.NET / C#' },
+    { stack: 'ruby',   testCmd: 'bundle exec rspec',    devCmd: 'bundle exec rails server', buildCmd: 'bundle exec rake assets:precompile', installCmd: 'bundle install', label: 'Ruby' },
+    { stack: 'java',   testCmd: 'mvn test',             devCmd: 'mvn exec:java',          buildCmd: 'mvn package',             installCmd: 'mvn install',            label: 'Java' },
+  ];
+
+  for (const { stack, testCmd, devCmd, buildCmd, installCmd } of newStacks) {
+    const config = {
+      ...BASE,
+      tier: 'm',
+      techStack: stack,
+      testCommand: testCmd,
+      devCommand: devCmd,
+      buildCommand: buildCmd,
+      installCommand: installCmd,
+      typeCheckCommand: '',
+      isDiscovery: false,
+    };
+    const dir = await scaffold(`new-stack-${stack}`, 'm', config);
+
+    assertExists(dir, 'CLAUDE.md');
+    assertExists(dir, '.claude/settings.json');
+    assertStopHookResolved(dir);
+    assertNoUnfilledWizardPlaceholders(dir);
+  }
+}
+
+async function scenarioWizardCoverage() {
+  section('Wizard coverage — full CLI execution via --answers');
+
+  const CLI = path.resolve(__dirname, '../../src/index.js');
+  const FIXTURES_DIR = path.resolve(__dirname, '../fixtures/wizard-answers');
+
+  const fixtures = fs.readdirSync(FIXTURES_DIR)
+    .filter(f => f.endsWith('.json'))
+    .sort();
+
+  for (const fixtureFile of fixtures) {
+    const fixture = JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, fixtureFile), 'utf8'));
+    const label = path.basename(fixtureFile, '.json');
+    const dir = path.join(OUTPUT_DIR, `wizard-${label}`);
+    await fs.ensureDir(dir);
+
+    const answersJson = JSON.stringify(fixture);
+
+    try {
+      execFileSync('node', [CLI, 'init', '--answers', answersJson], {
+        cwd: dir,
+        stdio: 'pipe',
+      });
+      pass(`wizard[${label}]: execution succeeded`);
+    } catch (err) {
+      const detail = err.stderr?.toString().trim().split('\n')[0] || err.message;
+      fail(`wizard[${label}]: execution failed`, detail);
+      continue;
+    }
+
+    assertExists(dir, '.claude/settings.json');
+    assertStopHookResolved(dir);
+    assertNoUnfilledWizardPlaceholders(dir);
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -574,6 +649,8 @@ async function main() {
   await scenarioUiAuditPruning();
   await scenarioCommitSkillAllTiers();
   await scenarioNewRuleFiles();
+  await scenarioNewStacks();
+  await scenarioWizardCoverage();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
 import path from 'path';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { detectStack } from '../utils/detect-stack.js';
 import { scaffoldTierSafe } from '../scaffold/index.js';
@@ -14,33 +15,39 @@ const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 export async function initInPlace(options) {
   const cwd = process.cwd();
 
-  console.log();
-  console.log(chalk.dim(`Analyzing existing project at ${cwd}...`));
+  let answers;
+  let detected = {};
 
-  // ── Auto-detect stack ────────────────────────────────────────────────
+  if (options.answers) {
+    answers = JSON.parse(options.answers);
+  } else {
+    console.log();
+    console.log(chalk.dim(`Analyzing existing project at ${cwd}...`));
 
-  const detected = await detectStack(cwd);
+    // ── Auto-detect stack ──────────────────────────────────────────────
 
-  if (detected.detectedFiles.length > 0) {
-    console.log(chalk.dim(`Detected: ${detected.detectedFiles.join(', ')}`));
-  }
+    detected = await detectStack(cwd);
 
-  // ── Confirmation wizard ──────────────────────────────────────────────
+    if (detected.detectedFiles.length > 0) {
+      console.log(chalk.dim(`Detected: ${detected.detectedFiles.join(', ')}`));
+    }
 
-  const stackLabel = {
-    'node-ts': 'Node.js / TypeScript',
-    'node-js': 'Node.js / JavaScript',
-    python: 'Python',
-    go: 'Go',
-    other: 'Other / mixed',
-  }[detected.techStack] || detected.techStack;
+    let hasGithubRemote = false;
+    try {
+      const remotes = execSync('git remote -v', { cwd, stdio: 'pipe' }).toString();
+      hasGithubRemote = remotes.includes('github.com');
+    } catch {
+      // not a git repo or git unavailable
+    }
 
-  const tierDefault = detected.suggestedTier || 'm';
-  const tierLabels = { s: 'Fast Lane', m: 'Standard', l: 'Full' };
+    // ── Confirmation wizard ────────────────────────────────────────────
 
-  console.log();
+    const tierDefault = detected.suggestedTier || 'm';
+    const tierLabels = { s: 'Fast Lane', m: 'Standard', l: 'Full' };
 
-  const answers = await inquirer.prompt([
+    console.log();
+
+    answers = await inquirer.prompt([
     {
       type: 'input',
       name: 'projectName',
@@ -57,14 +64,20 @@ export async function initInPlace(options) {
         { name: `Node.js / JavaScript${detected.techStack === 'node-js' ? chalk.dim(' (detected)') : ''}`, value: 'node-js' },
         { name: `Python${detected.techStack === 'python' ? chalk.dim(' (detected)') : ''}`, value: 'python' },
         { name: `Go${detected.techStack === 'go' ? chalk.dim(' (detected)') : ''}`, value: 'go' },
+        { name: `Swift / macOS / iOS${detected.techStack === 'swift' ? chalk.dim(' (detected)') : ''}`, value: 'swift' },
+        { name: `Kotlin / Android${detected.techStack === 'kotlin' ? chalk.dim(' (detected)') : ''}`, value: 'kotlin' },
+        { name: `Rust${detected.techStack === 'rust' ? chalk.dim(' (detected)') : ''}`, value: 'rust' },
+        { name: `.NET / C#${detected.techStack === 'dotnet' ? chalk.dim(' (detected)') : ''}`, value: 'dotnet' },
+        { name: `Ruby${detected.techStack === 'ruby' ? chalk.dim(' (detected)') : ''}`, value: 'ruby' },
+        { name: `Java${detected.techStack === 'java' ? chalk.dim(' (detected)') : ''}`, value: 'java' },
         { name: 'Other / mixed', value: 'other' },
       ],
     },
     {
       type: 'input',
       name: 'testCommand',
-      message: 'Test command:',
-      default: detected.testCommand || 'npm test',
+      message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
+      default: (a) => a.techStack === 'other' ? '' : (detected.testCommand || 'npm test'),
     },
     {
       type: 'input',
@@ -76,8 +89,19 @@ export async function initInPlace(options) {
     {
       type: 'input',
       name: 'devCommand',
-      message: 'Dev server command:',
-      default: detected.devCommand || 'npm run dev',
+      message: (a) => {
+        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
+        return isNative
+          ? 'Launch command (optional, leave blank to skip):'
+          : 'Dev server command:';
+      },
+      default: (a) => {
+        const nativeDefaults = {
+          swift: 'swift run', kotlin: './gradlew run',
+          rust: 'cargo run', dotnet: 'dotnet run', java: 'mvn exec:java',
+        };
+        return nativeDefaults[a.techStack] || detected.devCommand || 'npm run dev';
+      },
     },
     {
       type: 'list',
@@ -86,15 +110,40 @@ export async function initInPlace(options) {
       when: !options.tier,
       default: tierDefault,
       choices: [
+        { name: '0 — Discovery    (context only, no pipeline)', value: '0' },
         { name: 'S — Fast Lane    (bugfixes, ≤3 files)', value: 's' },
         { name: 'M — Standard     (feature blocks, 1–2 weeks)', value: 'm' },
         { name: 'L — Full         (complex domain, long-running)', value: 'l' },
       ],
     },
     {
+      type: 'confirm',
+      name: 'hasPrd',
+      message: 'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
+      when: (a) => {
+        const tier = options.tier || a.tier;
+        return tier === 'm' || tier === 'l';
+      },
+      default: false,
+    },
+    {
       type: 'input',
       name: 'e2eCommand',
-      message: 'E2E test command (Playwright/Cypress — leave blank to skip):',
+      message: (a) => {
+        const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
+        if (webStacks.includes(a.techStack)) {
+          return 'E2E test command (Playwright/Cypress — leave blank to skip):';
+        }
+        const nativeExamples = {
+          swift: 'XCUITest', kotlin: 'Espresso',
+          rust: 'cargo test --test integration', dotnet: 'dotnet test --filter Category=UI',
+          java: 'mvn verify -P integration',
+        };
+        const ex = nativeExamples[a.techStack];
+        return ex
+          ? `UI/integration test command (${ex} — leave blank to skip):`
+          : 'Integration test command (optional, leave blank to skip):';
+      },
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
@@ -105,20 +154,21 @@ export async function initInPlace(options) {
     {
       type: 'list',
       name: 'hasApi',
-      message: 'Does your project have an API layer?',
+      message: 'Does your project expose an API (REST, GraphQL, RPC)? (controls whether api-design checks are included)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
       },
       choices: [
+        { name: 'No',  value: false },
         { name: 'Yes', value: true },
-        { name: 'No', value: false },
       ],
+      default: false,
     },
     {
       type: 'list',
       name: 'hasDatabase',
-      message: 'Does your project use a database?',
+      message: 'Does your project use a database? (controls whether skill-db checks are included)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
@@ -131,7 +181,7 @@ export async function initInPlace(options) {
     {
       type: 'list',
       name: 'hasFrontend',
-      message: 'Does your project have a frontend / UI?',
+      message: 'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
@@ -144,7 +194,12 @@ export async function initInPlace(options) {
     {
       type: 'list',
       name: 'hasDesignSystem',
-      message: 'Do you use a component library or design system?',
+      message: (a) => {
+        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(a.techStack);
+        return isNative
+          ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
+          : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';
+      },
       when: (a) => {
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
@@ -167,26 +222,16 @@ export async function initInPlace(options) {
     {
       type: 'list',
       name: 'auditModel',
-      message: 'Preferred model for heavy audit skills (ux-audit, visual-audit)?',
+      message: 'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
       when: (a) => {
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
       },
       choices: [
-        { name: 'Sonnet — faster, lower cost  (recommended)', value: 'sonnet' },
-        { name: 'Opus   — more thorough, higher cost', value: 'opus' },
+        { name: 'claude-sonnet-4-6 — faster, lower cost  (recommended)', value: 'claude-sonnet-4-6' },
+        { name: 'claude-opus-4-6   — more thorough, higher cost',         value: 'claude-opus-4-6' },
       ],
-      default: 'sonnet',
-    },
-    {
-      type: 'confirm',
-      name: 'hasPrd',
-      message: 'Track a Product Requirements Document (PRD) per block?',
-      when: (a) => {
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
-      },
-      default: false,
+      default: 'claude-sonnet-4-6',
     },
     {
       type: 'confirm',
@@ -197,25 +242,26 @@ export async function initInPlace(options) {
     {
       type: 'confirm',
       name: 'includeGithub',
-      message: 'Include .github/ (PR template + CODEOWNERS)?',
-      default: true,
+      message: `Include .github/ (PR template + CODEOWNERS)?${!hasGithubRemote ? chalk.dim(' (no GitHub remote detected)') : ''}`,
+      default: hasGithubRemote,
     },
-  ]);
+    ]);
+  } // end else (interactive path)
 
   const config = {
     ...answers,
     tier: options.tier || answers.tier,
     mode: 'in-place',
     // Pass detected values as fallbacks for the Stop hook interpolation
-    buildCommand: detected.buildCommand,
-    installCommand: detected.installCommand,
+    buildCommand: answers.buildCommand || detected.buildCommand,
+    installCommand: answers.installCommand || detected.installCommand,
     hasE2E: answers.e2eCommand ? answers.e2eCommand.trim() !== '' : false,
     hasApi: answers.hasApi,
     hasDatabase: answers.hasDatabase,
     hasFrontend: answers.hasFrontend,
     hasDesignSystem: answers.hasDesignSystem,
     designSystemName: answers.designSystemName || 'component library',
-    auditModel: answers.auditModel || 'sonnet',
+    auditModel: answers.auditModel || 'claude-sonnet-4-6',
     hasPrd: answers.hasPrd ?? false,
   };
 

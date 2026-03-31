@@ -20,6 +20,22 @@ export async function detectStack(dir) {
 
   const exists = (f) => fs.pathExists(path.join(dir, f));
 
+  // Check if a directory entry with the given name exists in dir
+  const existsDir = async (name) => {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      return entries.some(e => e.isDirectory() && e.name === name);
+    } catch { return false; }
+  };
+
+  // Check if any file in dir matches a predicate on its name
+  const existsFileMatching = async (predicate) => {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      return entries.some(e => e.isFile() && predicate(e.name));
+    } catch { return false; }
+  };
+
   // ── Language detection ────────────────────────────────────────────────
 
   if (await exists('package.json')) {
@@ -111,14 +127,107 @@ export async function detectStack(dir) {
     result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
   }
 
+  else if (await exists('Gemfile')) {
+    result.techStack = 'ruby';
+    result.detectedFiles.push('Gemfile');
+    result.installCommand = 'bundle install';
+    result.testCommand = 'bundle exec rspec';
+    result.buildCommand = 'bundle exec rake assets:precompile';
+    result.devCommand = 'bundle exec rails server';
+
+    const fileCount = await countFiles(dir, ['.git', '.bundle', 'tmp', 'log']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
+  else if (await exists('pom.xml')) {
+    result.techStack = 'java';
+    result.detectedFiles.push('pom.xml');
+    result.installCommand = 'mvn install';
+    result.testCommand = 'mvn test';
+    result.buildCommand = 'mvn package';
+    result.devCommand = 'mvn exec:java';
+
+    const fileCount = await countFiles(dir, ['.git', 'target']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
+  else if (await exists('build.gradle.kts') || await exists('AndroidManifest.xml')) {
+    result.techStack = 'kotlin';
+    result.detectedFiles.push(
+      (await exists('build.gradle.kts')) ? 'build.gradle.kts' : 'AndroidManifest.xml'
+    );
+    result.installCommand = './gradlew dependencies';
+    result.testCommand = './gradlew test';
+    result.buildCommand = './gradlew build';
+    result.devCommand = './gradlew run';
+
+    const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
+  else if (await exists('build.gradle')) {
+    // Java via Gradle (non-Kotlin) — build.gradle.kts already caught above
+    result.techStack = 'java';
+    result.detectedFiles.push('build.gradle');
+    result.installCommand = './gradlew dependencies';
+    result.testCommand = './gradlew test';
+    result.buildCommand = './gradlew build';
+    result.devCommand = './gradlew run';
+
+    const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
+    result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
+  }
+
+  else if (await exists('Package.swift')) {
+    result.techStack = 'swift';
+    result.detectedFiles.push('Package.swift');
+    result.installCommand = 'swift package resolve';
+    result.testCommand = 'swift test';
+    result.buildCommand = 'swift build -c release';
+    result.devCommand = 'swift run';
+
+    const fileCount = await countFiles(dir, ['.git', '.build']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
+  else if (await existsDir('.xcodeproj') || await existsDir('.xcworkspace')) {
+    result.techStack = 'swift';
+    const detected = (await existsDir('.xcodeproj')) ? '.xcodeproj' : '.xcworkspace';
+    result.detectedFiles.push(detected);
+    result.testCommand = 'xcodebuild test';
+    result.buildCommand = 'xcodebuild build';
+    result.devCommand = '';
+    result.installCommand = '';
+
+    const fileCount = await countFiles(dir, ['.git', 'build', 'DerivedData']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
+  else if (
+    await existsFileMatching(n => n.endsWith('.csproj')) ||
+    await existsFileMatching(n => n.endsWith('.sln'))
+  ) {
+    result.techStack = 'dotnet';
+    result.detectedFiles.push('*.csproj / *.sln');
+    result.installCommand = 'dotnet restore';
+    result.testCommand = 'dotnet test';
+    result.buildCommand = 'dotnet build';
+    result.devCommand = 'dotnet run';
+
+    const fileCount = await countFiles(dir, ['.git', 'bin', 'obj']);
+    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+  }
+
   else if (await exists('Cargo.toml')) {
-    result.techStack = 'other';
-    result.framework = 'Rust';
+    result.techStack = 'rust';
     result.detectedFiles.push('Cargo.toml');
     result.installCommand = 'cargo build';
     result.testCommand = 'cargo test';
     result.buildCommand = 'cargo build --release';
     result.devCommand = 'cargo run';
+
+    const fileCount = await countFiles(dir, ['.git', 'target']);
+    result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
   }
 
   return result;

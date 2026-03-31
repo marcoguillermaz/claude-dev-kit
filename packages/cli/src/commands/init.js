@@ -9,27 +9,32 @@ export async function init(options) {
   console.log(chalk.bold('claude-dev-kit') + chalk.dim(' — governance-first Claude Code scaffold'));
   console.log();
 
-  const { mode } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'mode',
-      message: 'How do you want to start?',
-      choices: [
-        {
-          name: 'Greenfield          — new project from scratch, fill in details',
-          value: 'greenfield',
-        },
-        {
-          name: 'From context        — provide existing repos/docs, Claude populates your files',
-          value: 'from-context',
-        },
-        {
-          name: 'In-place            — add governance to the current directory',
-          value: 'in-place',
-        },
-      ],
-    },
-  ]);
+  let mode;
+  if (options.answers) {
+    mode = JSON.parse(options.answers).mode;
+  } else {
+    ({ mode } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'mode',
+        message: 'How do you want to start?',
+        choices: [
+          {
+            name: 'Greenfield          — new project from scratch, fill in details',
+            value: 'greenfield',
+          },
+          {
+            name: 'From context        — provide existing repos/docs, Claude populates your files',
+            value: 'from-context',
+          },
+          {
+            name: 'In-place            — add governance to the current directory',
+            value: 'in-place',
+          },
+        ],
+      },
+    ]));
+  }
 
   switch (mode) {
     case 'greenfield':

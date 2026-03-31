@@ -19,28 +19,36 @@ function suggestTierFromDiagnostics(answers) {
 }
 
 export async function initGreenfield(options) {
-  // First question: gauge familiarity to route beginners to Tier 0
-  const { familiarity } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'familiarity',
-      message: 'How familiar is your team with Claude Code?',
-      choices: [
-        {
-          name: "Just starting out — show me what's possible  (Discovery tier)",
-          value: '0',
-        },
-        {
-          name: 'We use it and want guardrails               (Tier S / M / L)',
-          value: 'experienced',
-        },
-      ],
-    },
-  ]);
+  let isDiscovery;
+  let answers;
 
-  const isDiscovery = familiarity === '0';
+  if (options.answers) {
+    const parsed = JSON.parse(options.answers);
+    isDiscovery = parsed.tier === '0';
+    answers = parsed;
+  } else {
+    // First question: gauge familiarity to route beginners to Tier 0
+    const { familiarity } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'familiarity',
+        message: 'How familiar is your team with Claude Code?',
+        choices: [
+          {
+            name: "Just starting out — show me what's possible  (Discovery tier)",
+            value: '0',
+          },
+          {
+            name: 'We use it and want guardrails               (Tier S / M / L)',
+            value: 'experienced',
+          },
+        ],
+      },
+    ]);
 
-  const answers = await inquirer.prompt([
+    isDiscovery = familiarity === '0';
+
+    answers = await inquirer.prompt([
     {
       type: 'input',
       name: 'projectName',
@@ -83,6 +91,7 @@ export async function initGreenfield(options) {
       message: (a) => {
         const suggested = suggestTierFromDiagnostics(a);
         const tierDesc = {
+          '0': '0 — Discovery    Context only, no pipeline.',
           s: 'S — Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
           m: 'M — Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
           l: 'L — Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
@@ -92,6 +101,7 @@ export async function initGreenfield(options) {
       when: () => !isDiscovery && !options.tier,
       default: (a) => suggestTierFromDiagnostics(a),
       choices: [
+        { name: '0 — Discovery    (context only, no pipeline)', value: '0' },
         { name: 'S — Fast Lane    (bugfixes, ≤3 files, 1 gate)', value: 's' },
         { name: 'M — Standard     (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
         { name: 'L — Full         (complex domain, full governance, 4 gates)', value: 'l' },
@@ -106,21 +116,33 @@ export async function initGreenfield(options) {
         { name: 'Node.js / JavaScript', value: 'node-js' },
         { name: 'Python', value: 'python' },
         { name: 'Go', value: 'go' },
+        { name: 'Swift / macOS / iOS', value: 'swift' },
+        { name: 'Kotlin / Android', value: 'kotlin' },
+        { name: 'Rust', value: 'rust' },
+        { name: '.NET / C#', value: 'dotnet' },
+        { name: 'Ruby', value: 'ruby' },
+        { name: 'Java', value: 'java' },
         { name: 'Other / mixed', value: 'other' },
       ],
     },
     {
       type: 'input',
       name: 'testCommand',
-      message: 'Test command:',
+      message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
       default: (a) =>
         ({
           'node-ts': 'npx vitest run',
           'node-js': 'npm test',
           python: 'pytest',
           go: 'go test ./...',
-          other: 'npm test',
-        })[a.techStack] || 'npm test',
+          swift: 'swift test',
+          kotlin: './gradlew test',
+          rust: 'cargo test',
+          dotnet: 'dotnet test',
+          ruby: 'bundle exec rspec',
+          java: 'mvn test',
+          other: '',
+        })[a.techStack] ?? 'npm test',
     },
     {
       type: 'input',
@@ -132,20 +154,45 @@ export async function initGreenfield(options) {
     {
       type: 'input',
       name: 'devCommand',
-      message: 'Dev server command:',
+      message: (a) => {
+        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
+        return isNative
+          ? 'Launch command (optional, leave blank to skip):'
+          : 'Dev server command:';
+      },
       default: (a) =>
         ({
           'node-ts': 'npm run dev',
           'node-js': 'npm run dev',
           python: 'uvicorn main:app --reload',
           go: 'go run .',
-          other: 'npm run dev',
+          ruby: 'bundle exec rails server',
+          swift: 'swift run',
+          kotlin: './gradlew run',
+          rust: 'cargo run',
+          dotnet: 'dotnet run',
+          java: 'mvn exec:java',
+          other: '',
         })[a.techStack] || 'npm run dev',
     },
     {
       type: 'input',
       name: 'e2eCommand',
-      message: 'E2E test command (Playwright/Cypress — leave blank to skip):',
+      message: (a) => {
+        const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
+        if (webStacks.includes(a.techStack)) {
+          return 'E2E test command (Playwright/Cypress — leave blank to skip):';
+        }
+        const nativeExamples = {
+          swift: 'XCUITest', kotlin: 'Espresso',
+          rust: 'cargo test --test integration', dotnet: 'dotnet test --filter Category=UI',
+          java: 'mvn verify -P integration',
+        };
+        const ex = nativeExamples[a.techStack];
+        return ex
+          ? `UI/integration test command (${ex} — leave blank to skip):`
+          : 'Integration test command (optional, leave blank to skip):';
+      },
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
@@ -157,21 +204,22 @@ export async function initGreenfield(options) {
     {
       type: 'list',
       name: 'hasApi',
-      message: 'Does your project have an API layer?',
+      message: 'Does your project expose an API (REST, GraphQL, RPC)? (controls whether api-design checks are included)',
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
       },
       choices: [
+        { name: 'No',  value: false },
         { name: 'Yes', value: true },
-        { name: 'No', value: false },
       ],
+      default: false,
     },
     {
       type: 'list',
       name: 'hasDatabase',
-      message: 'Does your project use a database?',
+      message: 'Does your project use a database? (controls whether skill-db checks are included)',
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
@@ -185,7 +233,7 @@ export async function initGreenfield(options) {
     {
       type: 'list',
       name: 'hasFrontend',
-      message: 'Does your project have a frontend / UI?',
+      message: 'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)',
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
@@ -199,7 +247,12 @@ export async function initGreenfield(options) {
     {
       type: 'list',
       name: 'hasDesignSystem',
-      message: 'Do you use a component library or design system?',
+      message: (a) => {
+        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(a.techStack);
+        return isNative
+          ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
+          : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';
+      },
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
@@ -224,22 +277,22 @@ export async function initGreenfield(options) {
     {
       type: 'list',
       name: 'auditModel',
-      message: 'Preferred model for heavy audit skills (ux-audit, visual-audit)?',
+      message: 'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
       },
       choices: [
-        { name: 'Sonnet — faster, lower cost  (recommended)', value: 'sonnet' },
-        { name: 'Opus   — more thorough, higher cost', value: 'opus' },
+        { name: 'claude-sonnet-4-6 — faster, lower cost  (recommended)', value: 'claude-sonnet-4-6' },
+        { name: 'claude-opus-4-6   — more thorough, higher cost',         value: 'claude-opus-4-6' },
       ],
-      default: 'sonnet',
+      default: 'claude-sonnet-4-6',
     },
     {
       type: 'confirm',
       name: 'hasPrd',
-      message: 'Track a Product Requirements Document (PRD) per block?',
+      message: 'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
       when: (a) => {
         if (isDiscovery) return false;
         const tier = options.tier || a.tier;
@@ -261,7 +314,8 @@ export async function initGreenfield(options) {
       default: true,
       when: !isDiscovery,
     },
-  ]);
+    ]);
+  } // end else (interactive path)
 
   const tier = isDiscovery ? '0' : options.tier || answers.tier || 's';
 
@@ -278,7 +332,7 @@ export async function initGreenfield(options) {
     hasFrontend: answers.hasFrontend,
     hasDesignSystem: answers.hasDesignSystem,
     designSystemName: answers.designSystemName || 'component library',
-    auditModel: answers.auditModel || 'sonnet',
+    auditModel: answers.auditModel || 'claude-sonnet-4-6',
     hasPrd: answers.hasPrd ?? false,
   };
 
