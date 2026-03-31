@@ -1,6 +1,6 @@
 ---
 name: skill-db
-description: Database schema and query quality audit. Reviews normalization, index coverage (FK columns, partial indexes, GIN for arrays), access control policy completeness and performance, constraint gaps, data type antipatterns, unused indexes, N+1 query patterns in API routes, and unbounded queries. Uses docs/db-map.md as authoritative schema reference. Outputs findings to docs/backlog-refinement.md.
+description: Database schema and query quality audit. Reviews normalization, index coverage (FK columns, partial indexes, GIN for arrays), access control policy completeness and performance, constraint gaps, data type antipatterns, unused indexes, N+1 query patterns in API routes, and unbounded queries. Uses docs/db-map.md as authoritative schema reference. Outputs findings to docs/refactoring-backlog.md.
 user-invocable: true
 model: sonnet
 context: fork
@@ -13,7 +13,7 @@ You are performing a database quality audit of the project's database schema and
 - `docs/db-map.md` is the authoritative schema reference. Read it first — do NOT query the live DB to discover schema unless verifying a specific detail.
 - `docs/sitemap.md` provides the API route inventory for checking query patterns.
 - Do NOT make schema changes. Audit only.
-- All findings go to `docs/backlog-refinement.md`.
+- All findings go to `docs/refactoring-backlog.md`.
 
 ---
 
@@ -52,7 +52,7 @@ Read `docs/db-map.md` in full. Note:
 - Access control summary and flagged gaps
 - Ownership patterns (how rows are scoped to users or roles)
 
-Also read `docs/refactoring-backlog.md` and current `docs/backlog-refinement.md` to avoid duplicates.
+Also read `docs/refactoring-backlog.md` to avoid duplicates.
 
 Output: structured understanding of schema. Do not proceed until complete.
 
@@ -325,7 +325,7 @@ Read the 5 most recent migration files from `[MIGRATIONS_PATH]`.
 
 ### Write to backlog
 
-For each finding with severity Medium or above, append to `docs/backlog-refinement.md`:
+For each finding with severity Medium or above, append to `docs/refactoring-backlog.md`:
 - Assign ID: `DB-[n]` (increment from last DB entry)
 - Add row to priority index
 - Add full detail section

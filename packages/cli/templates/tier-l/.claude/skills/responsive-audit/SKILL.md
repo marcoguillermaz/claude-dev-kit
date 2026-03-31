@@ -12,6 +12,7 @@ allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__p
 
 > Replace these placeholders:
 > - `[DEV_URL]` — e.g. `http://localhost:3000`
+> - `[LOGIN_ROUTE]` — your login page path, e.g. `login`, `signin`, `auth/login`
 > - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md` or `docs/routes.md`
 > - `[MOBILE_ROUTES]` — comma-separated routes to test in quick mode (pick 4–6 most-used)
 > - `[TEST_ACCOUNTS]` — one or more `email / password` pairs per role (from your project's test accounts)
@@ -36,6 +37,8 @@ Parse `$ARGUMENTS`:
 
 Mode and target are **independent** — `full wcag target:section:invoices` = all breakpoints + WCAG, invoice routes only.
 
+**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (all routes from sitemap per the selected mode).
+
 Announce at start:
 `Running responsive-audit in [QUICK | FULL | WCAG] mode — scope: [FULL | target: <resolved description>]`
 
@@ -45,9 +48,9 @@ Announce at start:
 
 Before any navigation, create the temp screenshot directory:
 ```bash
-mkdir -p /tmp/responsive-audit-screenshots
+mkdir -p /tmp/responsive-audit
 ```
-All screenshots during this session go into `/tmp/responsive-audit-screenshots/`. This keeps screenshots out of the project directory and simplifies cleanup.
+All screenshots during this session go into `/tmp/responsive-audit/`. This keeps screenshots out of the project directory and simplifies cleanup.
 
 ---
 
@@ -73,7 +76,7 @@ Run **before** launching the browser. These are zero-cost static checks that cat
 **S1 — Viewport unit font trap**
 ```
 Pattern: text-\[[0-9.]+vw\]|font-size.*[0-9]vw|fontSize.*vw
-Scope: app/**/*.tsx app/**/*.ts app/**/*.css (or equivalent for your framework)
+Scope: adapt to your project's source and style files (e.g. `src/**/*.css`, `styles/**/*.scss`)
 ```
 Flag any element with a `vw`-based font size without a `calc()` fallback.
 `font-size: Xvw` alone disables user zoom — WCAG 1.4.4 violation.
@@ -90,8 +93,8 @@ Expected: 0 matches. Any match is Medium severity.
 
 **S3 — Images without max-width constraint**
 ```
-Pattern: <img(?![^>]*class[^>]*(w-full|max-w|object-))
-Scope: template/view files (*.tsx, *.vue, *.html, etc.)
+Pattern: <img(?![^>]*(?:max-width|object-fit|width="100%"))
+Scope: your template/view files — adapt extension to your framework (e.g. `.html`, `.erb`, `.jinja`, `.vue`)
 ```
 Flag raw `<img>` tags without responsive width classes. All images should use a framework image component or have `max-width: 100%` / equivalent.
 Expected: 0 matches. Any match is Low severity.
@@ -271,7 +274,13 @@ From `tableOverflows` array:
 Report the specific table class and overflow amount.
 
 **R3 — Text truncation (visual check)**
-From screenshot: flag if text is cut off mid-word. Intentional `line-clamp` with ellipsis is acceptable — text cut at viewport edge is not.
+From screenshot: flag ALL of the following:
+- Text cut at viewport edge (not intentional `line-clamp`) → FAIL
+- Card or tile labels truncated with "..." that obscure identifying information (type name, action label, entity name) → FAIL. The truncation hides operationally critical content — user cannot identify the item.
+- Labels that wrap across 2+ lines breaking the label/value pairing visually → WARN
+- Any heading or title that wraps to 3+ lines due to font size disproportionate to the viewport width → WARN
+
+Intentional `line-clamp` on long body text (descriptions, notes) is acceptable — only flag when the truncation hides operationally critical content.
 
 **R4 — Tap target size** (BP0 + BP1 only)
 From `tooSmall` array: flag elements with `w < 44 OR h < 44`.
@@ -386,14 +395,19 @@ Log results in the WCAG compliance section of the report.
 
 ### Login helper (reuse across steps)
 ```
-1. browser_navigate [DEV_URL]/login
-2. If already at / (session active): check current role matches needed role
-   - If wrong role: find sign-out in nav → click → confirm if prompted → wait for /login
+1. browser_navigate [DEV_URL]/[LOGIN_ROUTE]
+2. If already at /: check sidebar/header for correct role indicator
+   - If wrong role: find sign-out in nav → click → confirm if prompted → wait for /[LOGIN_ROUTE]
 3. browser_type [email field] [email]
 4. browser_type [password field] [password]
 5. browser_click [submit button]
 6. browser_wait_for url = [DEV_URL]/
 ```
+
+### Role switch
+1. `browser_navigate [DEV_URL]/[LOGIN_ROUTE]`
+2. If redirected to `/`: look for sign-out in nav → click → confirm → wait for `/[LOGIN_ROUTE]`
+3. Login with target credentials
 
 ---
 
@@ -401,7 +415,6 @@ Log results in the WCAG compliance section of the report.
 
 ```
 ## Responsive Audit — [DATE] — [MODE] — [TARGET]
-### Reference: [SITEMAP_OR_ROUTE_LIST]
 ### Breakpoints tested: [BP0 320px (WCAG) · ] BP1 375px [· BP2 768px · BP3 1024px]
 
 ### Static pre-checks
@@ -415,8 +428,7 @@ Log results in the WCAG compliance section of the report.
 
 | Route | Role | BP0 320px | BP1 375px | BP2 768px | BP3 1024px | Issues |
 |---|---|---|---|---|---|---|
-| /login | — | WCAG✅/❌ | PASS/WARN/FAIL | — | — | [description] |
-| /[route] | [role] | — | PASS/WARN/FAIL | — | — | |
+| [route from sitemap] | [role] | WCAG✅/❌ | PASS/WARN/FAIL | PASS/WARN/FAIL | PASS/WARN/FAIL | [description] |
 | ... | | | | | | |
 
 Legend: PASS = no issues · WARN = minor (scroll container present, 44-47px targets, preflight skipped) · FAIL = broken (overflow, truncation, unusable layout) · WCAG✅ = passes 1.4.10 reflow · WCAG❌ = fails 1.4.10
@@ -453,12 +465,15 @@ For each WARN or FAIL:
 
 ---
 
-After the report, offer to implement the responsive fixes found. Options:
-- All at once
-- By breakpoint: mobile (BP0+BP1) · tablet (BP2) · laptop (BP3)
-- By check: overflow (R1+R2) · tap target (R4+R8) · layout stacking (R5) · sidebar collapse (R9) · modal (R6) · calendar/grid (R7)
-- By section: use `target:section:<name>` on the next run
-- WCAG compliance pass: fix all 1.4.10 and 1.4.4 violations found in `wcag` mode
+## Step 8 — Final offer
+
+After the report, offer to implement the responsive fixes found:
+
+- **All at once** — apply every FAIL and WARN fix in one pass
+- **By breakpoint**: mobile (BP0+BP1) · tablet (BP2) · laptop (BP3)
+- **By check**: overflow (R1+R2) · tap target (R4+R8) · layout stacking (R5) · sidebar collapse (R9) · modal (R6) · calendar/grid (R7)
+- **By section**: use `target:section:<name>` on the next run to scope fixes to a specific area
+- **WCAG compliance pass**: fix all 1.4.10 and 1.4.4 violations found in `wcag` mode
 
 **Do NOT apply any changes until confirmed.**
 
@@ -468,6 +483,6 @@ After the report, offer to implement the responsive fixes found. Options:
 
 After the report is delivered and the improvement offer is presented, clean up the temp directory:
 ```bash
-rm -rf /tmp/responsive-audit-screenshots
+rm -rf /tmp/responsive-audit
 ```
 Run this unconditionally at session end.**

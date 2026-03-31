@@ -1,6 +1,6 @@
 ---
 name: skill-dev
-description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, missing or premature abstractions, TypeScript type safety gaps (any, suppressions, floating promises), React antipatterns (useEffect misuse, derived state in effect), silent failure patterns, and structural quality issues (over-large components, prop drilling, client/server boundaries, utility consolidation). Uses docs/sitemap.md as structural guide. Outputs findings to docs/refactoring-backlog.md.
+description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, missing or premature abstractions, type safety gaps (suppressions, unsafe casts, floating promises — adapt to your language), reactive state antipatterns (adapt to your framework's hooks or reactivity model), silent failure patterns, and structural quality issues (over-large components, prop drilling, client/server boundaries, utility consolidation). Uses docs/sitemap.md as structural guide. Outputs findings to docs/refactoring-backlog.md.
 user-invocable: true
 model: sonnet
 context: fork
@@ -94,7 +94,8 @@ For each file in the list: count lines. Flag files > 250 lines with their line c
 Grep: `\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b` across all files in scope.
 Flag: each match with context.
 
-**CHECK D8 — TypeScript type safety suppressions and `any` usage**
+**CHECK D8 — Type safety suppressions and unsafe casts**
+**Adapt to your language**: this check is written for TypeScript. For other languages apply equivalent checks: Python/mypy: `# type: ignore`, Go: `//nolint`, Java: `@SuppressWarnings`, Rust: `#[allow(...)]`. Skip Pattern B (`:any`) if project is not TypeScript.
 Pattern A — Directive suppressions:
 Grep: `@ts-ignore|@ts-expect-error|@ts-nocheck` across all files.
 `@ts-ignore` is highest severity — it suppresses errors silently even if the error disappears. `@ts-expect-error` is acceptable if it has a description comment explaining why. Flag both.
@@ -106,7 +107,8 @@ Pattern C — Floating Promises (unhandled async):
 Grep in component files: lines starting async calls (`fetch(`, router navigation, DB client calls) NOT preceded by `await` and NOT assigned to a variable or chained to `.then(` or `.catch(`.
 Flag: async calls without await or error handling in component event handlers — these are silent fire-and-forget operations that can fail without user feedback.
 
-**CHECK D9 — useEffect antipatterns**
+**CHECK D9 — Reactive state antipatterns**
+**Adapt to your framework**: this check is written for React hooks. Skip entirely if project does not use React or a React-like hooks model. For Vue: adapt to `watch` / computed misuse. For Angular: adapt to `ngOnChanges` and signals. For Svelte: adapt to reactive statements (`$:`).
 Pattern A — Derived state stored in state + updated via useEffect:
 Grep: `useState` followed within 10 lines by `useEffect(() => { set` — state that is immediately updated in an effect is usually derivable during render (use `useMemo` or compute inline).
 Flag: components that `useState` for a value and then have a `useEffect` whose ONLY purpose is to call the matching `setState` based on props or other state.

@@ -8,6 +8,20 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 allowed-tools: mcp__playwright__browser_navigate, mcp__playwright__browser_evaluate
 ---
 
+## Configuration (fill in before first run)
+
+> Replace these placeholders:
+> - `[DEV_URL]` — your dev server URL, e.g. `http://localhost:3000`
+> - `[DESIGN_SYSTEM_NAME]` — your design system name (used in CHECK 2)
+> - `[DESTRUCTIVE_TOKEN]` — your design system's error/destructive color class, e.g. `text-error`, `text-danger`
+> - `[MUTED_TEXT_TOKEN]` — your design system's secondary/muted text class, e.g. `text-secondary`, `text-muted`
+> - `[EMPTY_STATE_COMPONENT]` — your shared empty state component name, e.g. `EmptyState`, `NoResults`
+> - `[STATUS_BADGE_COMPONENT]` — your shared status badge component name, e.g. `StatusBadge`, `Badge`
+>
+> **CSS framework note**: Checks 1–15 use Tailwind CSS utility class naming conventions. If your project uses a different CSS framework (Bootstrap, CSS Modules, SCSS, etc.), adapt the grep patterns to match your framework's class names and conventions.
+
+---
+
 You are performing a comprehensive UI quality audit of this project's frontend.
 
 **Critical constraint**: `docs/sitemap.md` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form searches across all source directories — scope every check to the files listed in the sitemap.
@@ -88,17 +102,17 @@ Expected: 0 on structural elements. Note: `bg-gray-100` and `bg-gray-200` (light
 **CHECK 4 — Required field asterisks using hardcoded color instead of semantic token** [Severity: Medium]
 Pattern: `text-red-500`
 Exclude: lines with `//`, `border-`, `hover:`, `ring-`, `focus:`
-Expected: 0 matches. All required-field asterisks must use your design system's destructive/error semantic token (e.g. `text-destructive`).
+Expected: 0 matches. All required-field asterisks must use your design system's destructive/error semantic token (`[DESTRUCTIVE_TOKEN]`).
 
 **CHECK 5 — Duplicate CSS class tokens** [Severity: Low]
 Pattern: look for any word repeated twice in the same className string, specifically `dark:[a-z-]+-[0-9]+ dark:[a-z-]+-[0-9]+` where the two tokens are identical.
 Flag lines where the same utility class appears twice.
 Expected: 0 matches.
 
-**CHECK 6 — Bare empty states (no EmptyState component)** [Severity: High]
-Pattern: lines containing `<p` AND a "no items found" / "empty" message with a className including `text-center` or `text-muted-foreground`
-Exclude: lines containing `EmptyState`, `toast`, `aria-`, `placeholder=`, `title=`
-Expected: 0 matches. All empty states must use a shared EmptyState component.
+**CHECK 6 — Bare empty states (no [EMPTY_STATE_COMPONENT])** [Severity: High]
+Pattern: lines containing `<p` AND a "no items found" / "empty" message with a className including `text-center` or `[MUTED_TEXT_TOKEN]`
+Exclude: lines containing `[EMPTY_STATE_COMPONENT]`, `toast`, `aria-`, `placeholder=`, `title=`
+Expected: 0 matches. All empty states must use a shared [EMPTY_STATE_COMPONENT] component.
 
 **CHECK 7 — Back links in detail pages missing block display** [Severity: Low]
 Scope: only the 'detail' layout pages from the sitemap.
@@ -108,7 +122,7 @@ Expected: every back link has `block` in className.
 **CHECK 8 — Status badges with hardcoded colors** [Severity: Medium]
 Scope: only the 'detail' and 'feed' layout pages.
 Pattern: `bg-green-|bg-yellow-|bg-orange-|text-green-|text-yellow-` on badge/span elements
-Expected: 0 matches. All status badges must use semantic tokens or a shared StatusBadge component.
+Expected: 0 matches. All status badges must use semantic tokens or a shared [STATUS_BADGE_COMPONENT] component.
 
 **CHECK 9 — Tab bars missing whitespace-nowrap** [Severity: Medium]
 Scope: only the 'tabs' layout pages from the sitemap.
@@ -126,7 +140,7 @@ Expected: 0 matches. `<Table>` must always have `w-auto`.
 **CHECK 11 — Icon-only buttons missing aria-label** [Severity: Critical]
 Pattern: lines containing `size="icon"` or `size={'icon'}` that do NOT also contain `aria-label`
 Method: grep for `size="icon"|size=\{'icon'\}`, then filter to keep only lines that do NOT contain `aria-label`.
-Also check: `IconButton` and `Button` with only an icon child (no visible text) — grep for `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*{[^}]*Icon` without `aria-label` on the same or preceding line.
+Also check: icon-only button variants (adapt component names like `IconButton`, `Button` to your UI library's equivalents) with only an icon child (no visible text) — grep for `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*{[^}]*Icon` without `aria-label` on the same or preceding line.
 Expected: 0 matches. Icon-only buttons must always have aria-label.
 
 **CHECK 12 — overflow-x-auto on table wrappers (layout violation)** [Severity: Critical]
@@ -148,7 +162,7 @@ Note: this is a framework-version-specific concern — verify against your CSS f
 **CHECK 15 — Deprecated opacity utility syntax** [Severity: High]
 Pattern: `bg-opacity-|text-opacity-|border-opacity-|divide-opacity-|placeholder-opacity-|ring-opacity-`
 Exclude: lines with `//`, `{/*`
-Expected: 0 matches. These utilities were removed in Tailwind v4. Use slash syntax: `bg-black/50`, `text-foreground/80`, etc.
+Expected: 0 matches. These utilities were deprecated or removed in recent CSS framework versions. Use slash syntax or your framework's equivalent: `bg-black/50`, `text-foreground/80`, etc.
 Note: framework-version-specific — verify against your CSS framework's changelog.
 
 **CHECK 16 — Native <img> tag** [Severity: Medium]
@@ -160,7 +174,7 @@ Expected: 0 matches. All raster images should use your framework's optimized ima
 **CHECK 17 — Form inputs without accessible labels** [Severity: Critical]
 Pattern: lines containing `<Input|<Textarea|<Select` (UI component library form components) that do NOT also contain `aria-label` or `aria-labelledby` or `id=` (indicating a Label htmlFor association is possible).
 Method: for each match, check within ±5 lines for a `<Label` containing `htmlFor` matching the input's `id`. If no `<Label htmlFor` and no `aria-label`/`aria-labelledby` on the component line: flag it.
-Note: inputs inside form field wrappers (e.g. react-hook-form `<FormField>`) with a sibling label component are valid — exclude lines inside such wrappers.
+Note: inputs inside form field wrappers (e.g. your form library's field wrapper component) with a sibling label component are valid — exclude lines inside such wrappers.
 Expected: 0 matches. Every form control must have an accessible name."
 
 ---
@@ -206,19 +220,20 @@ Expected: all table wrappers use `w-fit` or `w-auto`.
 Check the first 3 key components from the sitemap for the target scope: if any primary interactive component has `outline-none` or `outline-0` without a compensating `focus-visible:ring-*`, flag it.
 Severity: High (WCAG 2.4.7).
 
-**S8 — Client boundary placement depth**
+**S8 — Client boundary placement depth** *(framework-specific — applies only to frameworks with a server/client component model, e.g. React/Next.js)*
 Read your app layout file.
-Verify: client-side directive (e.g. `'use client'` in React/Next.js) is NOT present at the top of layout-level files (they should be Server Components by design).
+Verify: if your framework uses a server/client component boundary (e.g. `'use client'` in React/Next.js), check that this directive is NOT present at the top of layout-level files.
 Then check the first 3 key components from the sitemap for the target scope: if any page-level component carries a client directive AND contains no hooks or browser APIs, flag it — the client boundary is unnecessarily high.
 Severity: Medium (performance — prevents server-side streaming/rendering benefits).
+Note: skip this check if your framework does not have a server/client component distinction.
 
 ---
 
 ## Step 4 — Browser accessibility scan (conditional — Playwright MCP)
 
 **First: check if dev server is reachable.**
-Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
-- If response is NOT 200 or 302: output `Browser scan skipped — dev server not running on localhost:3000. Re-run after starting the dev server for full axe-core coverage.` Then skip to Step 5.
+Run: `curl -s -o /dev/null -w "%{http_code}" [DEV_URL]`
+- If response is NOT 200 or 302: output `Browser scan skipped — dev server not reachable at [DEV_URL]. Re-run after starting the dev server for full axe-core coverage.` Then skip to Step 5.
 - If response is 200 or 302: proceed.
 
 **Select 3 representative pages** from the target scope (resolved from sitemap.md):
@@ -229,7 +244,7 @@ Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
 **For each page, execute the following sequence:**
 
 ```
-1. mcp__playwright__browser_navigate to http://localhost:3000/<route>
+1. mcp__playwright__browser_navigate to [DEV_URL]/<route>
    (If redirected to a login page: authenticate first using your project's test credentials,
     then navigate to the target route)
 
@@ -270,7 +285,7 @@ Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
 
 **Known false-positives to suppress** (document, not fix):
 - `color-contrast` on muted/secondary text within portal overlay elements — accessibility tooling measures the portal layer, not the semantic background. Verify manually.
-- `aria-hidden-focus` inside closed modal/sheet components — component libraries like Radix manage this via `inert` attribute in recent versions. Verify your library version before flagging.
+- `aria-hidden-focus` inside closed modal/sheet components — component libraries may manage this via `inert` attribute in recent versions. Verify your component library's version and behavior before flagging.
 
 ---
 

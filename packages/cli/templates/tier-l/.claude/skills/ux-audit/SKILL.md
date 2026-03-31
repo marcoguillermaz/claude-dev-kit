@@ -12,6 +12,7 @@ allowed-tools: Read, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwri
 
 > Replace these placeholders:
 > - `[DEV_URL]` — e.g. `http://localhost:3000`
+> - `[LOGIN_ROUTE]` — your login page path, e.g. `login`, `signin`, `auth/login`
 > - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`
 > - `[TEST_ACCOUNTS]` — email/password pairs per role
 >
@@ -72,7 +73,7 @@ From sitemap sub-hierarchies, build a mental model of:
 Navigate to `[DEV_URL]`. If not reachable:
 > ❌ Dev server not running. Start it then re-run `/ux-audit`.
 
-Record the base URL. If redirected to `/login`, record that a session must be established first.
+Record the base URL. If redirected to `/[LOGIN_ROUTE]`, record that a session must be established first.
 
 ---
 
@@ -198,9 +199,9 @@ For each flow in scope:
 
 ### Login helper
 ```
-1. browser_navigate [DEV_URL]/login
+1. browser_navigate [DEV_URL]/[LOGIN_ROUTE]
 2. If at /: check sidebar/header for correct role indicator
-   - If wrong role: find sign-out → click → confirm → wait for /login
+   - If wrong role: find sign-out → click → confirm → wait for /[LOGIN_ROUTE]
 3. browser_type email field
 4. browser_type password field
 5. browser_click submit
@@ -307,7 +308,7 @@ Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Viola
 
 | Pattern | Routes compared | Gap | Severity |
 |---|---|---|---|
-| [e.g. Post-submit redirect] | /items/new vs /orders/new | [difference] | Minor |
+| [e.g. Post-submit redirect] | /[entity-a]/new vs /[entity-b]/new | [difference] | Minor |
 
 ---
 
