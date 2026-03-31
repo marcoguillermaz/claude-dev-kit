@@ -79,6 +79,7 @@ Grep: `import.*from` in client component files. Flag any imports of known-heavy 
 Flag: each import with the library name and whether a server-side alternative pattern exists.
 
 **CHECK B3 — Data fetching in client components**
+**Adapt to your framework**: this check is written for React hooks. Skip if project does not use React or a React-like hooks model — apply your framework's equivalent for detecting data fetches inside reactive/client contexts.
 Two-pass approach:
 Pass 1 — grep `useEffect` in all client component files to find files with useEffect usage.
 Pass 2 — for each file found, read up to 10 lines after each `useEffect(` call. Flag any useEffect whose callback body contains `fetch(`, `.from(`, or equivalent DB client call within those 10 lines.
@@ -86,6 +87,7 @@ The single-line regex misses multi-line patterns where the fetch call is on the 
 Flag: `useEffect` calls that fetch data — these defeat server rendering. Consider Server Components with Suspense, or a client-side data fetching library with proper caching.
 
 **CHECK B4 — Unstable callbacks on memoized child components**
+**Adapt to your framework**: this check is written for React `memo()`. Skip if project does not use React component memoization — apply your framework's equivalent (e.g. `computed` in Vue, `OnPush` change detection in Angular).
 Grep: inline `() =>` arrow functions passed as props to components that are known to be memoized (check if child is wrapped in `memo()`). Pattern: `onX={()=>` where the prop is passed to a component declared with `memo(`.
 Flag: each case. Inline arrow function props create new references on every parent render, defeating `memo`.
 Note: do NOT flag `onClick` on native HTML elements.
@@ -160,7 +162,7 @@ Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list �
 
 ```
 ## Performance Audit — [DATE] — [SCOPE]
-### Sources: [FRAMEWORK] bundle docs, React docs, web.dev/vitals
+### Sources: [FRAMEWORK] bundle docs, your framework's documentation, web.dev/vitals
 
 ### Server/Client Boundary
 | # | Check | Matches | Severity | Verdict |
@@ -201,7 +203,7 @@ Scoring: 🟢 = 0 High/Critical findings · 🟡 = 1-2 Medium findings · 🔴 =
 [findings that are isolated, low-risk, and self-contained — e.g. add Promise.all, add lazy loading wrapper]
 
 ### Strategic refactors (require planning)
-[findings that affect multiple files or need architectural decisions — e.g. move data fetch to Server Component]
+[findings that affect multiple files or need architectural decisions — e.g. move data fetch to a server-side component or handler]
 
 ### Findings requiring action ([N] total)
 [file:line — check# — issue — impact — suggested fix for each]
@@ -212,13 +214,13 @@ Scoring: 🟢 = 0 High/Critical findings · 🟡 = 1-2 Medium findings · 🔴 =
 Present all findings with severity Medium or above as a numbered decision list:
 
 ```
-Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+Found N findings at Medium severity or above. Which to add to the backlog?
 [1] [CRITICAL] PERF-? — file:line — one-line description
 [2] [HIGH]     PERF-? — file:line — one-line description
 [3] [MEDIUM]   PERF-? — file:line — one-line description
 ```
 
-Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+Reply with the numbers to include (e.g. "1 2 4"), "all", or "none".
 **Wait for explicit user response before writing anything.**
 
 Then write ONLY the approved entries to `docs/refactoring-backlog.md`:

@@ -99,7 +99,8 @@ Note: public/anon keys for services designed to be used client-side are expected
 
 **CHECK A9 — Service/admin credentials in client-side code**
 Scope: all files marked as client-side (e.g. `'use client'`, browser entry points, client modules).
-Pattern: grep for service role keys, admin credentials, or credential variable names: `SERVICE_ROLE|service_role|ADMIN_KEY|adminCredential|serviceKey`.
+Pattern: grep for service role keys, admin credentials, or credential variable names: `SERVICE_ROLE|service_role|ADMIN_KEY|SERVICE_ACCOUNT|adminCredential|serviceKey`.
+Adapt these patterns to your project's credential variable naming conventions.
 Flag: any match. Admin/service credentials bypass access control — their presence in client-side code exposes them in the browser bundle.
 
 **CHECK A10 — Storage/file URLs for private resources**
@@ -275,7 +276,7 @@ Flag: any header present in config but absent in live response — this means th
 [route/file — check# — note]
 
 ### Quick wins
-[findings that are isolated, low-risk fixes — e.g. add ownership filter, add Zod enum on query param]
+[findings that are isolated, low-risk fixes — e.g. add ownership filter, add input validation for query parameters]
 
 ### Strategic refactors
 [findings requiring broader changes — e.g. state machine enforcement across all transition routes, centralized response serializers]
@@ -286,13 +287,13 @@ Flag: any header present in config but absent in live response — this means th
 Present all findings with severity Medium or above as a numbered decision list:
 
 ```
-Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+Found N findings at Medium severity or above. Which to add to the backlog?
 [1] [CRITICAL] SEC-? — route/file — one-line description
 [2] [HIGH]     SEC-? — route/file — one-line description
 [3] [MEDIUM]   SEC-? — route/file — one-line description
 ```
 
-Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+Reply with the numbers to include (e.g. "1 2 4"), "all", or "none".
 **Wait for explicit user response before writing anything.**
 
 Then write ONLY the approved entries to `docs/refactoring-backlog.md`:

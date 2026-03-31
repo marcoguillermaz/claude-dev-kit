@@ -36,6 +36,7 @@ Launch a single research agent **(model: haiku)** to fetch ALL of the following 
 - https://docs.anthropic.com/en/docs/claude-code/changelog
 - https://github.com/anthropics/claude-code/releases (latest 5 releases)
 - https://docs.anthropic.com/en/docs/claude-code/best-practices
+- https://code.claude.com/docs/en/best-practices
 - https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview
 - https://code.claude.com/docs/en/memory
 - https://code.claude.com/docs/en/settings
@@ -98,12 +99,17 @@ Compare Step 1 findings against Step 2 state. Classify each gap:
 | Divergence area | Files to update | Classification |
 |---|---|---|
 | Hook event name changed or deprecated | `.claude/settings.json` (hook key) | RECOMMEND |
+| Hook JSON response schema changed (new/removed fields) | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (Block output format section) | RECOMMEND |
+| Hook prompt logic updated (trigger conditions, exclusions, bypass format) | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (matching section) | RECOMMEND — both files always updated together; hook is authoritative, rubric follows |
+| Deprecated model ID in hook | `.claude/settings.json` (`model:` field in hook entry) | AUTO-FIX |
 | New hook event worth adding | `.claude/settings.json` (new hook entry) | RECOMMEND |
 | Pipeline phase gate wording | `.claude/rules/pipeline.md` | RECOMMEND |
 | CLAUDE.md instruction addition | `CLAUDE.md` | RECOMMEND |
 | Skill model ID deprecated | `.claude/skills/<name>/SKILL.md` (`model:` frontmatter) | AUTO-FIX |
 | Skill missing `context: fork` | `.claude/skills/<name>/SKILL.md` (frontmatter) | AUTO-FIX |
 | Skill missing `allowed-tools` | `.claude/skills/<name>/SKILL.md` (frontmatter) | AUTO-FIX |
+| claudemd-standards.md outdated | `.claude/rules/claudemd-standards.md` (relevant section + `Last verified` date) | RECOMMEND |
+| pipeline-standards.md outdated | `.claude/rules/pipeline-standards.md` (relevant section + `Last verified` date) | RECOMMEND |
 
 Every RECOMMEND must include: (1) specific file path(s) to modify, (2) section or line reference, (3) proposed change in one sentence. A RECOMMEND without a file target is incomplete — do not emit it.
 
@@ -337,7 +343,7 @@ Expected: ≥1 match. Missing = WARN.
 
 **PE5 — Security checklist per API route**
 Check: does Phase 2 include a security checklist for every new/modified API route?
-Run: `grep -A8 "Security checklist\|security.*checklist" .claude/rules/pipeline.md | grep -c "auth\|validation\|Zod\|RLS\|sensitive"`
+Run: `grep -A8 "Security checklist\|security.*checklist" .claude/rules/pipeline.md | grep -c "auth\|valid\|sensitive\|access.control\|row.level"`
 Expected: ≥2 matches. Missing = WARN.
 
 **PE6 — Staging-before-production**
@@ -383,12 +389,12 @@ Using hook documentation fetched in Step 1 and `settings.json` read in Step 2, v
 
 **H1a — Event name currency**
 Check: every event name in `settings.json` hooks matches the current official event list.
-Run: `grep -o '"SessionStart"\|"UserPromptSubmit"\|"PreToolUse"\|"PostToolUse"\|"Stop"\|"PostCompact"\|"PreCompact"\|"InstructionsLoaded"\|"Notification"' .claude/settings.json | sort -u`
+Run: `grep -o '"SessionStart"\|"UserPromptSubmit"\|"PreToolUse"\|"PostToolUse"\|"Stop"\|"PostCompact"\|"PreCompact"\|"InstructionsLoaded"\|"Notification"\|"TaskCompleted"' .claude/settings.json | sort -u`
 Pass: all events appear in the Step 1 documentation. Any unrecognized event → RECOMMEND removal or rename.
 
 **H1b — JSON response field compliance (prompt hooks)**
-For each hook with `"type": "prompt"` in settings.json: check that response fields match the documented schema from Step 1 hooks documentation.
-If divergence found → RECOMMEND (never AUTO-FIX).
+For each hook with `"type": "prompt"` in settings.json: check that response fields `(ok, reason, decision, updatedInput)` match the documented schema from Step 1 hooks documentation.
+If divergence found → RECOMMEND (never AUTO-FIX): specify both files that need updating — `.claude/settings.json` (hook prompt inline, authoritative) + `.claude/rules/prompt-quality-rubric.md` (Block output format section, follows the hook).
 
 **H1c — Bypass mechanism visibility**
 Check: every `UserPromptSubmit` hook with `type: prompt` that can return a blocking response must include bypass instructions.
@@ -410,6 +416,8 @@ If drift found → AUTO-FIX: update the rubric to match the hook (hook is author
 Based on Step 1 documentation, flag any new hook events from recent Claude Code releases that the project might benefit from:
 - `PreCompact` — save critical in-progress state before context compression
 - `TaskCompleted` — post-completion summary or notification
+- `SubagentStart` / `SubagentStop` — track subagent lifecycle for observability or cost logging
+- `FileChanged` — trigger validation or linting when specific files are modified
 These are RECOMMEND, not AUTO-FIX.
 
 ---
@@ -435,6 +443,7 @@ Output a structured report in this exact format:
 ```
 ## Arch Audit — [DATE]
 ### Claude Code version checked: [version from changelog/releases]
+### Current model IDs verified: Opus=[id] · Sonnet=[id] · Haiku=[id]
 
 ### ✅ Auto-fixed ([N] changes)
 - [file]: [what changed and why]
@@ -445,7 +454,7 @@ Output a structured report in this exact format:
 ### ✓ Compliant (no action needed)
 - [area]: [brief confirmation]
 
-### Ecosystem consistency (C1–C17)
+### Ecosystem consistency (C1–C17) — grep-tier via haiku batch, judgment-tier in main context
 - C1 Deploy information currency: [PASS/FAIL]
 - C2 Skill output file references: [PASS/FAIL — list matches if any]
 - C3 files-guide.md live state: [PASS/FAIL]
