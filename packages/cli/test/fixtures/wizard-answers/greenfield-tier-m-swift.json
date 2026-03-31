@@ -1,0 +1,19 @@
+{
+  "mode": "greenfield",
+  "tier": "m",
+  "projectName": "Swift App",
+  "description": "A Tier M Swift iOS project",
+  "techStack": "swift",
+  "testCommand": "swift test",
+  "devCommand": "swift run",
+  "e2eCommand": "",
+  "hasApi": false,
+  "hasDatabase": false,
+  "hasFrontend": true,
+  "hasDesignSystem": true,
+  "designSystemName": "Apple HIG",
+  "auditModel": "claude-sonnet-4-6",
+  "hasPrd": false,
+  "includePreCommit": false,
+  "includeGithub": true
+}

@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 1.3.0
+**Version**: 1.5.0
 **Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -144,13 +144,13 @@ For experienced users, the wizard asks:
 - Test command, type check command, dev server command
 - **E2E test command (Playwright/Cypress — optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
 - **Feature flags (Tier M/L only)** — 7 questions that determine which audit skills are installed and set an `## Active Skills` section in CLAUDE.md:
-  - "Does your project have an API layer?" → installs `/api-design`, `/security-audit`
+  - "Does your project expose an API (REST, GraphQL, RPC)?" → installs `/api-design` (`/security-audit` is always installed for Tier M/L)
   - "Does your project use a database?" → installs `/skill-db`
   - "Does your project have a frontend / UI?" → installs `/responsive-audit`, `/visual-audit`, `/ux-audit`
   - "Do you use a component library or design system?" (if frontend) → installs `/ui-audit`
   - "Design system name?" (if design system) → populates `[DESIGN_SYSTEM_NAME]` placeholder in ui-audit
-  - "Preferred model for heavy audit skills?" (if frontend) → `sonnet` (faster) or `opus` (thorough); populates `[AUDIT_MODEL]` frontmatter
-  - "Track a PRD per block?" → determines if `docs/prd/prd.md` is referenced in context review C12
+  - "Track a PRD per feature block?" (shown immediately after tier selection) → determines if `docs/prd/prd.md` is referenced in context review C12
+  - "Preferred model for deep analysis skills?" (if frontend) → `claude-sonnet-4-6` (faster) or `claude-opus-4-6` (thorough); populates `[AUDIT_MODEL]` frontmatter
 - Whether to include pre-commit config and `.github/` files
 
 Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code. Tier M/L also include `FIRST_SESSION.md` — a step-by-step guide to the first block cycle.
@@ -191,7 +191,7 @@ What happens:
 **Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
 
 The CLI:
-1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`.
+1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `Package.swift`, `Gemfile`, `pom.xml`, `build.gradle`, `*.csproj`, and Xcode project directories. Supported stacks: Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java.
 2. Shows detected values pre-filled in every prompt — you confirm or override.
 3. Counts your source files to suggest an appropriate tier.
 4. Creates all governance files **without overwriting** `CLAUDE.md`, `MEMORY.md`, `.gitignore`, or `README.md` if they already exist.
@@ -703,7 +703,7 @@ Eleven audit skills are scaffolded across the tiers. Run them as slash commands 
 |---|---|---|---|---|---|
 | `/arch-audit` | ✓ | ✓ | ✓ | always | Internet access (fetches Anthropic docs) |
 | `/commit` | ✓ | ✓ | ✓ | always | — |
-| `/security-audit` | — | ✓ | ✓ | `hasApi=true` | — |
+| `/security-audit` | — | ✓ | ✓ | always | — |
 | `/skill-dev` | — | ✓ | ✓ | always | — |
 | `/skill-db` | — | ✓ | ✓ | `hasDatabase=true` | — |
 | `/api-design` | — | ✓ | ✓ | `hasApi=true` | — |

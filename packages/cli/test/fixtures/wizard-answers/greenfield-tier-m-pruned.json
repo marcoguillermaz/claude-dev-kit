@@ -1,0 +1,17 @@
+{
+  "mode": "greenfield",
+  "tier": "m",
+  "projectName": "Pruned Project",
+  "description": "A Tier M project with no API, DB, or frontend",
+  "techStack": "node-ts",
+  "testCommand": "npx vitest run",
+  "typeCheckCommand": "npx tsc --noEmit",
+  "devCommand": "npm run dev",
+  "e2eCommand": "",
+  "hasApi": false,
+  "hasDatabase": false,
+  "hasFrontend": false,
+  "hasPrd": false,
+  "includePreCommit": false,
+  "includeGithub": false
+}

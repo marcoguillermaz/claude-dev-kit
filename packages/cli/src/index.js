@@ -16,6 +16,7 @@ program
   .description('Initialize a new project with a legible, reviewable development scaffold')
   .option('--tier <tier>', 'Skip tier selection prompt (s, m, or l)')
   .option('--dry-run', 'Show what would be created without writing any files')
+  .option('--answers <json>', 'Bypass interactive prompts with JSON answers (for automation and testing)')
   .action(init);
 
 program
