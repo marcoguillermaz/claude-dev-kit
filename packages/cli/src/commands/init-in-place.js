@@ -8,6 +8,7 @@ import { detectStack } from '../utils/detect-stack.js';
 import { scaffoldTierSafe } from '../scaffold/index.js';
 import { generateContextImport } from '../generators/context-import.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
+import { AUDIT_MODELS } from '../utils/constants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -112,10 +113,10 @@ export async function initInPlace(options) {
       when: !options.tier,
       default: tierDefault,
       choices: [
-        { name: '0 — Discovery    (context only, no pipeline)', value: '0' },
-        { name: 'S — Fast Lane    (bugfixes, ≤3 files)', value: 's' },
-        { name: 'M — Standard     (feature blocks, 1–2 weeks)', value: 'm' },
-        { name: 'L — Full         (complex domain, long-running)', value: 'l' },
+        { name: '0 — Discovery (context only, no pipeline)', value: '0' },
+        { name: 'S — Fast Lane (bugfixes, ≤3 files)', value: 's' },
+        { name: 'M — Standard (feature blocks, 1–2 weeks)', value: 'm' },
+        { name: 'L — Full (complex domain, long-running)', value: 'l' },
       ],
     },
     {
@@ -240,10 +241,7 @@ export async function initInPlace(options) {
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
       },
-      choices: [
-        { name: 'claude-sonnet-4-6 — faster, lower cost  (recommended)', value: 'claude-sonnet-4-6' },
-        { name: 'claude-opus-4-6   — more thorough, higher cost',         value: 'claude-opus-4-6' },
-      ],
+      choices: AUDIT_MODELS,
       default: 'claude-sonnet-4-6',
     },
     {
