@@ -317,7 +317,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.5.0` — wizard UX Phases 1–4 complete: 6 new named stacks, aligned labels/hints/defaults, printPlan improvements, and `--answers` bypass for automation. Integration tests 150 → 186.
+`v1.6.0` — conditional docs scaffold (sitemap/db-map) + staff-manager→CDK skill sync. Integration tests 186 → 194.
+
+**v1.6.0 changes**: `docs/sitemap.md` and `docs/db-map.md` added as Tier M+L scaffold templates, pruned conditionally when `hasFrontend=false` / `hasDatabase=false` via new `pruneConditionalDocs()`; `printPlan` updated to show these files conditionally and remove phantom `docs/dependency-map.md`. 29 template files upgraded (common rules + 11 skills across Tier M/L, 2 skills in Tier S) via a 4-level agnosticity-filtered sync from an internal pilot project — L1 lexical, L2 structural, L3 CDK File/Placeholder Registry, L3b CDK Pattern Recognition, L4 conditional; domain tokens stripped, CDK Configuration placeholders preserved. +8 integration checks (194 total).
 
 **v1.5.0 changes (Phases 1–4)**: 6 new stacks auto-detected and wizard-ready (Swift, Kotlin, Rust, .NET, Ruby, Java) — IMPROVEMENT-01; all wizard labels, hints, and defaults aligned across tiers and stacks (Phases 1–2); `printPlan` shows skills included/skipped, hides misleading devCommand defaults, detects brew/pip for pre-commit, adapts doctor command to local vs npm context (Phase 3); `--answers <json>` CLI flag bypasses all interactive prompts for automation and testing — 9 fixture JSON files, `scenarioWizardCoverage()` added to integration suite (Phase 4). `CONTEXT_IMPORT.md` excluded from wizard-placeholder check (intentional instruction text, not unfilled values).
 

@@ -1,3 +1,7 @@
+---
+description: Output style and communication rules — applies to all Claude responses, not just code tasks
+---
+
 # Output Style Rules
 
 These rules apply to every Claude response in this project, regardless of task type.
@@ -16,7 +20,7 @@ These rules apply to every Claude response in this project, regardless of task t
 ## Tone and structure
 
 **No affirmation openers.** Never start a response with:
-- "Certainly!", "Of course!", "Absolutely!", "Sure!", "Great question!", "Excellent!", "I'd be happy to", "I'd be glad to"
+- "Certainly!", "Of course!", "Absolutely!", "Sure!", "Of course!", "Great question!", "Excellent!", "I'd be happy to", "I'd be glad to"
 
 **No sycophantic closers.** Never end with:
 - "I hope this helps", "Feel free to ask", "Let me know if you need anything", "Is there anything else?", "Happy to clarify"

@@ -289,6 +289,8 @@ async function scenarioTierS_full() {
   // Tier S must NOT have M/L-only files
   assertNotExists(dir, 'FIRST_SESSION.md');
   assertNotExists(dir, 'MEMORY.md');
+  assertNotExists(dir, 'docs/sitemap.md');
+  assertNotExists(dir, 'docs/db-map.md');
 
   assertStopHookPresent(dir);
   assertStopHookResolved(dir);
@@ -334,6 +336,8 @@ async function scenarioTierM() {
   assertExists(dir, 'docs/implementation-checklist.md');
   assertExists(dir, 'docs/refactoring-backlog.md');
   assertExists(dir, 'docs/adr/template.md');
+  assertExists(dir, 'docs/sitemap.md');
+  assertExists(dir, 'docs/db-map.md');
 
   // Agents (M has dependency-scanner, not context-reviewer)
   assertExists(dir, '.claude/agents/dependency-scanner.md');
@@ -370,6 +374,10 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/rules/output-style.md');
   assertExists(dir, '.claude/rules/claudemd-standards.md');
   assertExists(dir, '.claude/rules/pipeline-standards.md');
+
+  // Conditional docs (all flags enabled in BASE)
+  assertExists(dir, 'docs/sitemap.md');
+  assertExists(dir, 'docs/db-map.md');
 
   // Both agents
   assertExists(dir, '.claude/agents/dependency-scanner.md');
@@ -471,6 +479,10 @@ async function scenarioSkillPruning() {
     hasFrontend: false,
   };
   const dir = await scaffold('tier-m-pruned', 'm', config);
+
+  // Conditional docs must be absent (no frontend, no database)
+  assertNotExists(dir, 'docs/sitemap.md');
+  assertNotExists(dir, 'docs/db-map.md');
 
   // Skills that must be absent
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');

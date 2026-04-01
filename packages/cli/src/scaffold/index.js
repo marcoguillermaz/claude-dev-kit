@@ -83,9 +83,23 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     await fs.remove(path.join(targetDir, '.github'));
   }
 
-  // Conditionally remove skills that are not applicable for this project
+  // Conditionally remove docs and skills that are not applicable for this project
   if (tier === 'm' || tier === 'l') {
+    await pruneConditionalDocs(targetDir, config);
     await pruneSkills(targetDir, config);
+  }
+}
+
+/**
+ * Remove optional docs that are not applicable based on project feature flags.
+ * Docs are only pruned when a feature flag is explicitly set to false (not undefined).
+ */
+async function pruneConditionalDocs(targetDir, config) {
+  if (config.hasFrontend === false) {
+    await fs.remove(path.join(targetDir, 'docs', 'sitemap.md'));
+  }
+  if (config.hasDatabase === false) {
+    await fs.remove(path.join(targetDir, 'docs', 'db-map.md'));
   }
 }
 
@@ -203,6 +217,7 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   }
 
   if (tier === 'm' || tier === 'l') {
+    await pruneConditionalDocs(targetDir, config);
     await pruneSkills(targetDir, config);
   }
 }

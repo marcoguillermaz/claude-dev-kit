@@ -46,7 +46,7 @@ Run before every release to validate all tier/mode combinations:
 node packages/cli/test/integration/run.js
 # Add --verbose for per-check output
 ```
-186 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation, new named stacks (swift/kotlin/rust/dotnet/ruby/java), full CLI execution via `--answers` fixtures (9 scenarios). Output is gitignored (`packages/cli/test/integration/output/`).
+194 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation, new named stacks (swift/kotlin/rust/dotnet/ruby/java), conditional docs pruning (sitemap.md, db-map.md), full CLI execution via `--answers` fixtures (9 scenarios). Output is gitignored (`packages/cli/test/integration/output/`).
 
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
@@ -67,4 +67,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.5.0` — wizard UX Phases 0–4. Phase 4 (IMPROVEMENT-02): `--answers <json>` CLI flag bypasses all interactive prompts in `init`, `init-greenfield`, `init-in-place`. 9 fixture JSON files in `packages/cli/test/fixtures/wizard-answers/`. `scenarioWizardCoverage()` added to integration tests. `CONTEXT_IMPORT.md` excluded from wizard-placeholder check (intentional instruction text). 186 integration checks (+36 from Phase 4).
+`v1.6.0` — conditional docs scaffold (sitemap/db-map Tier M+L) + staff-manager→CDK skill sync (29 templates). `pruneConditionalDocs()` prunes sitemap/db-map when `hasFrontend`/`hasDatabase` false. 29 template files upgraded via 4-level agnosticity filter. 194 integration checks.

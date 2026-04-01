@@ -243,10 +243,12 @@ function getFilePlan(config) {
       base.push('docs/  (populated by Claude during discovery)');
     }
     base.push('docs/adr/template.md');
-  }
-
-  if (tier === 'L' && mode === 'greenfield') {
-    base.push('docs/sitemap.md', 'docs/dependency-map.md');
+    if (config.hasFrontend !== false) {
+      base.push('docs/sitemap.md');
+    }
+    if (config.hasDatabase !== false) {
+      base.push('docs/db-map.md');
+    }
   }
 
   if (config.includeGithub !== false) {
