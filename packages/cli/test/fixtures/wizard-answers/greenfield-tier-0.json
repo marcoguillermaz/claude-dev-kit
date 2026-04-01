@@ -1,0 +1,9 @@
+{
+  "mode": "greenfield",
+  "tier": "0",
+  "projectName": "Discovery Project",
+  "description": "A discovery tier project",
+  "techStack": "node-ts",
+  "testCommand": "npx vitest run",
+  "devCommand": "npm run dev"
+}

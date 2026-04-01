@@ -101,7 +101,6 @@ async function pruneSkills(targetDir, config) {
 
   if (config.hasApi === false) {
     skipSkills.add('api-design');
-    skipSkills.add('security-audit');
   }
 
   if (config.hasDatabase === false) {
@@ -249,6 +248,12 @@ function interpolate(content, config) {
     'node-js': 'Node.js + JavaScript',
     python: 'Python',
     go: 'Go',
+    swift: 'Swift / macOS',
+    kotlin: 'Kotlin / Android',
+    rust: 'Rust',
+    dotnet: '.NET / C#',
+    ruby: 'Ruby',
+    java: 'Java',
     other: 'Mixed',
   };
 
@@ -268,7 +273,7 @@ function interpolate(content, config) {
     .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
     .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
     .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
-    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || 'sonnet')
+    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || 'claude-sonnet-4-6')
     .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
     .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false');
 }

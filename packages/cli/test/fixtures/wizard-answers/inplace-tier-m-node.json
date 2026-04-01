@@ -1,0 +1,20 @@
+{
+  "mode": "in-place",
+  "tier": "m",
+  "projectName": "Existing Node Project",
+  "techStack": "node-ts",
+  "testCommand": "npx vitest run",
+  "typeCheckCommand": "npx tsc --noEmit",
+  "devCommand": "npm run dev",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "e2eCommand": "",
+  "hasApi": true,
+  "hasDatabase": true,
+  "hasFrontend": true,
+  "hasDesignSystem": false,
+  "auditModel": "claude-sonnet-4-6",
+  "hasPrd": false,
+  "includePreCommit": true,
+  "includeGithub": false
+}

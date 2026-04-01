@@ -1,0 +1,12 @@
+{
+  "mode": "in-place",
+  "tier": "s",
+  "projectName": "Android App",
+  "techStack": "kotlin",
+  "testCommand": "./gradlew test",
+  "devCommand": "./gradlew run",
+  "buildCommand": "./gradlew build",
+  "installCommand": "./gradlew dependencies",
+  "includePreCommit": false,
+  "includeGithub": false
+}

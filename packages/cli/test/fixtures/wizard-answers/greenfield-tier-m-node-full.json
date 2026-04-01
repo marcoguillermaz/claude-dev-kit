@@ -1,0 +1,20 @@
+{
+  "mode": "greenfield",
+  "tier": "m",
+  "projectName": "Standard Project",
+  "description": "A Tier M node project with all features",
+  "techStack": "node-ts",
+  "testCommand": "npx vitest run",
+  "typeCheckCommand": "npx tsc --noEmit",
+  "devCommand": "npm run dev",
+  "e2eCommand": "npx playwright test",
+  "hasApi": true,
+  "hasDatabase": true,
+  "hasFrontend": true,
+  "hasDesignSystem": true,
+  "designSystemName": "shadcn/ui",
+  "auditModel": "claude-sonnet-4-6",
+  "hasPrd": false,
+  "includePreCommit": true,
+  "includeGithub": true
+}

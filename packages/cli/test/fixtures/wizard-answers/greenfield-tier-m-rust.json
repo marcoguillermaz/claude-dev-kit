@@ -1,0 +1,16 @@
+{
+  "mode": "greenfield",
+  "tier": "m",
+  "projectName": "Rust Service",
+  "description": "A Tier M Rust backend service",
+  "techStack": "rust",
+  "testCommand": "cargo test",
+  "devCommand": "cargo run",
+  "e2eCommand": "",
+  "hasApi": true,
+  "hasDatabase": true,
+  "hasFrontend": false,
+  "hasPrd": false,
+  "includePreCommit": true,
+  "includeGithub": true
+}

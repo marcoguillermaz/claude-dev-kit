@@ -1,0 +1,16 @@
+{
+  "mode": "greenfield",
+  "tier": "l",
+  "projectName": "Full Python Project",
+  "description": "A Tier L Python project",
+  "techStack": "python",
+  "testCommand": "pytest",
+  "devCommand": "uvicorn main:app --reload",
+  "e2eCommand": "",
+  "hasApi": true,
+  "hasDatabase": true,
+  "hasFrontend": false,
+  "hasPrd": true,
+  "includePreCommit": true,
+  "includeGithub": true
+}

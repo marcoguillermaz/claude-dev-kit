@@ -46,7 +46,7 @@ Run before every release to validate all tier/mode combinations:
 node packages/cli/test/integration/run.js
 # Add --verbose for per-check output
 ```
-98 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation. Output is gitignored (`packages/cli/test/integration/output/`).
+186 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation, new named stacks (swift/kotlin/rust/dotnet/ruby/java), full CLI execution via `--answers` fixtures (9 scenarios). Output is gitignored (`packages/cli/test/integration/output/`).
 
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
@@ -67,4 +67,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.3.0` — agnostic audit depth upgrade. All 8 code-audit skills deepened: arch-audit C1–C17 + PE1–PE12 + H1a–H1f, visual-audit V9–V11 (/40→/55), responsive-audit VR1–VR6, skill-dev debt-density + regression risk, api-design N11–N13 + maturity assessment, security-audit A13, ux-audit D7 C1–C5 framework. Backlog path normalized to `docs/refactoring-backlog.md`. 126 integration checks (unchanged). v1.4.0 planned: `stackProfile` for stack-specific checks.
+`v1.5.0` — wizard UX Phases 0–4. Phase 4 (IMPROVEMENT-02): `--answers <json>` CLI flag bypasses all interactive prompts in `init`, `init-greenfield`, `init-in-place`. 9 fixture JSON files in `packages/cli/test/fixtures/wizard-answers/`. `scenarioWizardCoverage()` added to integration tests. `CONTEXT_IMPORT.md` excluded from wizard-placeholder check (intentional instruction text). 186 integration checks (+36 from Phase 4).
