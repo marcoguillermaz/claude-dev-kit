@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
+import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
 
 /**
  * Scaffold Tier 0 (Discovery) — minimal: CLAUDE.md, settings.json, GETTING_STARTED.md only.
@@ -97,7 +98,10 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
  * Docs are only pruned when a feature flag is explicitly set to false (not undefined).
  */
 async function pruneConditionalDocs(targetDir, config) {
-  if (config.hasFrontend === false) {
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  const isNative = nativeStacks.includes(config.techStack);
+
+  if (config.hasFrontend === false || isNative) {
     await fs.remove(path.join(targetDir, 'docs', 'sitemap.md'));
   }
   if (config.hasDatabase === false) {
@@ -123,11 +127,17 @@ async function pruneSkills(targetDir, config) {
     skipSkills.add('skill-db');
   }
 
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  const isNative = nativeStacks.includes(config.techStack);
+
   if (config.hasFrontend === false) {
     skipSkills.add('responsive-audit');
     skipSkills.add('visual-audit');
     skipSkills.add('ux-audit');
     skipSkills.add('ui-audit');
+  } else if (isNative) {
+    // responsive-audit is a web concept — not applicable for native UIs
+    skipSkills.add('responsive-audit');
   }
 
   // ui-audit additionally requires a design system
@@ -292,7 +302,7 @@ function interpolate(content, config) {
     .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
     .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
     .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
-    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || 'claude-sonnet-4-6')
+    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
     .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
     .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false');
 }

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node packages/cli/test/integration/run.js 2>/dev/null || echo '{\"decision\": \"block\", \"reason\": \"Integration tests must pass before declaring complete. Run: node packages/cli/test/integration/run.js\"}'"
+            "command": "cd /Users/MarcoG/Projects/claude-dev-kit && node packages/cli/test/integration/run.js 2>/dev/null || echo '{\"decision\": \"block\", \"reason\": \"Integration tests must pass before declaring complete. Run: node packages/cli/test/integration/run.js\"}'"
           }
         ]
       }

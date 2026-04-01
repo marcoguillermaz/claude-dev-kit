@@ -28,6 +28,15 @@ export async function detectStack(dir) {
     } catch { return false; }
   };
 
+  // Find a directory whose name ends with the given suffix; returns the name or null
+  const findDirEndingWith = async (suffix) => {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      const match = entries.find(e => e.isDirectory() && e.name.endsWith(suffix));
+      return match ? match.name : null;
+    } catch { return null; }
+  };
+
   // Check if any file in dir matches a predicate on its name
   const existsFileMatching = async (predicate) => {
     try {
@@ -190,9 +199,9 @@ export async function detectStack(dir) {
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
   }
 
-  else if (await existsDir('.xcodeproj') || await existsDir('.xcworkspace')) {
+  else if ((await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'))) {
     result.techStack = 'swift';
-    const detected = (await existsDir('.xcodeproj')) ? '.xcodeproj' : '.xcworkspace';
+    const detected = (await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'));
     result.detectedFiles.push(detected);
     result.testCommand = 'xcodebuild test';
     result.buildCommand = 'xcodebuild build';

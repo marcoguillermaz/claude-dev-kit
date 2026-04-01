@@ -151,7 +151,10 @@ const checks = [
     id: 'codeowners',
     label: '.github/CODEOWNERS includes .claude/',
     check: (cwd) => {
-      const p = path.join(cwd, '.github', 'CODEOWNERS');
+      const githubDir = path.join(cwd, '.github');
+      const p = path.join(githubDir, 'CODEOWNERS');
+      // If .github/ is absent the user opted out of GitHub files — skip silently
+      if (!fs.existsSync(githubDir)) return { skip: true };
       if (!fs.existsSync(p)) return { pass: false, warn: true, fix: 'Create .github/CODEOWNERS and add /.claude/ with tech lead as required reviewer.' };
       const content = fs.readFileSync(p, 'utf8');
       return {
@@ -345,7 +348,7 @@ export async function doctor(options = {}) {
 
   if (warned > 0) {
     console.log();
-    console.log(chalk.yellow('Address warnings to reach full scaffold coverage.'));
+    console.log(chalk.dim('Review the warnings above — some may not apply to your setup.'));
   }
 
   console.log();

@@ -32,21 +32,20 @@ You're using Claude Code but the process is ad-hoc. Claude makes autonomous deci
 npx mg-claude-dev-kit init
 ```
 
-The wizard asks one routing question first:
+The wizard asks about your project state first:
 
 ```
-? How familiar is your team with Claude Code?
-  ▸ Just starting out — show me what's possible  (Discovery tier)
-    We use it and want guardrails                (Tier S / M / L)
+? What's the state of this project?
+  ▸ Existing project — add CDK to a project that already has code
+    New project — starting from scratch, you'll fill in the details
+    From existing docs — share your docs and Claude populates everything
 ```
-
-Three init paths to choose from:
 
 | Path | Use when |
 |---|---|
-| **Greenfield** | Starting a new project from scratch |
-| **From context** | You have existing repos or docs — Claude reads them and populates your project files |
-| **In-place** | You're already inside a project — adds structure without overwriting anything |
+| **Existing project** | You're already inside a project — adds structure without overwriting anything |
+| **New project** | Starting from scratch, fill in the details |
+| **From existing docs** | You have existing repos or docs — Claude reads them and populates your project files |
 
 ### Automate / CI
 

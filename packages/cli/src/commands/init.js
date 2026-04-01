@@ -6,7 +6,10 @@ import { initInPlace } from './init-in-place.js';
 
 export async function init(options) {
   console.log();
-  console.log(chalk.bold('claude-dev-kit') + chalk.dim(' — governance-first Claude Code scaffold'));
+  console.log(chalk.bold('claude-dev-kit') + chalk.dim(' — rules, workflows, and pipeline templates for Claude Code'));
+  console.log();
+  console.log(chalk.dim('  Sets up your project so Claude works consistently from day one.'));
+  console.log(chalk.dim('  Takes ~2 minutes. You can edit everything after.'));
   console.log();
 
   let mode;
@@ -17,19 +20,19 @@ export async function init(options) {
       {
         type: 'list',
         name: 'mode',
-        message: 'How do you want to start?',
+        message: 'What\'s the state of this project?',
         choices: [
           {
-            name: 'Greenfield          — new project from scratch, fill in details',
+            name: 'Existing project — add CDK to a project that already has code',
+            value: 'in-place',
+          },
+          {
+            name: 'New project — starting from scratch, you\'ll fill in the details',
             value: 'greenfield',
           },
           {
-            name: 'From context        — provide existing repos/docs, Claude populates your files',
+            name: 'From existing docs — share your docs and Claude populates everything',
             value: 'from-context',
-          },
-          {
-            name: 'In-place            — add governance to the current directory',
-            value: 'in-place',
           },
         ],
       },
