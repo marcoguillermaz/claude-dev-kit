@@ -180,29 +180,29 @@ const checks = [
   },
   {
     id: 'claudemd-standards-rule',
-    label: '.claude/rules/claudemd-standards.md present (tier M/L)',
+    label: 'docs/claudemd-standards.md present (tier M/L)',
     check: (cwd) => {
       const hasPipeline = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline.md'));
       if (!hasPipeline) return { pass: true, skip: true };
-      const exists = fs.existsSync(path.join(cwd, '.claude', 'rules', 'claudemd-standards.md'));
+      const exists = fs.existsSync(path.join(cwd, 'docs', 'claudemd-standards.md'));
       return {
         pass: exists,
         warn: true,
-        fix: 'Run `claude-dev-kit upgrade` to add claudemd-standards.md, or copy from the template.',
+        fix: 'Run `claude-dev-kit upgrade` to add docs/claudemd-standards.md, or copy from the template.',
       };
     },
   },
   {
     id: 'pipeline-standards-rule',
-    label: '.claude/rules/pipeline-standards.md present (tier M/L)',
+    label: 'docs/pipeline-standards.md present (tier M/L)',
     check: (cwd) => {
       const hasPipeline = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline.md'));
       if (!hasPipeline) return { pass: true, skip: true };
-      const exists = fs.existsSync(path.join(cwd, '.claude', 'rules', 'pipeline-standards.md'));
+      const exists = fs.existsSync(path.join(cwd, 'docs', 'pipeline-standards.md'));
       return {
         pass: exists,
         warn: true,
-        fix: 'Run `claude-dev-kit upgrade` to add pipeline-standards.md, or copy from the template.',
+        fix: 'Run `claude-dev-kit upgrade` to add docs/pipeline-standards.md, or copy from the template.',
       };
     },
   },

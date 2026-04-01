@@ -41,7 +41,7 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/perf-audit` | Server/client boundaries, heavy imports, serial awaits, image optimization, N+1 | Before production releases; after major UI changes |
 
 > **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
-> **Prerequisites for screenshot-based skills**: dev server must be running on `localhost:3000`.
+> **Prerequisites for screenshot-based skills**: dev server must be running (check your project's dev command for the URL).
 
 ---
 

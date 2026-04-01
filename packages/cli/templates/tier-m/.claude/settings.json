@@ -27,8 +27,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd $CLAUDE_PROJECT_DIR && [TEST_COMMAND] 2>&1 | tail -5 || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before completing the task. Fix failing tests first.\"}'",
-            "timeout": 60000
+            "command": "cd $CLAUDE_PROJECT_DIR && [TEST_COMMAND] 2>&1 | tail -5; [[ ${PIPESTATUS[0]} -ne 0 ]] && echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before completing the task. Fix failing tests first.\"}'",
+            "timeout": 300000
           }
         ]
       }

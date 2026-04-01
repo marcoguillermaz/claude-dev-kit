@@ -22,7 +22,7 @@ Each check has a specific, verifiable pass/fail condition.
 `obbligatori`, `opzional`, `rimozione`, `rimosso`, `aggiunto`, `aggiornato`, `necessario`, `corretto`, `utilizza`, `gestisce`, `nota bene`, `attenzione`, `verificare`
 
 **Run on CLAUDE.md**: `grep -n "obbligatori\|opzional\|rimozione\|rimosso\|aggiornato\|necessario\|utilizza\|gestisce" CLAUDE.md`
-**Run on auto-memory**: same grep on `~/.claude/projects/.../memory/MEMORY.md`
+**Run on auto-memory**: same grep on `~/.claude/projects/<project-path-hash>/memory/MEMORY.md` (run `ls ~/.claude/projects/` to find your project hash)
 **Pass**: 0 matches, or all matches are inside quoted Italian UI strings or DB values.
 **Fail**: translate flagged text to English.
 
