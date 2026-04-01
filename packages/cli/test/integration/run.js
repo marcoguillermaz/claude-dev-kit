@@ -328,8 +328,8 @@ async function scenarioTierM() {
 
   // New shared rule files (tier M/L)
   assertExists(dir, '.claude/rules/output-style.md');
-  assertExists(dir, '.claude/rules/claudemd-standards.md');
-  assertExists(dir, '.claude/rules/pipeline-standards.md');
+  assertExists(dir, 'docs/claudemd-standards.md');
+  assertExists(dir, 'docs/pipeline-standards.md');
 
   // Docs
   assertExists(dir, 'docs/requirements.md');
@@ -372,8 +372,8 @@ async function scenarioTierL() {
 
   // New shared rule files (tier M/L)
   assertExists(dir, '.claude/rules/output-style.md');
-  assertExists(dir, '.claude/rules/claudemd-standards.md');
-  assertExists(dir, '.claude/rules/pipeline-standards.md');
+  assertExists(dir, 'docs/claudemd-standards.md');
+  assertExists(dir, 'docs/pipeline-standards.md');
 
   // Conditional docs (all flags enabled in BASE)
   assertExists(dir, 'docs/sitemap.md');
@@ -529,14 +529,15 @@ async function scenarioCommitSkillAllTiers() {
 }
 
 async function scenarioNewRuleFiles() {
-  section('New rule files — output-style, claudemd-standards, pipeline-standards in tier S');
+  section('New rule files — output-style in tier S; standards docs in docs/');
   const config = { ...BASE, tier: 's', isDiscovery: false };
   const dir = await scaffold('tier-s-rules', 's', config);
 
-  // Tier S also gets the shared rules via common/rules/ copy
+  // output-style.md stays in .claude/rules/ (operational rule)
   assertExists(dir, '.claude/rules/output-style.md');
-  assertExists(dir, '.claude/rules/claudemd-standards.md');
-  assertExists(dir, '.claude/rules/pipeline-standards.md');
+  // Standards reference docs go to docs/ (not auto-loaded as rules)
+  assertExists(dir, 'docs/claudemd-standards.md');
+  assertExists(dir, 'docs/pipeline-standards.md');
 }
 
 async function scenarioPipelineGateCount() {

@@ -54,6 +54,8 @@ Separate body from subject with a blank line.
 Output the proposed commit message, then run:
 
 ```bash
+git commit -m "type(scope): subject" \
+           -m "Optional body paragraph."
 ```
 
 Use multiple `-m` flags for subject + body. Never use `--amend` or `--no-verify`.

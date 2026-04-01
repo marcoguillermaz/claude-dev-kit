@@ -1,13 +1,3 @@
----
-paths:
-  - "src/api/**"
-  - "app/api/**"
-  - "routes/**"
-  - "server/**"
-  - "lib/auth*"
-  - "lib/db*"
----
-
 # Security Rules
 
 These rules apply when working on API routes, auth, and database code.

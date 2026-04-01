@@ -49,6 +49,8 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     'CODEOWNERS': '.github/CODEOWNERS',
     'context-review.md': '.claude/rules/context-review.md',
     'files-guide.md': '.claude/files-guide.md',
+    'pipeline-standards.md': 'docs/pipeline-standards.md',
+    'claudemd-standards.md': 'docs/claudemd-standards.md',
   }, config, ['rules']);
 
   // Copy tier-specific files (includes tier rules/ like pipeline.md)
@@ -187,6 +189,8 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
     'CODEOWNERS': '.github/CODEOWNERS',
     'context-review.md': '.claude/rules/context-review.md',
     'files-guide.md': '.claude/files-guide.md',
+    'pipeline-standards.md': 'docs/pipeline-standards.md',
+    'claudemd-standards.md': 'docs/claudemd-standards.md',
   }, config, ['rules']);
 
   if (await fs.pathExists(tierDir)) {
