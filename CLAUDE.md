@@ -3,8 +3,12 @@
 ## Overview
 CLI tool that installs a governance layer on top of Claude Code. Four tiers from minimal discovery to full pipeline governance. Stack-agnostic, npm-distributable. Target user: Builder PM and tech lead — technical enough for end-to-end Claude Code work.
 
+## Output Style
+
+Read `.claude/rules/output-style.md` before responding. It is the single source of truth for tone, vocabulary, punctuation, and structure. No other style guidance applies.
+
 ## Tech Stack
-- **Runtime**: Node.js ≥ 18, ESM modules
+- **Runtime**: Node.js ≥ 20, ESM modules
 - **CLI framework**: Commander + Inquirer + Chalk + Ora
 - **Package**: `packages/cli/` — main CLI source
 - **Templates**: `packages/cli/templates/` — tier-specific scaffold files
