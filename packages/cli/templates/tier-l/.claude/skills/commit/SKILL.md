@@ -1,16 +1,11 @@
 ---
 name: commit
-description: Generate and execute a Conventional Commits 1.0.0 compliant commit. Use at Phase 3 intermediate commit, Phase 8 docs commit, and Phase 8 context commit. Derives type, scope, and description from staged changes.
 user-invocable: true
 model: haiku
 context: fork
 ---
 
-Generate and execute a Conventional Commits 1.0.0 compliant commit for this project.
-
 ## Step 1 — Read staged changes
-
-Run: `git diff --staged --stat`
 
 If output is empty: respond "No staged files. Run `git add <files>` first." and stop.
 
@@ -20,9 +15,8 @@ Classify based on staged files:
 
 | Staged files | Type |
 |---|---|
-| Source code introducing new capability | `feat` |
 | Source code correcting broken behaviour | `fix` |
-| Test files only | `test` |
+| Test files only (`__tests__/`, `e2e/`) | `test` |
 | Docs only (`docs/`, `README.md`) | `docs` |
 | Context/config files (`.claude/`, `CLAUDE.md`, `MEMORY.md`, pipeline, skills, settings) | `chore` |
 | Restructuring without behaviour change | `refactor` |
@@ -35,9 +29,8 @@ When code + tests are staged together, type follows the code change (`feat` or `
 
 Derive from the primary functional area of the staged changes:
 
-- Domain entities: `domain` (your domain entities — e.g. orders, users, products, tasks)
-- Infrastructure: `auth` · `db` · `api` · `email` · `queue`
-- Horizontal: `ui` (UI-only, no domain logic) · `config` · `context` (pipeline.md, CLAUDE.md, skills, rules)
+- Infrastructure: `auth` · `proxy` · `db` · `api` · `email`
+- Horizontal: `ui` (UI-only, no domain logic) · `context` (pipeline.md, CLAUDE.md, skills, rules)
 - Omit scope if changes span >3 unrelated areas or are truly cross-cutting
 
 ## Step 4 — Write description
@@ -45,7 +38,6 @@ Derive from the primary functional area of the staged changes:
 Rules:
 - Imperative mood: `add`, `fix`, `update`, `remove` — never past tense
 - Max 72 characters total including `type(scope): `
-- Specific over generic: `add rejection transition to order workflow` not `update orders`
 - No period at end
 
 ## Step 5 — Body (include when useful)
@@ -62,7 +54,6 @@ Separate body from subject with a blank line.
 Output the proposed commit message, then run:
 
 ```bash
-git commit -m "<subject>" [-m "<body>"]
 ```
 
 Use multiple `-m` flags for subject + body. Never use `--amend` or `--no-verify`.

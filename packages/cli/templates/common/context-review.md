@@ -1,48 +1,50 @@
 # Context File Review Checklist
 
-Executed at the end of every block (Phase 8.5 in full pipeline, FL-4 in fast lane).
+Executed in **Phase 8.5** at the end of every block.
 Each check has a specific, verifiable pass/fail condition.
-**The phase is complete only when all checks pass — not when the review "seems thorough".**
+**The phase is complete only when all checks are ✅ — not when the review "seems thorough".**
 
 ---
 
 ## C1 — Security: no credentials in auto-memory
 
 **What**: grep for token/secret patterns in the auto-memory MEMORY.md.
-**Run**: `grep -in "sk_live_[a-z0-9]\|api_key.*=.*[a-z0-9]\{10,\}\|password.*=.*[a-z0-9]\{8,\}\|token.*=.*[a-z0-9]\{10,\}" ~/.claude/projects/.../memory/MEMORY.md`
-**Pass**: 0 matches, or only placeholder strings with no actual values (e.g. `sk_live_...` with no further characters).
+**Pass**: 0 matches (placeholder strings like `sbp_...` or `re_...` with no further characters are allowed).
 **Fail**: redact immediately → replace value with `...see .env.local` → remind user to rotate the exposed credential.
-**Note**: property names like `must_change_password`, `api_key: string` in code examples are NOT credentials — the grep targets actual value strings (minimum 8–10 chars after the pattern).
+**Note**: `must_change_password`, `password=false` in code examples are NOT credentials — they are property names. The grep targets actual token strings (minimum 10 chars after the prefix).
 
 ---
 
-## C2 — No unresolved placeholders in active files
+## C2 — Language: no Italian in internal explanatory text
 
-**Scope**: every non-code-block line in CLAUDE.md, pipeline.md, and active `.claude/rules/` files.
-**What**: placeholders in the format `[PLACEHOLDER_NAME]` must all be resolved after init. Any remaining `[ALL_CAPS_BRACKETS]` pattern indicates an unfilled wizard value.
-**Run**: `grep -rn "\[[A-Z_]\{3,\}\]" CLAUDE.md .claude/rules/ 2>/dev/null`
-**Pass**: 0 matches (or only matches inside code blocks that are intentional examples).
-**Fail**: fill the placeholder or remove the rule that references it.
+**Scope**: every non-code-block line in CLAUDE.md and auto-memory MEMORY.md.
+**Flag** Italian words that are clearly explanatory prose, not quoted values. Key indicators:
+`obbligatori`, `opzional`, `rimozione`, `rimosso`, `aggiunto`, `aggiornato`, `necessario`, `corretto`, `utilizza`, `gestisce`, `nota bene`, `attenzione`, `verificare`
+
+**Run on CLAUDE.md**: `grep -n "obbligatori\|opzional\|rimozione\|rimosso\|aggiornato\|necessario\|utilizza\|gestisce" CLAUDE.md`
+**Run on auto-memory**: same grep on `~/.claude/projects/.../memory/MEMORY.md`
+**Pass**: 0 matches, or all matches are inside quoted Italian UI strings or DB values.
+**Fail**: translate flagged text to English.
 
 ---
 
 ## C3 — Field name staleness (CLAUDE.md)
 
-**What**: every DB field / config key mentioned in CLAUDE.md must exist in the current schema/codebase.
-**Run**: identify the latest migration or config file, confirm every field referenced in CLAUDE.md is current.
-**Specific risk**: field renames across blocks. After each block that renames a DB column or config key: immediately update every mention in CLAUDE.md.
-**Pass**: all field names match the current state.
+**What**: every DB field name mentioned in CLAUDE.md must exist in the current schema.
+**Specific risk pattern**: field renames across blocks. After each block that renames a DB column: immediately update every mention in CLAUDE.md.
+
+**Pass**: all field names in CLAUDE.md match the current schema.
 **Fail**: update the field name and add the rename to Known Patterns if non-obvious.
 
 ---
 
 ## C4 — Stale block references (CLAUDE.md + auto-memory)
 
-**What**: references like "(Block N)" or "from Block N" must not describe closed blocks as if they are open or future.
+**What**: references like "(Block N)", "(optional, Block N)", "from Block N" must not describe closed blocks as if they are open or future.
 **Run on CLAUDE.md**: `grep -n "Block [0-9]" CLAUDE.md`
-**Run on auto-memory**: same grep on `~/.claude/projects/.../memory/MEMORY.md`
+**Run on auto-memory**: `grep -n "Block [0-9]" ~/.claude/projects/.../memory/MEMORY.md`
 **Pass**: every match is either a historical note in past tense ("renamed in Block 3") or references a genuinely open block.
-**Fail**: remove forward-looking references for closed blocks; convert to past tense if historical context is useful.
+**Fail**: remove forward-looking block references for closed blocks; convert to past tense if the historical context is useful.
 
 ---
 
@@ -50,15 +52,15 @@ Each check has a specific, verifiable pass/fail condition.
 
 **What**: every mention of "MEMORY.md" in pipeline.md must be unambiguous about which file is meant.
 **Run**: `grep -n "MEMORY\.md" .claude/rules/pipeline.md`
-**Pass**: every match contains one of: `(project root)`, `auto-memory`, or is a filename reference inside a code block.
+**Pass**: every match contains one of: `(project root)`, `auto-memory`, or is wrapped in backticks as a filename reference within a code block.
 **Fail**: add the appropriate qualifier.
 
 ---
 
 ## C6 — No duplication: auto-memory vs CLAUDE.md
 
-**What**: a pattern in auto-memory that has become a stable project truth belongs in CLAUDE.md, not both.
-**Check**: read the relevant sections of auto-memory and CLAUDE.md § Known Patterns side by side.
+**What**: a pattern in auto-memory that has become a stable project truth belongs in CLAUDE.md, not in both files.
+**Check method**: read the "Key technical patterns" section of auto-memory and the "Known Patterns" section of CLAUDE.md side by side.
 **Pass**: no entry is substantially identical in both files (same pattern + same fix + same context).
 **Fail**: remove from auto-memory; CLAUDE.md is the canonical location for stable patterns.
 
@@ -66,17 +68,16 @@ Each check has a specific, verifiable pass/fail condition.
 
 ## C7 — Size compliance
 
-**Run**: `wc -l MEMORY.md` (project root) and `wc -l ~/.claude/projects/.../memory/MEMORY.md` (auto-memory)
-**Pass**: project-root MEMORY.md < 150 lines. Auto-memory MEMORY.md < 150 lines.
-**Fail**: extract oldest or least-referenced patterns into a topic file under `.claude/` and replace with a link.
+**Pass**: file < 150 lines.
+**Fail**: extract oldest or least-referenced patterns into a new section of the auto-memory file or remove obsolete entries.
 
 ---
 
 ## C8 — files-guide.md path accuracy
 
 **What**: every file path listed in the "Automatically loaded" tree must exist on disk and be correct.
-**Run**: for each path in the tree, verify existence with Glob or Bash `ls`.
-**Also check**: the `.claude/CLAUDE.local.md` description must match what the file actually contains (if it exists).
+**Run**: for each path in the tree, `ls [path]` or Glob to confirm existence.
+**Also check**: the `CLAUDE.local.md` "Current content" description must match what `.claude/CLAUDE.local.md` actually contains. If the file's purpose has changed, update the description.
 **Pass**: all paths resolve; description matches reality.
 **Fail**: correct the path or update the description.
 
@@ -86,7 +87,7 @@ Each check has a specific, verifiable pass/fail condition.
 
 **What**: the Active plan table must reflect the actual state of the project at the time of the current commit.
 **Check each row**:
-- Status `🔄 in progress` → is it genuinely still in progress, or completed in this block?
+- Status `🔄 in progress` → is it genuinely still in progress, or was it completed in this block?
 - Status `✅` → was it committed and verifiable in the implementation checklist?
 - Description → does it accurately describe what happened, not what was planned?
 **Pass**: every row is accurate as of the last `git push`.
@@ -96,9 +97,13 @@ Each check has a specific, verifiable pass/fail condition.
 
 ## C10 — Dead file references (cross-doc)
 
-**What**: file paths referenced in context docs must exist on disk. Any `docs/*.md` or `.claude/*.md` path mentioned in CLAUDE.md or pipeline.md that no longer exists is a silent broken pointer.
-**Run**: `grep -oE "docs/[a-zA-Z0-9/_-]+\.md|\.claude/[a-zA-Z0-9/_-]+\.md" CLAUDE.md .claude/rules/pipeline.md docs/refactoring-backlog.md 2>/dev/null`
-For each path found, verify it exists.
+**What**: file paths referenced in context docs must exist on disk. Any `docs/*.md` or `.claude/*.md` path mentioned in CLAUDE.md, pipeline.md, or refactoring-backlog.md that no longer exists is a silent broken pointer.
+**Run**:
+```
+grep -oE "docs/[a-z A-Z0-9_-]+\.md|\.claude/[a-zA-Z0-9/_-]+\.md" \
+  CLAUDE.md .claude/rules/pipeline.md docs/refactoring-backlog.md
+```
+For each path found, verify it exists: `ls [path]`.
 **Pass**: all referenced paths resolve.
 **Fail**: remove or update the stale reference before closing.
 
@@ -107,40 +112,59 @@ For each path found, verify it exists.
 ## C11 — Refactoring backlog: completed items
 
 **What**: items in `docs/refactoring-backlog.md` that correspond to work completed in the current block must be removed. Completed items inflate the backlog and dilute attention on real open issues.
-**Run**: read the current block's log row in `docs/implementation-checklist.md`. Grep `docs/refactoring-backlog.md` for any ID or topic matching completed work.
-**Pass**: no completed item remains open.
-**Fail**: remove from priority index AND delete the corresponding detail section.
+**Pass**: no completed item remains open in the priority index or detail sections.
+**Fail**: remove from priority index table AND delete the corresponding detail section.
 
 ---
 
-## C12 — Canonical docs currency
+## C12 — Canonical docs currency (sitemap.md + db-map.md)
 
-**What**: verify that project canonical docs are up to date with the current codebase state.
-**Scope**: only applies to docs that exist in the project. Skip checks for docs not present.
+**What**: verify that `docs/sitemap.md` and `docs/db-map.md` are up to date with the current codebase state.
 
-**If `docs/sitemap.md` exists**:
-- After any block that adds or removes routes, verify every route in the codebase has a corresponding entry in `docs/sitemap.md`.
-- **Pass**: sitemap matches current route inventory.
-- **Fail**: add missing routes (path, roles, layout, key components) before closing.
+**Run on sitemap.md**:
+```
+```
+Compare the resulting route list against routes listed in `docs/sitemap.md`. Flag any route present in the filesystem but absent from the sitemap.
 
-**If `docs/db-map.md` exists**:
-- After any block that changes the schema, verify the "Last synced" marker at the top of `docs/db-map.md` matches the latest migration.
-- **Pass**: Last synced migration matches the highest-numbered migration file.
-- **Fail**: update Tables, indexes, and access control sections for any migration applied since the last sync.
+**Run on db-map.md**:
+```
+```
+Compare the filename with the "Last synced: migration `NNN_*.sql`" line at the top of `docs/db-map.md`.
+**Fail**: `docs/db-map.md` is behind — update the Tables section, FK Graph, Indexes, and RLS Summary for any migration applied since the last sync, then run `node scripts/refresh-db-map.mjs` to regenerate Column specs.
 
-**If `docs/prd/prd.md` exists**:
-- Verify the PRD reflects the current block's outcomes. A block is not closed until the PRD is current.
-- **Pass**: PRD describes the current state of the feature.
-- **Fail**: update before closing.
+**Note**: this check is a backstop — steps 2c and 2d in Phase 8 are the primary enforcement point. C12 catches drift that slipped through.
 
-**Note**: this check is a backstop — Phase 8 steps are the primary enforcement point. C12 catches drift that slipped through.
+---
+
+---
+
+## C13 — CLAUDE.md Known Patterns hygiene
+
+**Trigger**: run when CLAUDE.md exceeds 100 lines, OR every 4 completed blocks — whichever comes first. Skip if neither condition is met.
+
+**What**: audit every entry under `## Known Patterns` in `CLAUDE.md` against the decision filter:
+> "Would Claude make this mistake on a new block, without prior warning, even after reading the relevant code and schema?"
+
+**Run**: `wc -l CLAUDE.md` to check line count first. If < 100 lines AND fewer than 4 blocks since last C13 ran → skip and mark ✅.
+
+**For each entry that fails the filter** (it's a schema fact, historical note, or something Claude would recover from reading the code):
+- Move the full content to an appropriate memory topic file in `~/.claude/projects/.../memory/`
+- Remove the entry from CLAUDE.md Known Patterns
+- Add or update a pointer in MEMORY.md if the topic file is new
+
+**For each entry that is obsolete** (table renamed, pattern removed, workaround superseded):
+- Delete from CLAUDE.md
+- If a memory topic file exists for it, delete or archive that too
+
+**Pass**: all remaining Known Patterns entries pass the decision filter; CLAUDE.md ≤ 100 lines (or justified exceptions documented).
+**Fail**: demote or delete failing entries, then re-run `wc -l CLAUDE.md` to confirm.
 
 ---
 
 ## Execution order and completion condition
 
-Run C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10 → C11 → C12 in sequence.
-Apply any fix before moving to the next check.
-**The phase is complete when C1–C12 have all passed.** Then run `/compact`.
+Run C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10 → C11 → C12 in sequence. Run C13 only when its trigger condition is met.
+Apply any fixes found before moving to the next check.
+**The phase is complete when C1–C12 have all passed (and C13 if triggered).** Then run `/compact`.
 
 > If a check reveals a pattern worth adding to CLAUDE.md or auto-memory, add it before C6 (duplication check) so the dedup pass catches any overlap.

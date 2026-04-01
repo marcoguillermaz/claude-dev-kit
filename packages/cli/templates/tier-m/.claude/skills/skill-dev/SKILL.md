@@ -1,23 +1,23 @@
 ---
 name: skill-dev
-description: Code quality and technical debt audit. Identifies coupling, duplication, dead code, pattern inconsistencies, magic values, missing or premature abstractions, type safety gaps (suppressions, unsafe casts, floating promises — adapt to your language), reactive state antipatterns (adapt to your framework's hooks or reactivity model), silent failure patterns, and structural quality issues (over-large components, prop drilling, client/server boundaries, utility consolidation). Uses docs/sitemap.md as structural guide. Outputs findings to docs/refactoring-backlog.md.
 user-invocable: true
 model: sonnet
 context: fork
-argument-hint: [target:section:<section>|target:page:<route>]
 ---
 
-You are performing a code quality and technical debt audit of the project codebase.
+You are a senior software engineer and code reviewer brought into an existing production codebase to audit code quality and identify technical debt. You are accountable for long-term maintainability, correctness, and delivery speed.
 
-**Operating mode**: Audit only — no code changes. Anchor every finding to concrete file paths and code evidence. Do not inflate severity. Distinguish facts from inferences.
+**Operating mode for this skill**: Audit only — no code changes. Anchor every finding to concrete file paths and code evidence. Do not inflate severity. Distinguish facts from inferences.
 
-**Non-regression constraint — mandatory evaluation criterion**: every proposed fix must preserve the observable behavior and user experience of the affected code. A fix that changes an external API contract, a UI flow, an error message, a side effect (DB write, email send, redirect), or any user-visible output is not a technical debt fix — it is a behavioral change requiring a dedicated pipeline block. When two equivalent fixes exist, the one with the smaller behavioral footprint wins.
+Do not optimize for theoretical purity. Optimize for pragmatic, production-grade engineering decisions.
 
-**Critical constraints**:
-- `docs/sitemap.md` is the authoritative inventory of every page and component. Use it to build your file target list. Do NOT scan the filesystem freely.
-- Do NOT make code changes. Audit only.
-- Do NOT report issues already in `docs/refactoring-backlog.md` — check for duplicates first.
-- All new findings go to `docs/refactoring-backlog.md`.
+**Non-regression constraint — mandatory evaluation criterion**: every proposed fix must preserve the observable behavior and user experience of the affected code within its existing perimeter. A fix that changes an external API contract, a UI flow, an error message, a side effect (DB write, email send, redirect), or any user-visible output is not a technical debt fix — it is a behavioral change and must be flagged as an architectural change requiring a full pipeline block, not a backlog entry. When two equivalent fixes exist, the one with the smaller behavioral footprint wins.
+
+**Severity model**:
+- **Critical**: production/data/security risk or correctness failure
+- **High**: architecture flaw or maintainability issue affecting delivery speed or stability; `useEffect` with no dependency array; floating promise on auth/data-write path
+- **Medium**: meaningful improvement with clear benefit, not urgent; over-large component; `'use client'` at page level when only a subcomponent needs it; console.log in production
+- **Low**: TODO comments; consolidation opportunities; magic enum strings already covered by type definitions
 
 ---
 
@@ -27,229 +27,249 @@ Parse `$ARGUMENTS` for a `target:` token.
 
 | Pattern | Meaning |
 |---|---|
-| `target:section:<name>` | Focus on components and routes belonging to that section |
-| `target:page:<route>` | Focus on the page file and its direct component dependencies |
-| No argument | Full audit — all files from sitemap |
+| `target:section:notifications` | Focus on notification system (lib/notification-utils.ts, NotificationBell, NotificationPageClient) (example — any section name is valid) |
+| `target:section:tickets` | Focus on ticket components and API routes (example) |
+| `target:section:documents` | Focus on document upload, signing, and generation components (example) |
+| `target:section:profile` | Focus on collaborator profile and onboarding components (example) |
+| `target:section:content` | Focus on content tables (communications, events, opportunities, discounts) (example) |
+| No argument | **Full audit — the ENTIRE codebase: all page files, all components, all lib/ files, all API routes, all types. Build from sitemap.md + filesystem scan of components/ and lib/. Maximum depth.** |
+
+**STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full codebase audit at maximum depth. When a target IS provided → act with maximum depth and completeness on that specific scope only.
 
 Announce: `Running skill-dev — scope: [FULL | target: <resolved>]`
 Apply the target filter to the file list in Step 1.
 
----
-
-## Configuration (adapt before first run)
-
-> Replace these placeholders:
-> - `[COMPONENTS_PATH]` — e.g. `components/`, `src/components/`, `app/`
-> - `[SHARED_LIB_PATH]` — e.g. `lib/`, `src/utils/`, `shared/`
-> - `[FEATURE_NAMING]` — how feature folders are named in this project (e.g. `features/auth/`, `app/(auth)/`)
+`docs/sitemap.md` is the authoritative inventory. Build the file list from it — do NOT scan the filesystem freely.
 
 ---
 
 ## Step 1 — Read structural guides
 
 Read in order:
-1. `docs/sitemap.md` — build target file list (pages + key components per route + lib files referenced)
-2. `docs/refactoring-backlog.md` — note existing entries to avoid duplicates
+2. `docs/refactoring-backlog.md` — read in full. Use it for two purposes:
+   - **Deduplication**: do not re-report a finding already present (including resolved ✅ entries — resolved entries confirm a fix was applied, not that the pattern cannot recur elsewhere).
+   - **Debt density context**: for each module/file in the target list, count how many existing open entries it has. A module with 3+ open entries is a **high-debt zone** — new findings there carry elevated priority regardless of check category, because accumulated debt signals systemic fragility, not isolated issues.
 
-Use the backlog for two purposes:
-- **Deduplication**: do not re-report a finding already present (including resolved ✅ entries — they confirm a fix was applied, not that the pattern cannot recur elsewhere).
-- **Debt density context**: for each file in the target list, count how many open entries it has. A file with 3+ open entries is a **high-debt zone** — new findings there carry elevated priority regardless of check category.
-
-Output: (a) structured file list, (b) high-debt zone map (file → open entry count). Do not proceed until both files are read.
+Output: (a) structured file list, (b) high-debt zone map (module → open entry count). Do not proceed until both files are read.
 
 ---
 
-## Step 2 — Delegate pattern checks to Explore subagent
+## Step 2 — Launch Explore agent in background
 
-Launch a **single Explore subagent** (model: haiku) with the full file list from Step 1 — use `run_in_background: true` so Step 3 structural checks can run in parallel:
+**Launch immediately with `run_in_background: true`, then proceed to Step 3 without waiting.**
 
-"Run all 10 checks below on ONLY the provided files. For each check: state total match count, list every match as `file:line — excerpt`, state PASS or FAIL.
+Pass the full file list from Step 1 to a Haiku Explore agent, along with the exact text below — from "Run all 10 checks below" through the end of CHECK D10 — copied verbatim as the agent prompt. Do not summarize or paraphrase the check instructions.
+
+"Run all 10 checks below on ONLY the files provided. For each check: state total match count, list every match as `file:line — excerpt`, and state PASS or FAIL.
 
 **CHECK D1 — Cross-module direct imports (coupling)**
-Pattern: feature components importing directly from other feature folders, bypassing shared lib or index.
-Grep: `import.*from.*'[COMPONENTS_PATH]` lines. Flag any import where the importing file's feature folder differs from the imported file's feature folder AND the import does not go through a shared path.
+Pattern: components importing directly from other feature components (e.g. `components/admin/` importing from `components/compensation/`).
+Grep in all provided `.tsx`/`.ts` files: `'@/components/(?!ui/)([a-z-]+)/` — any import referencing a non-ui component subfolder. This produces the full list of inter-component imports. Then, for each match, flag it if the importing file's feature folder differs from the imported file's feature folder AND the import does not go through `@/lib/`.
+Expected: flag each cross-feature import as an explicit coupling.
 
-**CHECK D2 — Duplicated inline constant maps**
-Pattern: the same lookup object (color maps, status maps, label maps) defined more than once in different files.
-Grep: for object literals with 3+ key-value pairs that appear in 2+ files. Flag duplicates — they should be extracted to `[SHARED_LIB_PATH]`.
+**CHECK D2 — Duplicated inline color maps**
+Pattern: object literals mapping status strings to CSS classes (e.g. `{ IN_ATTESA: 'bg-yellow-', APPROVATO: 'bg-green-' }`).
+Flag: any file with this pattern NOT already using `ContentStatusBadge` or importing from a shared badge-maps utility.
+Expected: all status color maps centralised.
 
-**CHECK D3 — Dead exports**
-Pattern: exported functions/components/constants that are never imported anywhere.
-Grep: for each `export function|export const|export class` in the file list, check if the export name appears in an import statement in any other file. Flag unexported items.
+**CHECK D3 — N+1 fetch patterns in components and API routes**
+Pattern A: any `.from('<tablename>').select(` call inside a `.map(`, `for (`, `forEach(`, or `for...of` loop.
+Grep: `\.from\(.*\)\.select` — then check if it appears inside an iteration block.
+Flag ALL tables — any Supabase query inside a loop is a potential N+1.
+Pattern B: `for...of` with `await svc.from(` or `await supabase.from(` inside the loop body (sequential awaits).
+Flag: each match with file:line.
 
-**CHECK D4 — Magic strings and numbers**
-Pattern: string literals and numeric literals used directly in logic, not assigned to a named constant.
-Grep: string comparisons (`=== 'someValue'`) where the value is a domain concept (status, role, type). Flag literals that should be named constants or enums.
-Also flag hardcoded numeric literals in business logic (e.g. withholding rates, page sizes, timeout durations, amount thresholds). Exclude: test files, CSS px values, HTTP status codes.
+**CHECK D4 — Dead exports (sampled: 5 largest files)**
+*This is a sampled check — not exhaustive. Mark all findings as `(sampled)`. A full dead-export audit requires a dedicated tool such as `knip`.*
+Pattern: `export (function|const|type|interface) ` that are never imported elsewhere.
+For the 5 largest component files by line count: grep each exported name across all other files.
+Flag: exports with 0 consumers outside their own file.
 
-**CHECK D5 — Pattern inconsistencies**
-Pattern: the same operation done in materially different ways in different files.
-Grep: look for 2+ different patterns for: (a) error handling in async functions, (b) data fetching approach, (c) form submission handling. Flag inconsistencies.
+**CHECK D5 — Duplicated validation logic**
+Pattern: the same field validation appearing in more than one API route handler.
+Flag: identical guard patterns in 3+ routes that are not using a shared Zod schema.
 
-**CHECK D6 — Components over 250 lines**
-Pattern: component files exceeding 250 lines are candidates for decomposition.
-For each file in the list: count lines. Flag files > 250 lines with their line count.
+**CHECK D6 — Magic strings and magic numbers**
+*Magic strings* — state machine values hardcoded as string literals in component files:
+Grep in `.tsx` files (not API routes, not type definitions):
+Flag: any string literal that should reference a shared enum/constant.
+Grep: `(?<![a-zA-Z_])(0\.20|0\.60|50000|86400)(?![a-zA-Z_])` — withholding rates, fiscal limits, TTL durations.
+Exclude lines matching: `PORT=|timeout|delay|setTimeout|setInterval|HTTP_STATUS|ms\b|px\b`.
+Expected: 0 unextracted magic numbers in business logic paths.
 
 **CHECK D7 — TODO/FIXME/HACK comments**
 Grep: `\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b` across all files in scope.
 Flag: each match with context.
 
-**CHECK D8 — Type safety suppressions and unsafe casts**
-**Adapt to your language**: this check is written for TypeScript. For other languages apply equivalent checks: Python/mypy: `# type: ignore`, Go: `//nolint`, Java: `@SuppressWarnings`, Rust: `#[allow(...)]`. Skip Pattern B (`:any`) if project is not TypeScript.
+**CHECK D8 — TypeScript type safety suppressions and `any` usage**
 Pattern A — Directive suppressions:
 Grep: `@ts-ignore|@ts-expect-error|@ts-nocheck` across all files.
-`@ts-ignore` is highest severity — it suppresses errors silently even if the error disappears. `@ts-expect-error` is acceptable if it has a description comment explaining why. Flag both.
+`@ts-ignore` is highest severity. `@ts-expect-error` is acceptable only with a description comment. Flag both.
 Pattern B — Explicit `any`:
 Grep: `:\s*any\b|as\s+any\b|<any>|Promise<any>` in non-test `.ts` and `.tsx` files.
-Exclude: type definition files (`*.d.ts`) and documented intentional workarounds listed in CLAUDE.md Known Patterns.
-Flag: each remaining `any` usage. A typed alternative almost always exists.
-Pattern C — Floating Promises (unhandled async):
-Grep in component files: lines starting async calls (`fetch(`, router navigation, DB client calls) NOT preceded by `await` and NOT assigned to a variable or chained to `.then(` or `.catch(`.
-Flag: async calls without await or error handling in component event handlers — these are silent fire-and-forget operations that can fail without user feedback.
+Exclude: `lib/supabase.ts`, `lib/supabase-server.ts`, `*.d.ts`, and any `SupabaseClient` type usage exempted in CLAUDE.md Known Patterns.
+Flag: each remaining `any` usage.
+Pattern C — Floating promises (unhandled async in component event handlers):
+Grep in `.tsx` component files (not API routes): `^\s*(fetch\(|router\.(push|replace|refresh)\(|supabase\.|svc\.)`.
+For each match, inspect the 2 surrounding lines. Flag lines where the call is a bare statement — not preceded by `await`, `void`, `return`, or an assignment (`const .* =`, `let .* =`), and not chained to `.then(` or `.catch(`. These are silent fire-and-forget calls with no error handling.
 
-**CHECK D9 — Reactive state antipatterns**
-**Adapt to your framework**: this check is written for React hooks. Skip entirely if project does not use React or a React-like hooks model. For Vue: adapt to `watch` / computed misuse. For Angular: adapt to `ngOnChanges` and signals. For Svelte: adapt to reactive statements (`$:`).
+**CHECK D9 — useEffect antipatterns**
 Pattern A — Derived state stored in state + updated via useEffect:
-Grep: `useState` followed within 10 lines by `useEffect(() => { set` — state that is immediately updated in an effect is usually derivable during render (use `useMemo` or compute inline).
-Flag: components that `useState` for a value and then have a `useEffect` whose ONLY purpose is to call the matching `setState` based on props or other state.
+Grep: `useState` followed within 10 lines by `useEffect(() => { set`. Flag components where a `useEffect`'s only purpose is to call `setState` based on props — the value is derivable during render.
 Pattern B — Event handler logic inside useEffect:
-Grep: `useEffect` containing side effects that were triggered by a user action (toast notifications, navigation, emails). These belong in the event handler, not in an effect.
-Pattern C — Missing dependency array (effect runs on every render):
-Grep: `useEffect\(\s*(?:async\s*)?\(\s*\)\s*=>` followed by closing `\}\)` without a dependency array `[` before `)`.
-Flag: `useEffect` calls without a dependency array — they run on every render and are almost always bugs or performance issues.
-Expected: 0 matches for A and C. B requires judgment — flag candidates.
+In each file containing `useEffect(`: read the full body of each useEffect. Flag any useEffect whose body contains `toast`, `router.push`, `router.replace`, `router.refresh`, `showNotification`, `sendEmail`, or `console.log` — regardless of position in the body. These belong in event handlers, not effects.
+Pattern C — Missing dependency array:
+In each file containing `useEffect(`: verify that every `useEffect(` call has a second argument (dependency array `[...]`). A `useEffect` with only one argument runs on every render and is almost always a bug.
+Flag each useEffect call missing the second argument.
+Expected: 0 matches for A and C. B requires judgment.
 
-**CHECK D10 — Silent failure patterns**
+**CHECK D10 — Empty catch blocks and console.log in production**
 Pattern A — Empty or near-empty catch blocks:
-Grep: `catch\s*\([^)]*\)\s*\{\s*\}|catch\s*\([^)]*\)\s*\{\s*\/\/`
-Flag: catch blocks that swallow errors silently with no recovery or user feedback.
-Pattern B — console.log in production code:
-Grep: `console\.log\(|console\.warn\(|console\.error\(` in `app/` and `lib/` equivalent directories (excluding test files).
-Expected: 0 matches outside intentional error boundaries. `console.error` in catch blocks is acceptable if also returning an error response."
-
-**Proceed to Step 3 immediately after launching — do not wait for the agent.**
+Grep: `catch\s*\([^)]*\)\s*\{\s*\}|catch\s*\([^)]*\)\s*\{\s*\/\/|catch\s*\([^)]*\)\s*\{\s*console\.log`
+Flag: catch blocks that swallow errors silently or log them without recovery or user feedback.
+Pattern B — console.log in production:
+Grep: `console\.log\(|console\.warn\(|console\.error\(` in `app/` and `lib/` (excluding `__tests__/`, `e2e/`, `.test.ts`).
+`console.error` in catch blocks is acceptable only if also returning an error response."
 
 ---
 
-## Step 3 — Structural judgment checks (main context)
+## Step 3 — Structural judgment checks (runs in parallel with Step 2)
 
 **Begin immediately after launching the Step 2 agent — do not wait for it.**
 
-These require reading and reasoning, not just pattern matching:
-
 **J1 — Over-large components**
-Identify the 3 largest components by line count or by most listed sub-responsibilities in the sitemap. Read each candidate file.
 Flag components that are:
-- Over 300 lines AND have 4+ distinct responsibilities (fetch, state management, form handling, display)
-- Exhibit "divergent change" — if you'd need to change two unrelated concerns in the same file, it should be split
+- Over 300 lines AND have 4+ distinct responsibilities (fetch, state, form handling, display)
+- Exhibit "divergent change" — compensation logic AND display logic in the same file
 - Exhibit "feature envy" — a component that uses more data/methods from another domain than its own
 
 **J2 — Prop drilling depth**
-For each multi-step form, wizard, or deeply nested component: read the top-level component. Count how many props are passed down 3+ levels without being consumed at intermediate levels. Flag if prop count > 5 at depth > 2.
-Also check for "data clumps" — groups of 3+ related variables always passed together as separate props (should be an object type).
 
-**J3 — Client/server boundary placement** *(skip if project has no client/server split)*
-Check 1 — 'use client' (or equivalent) at page/layout level when only a subcomponent needs it:
-If a page or layout file is marked as a client component but only uses client-specific features in one subcomponent, it should instead split the interactive part into a named client component and keep the page as a server component. Marking the whole page as a client component forces ALL its imports into the client bundle.
-Check 2 — Context providers placed too high in the component tree when they could be lower.
-Check 3 — Server secrets imported into client-side files:
-Grep: any client-marked file (e.g. `'use client'` or equivalent) importing from a utility that accesses environment variables for non-public variables. These utilities need a server-only guard or must be split.
-Check 4 — Missing server-action markers on exported async functions:
-Flag: each exported async function in a non-API file (Server Actions or equivalent) that is missing the appropriate server-execution marker. Without it, the function may be incorrectly treated as a client function.
+**J3 — Client/server component boundary placement**
+
+Read `app/(app)/layout.tsx` and the 5 most-visited page files from sitemap.md.
+
+Check 1 — `'use client'` at page/layout level when only a subcomponent needs it:
+
+Check 2 — Context providers placed too high:
+If a context Provider wraps `<html>` or `<body>`, check if it can be moved lower — high placement prevents Next.js from optimising static Server Component subtrees.
+
+Check 3 — Server secrets imported into `'use client'` files:
+Grep: any `'use client'` file importing from a `lib/` file that accesses `process.env` for non-`NEXT_PUBLIC_` variables. These utilities need an `import 'server-only'` guard or must be split.
+
+Check 4 — Missing `'use server'` on Server Actions:
+Flag: each exported async function in a non-API file without `'use server'`.
+
 Flag each issue with: file path, current placement, recommended refactor.
 
-**J4 — Utility consolidation**
-Read the shared utility directory listing (`[SHARED_LIB_PATH]`). Flag any utilities that appear to have overlapping purposes (e.g. two date formatting helpers, two notification builder functions, duplicate validation helpers).
-Flag if overlapping utilities exist and have not been consolidated.
+**J4 — lib/ utility consolidation**
+Read the `lib/` directory listing. Flag any utilities with overlapping purposes (e.g. two date formatting helpers, two notification builder functions, any type constant or badge-map object defined independently in 2+ component files without being extracted to `lib/`).
+Specifically verify: `lib/notification-utils.ts` vs `lib/notification-helpers.ts` — confirm if both exist and flag any responsibility overlap.
+Do not re-report overlaps already in `docs/refactoring-backlog.md`.
 
 **J5 — Type definition consolidation**
-Read the project's types file(s) (e.g. `lib/types.ts`, `src/types/`). Flag:
-- Types defined inline in component files that are used in 3+ places (should be in a shared types file)
-- Response types that duplicate generated/source types (should extend the generated types instead)
-- Duplicate `interface` or `type` definitions for the same concept across different files
+Read `lib/types.ts` (or equivalent). Flag:
+- Types defined inline in component files that are used in 3+ places (should live in `lib/types.ts`)
+- Response types that duplicate Supabase-generated types (should extend the generated types instead)
+- `interface X extends Y` where Y is never used independently (prefer composition or a union type)
 
 ---
 
 ## Step 4 — Wait for Step 2 agent, then produce combined report
 
-**Wait for the Step 2 Explore agent to complete before producing the report.**
+**Wait for the Step 2 Explore agent to complete before proceeding.**
+
+Cross-check all findings from Step 2 (D1–D10) and Step 3 (J1–J5) against `docs/refactoring-backlog.md`. Exclude any finding already documented.
+
+For remaining findings, apply severity modifiers in this exact order:
+1. **Base severity** — assign from the check category using the Severity guide at the bottom of this step.
+2. **Debt-density escalation** — if the finding's file/module is in the high-debt zone (3+ open entries in `docs/refactoring-backlog.md`), escalate by one level (Low → Medium, Medium → High, High → Critical). Document: `"Debt-density escalation: N open entries in this module."` Do not escalate above Critical.
+3. **Regression risk downgrade** — if the `Regression risk` field is Behavior-adjacent, downgrade the severity by one level from the value produced in step 2. The final severity after both modifiers is what gets written to the backlog.
 
 ### Output format
 
 ```
-## Skill-Dev Audit — [DATE]
+## Skill-Dev Audit — [today's date in YYYY-MM-DD format]
 ### Scope: [N] files from sitemap.md
-### Sources: Refactoring.Guru code smells, typescript-eslint rules, React "You Might Not Need an Effect"
+### Sources: Refactoring.Guru smells taxonomy, typescript-eslint rules, Next.js composition patterns, React "You Might Not Need an Effect"
 
 ### Pattern Checks (Explore agent)
 | # | Check | Matches | Severity | Verdict |
 |---|---|---|---|---|
 | D1 | Cross-module coupling | N | Medium | ✅/⚠️ |
-| D2 | Duplicated constant maps | N | Medium | ✅/⚠️ |
-| D3 | Dead exports | N | Low | ✅/⚠️ |
-| D4 | Magic strings + numbers | N | Medium | ✅/⚠️ |
-| D5 | Pattern inconsistencies | N | Medium | ✅/⚠️ |
-| D6 | Components >250 lines | N | Medium | ✅/⚠️ |
+| D2 | Duplicated color maps | N | Medium | ✅/⚠️ |
+| D3 | N+1 fetch patterns | N | High | ✅/⚠️ |
+| D4 | Dead exports (sampled — 5 largest files) | N | Low | ✅/⚠️ |
+| D5 | Duplicated validation | N | Medium | ✅/⚠️ |
+| D6 | Magic strings + numbers | N | Medium | ✅/⚠️ |
 | D7 | TODO/FIXME comments | N | Low | ✅/⚠️ |
 | D8 | @ts-ignore + any + floating promises | N | High | ✅/⚠️ |
 | D9 | useEffect antipatterns | N | Medium | ✅/⚠️ |
 | D10 | Empty catch + console.log | N | Medium | ✅/⚠️ |
 
-### Structural Checks (main context)
+### Structural Checks
 | # | Check | Verdict | Notes |
 |---|---|---|---|
 | J1 | Over-large components | ✅/⚠️ | |
 | J2 | Prop drilling + data clumps | ✅/⚠️ | |
 | J3 | Client/server boundary | ✅/⚠️ | |
-| J4 | Utility consolidation | ✅/⚠️ | |
+| J4 | lib/ consolidation | ✅/⚠️ | |
 | J5 | Type definition consolidation | ✅/⚠️ | |
 
 ### Findings requiring action ([N] total)
-[file:line — check# — issue — suggested fix for each]
+[Sorted Critical → High → Medium → Low]
+[file:line — check# — final-severity — issue — suggested fix for each]
 ```
-
-For each finding, apply severity modifiers in this order:
-1. **Base severity** — from the check category (Severity guide below)
-2. **Debt-density escalation** — if the finding's file is in the high-debt zone (3+ open entries), escalate by one level (Low → Medium, Medium → High, High → Critical). Document: "Debt-density escalation: N open entries in this file." Do not escalate above Critical.
-3. **Regression risk downgrade** — if the `Regression risk` field is Behavior-adjacent, downgrade severity by one level from step 2. The final severity is what gets written to the backlog.
-
-### Severity guide
-
-- **Critical**: production/data/security risk or correctness failure; `@ts-ignore` on a security or data path (D8); floating promise in an auth or data-write event handler (D8)
-- **High**: `any` in shared lib utilities; `useEffect` with no dependency array (D9C); empty catch on a DB write (D10); N+1 in a hot path (D3); dead export in shared lib
-- **Medium**: `useEffect` derived-state antipattern (D9A); over-large component >300 lines with 4+ responsibilities (J1); client component marker at page level when only a subcomponent needs it (J3); magic business-rule numbers (D4); console.log in production (D10); data clumps >3 always-grouped props (J2)
-- **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings with existing type definitions; single dead export
 
 ### Backlog decision gate
 
-Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
+Present all findings with final severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
 
 ```
-Found N findings Medium or above. Which to add to the backlog?
+Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+
 [1] [CRITICAL] DEV-? — file:line — one-line description
 [2] [HIGH]     DEV-? — file:line — one-line description
 [3] [MEDIUM]   DEV-? — file:line — one-line description
 ...
+
+Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
 ```
 
-Reply with the numbers to include (e.g. "1 2 4"), "all", or "none".
 **Wait for explicit user response before writing anything.**
 
-Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
-- Check existing entries first to avoid duplicates — assign `DEV-[n]` incrementing from the last DEV entry
-- Add row to the priority index table
-- Add full detail section using this format:
+Then write ONLY the approved entries to `docs/refactoring-backlog.md`.
+- Check existing entries first to avoid duplicates — assign `DEV-[n]` incrementing from the last DEV entry.
+- Add row to the Priority Index table.
+- Add full detail section using the format:
 
+```
 ### [ID] — [Title]
 **Skill**: /skill-dev
 **Severity**: Critical | High | Medium | Low
 **File(s)**: path/to/file.ts:line
 **Finding**: concrete description anchored to file:line evidence
 **Suggested fix**: smallest behavior-preserving change
-**Regression risk**: Behavior-preserving | Behavior-adjacent
-**Debt context**: [N open entries in this file — debt-density escalation applied | No prior debt]
-**Added**: [YYYY-MM-DD]
+**Regression risk**: Behavior-preserving | Behavior-adjacent (see constraint above)
+**Debt context**: [N open entries in this module — debt-density escalation applied | No prior debt]
+**Added**: [today's date in YYYY-MM-DD format]
+```
 
 Each entry **must** include a `Regression risk` field:
-- **Behavior-preserving** (pure refactoring — no change to external contracts, UI, DB writes): proceed at the assigned severity.
-- **Behavior-adjacent** (fix touches a path that could affect observable output): downgrade severity by one level AND add note `"Requires dedicated pipeline block — not a fast-lane fix."` List existing tests that cover the affected path — if none, add `"No coverage — regression risk unverifiable."` and treat as Critical regardless of check category.
+- **Behavior-preserving** (pure refactoring — no change to external contracts, UI, DB writes, emails, redirects): proceed at the assigned severity.
+- **Behavior-adjacent** (fix touches a path that could affect observable output): downgrade severity by one level AND add the note `"Requires dedicated pipeline block — not a fast-lane fix."`. List the existing Vitest/Playwright tests that cover the affected path — if none exist, add `"No coverage — regression risk is unverifiable without adding tests first."` and treat as Critical regardless of check category.
+- If the fix cannot be proven behavior-preserving from static analysis alone: default to behavior-adjacent.
+
+### Severity guide
+
+- **Critical**: `@ts-ignore` on a security/data path; N+1 in a hot path (list page or dashboard); floating promise on an auth or data-write event handler
+- **High**: `any` in shared lib utilities; `useEffect` missing dependency array (D9C); dead export in shared lib; empty catch on DB write; missing `'use server'` on exported Server Action (J3)
+- **Medium**: `useEffect` derived-state antipattern (D9A); over-large component >300 lines with 4+ responsibilities (J1); `'use client'` at page level when only a subcomponent needs it (J3); magic business-rule numbers (D6); console.log in production (D10); data clumps >3 always-grouped props (J2)
+- **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings already covered by type definitions; D4 sampled dead exports
+
+---
+
+## Execution notes
+
+- Do NOT make any code changes.
+- After producing the report, ask: "Vuoi che implementi i fix di priorità High/Critical identificati?"

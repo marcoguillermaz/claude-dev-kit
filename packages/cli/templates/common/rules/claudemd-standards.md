@@ -1,5 +1,6 @@
 # CLAUDE.md Standards Reference
 
+Last verified: 2026-03-27
 Update protocol: update only when `/arch-audit` detects a material change in official sources. Manual review required — no auto-update.
 
 ## Sources
@@ -48,7 +49,7 @@ Apply this test to every line: **"Would removing this cause Claude to make mista
 
 ## S3 — Language & formalism
 
-- **Specific and verifiable**: "Run `[TEST_COMMAND]` before committing" not "Test your changes". *(Source: 1)*
+- **Specific and verifiable**: "Run `[TEST_COMMAND]` before committing" not "Test your changes". "Use 2-space indentation" not "Format code properly". *(Source: 1)*
 - **Imperative for critical rules**: MUST / NEVER / ALWAYS on rules where violation causes bugs, security issues, or irreversible actions. *(Source: 1, 5)*
 - **Organized sections > dense paragraphs**: markdown headers and bullets outperform walls of text. *(Source: 1)*
 - **Periphery bias**: LLMs give more weight to instructions at the **beginning and end** of the file. Put the most critical rules first AND reference them last. *(Source: 5)*
@@ -72,7 +73,7 @@ Apply this test to every line: **"Would removing this cause Claude to make mista
 - **Conditional XML blocks** (HumanLayer pattern): wrap domain-specific sections to reduce activation noise:
   ```xml
   <important if="you are writing or modifying tests">
-  - Use the project's test helper utilities for integration tests
+  - Use `createTestApp()` helper for integration tests
   </important>
   ```
   Keep foundational content (project identity, tech stack) unconditional. *(Source: 5)*
@@ -101,7 +102,7 @@ Apply this test to every line: **"Would removing this cause Claude to make mista
 - **Each loaded MCP server** consumes **14–22% of the instruction budget** when poorly curated. Disable unused servers. *(Source: 5)*
 - **NEVER connect to untrusted MCP servers** — tool descriptions in the system prompt are prompt injection vectors. *(Source: 5)*
 - **Prefer CLI over MCP** when a CLI already exists in model training data (GitHub CLI, Docker, databases). *(Source: 5)*
-- **`allowed-tools` frontmatter**: skills that call `mcp__*` tools MUST declare those tools in `allowed-tools:` frontmatter to avoid mid-execution permission prompts. *(Source: 2)*
+- **`allowed-tools` frontmatter**: skills that call `mcp__*` tools MUST declare those tools in `allowed-tools:` frontmatter to avoid mid-execution permission prompts. *(Source: 2, arch-audit C17)*
 
 ---
 
@@ -127,7 +128,7 @@ Apply this test to every line: **"Would removing this cause Claude to make mista
 This file is updated only when `/arch-audit` (Step 1 WebFetch) detects a material change in official sources. Procedure:
 1. `/arch-audit` flags the discrepancy in its report under RECOMMEND
 2. User confirms update
-3. Relevant section updated with new rule + source citation
+3. Relevant section updated with new rule + source citation + date
 4. Commit: `chore(context): update claudemd-standards.md — [summary of change]`
 
 **NEVER auto-update** — manual review required to prevent LLM-generated drift.

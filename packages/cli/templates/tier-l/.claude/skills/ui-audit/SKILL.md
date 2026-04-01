@@ -1,6 +1,5 @@
 ---
 name: ui-audit
-description: Full UI quality audit. Covers design system token compliance, accessibility (WCAG 2.2 static + axe-core live scan), CSS framework breaking-change detection, keyboard/interaction patterns, form label completeness, empty states, table rules, loading state coverage. Uses docs/sitemap.md as authoritative file inventory. Static mode runs concurrently with Playwright skills; full mode (dev server up) adds axe-core browser scan.
 user-invocable: true
 model: sonnet
 context: fork
@@ -8,23 +7,7 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 allowed-tools: mcp__playwright__browser_navigate, mcp__playwright__browser_evaluate
 ---
 
-## Configuration (fill in before first run)
-
-> Replace these placeholders:
-> - `[DEV_URL]` — your dev server URL, e.g. `http://localhost:3000`
-> - `[DESIGN_SYSTEM_NAME]` — your design system name (used in CHECK 2)
-> - `[DESTRUCTIVE_TOKEN]` — your design system's error/destructive color class, e.g. `text-error`, `text-danger`
-> - `[MUTED_TEXT_TOKEN]` — your design system's secondary/muted text class, e.g. `text-secondary`, `text-muted`
-> - `[EMPTY_STATE_COMPONENT]` — your shared empty state component name, e.g. `EmptyState`, `NoResults`
-> - `[STATUS_BADGE_COMPONENT]` — your shared status badge component name, e.g. `StatusBadge`, `Badge`
->
-> **CSS framework note**: Checks 1–15 use Tailwind CSS utility class naming conventions. If your project uses a different CSS framework (Bootstrap, CSS Modules, SCSS, etc.), adapt the grep patterns to match your framework's class names and conventions.
-
----
-
-You are performing a comprehensive UI quality audit of this project's frontend.
-
-**Critical constraint**: `docs/sitemap.md` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form searches across all source directories — scope every check to the files listed in the sitemap.
+**Critical constraint**: `docs/sitemap.md` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form `grep -r` across all of `app/` or `components/` — scope every check to the files listed in the sitemap.
 
 **Two execution modes**:
 - **Static mode** (dev server not running): Steps 1–3 only. Can run concurrently with Playwright-based skills per pipeline.md.
@@ -38,10 +21,10 @@ Parse `$ARGUMENTS` for a `target:` token.
 
 | Pattern | Meaning |
 |---|---|
-| `target:page:/some-route` | Restrict scope to that exact route and its key components |
-| `target:role:<role-name>` | Restrict to all routes accessible by that role |
-| `target:section:<section-name>` | Restrict to routes whose path contains that section name |
-| No target argument | Full audit — all routes in sitemap |
+| `target:section:<name>` | Restrict to routes whose path contains `<name>` |
+| No target argument | Full audit — ALL routes in sitemap.md |
+
+**STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full audit, all routes in sitemap.
 
 Announce at start: `Running ui-audit — scope: [FULL | target resolved to: N pages]`
 
@@ -53,18 +36,8 @@ Apply the resolved target to Steps 1–3 below — include only the matching pag
 
 Read `docs/sitemap.md`. Extract (filtered by target scope from Step 0):
 
-**A — Page files**: every path in the "Page file" column.
-
-**B — Component groups by layout type** (derived from the "Key components" column — do not hardcode):
-- `full-list` pages: routes with DataTable or list-style key components
 - `detail` pages: routes with `/[id]` in the path
 - `form / wizard` pages: routes with Form, wizard, or onboarding components
-- `tabs` pages: routes with Tabs in key components
-- `dashboard`: the root index page
-- `feed`: content/activity routes
-- `calendar / grid` pages: routes with calendar or grid components in key components
-
-**C — Key component files**: for each page, note the "Key components" column and map to actual files under your components directory. These are the component files to include in grep checks.
 
 Output: structured lists A, B, C. Do not proceed to Step 2 until these are complete.
 
@@ -89,47 +62,46 @@ Find lines containing `grid-cols-[2-9]` (any column count 2–9) that do NOT als
 Method: grep for `grid-cols-[2-9]` across all files in scope, then filter out lines that contain any responsive prefix. Report only the lines that survive the filter.
 Expected: 0 matches.
 
-**CHECK 2 — Hardcoded color values instead of design token variables** [Severity: High]
+**CHECK 2 — Hardcoded blue color tokens** [Severity: High]
 Pattern: `bg-blue-|text-blue-|border-blue-`
 Exclude: lines starting with `//`, lines containing `focus:`, `ring-`, `via-`, `aria-`
-Expected: 0 matches. Any match is a design system violation — use your [DESIGN_SYSTEM_NAME] semantic color tokens instead.
+Expected: 0 matches. Any match is a design system violation.
 
 **CHECK 3 — Hardcoded gray on structural containers** [Severity: Medium]
 Pattern (ripgrep OR syntax): `bg-gray-[789][0-9]|bg-gray-[89][0-9]{2}|bg-gray-950`
 Exclude lines that contain: `dark:`, `hover:`, `border-`, `//`, `focus:`, `to-`, `from-`
 Expected: 0 on structural elements. Note: `bg-gray-100` and `bg-gray-200` (light mode badge pairs) are exempt — only flag dark gray values (700+).
 
-**CHECK 4 — Required field asterisks using hardcoded color instead of semantic token** [Severity: Medium]
+**CHECK 4 — Required field asterisks using text-red-500 instead of text-destructive** [Severity: Medium]
 Pattern: `text-red-500`
 Exclude: lines with `//`, `border-`, `hover:`, `ring-`, `focus:`
-Expected: 0 matches. All required-field asterisks must use your design system's destructive/error semantic token (`[DESTRUCTIVE_TOKEN]`).
+Expected: 0 matches. All required-field asterisks must use `text-destructive`.
 
 **CHECK 5 — Duplicate CSS class tokens** [Severity: Low]
 Pattern: look for any word repeated twice in the same className string, specifically `dark:[a-z-]+-[0-9]+ dark:[a-z-]+-[0-9]+` where the two tokens are identical.
 Flag lines where the same utility class appears twice.
 Expected: 0 matches.
 
-**CHECK 6 — Bare empty states (no [EMPTY_STATE_COMPONENT])** [Severity: High]
-Pattern: lines containing `<p` AND a "no items found" / "empty" message with a className including `text-center` or `[MUTED_TEXT_TOKEN]`
-Exclude: lines containing `[EMPTY_STATE_COMPONENT]`, `toast`, `aria-`, `placeholder=`, `title=`
-Expected: 0 matches. All empty states must use a shared [EMPTY_STATE_COMPONENT] component.
+**CHECK 6 — Bare empty states (no EmptyState component)** [Severity: High]
+Pattern: lines containing `<p` AND (`Nessun` OR `Nessuna`) with a className including `text-center` or `text-muted-foreground`
+Exclude: lines containing `EmptyState`, `toast`, `aria-`, `placeholder=`, `title=`
+Expected: 0 matches. All empty states must use the EmptyState component.
 
 **CHECK 7 — Back links in detail pages missing block display** [Severity: Low]
 Scope: only the 'detail' layout pages from the sitemap.
-Pattern: back navigation links — check that the containing Link has `block` in its className.
+Pattern: `← Torna` — check that the containing Link has `block` in its className.
 Expected: every back link has `block` in className.
 
-**CHECK 8 — Status badges with hardcoded colors** [Severity: Medium]
-Scope: only the 'detail' and 'feed' layout pages.
+**CHECK 8 — Content status badges with hardcoded colors** [Severity: Medium]
 Pattern: `bg-green-|bg-yellow-|bg-orange-|text-green-|text-yellow-` on badge/span elements
-Expected: 0 matches. All status badges must use semantic tokens or a shared [STATUS_BADGE_COMPONENT] component.
+Expected: 0 matches. All status badges must use semantic tokens or StatusBadge component.
 
 **CHECK 9 — Tab bars missing whitespace-nowrap** [Severity: Medium]
 Scope: only the 'tabs' layout pages from the sitemap.
-Pattern: check tab link elements for presence of `whitespace-nowrap`.
+Pattern: check tab link elements (`className=.*tabCls|rounded-lg.*px-4.*py-2`) for presence of `whitespace-nowrap`.
 Expected: all tab links have whitespace-nowrap to prevent wrapping on mobile.
 
-**CHECK 10 — Table elements with w-full (layout violation)** [Severity: Critical]
+**CHECK 10 — Table elements with w-full (PERMANENT RULE violation)** [Severity: Critical]
 Pattern: find lines in the scope files that match BOTH of these conditions on the same line:
   - Contains `<Table` (a Table component opening tag)
   - Contains `w-full`
@@ -140,10 +112,10 @@ Expected: 0 matches. `<Table>` must always have `w-auto`.
 **CHECK 11 — Icon-only buttons missing aria-label** [Severity: Critical]
 Pattern: lines containing `size="icon"` or `size={'icon'}` that do NOT also contain `aria-label`
 Method: grep for `size="icon"|size=\{'icon'\}`, then filter to keep only lines that do NOT contain `aria-label`.
-Also check: icon-only button variants (adapt component names like `IconButton`, `Button` to your UI library's equivalents) with only an icon child (no visible text) — grep for `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*{[^}]*Icon` without `aria-label` on the same or preceding line.
+Also check: `IconButton` and `Button` with only an icon child (no visible text) — grep for `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*{[^}]*Icon` without `aria-label` on the same or preceding line.
 Expected: 0 matches. Icon-only buttons must always have aria-label.
 
-**CHECK 12 — overflow-x-auto on table wrappers (layout violation)** [Severity: Critical]
+**CHECK 12 — overflow-x-auto on table wrappers (PERMANENT RULE violation)** [Severity: Critical]
 Pattern: `overflow-x-auto`
 Exclude: lines containing `<pre`, `<code`, `// `, `{/*`
 Expected: 0 matches in non-pre containers. Table wrappers must use `overflow-hidden`, not `overflow-x-auto`.
@@ -153,28 +125,25 @@ Pattern: `tabIndex=[1-9]|tabindex="[1-9]`
 Exclude: lines with `//`, `{/*`
 Expected: 0 matches. Positive tabindex breaks natural tab order. Only `tabIndex={0}` or `tabIndex={-1}` are valid.
 
-**CHECK 14 — outline-none without focus ring (forced-color regression)** [Severity: High]
+**CHECK 14 — outline-none without focus ring (Tailwind v4 forced-color regression)** [Severity: High]
 Pattern: lines containing `outline-none` that do NOT also contain at least one of: `focus-visible:ring`, `focus:ring`, `focus-visible:outline`, `focus:outline`
 Method: grep for `outline-none`, then filter out lines that also contain any of the above focus restoration patterns.
-Expected: 0 matches. `outline-none` strips the focus indicator in forced-color / high-contrast mode. Replace with `outline-hidden` for decorative suppression, or add explicit `focus-visible:ring-*` compensation.
-Note: this is a framework-version-specific concern — verify against your CSS framework's changelog for your version.
+Expected: 0 matches. In Tailwind v4, `outline-none` strips the focus indicator in forced-color / high-contrast mode. Replace with `outline-hidden` for decorative suppression, or add explicit `focus-visible:ring-*` compensation.
 
-**CHECK 15 — Deprecated opacity utility syntax** [Severity: High]
+**CHECK 15 — Deprecated opacity utility syntax (Tailwind v4 breaking change)** [Severity: High]
 Pattern: `bg-opacity-|text-opacity-|border-opacity-|divide-opacity-|placeholder-opacity-|ring-opacity-`
 Exclude: lines with `//`, `{/*`
-Expected: 0 matches. These utilities were deprecated or removed in recent CSS framework versions. Use slash syntax or your framework's equivalent: `bg-black/50`, `text-foreground/80`, etc.
-Note: framework-version-specific — verify against your CSS framework's changelog.
+Expected: 0 matches. Tailwind v4 removed these utilities. Use slash syntax: `bg-black/50`, `text-foreground/80`, etc.
 
-**CHECK 16 — Native <img> tag** [Severity: Medium]
+**CHECK 16 — Native <img> tag (use Next.js <Image>)** [Severity: Medium]
 Pattern: `<img\s`
 Exclude: lines containing `//`, `{/*`, `alt=`, `.svg`, `data:`, `role="presentation"`
 Flag: any `<img` that does not appear to be a decorative/SVG use.
-Expected: 0 matches. All raster images should use your framework's optimized image component for optimization and LCP performance.
+Expected: 0 matches. All raster images must use `<Image>` from `next/image` for optimization and LCP.
 
 **CHECK 17 — Form inputs without accessible labels** [Severity: Critical]
-Pattern: lines containing `<Input|<Textarea|<Select` (UI component library form components) that do NOT also contain `aria-label` or `aria-labelledby` or `id=` (indicating a Label htmlFor association is possible).
 Method: for each match, check within ±5 lines for a `<Label` containing `htmlFor` matching the input's `id`. If no `<Label htmlFor` and no `aria-label`/`aria-labelledby` on the component line: flag it.
-Note: inputs inside form field wrappers (e.g. your form library's field wrapper component) with a sibling label component are valid — exclude lines inside such wrappers.
+Note: inputs inside `<FormField>` (react-hook-form pattern) with a sibling `<FormLabel>` are valid — exclude lines inside a `<FormField>` wrapper.
 Expected: 0 matches. Every form control must have an accessible name."
 
 ---
@@ -183,57 +152,52 @@ Expected: 0 matches. Every form control must have an accessible name."
 
 These require judgment, not just pattern matching:
 
-**S1 — Loading state coverage**
-From the sitemap "loading" column, identify any route marked as missing a loading state.
-Cross-reference with your project's loading boundary file conventions (e.g. framework-specific loading state files — check your framework's routing docs for the exact convention).
-Flag any route with significant data loading that lacks a loading state.
 Severity: High for routes with DB queries, Medium for static/client-only routes.
 
-**S2 — Primary navigation component accessibility**
-Read your main layout and navigation component files.
-Verify: the primary navigation element (sidebar, nav bar, drawer) appears exactly once in the rendered DOM per viewport (no duplication across breakpoints).
-Known issue pattern: collapsible sidebars with breakpoint visibility classes can cause double rendering if not properly guarded.
+**S2 — NotificationBell placement**
+Read `components/Sidebar.tsx` and `app/(app)/layout.tsx`.
+Verify: NotificationBell appears exactly once in the rendered DOM per viewport (no duplication).
+Known issue: `collapsible="offcanvas"` sidebar + `md:hidden` header can cause double rendering.
 
-**S3 — Responsive navigation trigger accessibility**
-Read your app layout file.
-Verify: the navigation trigger (hamburger, sidebar open button) is reachable on BOTH mobile (in mobile header) and desktop (always accessible, not hidden when nav is open).
-Flag if trigger is inside a mobile-only wrapper with no desktop alternative.
+**S3 — Sign-out button semantic color**
+Read `components/Sidebar.tsx` lines containing "Esci" or "sign" or "red".
+Verify: uses `bg-destructive` (semantic) not `bg-red-600` (hardcoded).
+Expected: `bg-destructive hover:bg-destructive/90`.
 
-**S4 — Bare `ring` on focus styles** [Severity: Medium]
+**S4 — Responsive sidebar trigger accessibility**
+Read `app/(app)/layout.tsx`.
+Verify: SidebarTrigger is reachable on BOTH mobile (in mobile header) and desktop (always accessible, not hidden when sidebar is open).
+Flag if trigger is inside an `md:hidden` wrapper with no desktop alternative.
+
+**S5 — w-fit on table container wrappers**
+For each file in scope that contains `<Table`, check whether its immediate parent container (Card, div) uses `w-fit`. Files that contain `<Table` but no `w-fit` anywhere → flag.
+Expected: all table wrappers use `w-fit` or `w-auto`.
+
+**S6 — Tailwind v4 bare `ring` on focus styles**
 Grep the scoped files for `focus:ring[^-]|focus-visible:ring[^-]` (bare `ring` without an explicit size modifier like `ring-2`).
-A bare `focus-visible:ring` that relies on the framework default may be too thin to meet WCAG 1.4.11 (3:1 non-text contrast for focus indicators).
-Flag any bare `ring` usage on interactive elements. Recommend an explicit size modifier like `ring-2` or `ring-[3px]`.
-Note: framework-version-specific — verify against your CSS framework's changelog.
+In Tailwind v4, the default `ring` changed from 3px to 1px. A bare `focus-visible:ring` that was relying on the 3px default is now too thin to meet WCAG 1.4.11 (3:1 non-text contrast for focus indicators).
+Flag any bare `ring` usage on interactive elements. Recommend `ring-2` or `ring-[3px]` explicitly.
+Severity: Medium.
 
-**S5 — onClick on non-interactive elements**
+**S7 — onClick on non-interactive elements**
 Grep the scoped files for `<div.*onClick|<span.*onClick|<li.*onClick`.
 For each match, verify the element also has `role="button"` (or equivalent) AND `onKeyDown` (or `onKeyPress`).
 Missing either = keyboard users cannot activate the element (WCAG 2.1.1).
-Exclude: lines inside `{/* ... */}` comments, or where the element is a component library `asChild` wrapper.
+Exclude: lines inside `{/* ... */}` comments, or where the element is a Radix `asChild` wrapper.
 Severity: Critical if the element is a primary action, High otherwise.
 
-**S6 — Table container width wrappers**
-For each file in scope that contains `<Table`, check whether its immediate parent container uses `w-fit` or `w-auto`. Files that contain `<Table` but no `w-fit` or `w-auto` anywhere → flag.
-Expected: all table wrappers use `w-fit` or `w-auto`.
-
-**S7 — Focus ring visibility on interactive components**
-Check the first 3 key components from the sitemap for the target scope: if any primary interactive component has `outline-none` or `outline-0` without a compensating `focus-visible:ring-*`, flag it.
-Severity: High (WCAG 2.4.7).
-
-**S8 — Client boundary placement depth** *(framework-specific — applies only to frameworks with a server/client component model, e.g. React/Next.js)*
-Read your app layout file.
-Verify: if your framework uses a server/client component boundary (e.g. `'use client'` in React/Next.js), check that this directive is NOT present at the top of layout-level files.
-Then check the first 3 key components from the sitemap for the target scope: if any page-level component carries a client directive AND contains no hooks or browser APIs, flag it — the client boundary is unnecessarily high.
-Severity: Medium (performance — prevents server-side streaming/rendering benefits).
-Note: skip this check if your framework does not have a server/client component distinction.
+**S8 — 'use client' placement depth**
+Read `app/(app)/layout.tsx`.
+Verify: `'use client'` is NOT present at the top of layout.tsx (it is a Server Component by design).
+Severity: Medium (performance — prevents RSC streaming).
 
 ---
 
 ## Step 4 — Browser accessibility scan (conditional — Playwright MCP)
 
 **First: check if dev server is reachable.**
-Run: `curl -s -o /dev/null -w "%{http_code}" [DEV_URL]`
-- If response is NOT 200 or 302: output `Browser scan skipped — dev server not reachable at [DEV_URL]. Re-run after starting the dev server for full axe-core coverage.` Then skip to Step 5.
+Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
+- If response is NOT 200 or 302: output `⚠️ Browser scan skipped — dev server not running on localhost:3000. Re-run after starting npm run dev for full axe-core coverage.` Then skip to Step 5.
 - If response is 200 or 302: proceed.
 
 **Select 3 representative pages** from the target scope (resolved from sitemap.md):
@@ -244,9 +208,8 @@ Run: `curl -s -o /dev/null -w "%{http_code}" [DEV_URL]`
 **For each page, execute the following sequence:**
 
 ```
-1. mcp__playwright__browser_navigate to [DEV_URL]/<route>
-   (If redirected to a login page: authenticate first using your project's test credentials,
-    then navigate to the target route)
+1. mcp__playwright__browser_navigate to http://localhost:3000/<route>
+   (If redirected to /login: read test account credentials from the "Test accounts" section
 
 2. mcp__playwright__browser_evaluate:
    // Inject axe-core from CDN
@@ -284,8 +247,8 @@ Run: `curl -s -o /dev/null -w "%{http_code}" [DEV_URL]`
 - `minor` axe violations → **Medium** (append to `docs/refactoring-backlog.md` with `UI-[n]` prefix)
 
 **Known false-positives to suppress** (document, not fix):
-- `color-contrast` on muted/secondary text within portal overlay elements — accessibility tooling measures the portal layer, not the semantic background. Verify manually.
-- `aria-hidden-focus` inside closed modal/sheet components — component libraries may manage this via `inert` attribute in recent versions. Verify your component library's version and behavior before flagging.
+- `color-contrast` on `text-muted-foreground` within Radix Portal overlay — axe measures the portal layer, not the semantic background. Verify manually.
+- `aria-hidden-focus` inside closed Dialog/Sheet — Radix manages this via `inert` attribute in v1.1+. Verify version before flagging.
 
 ---
 
@@ -302,35 +265,34 @@ Output in this exact format:
 ### Grep Checks
 | # | Check | Matches | Severity | Verdict |
 |---|---|---|---|---|
-| 1 | Grids without responsive prefix | N | High | PASS/FAIL |
-| 2 | Hardcoded color values (non-token) | N | High | PASS/FAIL |
-| 3 | Hardcoded gray structural | N | Medium | PASS/FAIL |
-| 4 | Hardcoded error color on required fields | N | Medium | PASS/FAIL |
-| 5 | Duplicate CSS tokens | N | Low | PASS/FAIL |
-| 6 | Bare empty states | N | High | PASS/FAIL |
-| 7 | Back links missing block | N | Low | PASS/FAIL |
-| 8 | Status badges hardcoded colors | N | Medium | PASS/FAIL |
-| 9 | Tab bars missing whitespace-nowrap | N | Medium | PASS/FAIL |
-| 10 | Table w-full violation | N | Critical | PASS/FAIL |
-| 11 | Icon buttons missing aria-label | N | Critical | PASS/FAIL |
-| 12 | overflow-x-auto on table wrappers | N | Critical | PASS/FAIL |
-| 13 | Positive tabindex | N | Critical | PASS/FAIL |
-| 14 | outline-none without focus ring | N | High | PASS/FAIL |
-| 15 | Deprecated opacity syntax | N | High | PASS/FAIL |
-| 16 | Native img tag | N | Medium | PASS/FAIL |
-| 17 | Form inputs without labels | N | Critical | PASS/FAIL |
+| 1 | Grids without responsive prefix | N | High | ✅/❌ |
+| 2 | Hardcoded blue tokens | N | High | ✅/❌ |
+| 3 | Hardcoded gray structural | N | Medium | ✅/❌ |
+| 4 | text-red-500 asterisks | N | Medium | ✅/❌ |
+| 5 | Duplicate CSS tokens | N | Low | ✅/❌ |
+| 6 | Bare empty states | N | High | ✅/❌ |
+| 7 | Back links missing block | N | Low | ✅/❌ |
+| 8 | Content status badges hardcoded | N | Medium | ✅/❌ |
+| 9 | Tab bars missing whitespace-nowrap | N | Medium | ✅/❌ |
+| 10 | Table w-full violation | N | Critical | ✅/❌ |
+| 11 | Icon buttons missing aria-label | N | Critical | ✅/❌ |
+| 12 | overflow-x-auto on table wrappers | N | Critical | ✅/❌ |
+| 13 | Positive tabindex | N | Critical | ✅/❌ |
+| 14 | outline-none without focus ring | N | High | ✅/❌ |
+| 15 | Deprecated opacity syntax | N | High | ✅/❌ |
+| 16 | Native <img> tag | N | Medium | ✅/❌ |
+| 17 | Form inputs without labels | N | Critical | ✅/❌ |
 
 ### Supplemental Checks
 | # | Check | Verdict | Notes |
 |---|---|---|---|
-| S1 | Loading state coverage | PASS/FAIL | [missing routes if any] |
-| S2 | Primary nav component duplication | PASS/FAIL | |
-| S3 | Nav trigger accessibility | PASS/FAIL | |
-| S4 | Bare ring on focus styles | PASS/FAIL | |
-| S5 | onClick on non-interactive elements | PASS/FAIL | |
-| S6 | Table container width wrappers | PASS/FAIL | |
-| S7 | Focus ring visibility | PASS/FAIL | |
-| S8 | Client boundary placement depth | PASS/FAIL | |
+| S2 | NotificationBell placement | ✅/❌ | |
+| S3 | Sign-out semantic color | ✅/❌ | |
+| S4 | Sidebar trigger accessibility | ✅/❌ | |
+| S5 | Table container w-fit | ✅/❌ | |
+| S6 | Bare ring on focus styles | ✅/❌ | |
+| S7 | onClick on non-interactive elements | ✅/❌ | |
+| S8 | 'use client' placement depth | ✅/❌ | |
 
 ### Browser Accessibility Scan (axe-core)
 [Only if Step 4 ran — otherwise: "Skipped — dev server not running"]
@@ -343,7 +305,7 @@ Output in this exact format:
 Top violations:
 [id — description — N nodes — example HTML]
 
-### Failures requiring action ([N] total — by severity)
+### ❌ Failures requiring action ([N] total — by severity)
 
 **Critical ([N])** — fix before Phase 6:
 [file:line — check# — excerpt — recommended fix]
@@ -354,7 +316,7 @@ Top violations:
 **Medium/Low ([N])** — append to docs/refactoring-backlog.md:
 [file:line — check# — excerpt — recommended fix]
 
-### Passing checks ([N] total)
+### ✅ Passing checks ([N] total)
 [check numbers with 0 matches confirmed]
 
 ### Coverage
@@ -372,8 +334,6 @@ If all checks pass: output `UI Audit CLEAN — [DATE]. No violations found.`
 - Do NOT make any code changes during this skill. Audit only.
 - Do NOT re-read files already in context from Step 1.
 - The Explore agent in Step 2 handles all grep work. Do not duplicate searches in the main context.
-- If `docs/sitemap.md` is not present, ask the user to create it or point to the equivalent route inventory document for this project.
-- **Pipeline integration**: for Critical findings, ask the user: "Do you want me to implement the identified fixes?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
+- **Pipeline integration**: for Critical findings, ask the user: "Vuoi che implementi i fix identificati?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
 - **Concurrent execution**: when invoked from pipeline.md Phase 5d, this skill runs concurrently with the first Playwright-based skill ONLY in Static mode (Step 4 skipped). If the dev server is running and Step 4 executes, the Playwright MCP session is in use — do not overlap.
-- **axe-core false positives**: document suppressed false positives explicitly in the report. Do not flag known component-library-managed patterns (inert modal children, portal color-contrast measurements) as violations without manual verification.
-- **Framework-version-specific checks** (14, 15, S4): verify against your CSS framework's changelog before treating as failures. These are written for Tailwind v4 conventions but the underlying WCAG principles apply universally.
+- **axe-core false positives**: document suppressed false positives explicitly in the report. Do not flag known Radix-managed patterns (inert Dialog children, Portal color-contrast measurements) as violations without manual verification.
