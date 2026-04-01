@@ -43,14 +43,6 @@ Announce at start:
 
 ---
 
-## Step 0.5 — Screenshot directory setup
-
-Before any navigation, create the temp screenshot directory:
-```bash
-```
-
----
-
 ## Step 1 — Load architecture context
 
 Read in parallel:
