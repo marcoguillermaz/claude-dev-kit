@@ -140,7 +140,7 @@ For experienced users, the wizard asks:
   1. "How many engineers will use Claude Code on this project?" (solo / small team / larger team)
   2. "What kind of work will you primarily do?" (bugfixes / feature blocks / complex/long-running)
   3. The wizard suggests a tier with a description (phases, gates, overhead) — you confirm or pick a different one
-- Tech stack (Node.js/TS, Node.js/JS, Python, Go, other)
+- Tech stack (Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java, other)
 - Test command, type check command, dev server command
 - **E2E test command (Playwright/Cypress — optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
 - **Feature flags (Tier M/L only)** — 7 questions that determine which audit skills are installed and set an `## Active Skills` section in CLAUDE.md:
@@ -1532,7 +1532,7 @@ The STOP gates rely on Claude respecting the instructions in `pipeline.md`. If y
 
 **Q: Can I use this with a non-Node.js project?**
 
-Yes. The CLI supports Python, Go, and "Other / mixed" stacks. The test command, type check command, and build command are all configurable. The pipeline itself is stack-agnostic.
+Yes. The CLI supports Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java, and "Other / mixed" stacks. The test command, type check command, and build command are all configurable. The pipeline itself is stack-agnostic.
 
 ---
 
@@ -1591,10 +1591,24 @@ Phase 4 requires three conditions: (1) a real command configured, (2) scope gate
 
 ---
 
+**Q: Can I run `init` non-interactively for CI or scripted provisioning?**
+
+Yes. All three init commands accept an `--answers <path>` flag that bypasses every wizard prompt:
+
+```bash
+npx mg-claude-dev-kit init --answers ./answers.json
+npx mg-claude-dev-kit init-greenfield --answers ./answers.json
+npx mg-claude-dev-kit init-in-place --answers ./answers.json
+```
+
+Pass a JSON file containing all wizard answers. Nine example fixtures covering the most common combinations are in `packages/cli/test/fixtures/wizard-answers/`. Copy one as a starting point and adjust values. Useful for CI pipelines, scripted team provisioning, and automated testing.
+
+---
+
 **Q: How do I add a new audit skill?**
 
 Create a directory under `.claude/skills/your-skill-name/` containing a `SKILL.md` file. Follow the structure of the existing skills (header with scope + trigger conditions, numbered checks, output format). Add a row to `.claude/cheatsheet.md` if your project uses one.
 
 ---
 
-*Last updated: 2026-03-22 — v0.5.3*
+*Last updated: 2026-04-01 — v1.5.0*

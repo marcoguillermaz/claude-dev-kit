@@ -48,6 +48,18 @@ Three init paths to choose from:
 | **From context** | You have existing repos or docs — Claude reads them and populates your project files |
 | **In-place** | You're already inside a project — adds structure without overwriting anything |
 
+### Automate / CI
+
+Skip all interactive prompts with a pre-filled answers file:
+
+```bash
+npx mg-claude-dev-kit init --answers ./my-answers.json
+npx mg-claude-dev-kit init-greenfield --answers ./my-answers.json
+npx mg-claude-dev-kit init-in-place --answers ./my-answers.json
+```
+
+Pass a JSON file with all wizard answers. Nine example fixtures are included in `packages/cli/test/fixtures/wizard-answers/` — copy one as a starting point. Useful for CI pipelines, scripted provisioning, and integration testing.
+
 ### Validate your setup
 
 ```bash
@@ -316,12 +328,6 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 **v1.2.0 changes**: 3 new shared rule files (`output-style.md`, `claudemd-standards.md`, `pipeline-standards.md`) in `common/rules/` loaded by tier M/L; 2 new skills (`/commit` for all tiers, `/ui-audit` conditional on design system); 7 wizard feature flags (`hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`, `auditModel`, `hasPrd`, `hasE2E`) that conditionally install skills and set `Active Skills` section in CLAUDE.md; all 9 existing skills upgraded with deeper checks (APCA contrast, ISO 9241-11, WCAG 1.4.10, Conventional Commits, CVE scanning, unused indexes, structural judgment); context-reviewer agent updated from Italian prose check to unresolved-placeholder check; context-review C12 added (canonical docs currency); doctor expanded from 13 to 19 checks; integration tests 98 → 126.
 
 **v1.1.0 changes**: spec-driven mode selection at Phase 1 (Tier M/L) — per block, Claude asks whether to use Spec-first (generates `docs/specs/[block-name].md` with EARS acceptance criteria before implementation) or Scope-confirm (existing structured sweep). `docs/specs/archive/` tracks implemented specs. Bug fix: `pipeline.md` was never copied to tier S/M/L scaffold (critical scaffold regression).
-
-**v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
-
-**v0.5.2 changes**: UAT scenario definition at scope gate — when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
-
-**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx mg-claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
 
 **v0.5.3 changes**: critical fix — Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
