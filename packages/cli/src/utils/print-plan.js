@@ -42,7 +42,7 @@ export function printPlan(config) {
   }
 }
 
-export function printNextSteps(config) {
+export function printNextSteps(config, opts = {}) {
   const mode = config.mode || 'greenfield';
 
   // 3.4 — adapt doctor command to execution context
@@ -75,13 +75,32 @@ export function printNextSteps(config) {
   }
 
   if (mode === 'in-place') {
-    console.log('  1. Open Claude Code: ' + chalk.cyan('claude'));
-    console.log('  2. Claude will detect ' + chalk.cyan('CONTEXT_IMPORT.md') + ' and start the discovery pass automatically');
-    console.log('     It will read the existing codebase and populate CLAUDE.md, requirements.md, etc.');
-    console.log('  3. Confirm the discovery summary and answer any gap questions');
-    console.log('  4. Run ' + chalk.cyan(doctorCmd) + ' after discovery completes');
-    if (config.includePreCommit) {
-      console.log('  5. Run ' + chalk.cyan(preCommitCmd) + ' to activate secret scanning');
+    const { ranDoctor = false, ranPreCommit = false } = opts;
+
+    console.log();
+    console.log('  1. Open Claude Code in this directory:');
+    console.log('       ' + chalk.cyan('claude'));
+
+    console.log();
+    console.log('  2. ' + chalk.bold('Discovery pass') + chalk.dim(' — starts automatically on first open'));
+    console.log('       Claude reads ' + chalk.cyan('CONTEXT_IMPORT.md') + ' — your project briefing file —');
+    console.log('       and scans your codebase. It generates CLAUDE.md, fills in docs/,');
+    console.log('       and asks you about anything it could not infer from the code.');
+    console.log('       ' + chalk.dim('Takes 5–10 min. Confirm the output, then you\'re inside the pipeline.'));
+    console.log();
+    console.log('       ' + chalk.dim('Tip: open CONTEXT_IMPORT.md before starting Claude and review'));
+    console.log('       ' + chalk.dim('     what it will ask Claude to analyze. Edit if needed.'));
+
+    let step = 3;
+    if (!ranDoctor) {
+      console.log();
+      console.log(`  ${step++}. After discovery completes:`);
+      console.log('       ' + chalk.cyan(doctorCmd) + chalk.dim('  ← validates files and hooks'));
+    }
+    if (config.includePreCommit && !ranPreCommit) {
+      console.log();
+      console.log(`  ${step++}. Activate secret scanning:`);
+      console.log('       ' + chalk.cyan(preCommitCmd));
     }
   }
 }
@@ -148,7 +167,7 @@ function getCommandSummary(config) {
   // Show audit model when it matters (Tier M/L + UI present)
   const tier = (config.tier || 's').toUpperCase();
   if ((tier === 'M' || tier === 'L') && config.hasFrontend !== false && config.auditModel) {
-    lines.push(`${chalk.dim('Audit: ')} ${config.auditModel}`);
+    lines.push(`${chalk.dim('Audit model:')} ${config.auditModel}`);
   }
 
   return lines;
@@ -182,8 +201,13 @@ function getSkillsSummary(config) {
     skipped.push({ name: 'skill-db', reason: 'no database' });
   }
 
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  const isNative = nativeStacks.includes(config.techStack);
+
   if (config.hasFrontend !== false) {
-    included.push('responsive-audit', 'visual-audit', 'ux-audit');
+    if (!isNative) included.push('responsive-audit');
+    else skipped.push({ name: 'responsive-audit', reason: 'native UI' });
+    included.push('visual-audit', 'ux-audit');
     if (config.hasDesignSystem !== false) {
       included.push('ui-audit');
     } else {
@@ -243,7 +267,9 @@ function getFilePlan(config) {
       base.push('docs/  (populated by Claude during discovery)');
     }
     base.push('docs/adr/template.md');
-    if (config.hasFrontend !== false) {
+    const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+    const isNative = nativeStacks.includes(config.techStack);
+    if (config.hasFrontend !== false && !isNative) {
       base.push('docs/sitemap.md');
     }
     if (config.hasDatabase !== false) {

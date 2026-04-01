@@ -95,7 +95,10 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
  * Docs are only pruned when a feature flag is explicitly set to false (not undefined).
  */
 async function pruneConditionalDocs(targetDir, config) {
-  if (config.hasFrontend === false) {
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  const isNative = nativeStacks.includes(config.techStack);
+
+  if (config.hasFrontend === false || isNative) {
     await fs.remove(path.join(targetDir, 'docs', 'sitemap.md'));
   }
   if (config.hasDatabase === false) {
@@ -121,11 +124,17 @@ async function pruneSkills(targetDir, config) {
     skipSkills.add('skill-db');
   }
 
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  const isNative = nativeStacks.includes(config.techStack);
+
   if (config.hasFrontend === false) {
     skipSkills.add('responsive-audit');
     skipSkills.add('visual-audit');
     skipSkills.add('ux-audit');
     skipSkills.add('ui-audit');
+  } else if (isNative) {
+    // responsive-audit is a web concept — not applicable for native UIs
+    skipSkills.add('responsive-audit');
   }
 
   // ui-audit additionally requires a design system

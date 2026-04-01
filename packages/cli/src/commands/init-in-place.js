@@ -22,14 +22,16 @@ export async function initInPlace(options) {
     answers = JSON.parse(options.answers);
   } else {
     console.log();
-    console.log(chalk.dim(`Analyzing existing project at ${cwd}...`));
+    console.log(chalk.dim(`Analyzing ${path.basename(cwd)}...`));
 
     // ── Auto-detect stack ──────────────────────────────────────────────
 
     detected = await detectStack(cwd);
 
     if (detected.detectedFiles.length > 0) {
-      console.log(chalk.dim(`Detected: ${detected.detectedFiles.join(', ')}`));
+      console.log(chalk.dim(`  Detected: ${detected.detectedFiles.join(', ')}`));
+    } else {
+      console.log(chalk.dim('  No stack detected — you\'ll confirm the details below.'));
     }
 
     let hasGithubRemote = false;
@@ -57,7 +59,7 @@ export async function initInPlace(options) {
     {
       type: 'list',
       name: 'techStack',
-      message: 'Tech stack:',
+      message: detected.techStack !== 'other' ? 'Tech stack (detected — confirm or change):' : 'Tech stack:',
       default: detected.techStack,
       choices: [
         { name: `Node.js / TypeScript${detected.techStack === 'node-ts' ? chalk.dim(' (detected)') : ''}`, value: 'node-ts' },
@@ -76,7 +78,7 @@ export async function initInPlace(options) {
     {
       type: 'input',
       name: 'testCommand',
-      message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
+      message: 'Test command (reference only — CDK won\'t run it):',
       default: (a) => a.techStack === 'other' ? '' : (detected.testCommand || 'npm test'),
     },
     {
@@ -100,13 +102,13 @@ export async function initInPlace(options) {
           swift: 'swift run', kotlin: './gradlew run',
           rust: 'cargo run', dotnet: 'dotnet run', java: 'mvn exec:java',
         };
-        return nativeDefaults[a.techStack] || detected.devCommand || 'npm run dev';
+        return detected.devCommand !== null ? detected.devCommand : (nativeDefaults[a.techStack] || '');
       },
     },
     {
       type: 'list',
       name: 'tier',
-      message: `Pipeline tier (suggested: ${tierDefault.toUpperCase()} — ${tierLabels[tierDefault]}):`,
+      message: `Pipeline tier (suggested: ${tierDefault.toUpperCase()} — ${tierLabels[tierDefault]}${detected.detectedFiles.length > 0 ? ', based on project size' : ''}):`,
       when: !options.tier,
       default: tierDefault,
       choices: [
@@ -119,7 +121,7 @@ export async function initInPlace(options) {
     {
       type: 'confirm',
       name: 'hasPrd',
-      message: 'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
+      message: 'Track a PRD per feature block? (adds a PRD template to each block)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
@@ -132,7 +134,7 @@ export async function initInPlace(options) {
       message: (a) => {
         const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
         if (webStacks.includes(a.techStack)) {
-          return 'E2E test command (Playwright/Cypress — leave blank to skip):';
+          return 'E2E test command (Playwright/Cypress — reference only, leave blank to skip):';
         }
         const nativeExamples = {
           swift: 'XCUITest', kotlin: 'Espresso',
@@ -141,8 +143,8 @@ export async function initInPlace(options) {
         };
         const ex = nativeExamples[a.techStack];
         return ex
-          ? `UI/integration test command (${ex} — leave blank to skip):`
-          : 'Integration test command (optional, leave blank to skip):';
+          ? `UI/integration test command (${ex} — reference only, leave blank to skip):`
+          : 'Integration test command (reference only, leave blank to skip):';
       },
       when: (a) => {
         const tier = options.tier || a.tier;
@@ -152,47 +154,42 @@ export async function initInPlace(options) {
     },
     // Feature flags — tier M/L only
     {
-      type: 'list',
+      type: 'confirm',
       name: 'hasApi',
       message: 'Does your project expose an API (REST, GraphQL, RPC)? (controls whether api-design checks are included)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
       },
-      choices: [
-        { name: 'No',  value: false },
-        { name: 'Yes', value: true },
-      ],
       default: false,
     },
     {
-      type: 'list',
+      type: 'confirm',
       name: 'hasDatabase',
       message: 'Does your project use a database? (controls whether skill-db checks are included)',
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
+      default: true,
     },
     {
-      type: 'list',
+      type: 'confirm',
       name: 'hasFrontend',
-      message: 'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)',
+      message: (a) => {
+        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
+        return isNative
+          ? 'Does your project have a UI? (controls whether visual-audit and ux-audit are included)'
+          : 'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)';
+      },
       when: (a) => {
         const tier = options.tier || a.tier;
         return tier === 'm' || tier === 'l';
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
+      default: true,
     },
     {
-      type: 'list',
+      type: 'confirm',
       name: 'hasDesignSystem',
       message: (a) => {
         const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(a.techStack);
@@ -204,20 +201,36 @@ export async function initInPlace(options) {
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
+      default: true,
     },
     {
       type: 'input',
       name: 'designSystemName',
-      message: 'Design system name (e.g. shadcn/ui, MUI, Ant Design):',
+      message: (a) => {
+        const nativeExamples = {
+          swift: 'Apple HIG, SwiftUI',
+          kotlin: 'Material Design 3, Material You',
+          dotnet: 'Fluent Design, WinUI',
+          java: 'Material Design, JavaFX',
+        };
+        const ex = nativeExamples[a.techStack];
+        return ex
+          ? `Design guideline name (e.g. ${ex}):`
+          : 'Design system name (e.g. shadcn/ui, MUI, Ant Design):';
+      },
       when: (a) => {
         const tier = options.tier || a.tier;
         return (tier === 'm' || tier === 'l') && a.hasFrontend === true && a.hasDesignSystem === true;
       },
-      default: 'component library',
+      default: (a) => {
+        const nativeDefaults = {
+          swift: 'Apple HIG',
+          kotlin: 'Material Design 3',
+          dotnet: 'Fluent Design',
+          java: 'Material Design',
+        };
+        return nativeDefaults[a.techStack] || 'component library';
+      },
     },
     {
       type: 'list',
@@ -312,9 +325,63 @@ export async function initInPlace(options) {
   console.log(chalk.green.bold('✓ In-place scaffold complete'));
   console.log();
   printPlan(config);
+
+  // ── Optional inline validation ────────────────────────────────────────
+
+  let ranDoctor = false;
+  let ranPreCommit = false;
+
+  if (!options.answers) {
+    console.log();
+    const { runDoctorNow } = await inquirer.prompt([{
+      type: 'confirm',
+      name: 'runDoctorNow',
+      message: 'Validate setup with doctor now?',
+      default: true,
+    }]);
+
+    if (runDoctorNow) {
+      console.log();
+      console.log(chalk.dim('  Checking file structure, hooks, and pipeline setup...'));
+      console.log();
+      try {
+        execSync(`node "${process.argv[1]}" doctor`, { cwd, stdio: 'inherit' });
+        ranDoctor = true;
+      } catch {
+        console.log(chalk.yellow('  Doctor reported issues — review above before proceeding.'));
+      }
+    }
+
+    if (config.includePreCommit) {
+      console.log();
+      const { runPreCommitNow } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'runPreCommitNow',
+        message: 'Install pre-commit hooks now? (blocks commits that contain API keys or tokens)',
+        default: false,
+      }]);
+
+      if (runPreCommitNow) {
+        const preCommitInstallCmd = process.platform === 'darwin'
+          ? 'brew install pre-commit && pre-commit install'
+          : 'pip install pre-commit && pre-commit install';
+        const spinner2 = ora('Installing pre-commit hooks...').start();
+        try {
+          execSync(preCommitInstallCmd, { cwd, stdio: 'pipe' });
+          spinner2.succeed('Pre-commit hooks installed.');
+          ranPreCommit = true;
+        } catch {
+          spinner2.fail(`Install failed — run manually: ${preCommitInstallCmd}`);
+        }
+      }
+    }
+  }
+
+  // ── Next steps ────────────────────────────────────────────────────────
+
   console.log();
   console.log(chalk.bold('Next steps:'));
-  printNextSteps(config);
+  printNextSteps(config, { ranDoctor, ranPreCommit });
   console.log();
   console.log(chalk.dim('Docs: https://github.com/marcoguillermaz/claude-dev-kit'));
 }

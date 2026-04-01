@@ -122,6 +122,15 @@ Run this from any directory:
 npx mg-claude-dev-kit init
 ```
 
+The wizard asks about your project state first:
+
+```
+? What's the state of this project?
+  ▸ Existing project — add CDK to a project that already has code
+    New project — starting from scratch, you'll fill in the details
+    From existing docs — share your docs and Claude populates everything
+```
+
 You will be asked to choose one of three paths:
 
 ---
@@ -191,12 +200,14 @@ What happens:
 **Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
 
 The CLI:
-1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `Package.swift`, `Gemfile`, `pom.xml`, `build.gradle`, `*.csproj`, and Xcode project directories. Supported stacks: Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java.
+1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `Package.swift`, `Gemfile`, `pom.xml`, `build.gradle`, `*.csproj`, and Xcode project directories (matched by `.xcodeproj` / `.xcworkspace` suffix). Supported stacks: Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java.
 2. Shows detected values pre-filled in every prompt — you confirm or override.
 3. Counts your source files to suggest an appropriate tier.
 4. Creates all governance files **without overwriting** `CLAUDE.md`, `MEMORY.md`, `.gitignore`, or `README.md` if they already exist.
 5. Generates `CONTEXT_IMPORT.md` pointing to the current directory.
 6. Appends claude-dev-kit entries to `.gitignore`.
+7. Optionally runs `doctor` inline to validate the scaffold before you open Claude Code.
+8. Optionally installs pre-commit hooks inline (blocks commits that contain API keys or tokens).
 
 Detected values you will be asked to confirm:
 - Project name (defaults to directory name)
@@ -205,7 +216,7 @@ Detected values you will be asked to confirm:
 - E2E test command (optional — leave blank to skip; if configured, Phase 4 activates conditionally in Tier M/L)
 - Pipeline tier (suggested based on project size)
 
-**After running:** open Claude Code. Claude detects `CONTEXT_IMPORT.md` and runs Discovery on the current directory. See section 4.
+**After running:** open Claude Code with `claude`. Claude detects `CONTEXT_IMPORT.md` and runs the Discovery pass automatically — reads your codebase, generates `CLAUDE.md` and `docs/`, and asks about anything it could not infer from the code. See section 5 for details.
 
 ---
 
