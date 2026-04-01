@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
+import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
 
 /**
  * Scaffold Tier 0 (Discovery) — minimal: CLAUDE.md, settings.json, GETTING_STARTED.md only.
@@ -297,7 +298,7 @@ function interpolate(content, config) {
     .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
     .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
     .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
-    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || 'claude-sonnet-4-6')
+    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
     .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
     .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false');
 }
