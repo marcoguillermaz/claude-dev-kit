@@ -543,6 +543,36 @@ async function scenarioPerfAuditPlaceholders() {
   }
 }
 
+async function scenarioSkillDevApplicabilityCheck() {
+  section('skill-dev — applicability guard present (tier M/L)');
+
+  for (const tier of ['m', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const scenarioDir = path.join(OUTPUT_DIR, `skill-dev-applicability-tier-${tier}`);
+    await fs.ensureDir(scenarioDir);
+    await scaffoldTier(tier, scenarioDir, config, TEMPLATES_DIR);
+
+    const skillPath = path.join(scenarioDir, '.claude/skills/skill-dev/SKILL.md');
+    if (!fs.existsSync(skillPath)) {
+      fail(`Tier ${tier}: skill-dev/SKILL.md missing`);
+      continue;
+    }
+    const raw = fs.readFileSync(skillPath, 'utf8');
+
+    if (raw.includes('Applicability check')) {
+      pass(`Tier ${tier}: skill-dev Applicability check present`);
+    } else {
+      fail(`Tier ${tier}: skill-dev Applicability check missing`);
+    }
+
+    if (raw.includes('CHECK D9') && raw.includes('React only')) {
+      pass(`Tier ${tier}: skill-dev skip list includes D9 (useEffect — React only)`);
+    } else {
+      fail(`Tier ${tier}: skill-dev skip list missing D9 annotation`);
+    }
+  }
+}
+
 async function scenarioSkillPruning() {
   section('Skill pruning — no API, no DB, no frontend');
   const config = {
@@ -734,6 +764,7 @@ async function main() {
   await scenarioStopHookContent();
   await scenarioArchAuditTimestamp();
   await scenarioPerfAuditPlaceholders();
+  await scenarioSkillDevApplicabilityCheck();
   await scenarioPipelineGateCount();
   await scenarioSkillPruning();
   await scenarioUiAuditPruning();
