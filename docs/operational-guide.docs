@@ -528,10 +528,16 @@ Scaffolded by the CLI for Tier M and Tier L. A practical guide to the first bloc
 
 The primary project context file. Claude reads it at the start of every session.
 
-**What to put in it:**
+**Auto-populated fields** (filled by the scaffold from wizard/detection data):
+- **Project name** — from wizard input
+- **Tech Stack Summary** — from detected stack (e.g. "Node.js + TypeScript", "Swift / macOS")
+- **Framework** — auto-detected from dependencies (e.g. "Next.js", "Django"). Shows "N/A - native app" for Swift/Kotlin/Rust/.NET/Java. Shows an italic hint when not detected.
+- **Language** — derived from tech stack (e.g. "TypeScript", "Python", "Swift", "C#")
+- **Key Commands** — from wizard input or native defaults (e.g. `xcodebuild test` for Swift)
+
+**What to fill in manually:**
 - Project overview (2–4 sentences)
-- Tech stack with specific versions
-- Key commands: install, dev, build, test, type check, migration (if applicable), E2E (if applicable — `# not configured` if none)
+- Database, Auth, Storage, Email, Deploy fields
 - Folder conventions (where routes live, where utilities live)
 - Naming conventions (casing, file naming)
 - Known non-obvious patterns (things Claude would get wrong without being told)
@@ -576,6 +582,20 @@ Permissions and hooks. Five hooks are pre-configured in Tier M/L (three in Tier 
 
 **Do not disable the Stop hook** unless running a dry-run or documentation-only task.
 
+**Stack-aware permissions**: `permissions.allow` is set to stack-appropriate CLI tools at scaffold time. `permissions.deny` includes base protections (force push, `rm -rf /`, `DROP TABLE`, `TRUNCATE`) plus stack-specific release/publish commands:
+
+| Stack | Allow | Deny (additions) |
+|---|---|---|
+| Node.js (default) | git, node, npm, npx, curl | — |
+| Swift | git, swift, xcodebuild, xcrun, curl | xcodebuild archive, xcrun altool --upload-app |
+| Kotlin | git, gradlew, gradle, curl | gradlew publish |
+| Rust | git, cargo, rustc, curl | cargo publish |
+| .NET | git, dotnet, curl | dotnet nuget push |
+| Java | git, mvn, gradlew, gradle, curl | mvn deploy, gradlew publish |
+| Ruby | git, bundle, rails, rake, curl | gem push |
+| Python | git, python, pip, uv, curl | twine upload |
+| Go | git, go, curl | — |
+
 **`includeGitInstructions: false`** — the built-in Claude Code git instructions are suppressed in Tier M/L. `pipeline.md` and `git.md` cover this more precisely for your project.
 
 ---
@@ -596,9 +616,18 @@ You can add project-specific overrides at the bottom of this file. Example:
 
 ### .claude/rules/security.md
 
-Path-scoped security rules. These load only when Claude works on files matching `src/api/**` or `lib/auth*`. Zero context cost during UI work.
+Stack-aware security rules. The scaffold selects the appropriate variant based on your tech stack:
 
-Contains: auth check requirements, input validation rules, RLS/ACL checklist, headers to include.
+| Variant | Stacks | Focus areas |
+|---|---|---|
+| **Web** (default) | Node.js, Python, Ruby, Go/Java/.NET with API | Auth checks, input validation, SQL injection, RLS/ACL, API response security, HTTP headers |
+| **Native Apple** | Swift | App Sandbox entitlements, Keychain access, TCC permissions (camera, mic, files), Data Protection, code signing |
+| **Native Android** | Kotlin | Manifest permissions, Android Keystore, EncryptedSharedPreferences, network security config, ProGuard |
+| **Systems** | Rust, Go, .NET, Java (without API) | Memory safety, process execution, file permissions, input validation at system boundaries, dependency auditing |
+
+Selection logic: Swift always gets native-apple, Kotlin always gets native-android. Rust/Go/.NET/Java get the systems variant when `hasApi=false`, otherwise the web variant. All other stacks get the web variant.
+
+The output file is always named `security.md` regardless of which variant was selected.
 
 ---
 
@@ -759,6 +788,8 @@ Add to `.claude/settings.json`:
 **File**: `.claude/skills/security-audit/SKILL.md`
 **Backlog prefix**: `SEC-n`
 **Run when**: shipping a new API route, after an auth refactor, or as a quarterly hygiene check.
+
+**Applicability check**: before starting, the skill reads CLAUDE.md and checks the Framework and Language fields. If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (`[HAS_API]` is `false`), it outputs a native-specific guidance message and stops. Projects with API routes proceed normally regardless of stack.
 
 #### Placeholders to configure
 

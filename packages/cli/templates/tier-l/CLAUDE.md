@@ -4,8 +4,8 @@
 [One paragraph: what the product does, who uses it, what problem it solves.]
 
 ## Tech Stack
-- **Framework**: [e.g. Next.js 15, Express, Django, Rails]
-- **Language**: [TypeScript / Python / Go / etc.]
+- **Framework**: [FRAMEWORK_VALUE]
+- **Language**: [LANGUAGE_VALUE]
 - **Database**: [PostgreSQL + RLS / Prisma / Drizzle]
 - **Auth**: [Auth mechanism]
 - **Storage**: [File storage if any]

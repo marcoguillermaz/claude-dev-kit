@@ -14,6 +14,19 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 
 ---
 
+## Applicability check
+
+Before any other step: read `CLAUDE.md` and check the Framework and Language fields.
+
+- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (the `[HAS_API]` field is `false` or the Framework field is `N/A — native app`): output the following and stop — do not proceed to Step 0:
+
+  > **security-audit** targets web applications with API routes, middleware, and database access policies. This project uses a native stack with no server-side API surface. For native app security, audit manually: App Sandbox entitlements, Keychain access patterns, TCC permissions (camera, microphone, file access), code signing, and hardened runtime configuration.
+
+- If the project has API routes (`[HAS_API]` is `true`), even on a native stack: proceed to Step 0. The API surface is auditable.
+- If unsure: check for route handler files (e.g., `src/app/api/`, `routes/`, `handlers/`). If none exist, output the message above and stop.
+
+---
+
 ## Step 0 — Target resolution
 
 Parse `$ARGUMENTS` for a `target:` token.

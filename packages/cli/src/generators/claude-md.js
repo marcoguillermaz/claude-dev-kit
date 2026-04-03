@@ -23,7 +23,9 @@ export async function generateClaudeMd(config, targetDir) {
   // Apply known values from wizard answers
   content = content
     .replace(/\[PROJECT_NAME\]/g, config.projectName)
-    .replace(/\[TECH_STACK_SUMMARY\]/g, techStackSummary(config.techStack));
+    .replace(/\[TECH_STACK_SUMMARY\]/g, techStackSummary(config.techStack))
+    .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
+    .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack));
 
   // Inject commands
   const commands = buildCommandsBlock(config);
@@ -36,6 +38,29 @@ export async function generateClaudeMd(config, targetDir) {
   }
 
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
+}
+
+function frameworkValue(config) {
+  if (config.framework) return config.framework;
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  if (nativeStacks.includes(config.techStack)) return 'N/A — native app';
+  return '_fill in: e.g. Next.js 15, Express, Django, Rails_';
+}
+
+function languageFromStack(techStack) {
+  const map = {
+    'node-ts': 'TypeScript',
+    'node-js': 'JavaScript',
+    python: 'Python',
+    go: 'Go',
+    swift: 'Swift',
+    kotlin: 'Kotlin',
+    rust: 'Rust',
+    dotnet: 'C#',
+    ruby: 'Ruby',
+    java: 'Java',
+  };
+  return map[techStack] || '_fill in: TypeScript / Python / Go / etc._';
 }
 
 function techStackSummary(stack) {

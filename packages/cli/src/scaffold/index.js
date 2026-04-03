@@ -59,11 +59,24 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     await copyTemplateDir(tierDir, targetDir, config, {}, config, []);
   }
 
-  // Copy rules/ subdirectory from common
+  // Copy rules/ subdirectory from common — select security variant by stack family
   const commonRulesDir = path.join(commonDir, 'rules');
   if (await fs.pathExists(commonRulesDir)) {
+    const securityVariant = securityRuleVariant(config);
     const rules = await fs.readdir(commonRulesDir);
     for (const rule of rules) {
+      // Security variant selection: skip all security-*.md variants and the base security.md.
+      // Only the selected variant is copied, always as security.md in the output.
+      if (rule.startsWith('security')) {
+        if (rule === securityVariant) {
+          const src = path.join(commonRulesDir, rule);
+          const dest = path.join(targetDir, '.claude', 'rules', 'security.md');
+          await fs.ensureDir(path.dirname(dest));
+          const content = await fs.readFile(src, 'utf8');
+          await fs.writeFile(dest, interpolate(content, config));
+        }
+        continue;
+      }
       const src = path.join(commonRulesDir, rule);
       const dest = path.join(targetDir, '.claude', 'rules', rule);
       await fs.ensureDir(path.dirname(dest));
@@ -91,6 +104,9 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     await pruneConditionalDocs(targetDir, config);
     await pruneSkills(targetDir, config);
   }
+
+  // Post-process settings.json: replace default permissions.allow with stack-aware permissions
+  await patchSettingsPermissions(targetDir, config);
 }
 
 /**
@@ -147,6 +163,54 @@ async function pruneSkills(targetDir, config) {
 
   for (const skill of skipSkills) {
     await fs.remove(path.join(skillsDir, skill));
+  }
+}
+
+/**
+ * Patch settings.json permissions.allow to use stack-appropriate CLI tools.
+ * Default templates use node/npm/npx — this replaces them for non-JS stacks.
+ */
+async function patchSettingsPermissions(targetDir, config) {
+  const settingsPath = path.join(targetDir, '.claude', 'settings.json');
+  if (!(await fs.pathExists(settingsPath))) return;
+
+  const permissionsAllowByStack = {
+    swift:  ['Bash(git:*)', 'Bash(swift:*)', 'Bash(xcodebuild:*)', 'Bash(xcrun:*)', 'Bash(curl:*)'],
+    kotlin: ['Bash(git:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
+    rust:   ['Bash(git:*)', 'Bash(cargo:*)', 'Bash(rustc:*)', 'Bash(curl:*)'],
+    dotnet: ['Bash(git:*)', 'Bash(dotnet:*)', 'Bash(curl:*)'],
+    java:   ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
+    ruby:   ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
+    go:     ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
+    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(curl:*)'],
+  };
+
+  const denyByStack = {
+    swift:  ['Bash(xcodebuild archive*)', 'Bash(xcrun altool --upload-app*)'],
+    kotlin: ['Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
+    rust:   ['Bash(cargo publish*)'],
+    dotnet: ['Bash(dotnet nuget push*)'],
+    java:   ['Bash(mvn deploy*)', 'Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
+    ruby:   ['Bash(gem push*)'],
+    python: ['Bash(twine upload*)'],
+  };
+
+  const stackPerms = permissionsAllowByStack[config.techStack];
+  const stackDeny = denyByStack[config.techStack];
+  if (!stackPerms && !stackDeny) return; // default node/npm/npx already in template
+
+  try {
+    const raw = await fs.readFile(settingsPath, 'utf8');
+    const settings = JSON.parse(raw);
+    if (stackPerms && settings.permissions && Array.isArray(settings.permissions.allow)) {
+      settings.permissions.allow = stackPerms;
+    }
+    if (stackDeny && settings.permissions && Array.isArray(settings.permissions.deny)) {
+      settings.permissions.deny = [...settings.permissions.deny, ...stackDeny];
+    }
+    await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  } catch {
+    // If settings.json is malformed, skip patching silently
   }
 }
 
@@ -209,8 +273,20 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
 
   const commonRulesDir = path.join(commonDir, 'rules');
   if (await fs.pathExists(commonRulesDir)) {
+    const securityVariant = securityRuleVariant(config);
     const rules = await fs.readdir(commonRulesDir);
     for (const rule of rules) {
+      if (rule.startsWith('security')) {
+        if (rule === securityVariant) {
+          const dest = path.join(targetDir, '.claude', 'rules', 'security.md');
+          if (await fs.pathExists(dest)) continue;
+          const src = path.join(commonRulesDir, rule);
+          await fs.ensureDir(path.dirname(dest));
+          const content = await fs.readFile(src, 'utf8');
+          await fs.writeFile(dest, interpolate(content, config));
+        }
+        continue;
+      }
       const src = path.join(commonRulesDir, rule);
       const dest = path.join(targetDir, '.claude', 'rules', rule);
       if (await fs.pathExists(dest)) continue;
@@ -234,6 +310,9 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
     await pruneConditionalDocs(targetDir, config);
     await pruneSkills(targetDir, config);
   }
+
+  // Post-process settings.json: replace default permissions.allow with stack-aware permissions
+  await patchSettingsPermissions(targetDir, config);
 }
 
 async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
@@ -271,6 +350,45 @@ async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userCon
 /**
  * Replace template placeholders with actual values from config.
  */
+/**
+ * Select the security.md variant based on stack family.
+ * Returns the filename of the variant to use (e.g. 'security-native-apple.md').
+ * The base 'security.md' is the web default and is used when no variant matches.
+ */
+function securityRuleVariant(config) {
+  if (config.techStack === 'swift') return 'security-native-apple.md';
+  if (config.techStack === 'kotlin') return 'security-native-android.md';
+  const systemsStacks = ['rust', 'dotnet', 'java', 'go'];
+  if (systemsStacks.includes(config.techStack) && config.hasApi === false) {
+    return 'security-systems.md';
+  }
+  // Web default: node-ts, node-js, python, ruby, go (with API), dotnet (with API), java (with API), other
+  return 'security.md';
+}
+
+function frameworkValue(config) {
+  if (config.framework) return config.framework;
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  if (nativeStacks.includes(config.techStack)) return 'N/A — native app';
+  return '_fill in: e.g. Next.js 15, Express, Django, Rails_';
+}
+
+function languageFromStack(techStack) {
+  const map = {
+    'node-ts': 'TypeScript',
+    'node-js': 'JavaScript',
+    python: 'Python',
+    go: 'Go',
+    swift: 'Swift',
+    kotlin: 'Kotlin',
+    rust: 'Rust',
+    dotnet: 'C#',
+    ruby: 'Ruby',
+    java: 'Java',
+  };
+  return map[techStack] || '[TypeScript / Python / Go / etc.]';
+}
+
 function interpolate(content, config) {
   const techStackLabels = {
     'node-ts': 'Node.js + TypeScript',
@@ -317,5 +435,7 @@ function interpolate(content, config) {
     .replace(/\[FRAMEWORK\]/g, ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack) ? 'N/A — native app' : config.hasFrontend === false ? 'N/A — no web frontend' : 'your frontend framework')
     .replace(/\[SITEMAP_OR_ROUTE_LIST\]/g, config.hasFrontend === false ? 'N/A — no web frontend' : 'docs/sitemap.md')
     .replace(/\[API_ROUTES_PATH\]/g, config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/')
-    .replace(/\[BUNDLE_TOOL\]/g, ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — native app' : 'your build tool\'s bundle analyzer');
+    .replace(/\[BUNDLE_TOOL\]/g, ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — native app' : 'your build tool\'s bundle analyzer')
+    .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
+    .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack));
 }

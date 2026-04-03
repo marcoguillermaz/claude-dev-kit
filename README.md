@@ -138,7 +138,7 @@ your-project/
 │   ├── rules/
 │   │   ├── pipeline.md             ← development workflow (tier-appropriate)
 │   │   ├── context-review.md       ← end-of-block compliance checklist (C1–C12)
-│   │   ├── security.md             ← path-scoped: API/auth files only
+│   │   ├── security.md             ← stack-aware: web / native-apple / native-android / systems
 │   │   ├── git.md                  ← commit format, branch rules
 │   │   ├── output-style.md         ← communication rules (no openers, plain vocabulary)
 │   │   ├── claudemd-standards.md   ← CLAUDE.md hygiene standards (S1–S9)
@@ -255,15 +255,20 @@ This is present in **every tier**, including Tier 0. It is the only mechanically
 
 **AI commit attribution** — every Claude-assisted commit tagged: `Co-authored-by: Claude <noreply@anthropic.com>`
 
-### Path-scoped rules
+### Stack-aware security rules
 
-Security rules load only when Claude works on API/auth files — zero context cost during UI work:
-```yaml
----
-paths: ["src/api/**", "lib/auth*"]
----
-# These rules are invisible when not relevant
-```
+The scaffold selects a security.md variant matched to your tech stack:
+
+| Variant | Stacks | Focus |
+|---|---|---|
+| Web (default) | Node.js, Python, Ruby, Go/Java/.NET with API | Auth, SQL injection, RLS, API responses |
+| Native Apple | Swift | App Sandbox, Keychain, TCC permissions, code signing |
+| Native Android | Kotlin | Manifest permissions, Keystore, network security, ProGuard |
+| Systems | Rust, Go, .NET, Java (no API) | Memory safety, process exec, file permissions |
+
+### Stack-aware permissions
+
+`permissions.allow` maps CLI tools to your stack (e.g. Swift gets `xcodebuild`, `xcrun`; Rust gets `cargo`). `permissions.deny` adds stack-specific release guards (e.g. `cargo publish`, `xcodebuild archive`, `gem push`) on top of the base protections (force push, `rm -rf /`, `DROP TABLE`).
 
 ---
 
@@ -299,6 +304,29 @@ Architectural decisions become persistent constraints Claude respects across ses
 
 ---
 
+## Supported stacks
+
+CDK auto-detects your tech stack and adapts the scaffold: commands, security rules, permissions, and CLAUDE.md fields are all stack-aware.
+
+| Stack | Detection | Security variant | CLAUDE.md Language |
+|---|---|---|---|
+| Node.js + TypeScript | `tsconfig.json` or `typescript` dep | Web | TypeScript |
+| Node.js + JavaScript | `package.json` without TS | Web | JavaScript |
+| Python | `pyproject.toml`, `requirements.txt`, `setup.py` | Web | Python |
+| Go | `go.mod` | Web or Systems | Go |
+| Swift | `Package.swift`, `.xcodeproj`, `.xcworkspace` | Native Apple | Swift |
+| Kotlin | `build.gradle.kts`, `build.gradle` (Android) | Native Android | Kotlin |
+| Rust | `Cargo.toml` | Web or Systems | Rust |
+| .NET / C# | `*.csproj`, `*.sln` | Web or Systems | C# |
+| Ruby | `Gemfile` | Web | Ruby |
+| Java | `pom.xml`, `build.gradle` | Web or Systems | Java |
+
+"Web or Systems" stacks use the web variant when `hasApi=true` and the systems variant when `hasApi=false`.
+
+Framework is auto-detected from dependencies (Next.js, Remix, SvelteKit, Vite, Express, Fastify, Hono, Django, FastAPI/Flask, Rails). When detected, it is auto-populated in CLAUDE.md. Native stacks show "N/A - native app".
+
+---
+
 ## Requirements
 
 - Node.js ≥ 18
@@ -316,7 +344,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.6.1` — native stack polish pass (Swift/Kotlin/Rust/.NET/Java). Integration tests 194 → 233.
+`v1.7.0` — stack-aware content specialization. Security rules, permissions, and CLAUDE.md fields adapt to your tech stack. Integration tests 233 → 249.
+
+**v1.7.0 changes**: security.md now selects from 4 variants based on tech stack: web (default), native-apple (Swift - App Sandbox, Keychain, TCC), native-android (Kotlin - Manifest, Keystore, network security), systems (Rust/Go/.NET/Java without API - memory safety, process execution, file permissions). `permissions.deny` adds stack-specific release guards: `xcodebuild archive`, `cargo publish`, `gradlew publish`, `mvn deploy`, `gem push`, `twine upload`, `dotnet nuget push`. CLAUDE.md `Framework` and `Language` fields auto-populated from wizard data - no more placeholder text for fields CDK can resolve. `security-audit` skill has applicability check for native apps: bail-out with native-specific guidance when project has no API routes. New `docs/workspace-quality-rubric.md` - reusable 8-dimension rubric for evaluating AI workspace quality (D1-D8, weighted scoring 0-100%). +16 integration checks (249 total).
 
 **v1.6.1 changes**: native stack scaffold validated end-to-end via 5-round audit on a Swift/macOS project. Fixes: Stop hook `stop_hook_active` guard added to all tiers (PR#32); arch-audit timestamp moved from unreliable external path to `.claude/session/last-arch-audit` (PR#32/33); `perf-audit` applicability check added — exits cleanly for native apps instead of running web-only checks; `skill-dev` applicability check added — skips React/Next.js-specific checks (D9, J3) on non-web stacks; `dependency-scanner` Check 1 extended with Swift native navigation patterns (`NavigationLink`, `.sheet()`, `fullScreenCover()`); `CLAUDE.md` Key Commands no longer defaults to `npm test`/`npm install` for native stacks — uses platform-appropriate defaults (`xcodebuild test`, `cargo test`, `dotnet test`, etc.); `skill-dev` Severity guide made stack-agnostic (removed `useEffect`/`'use client'`/`'use server'` examples); `perf-audit` applicability check no longer interpolates `[HAS_FRONTEND]` as a boolean literal in narrative text; `context-review.md` all three `...` path instances replaced with `<project-path-hash>` + `ls ~/.claude/projects/` hint (C2, C4, C13); doctor Playwright detection narrowed to actual `browser_*` MCP tool invocations only. +39 integration checks (233 total).
 
