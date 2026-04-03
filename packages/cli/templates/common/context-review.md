@@ -148,7 +148,7 @@ Compare the filename with the "Last synced: migration `NNN_*.sql`" line at the t
 **Run**: `wc -l CLAUDE.md` to check line count first. If < 100 lines AND fewer than 4 blocks since last C13 ran → skip and mark ✅.
 
 **For each entry that fails the filter** (it's a schema fact, historical note, or something Claude would recover from reading the code):
-- Move the full content to an appropriate memory topic file in `~/.claude/projects/.../memory/`
+- Move the full content to an appropriate memory topic file in `~/.claude/projects/<project-path-hash>/memory/` (run `ls ~/.claude/projects/` to find your project hash)
 - Remove the entry from CLAUDE.md Known Patterns
 - Add or update a pointer in MEMORY.md if the topic file is new
 
