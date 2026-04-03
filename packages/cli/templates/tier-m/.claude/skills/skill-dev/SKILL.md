@@ -288,8 +288,8 @@ Each entry **must** include a `Regression risk` field:
 ### Severity guide
 
 - **Critical**: `@ts-ignore` on a security/data path; N+1 in a hot path (list page or dashboard); floating promise on an auth or data-write event handler
-- **High**: `any` in shared lib utilities; `useEffect` missing dependency array (D9C); dead export in shared lib; empty catch on DB write; missing `'use server'` on exported Server Action (J3)
-- **Medium**: `useEffect` derived-state antipattern (D9A); over-large component >300 lines with 4+ responsibilities (J1); `'use client'` at page level when only a subcomponent needs it (J3); magic business-rule numbers (D6); console.log in production (D10); data clumps >3 always-grouped props (J2)
+- **High**: `any` in shared lib utilities; dead export in shared lib; empty catch on DB write; unhandled error on async data-write path
+- **Medium**: over-large module >300 lines with 4+ responsibilities (J1); magic business-rule numbers (D6); console.log in production (D10); data clumps >3 always-grouped props (J2)
 - **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings already covered by type definitions; D4 sampled dead exports
 
 ---
