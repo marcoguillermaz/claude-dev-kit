@@ -465,6 +465,81 @@ async function scenarioStopHookContent() {
     } else {
       warn(`Tier ${tier}: custom testCommand not found in settings.json`);
     }
+
+    if (raw.includes('stop_hook_active')) {
+      pass(`Tier ${tier}: stop_hook_active guard present in Stop hook`);
+    } else {
+      fail(`Tier ${tier}: stop_hook_active guard missing from Stop hook`);
+    }
+  }
+}
+
+async function scenarioArchAuditTimestamp() {
+  section('Arch audit — timestamp system');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = {
+      ...BASE,
+      tier,
+      isDiscovery: false,
+      includePreCommit: false,
+      includeGithub: false,
+    };
+    const scenarioDir = path.join(OUTPUT_DIR, `arch-audit-ts-tier-${tier}`);
+    await fs.ensureDir(scenarioDir);
+    await scaffoldTier(tier, scenarioDir, config, TEMPLATES_DIR);
+
+    const settingsPath = path.join(scenarioDir, '.claude/settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const raw = fs.readFileSync(settingsPath, 'utf8');
+      if (raw.includes('.claude/session/last-arch-audit')) {
+        pass(`Tier ${tier}: SessionStart reads from .claude/session/last-arch-audit`);
+      } else {
+        fail(`Tier ${tier}: SessionStart still uses external ~/.claude/projects/ path for last-audit`);
+      }
+    }
+
+    const skillPath = path.join(scenarioDir, '.claude/skills/arch-audit/SKILL.md');
+    if (fs.existsSync(skillPath)) {
+      const skillRaw = fs.readFileSync(skillPath, 'utf8');
+      if (skillRaw.includes('last-arch-audit')) {
+        pass(`Tier ${tier}: arch-audit Step 5 writes last-arch-audit timestamp`);
+      } else {
+        fail(`Tier ${tier}: arch-audit Step 5 bash block is empty — timestamp never written`);
+      }
+    }
+  }
+}
+
+async function scenarioPerfAuditPlaceholders() {
+  section('perf-audit — placeholder resolution + applicability guard');
+
+  for (const tier of ['m', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false, hasFrontend: true, hasApi: true };
+    const scenarioDir = path.join(OUTPUT_DIR, `perf-audit-tier-${tier}`);
+    await fs.ensureDir(scenarioDir);
+    await scaffoldTier(tier, scenarioDir, config, TEMPLATES_DIR);
+
+    const skillPath = path.join(scenarioDir, '.claude/skills/perf-audit/SKILL.md');
+    if (!fs.existsSync(skillPath)) {
+      fail(`Tier ${tier}: perf-audit/SKILL.md missing`);
+      continue;
+    }
+    const raw = fs.readFileSync(skillPath, 'utf8');
+
+    for (const placeholder of ['[FRAMEWORK]', '[SITEMAP_OR_ROUTE_LIST]', '[API_ROUTES_PATH]', '[BUNDLE_TOOL]']) {
+      if (raw.includes(placeholder)) {
+        fail(`Tier ${tier}: perf-audit contains unresolved placeholder ${placeholder}`);
+      } else {
+        pass(`Tier ${tier}: perf-audit placeholder ${placeholder} resolved`);
+      }
+    }
+
+    if (raw.includes('Applicability check')) {
+      pass(`Tier ${tier}: perf-audit Applicability check present`);
+    } else {
+      fail(`Tier ${tier}: perf-audit Applicability check missing`);
+    }
   }
 }
 
@@ -657,6 +732,8 @@ async function main() {
   await scenarioTierL();
   await scenarioInPlaceSafe();
   await scenarioStopHookContent();
+  await scenarioArchAuditTimestamp();
+  await scenarioPerfAuditPlaceholders();
   await scenarioPipelineGateCount();
   await scenarioSkillPruning();
   await scenarioUiAuditPruning();

@@ -304,5 +304,9 @@ function interpolate(content, config) {
     .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
     .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
     .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
-    .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false');
+    .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false')
+    .replace(/\[FRAMEWORK\]/g, ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack) ? 'N/A — native app' : config.hasFrontend === false ? 'N/A — no web frontend' : 'your frontend framework')
+    .replace(/\[SITEMAP_OR_ROUTE_LIST\]/g, config.hasFrontend === false ? 'N/A — no web frontend' : 'docs/sitemap.md')
+    .replace(/\[API_ROUTES_PATH\]/g, config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/')
+    .replace(/\[BUNDLE_TOOL\]/g, 'your build tool\'s bundle analyzer');
 }
