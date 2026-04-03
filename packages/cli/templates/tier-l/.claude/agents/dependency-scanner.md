@@ -18,8 +18,9 @@ The caller provides:
 
 ### Check 1 — Route consumers
 For each affected route path:
-- Grep for `href="[route]"`, `href={`, `router.push`, `redirect(`, `Link href` matching the route
-- Glob for pages/layouts that define the route segment
+- **Web projects** (Next.js, React Router, Express): grep for `href="[route]"`, `href={`, `router.push`, `redirect(`, `Link href` matching the route; glob for pages/layouts that define the route segment
+- **Native projects** (Swift/iOS/macOS): grep for `NavigationLink`, `navigationDestination`, `.sheet(`, `fullScreenCover(`, deep link URL patterns matching the route
+- **No frontend** (`[HAS_FRONTEND]` is `false`): mark Check 1 as N/A
 - Report: file path + line number + usage type
 
 ### Check 2 — Component import consumers

@@ -15,8 +15,16 @@ argument-hint: [target:section:<section>|target:page:<route>|mode:audit|mode:app
 > - `[BUNDLE_TOOL]` — e.g. `@next/bundle-analyzer`, `vite-bundle-visualizer`, `webpack-bundle-analyzer`
 > - Note: if this is a **public-facing** app, remove the "Out of scope" restriction on Core Web Vitals
 
+## Applicability check
 
+Before any other step: read `CLAUDE.md` and check the Framework and Language fields.
 
+- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) or the Framework field is `N/A — native app`: output the following and stop — do not proceed to Step 1:
+
+  > **perf-audit** targets web applications (Core Web Vitals, bundle composition, server/client boundaries). This project uses a native stack. Use platform-native profiling tools instead: Instruments (Swift/macOS/iOS), Android Studio Profiler (Kotlin/Android), Valgrind/perf (C/C++).
+
+- If `[HAS_FRONTEND]` is `false`: output the same message and stop.
+- If the project is a web application: proceed to Step 1.
 
 
 

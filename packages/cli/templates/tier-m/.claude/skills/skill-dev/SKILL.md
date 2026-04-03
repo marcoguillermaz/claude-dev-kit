@@ -15,8 +15,8 @@ Do not optimize for theoretical purity. Optimize for pragmatic, production-grade
 
 **Severity model**:
 - **Critical**: production/data/security risk or correctness failure
-- **High**: architecture flaw or maintainability issue affecting delivery speed or stability; `useEffect` with no dependency array; floating promise on auth/data-write path
-- **Medium**: meaningful improvement with clear benefit, not urgent; over-large component; `'use client'` at page level when only a subcomponent needs it; console.log in production
+- **High**: architecture flaw or maintainability issue affecting delivery speed or stability; unhandled error on async data-write path; missing null check on external input entering business logic
+- **Medium**: meaningful improvement with clear benefit, not urgent; over-large module (300+ lines, 4+ responsibilities); console.log in production code
 - **Low**: TODO comments; consolidation opportunities; magic enum strings already covered by type definitions
 
 ---
