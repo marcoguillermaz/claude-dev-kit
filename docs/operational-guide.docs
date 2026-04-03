@@ -1,7 +1,7 @@
 
 # claude-dev-kit — Operational Guide
 
-**Version**: 1.5.0
+**Version**: 1.6.1
 **Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
@@ -1463,7 +1463,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 19 checks and reports pass/fail:
+Runs 17 checks and reports pass/fail:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1474,16 +1474,16 @@ Runs 19 checks and reports pass/fail:
 7. `.env` files are covered by `.gitignore`
 8. No secrets (API keys, tokens) found in `CLAUDE.md`
 9. Stop hook is configured with a non-empty command
-10. `.github/CODEOWNERS` covers `.claude/`
-11. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
+10. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
+11. `.github/CODEOWNERS` covers `.claude/`
 12. `.claude/rules/output-style.md` present (tier M/L — warn if missing)
-13. `.claude/rules/claudemd-standards.md` present (tier M/L — warn if missing)
-14. `.claude/rules/pipeline-standards.md` present (tier M/L — warn if missing)
+13. `docs/claudemd-standards.md` present (tier M/L — warn if missing)
+14. `docs/pipeline-standards.md` present (tier M/L — warn if missing)
 15. `.claude/skills/commit/` present (tier M/L — warn if missing)
-16. Skills using Playwright declare `allowed-tools` frontmatter (warn if missing)
+16. Skills invoking Playwright `browser_*` tools declare `allowed-tools` frontmatter (warn if missing)
 17. `.claude/rules/context-review.md` includes C12 (warn if not present — upgrade needed)
-18. (checks 12–17 are skipped with `pass/skip` when the project has no `pipeline.md` — i.e. Tier 0)
-19. (reserved for future checks)
+
+Checks 12–17 are skipped (`pass/skip`) for Tier 0 projects (no `pipeline.md`).
 
 **`--report` output format** — machine-readable JSON consumed by CI systems or external audit tools:
 
