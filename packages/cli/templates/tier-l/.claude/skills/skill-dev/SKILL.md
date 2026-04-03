@@ -21,6 +21,31 @@ Do not optimize for theoretical purity. Optimize for pragmatic, production-grade
 
 ---
 
+## Applicability check
+
+Before Step 0: check `CLAUDE.md` for the Framework and Language fields.
+
+**Web stacks** (Next.js, React, Express, Django, Rails, or any stack with a web frontend): run all checks — proceed to Step 0.
+
+**Native or backend-only stacks** (Swift, Kotlin, Rust, Go, .NET/C#, Java, Python without a web frontend): several checks target TypeScript/React patterns that do not exist in your codebase. Proceed to Step 0 with these adjustments:
+
+Skip entirely:
+- CHECK D1 — Next.js `@/components/` cross-module import patterns (TypeScript/Next.js only)
+- CHECK D2 — `ContentStatusBadge` and inline CSS class maps (React/TypeScript only)
+- CHECK D3 — Supabase `from().select()` N+1 patterns (ORM-specific)
+- CHECK D8 — TypeScript type safety suppressions and `any` usage (language-specific)
+- CHECK D9 — useEffect antipatterns (React only — entire check)
+- CHECK J3 — Client/Server component boundary placement (Next.js only)
+
+Run as-is (stack-agnostic):
+- CHECK D4 (dead exports), D5 (duplicated validation logic), D6 (magic strings/numbers), D7 (TODO/FIXME/HACK)
+- CHECK D10 (empty catch blocks, console.log in production)
+- CHECK J1 (over-large modules), J2 (coupling depth), J4 (utility consolidation — adapt directory name from `lib/` to your project's equivalent)
+
+Announce skipped checks and reason at the top of the audit report.
+
+---
+
 ## Step 0 — Target resolution
 
 Parse `$ARGUMENTS` for a `target:` token.
