@@ -461,6 +461,7 @@ For each AUTO-FIX from Step 3, Step 3b, and Step H1: apply the change, note the 
 ## Step 5 — Update timestamp
 
 ```bash
+date +%s > "$CLAUDE_PROJECT_DIR/.claude/session/last-arch-audit"
 ```
 
 ## Step 6 — Produce audit report
