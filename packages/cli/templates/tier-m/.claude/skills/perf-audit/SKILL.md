@@ -23,7 +23,7 @@ Before any other step: read `CLAUDE.md` and check the Framework and Language fie
 
   > **perf-audit** targets web applications (Core Web Vitals, bundle composition, server/client boundaries). This project uses a native stack. Use platform-native profiling tools instead: Instruments (Swift/macOS/iOS), Android Studio Profiler (Kotlin/Android), Valgrind/perf (C/C++).
 
-- If `[HAS_FRONTEND]` is `false`: output the same message and stop.
+- If the CLAUDE.md Framework field is `N/A — no web frontend`: output the same message and stop.
 - If the project is a web application: proceed to Step 1.
 
 
