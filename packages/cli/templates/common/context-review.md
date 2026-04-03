@@ -42,7 +42,7 @@ Each check has a specific, verifiable pass/fail condition.
 
 **What**: references like "(Block N)", "(optional, Block N)", "from Block N" must not describe closed blocks as if they are open or future.
 **Run on CLAUDE.md**: `grep -n "Block [0-9]" CLAUDE.md`
-**Run on auto-memory**: `grep -n "Block [0-9]" ~/.claude/projects/.../memory/MEMORY.md`
+**Run on auto-memory**: same grep on `~/.claude/projects/<project-path-hash>/memory/MEMORY.md` (run `ls ~/.claude/projects/` to find your project hash)
 **Pass**: every match is either a historical note in past tense ("renamed in Block 3") or references a genuinely open block.
 **Fail**: remove forward-looking block references for closed blocks; convert to past tense if the historical context is useful.
 
