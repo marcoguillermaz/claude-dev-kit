@@ -49,13 +49,28 @@ function techStackSummary(stack) {
   return map[stack] || stack;
 }
 
+const NATIVE_CMD_DEFAULTS = {
+  swift:  { install: '# no install step', dev: 'swift run',     build: 'xcodebuild build',      test: 'xcodebuild test',  typeCheck: '' },
+  kotlin: { install: '# no install step', dev: './gradlew run',  build: './gradlew build',       test: './gradlew test',   typeCheck: '' },
+  rust:   { install: '# no install step', dev: 'cargo run',      build: 'cargo build --release', test: 'cargo test',       typeCheck: '' },
+  dotnet: { install: 'dotnet restore',    dev: 'dotnet run',     build: 'dotnet build',          test: 'dotnet test',      typeCheck: '' },
+  java:   { install: 'mvn install',       dev: 'mvn exec:java',  build: 'mvn package',           test: 'mvn test',         typeCheck: '' },
+};
+
 function buildCommandsBlock(config) {
+  const ncd = NATIVE_CMD_DEFAULTS[config.techStack] || {};
+  const install = config.installCommand || ncd.install || 'npm install';
+  const dev = config.devCommand || ncd.dev || 'npm run dev';
+  const build = config.buildCommand || ncd.build || 'npm run build';
+  const test = config.testCommand || ncd.test || 'npm test';
+  const typeCheck = config.typeCheckCommand || ncd.typeCheck || '';
+
   const lines = ['```bash'];
-  if (config.installCommand) lines.push(`${config.installCommand}     # install dependencies`);
-  if (config.devCommand) lines.push(`${config.devCommand}          # start dev server`);
-  if (config.buildCommand) lines.push(`${config.buildCommand}       # production build`);
-  if (config.testCommand) lines.push(`${config.testCommand}         # run tests`);
-  if (config.typeCheckCommand) lines.push(`${config.typeCheckCommand}  # type check`);
+  if (install) lines.push(`${install}     # install dependencies`);
+  if (dev) lines.push(`${dev}          # start dev server`);
+  if (build) lines.push(`${build}       # production build`);
+  if (test) lines.push(`${test}         # run tests`);
+  if (typeCheck) lines.push(`${typeCheck}  # type check`);
   lines.push('```');
   return lines.join('\n');
 }

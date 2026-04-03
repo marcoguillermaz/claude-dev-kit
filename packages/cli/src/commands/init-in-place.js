@@ -80,7 +80,12 @@ export async function initInPlace(options) {
       type: 'input',
       name: 'testCommand',
       message: 'Test command (reference only — CDK won\'t run it):',
-      default: (a) => a.techStack === 'other' ? '' : (detected.testCommand || 'npm test'),
+      default: (a) => {
+        if (a.techStack === 'other') return '';
+        if (detected.testCommand) return detected.testCommand;
+        const nativeDefaults = { swift: 'xcodebuild test', kotlin: './gradlew test', rust: 'cargo test', dotnet: 'dotnet test', java: 'mvn test' };
+        return nativeDefaults[a.techStack] || 'npm test';
+      },
     },
     {
       type: 'input',

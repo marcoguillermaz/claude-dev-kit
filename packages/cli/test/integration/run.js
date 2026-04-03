@@ -707,6 +707,55 @@ async function scenarioNewStacks() {
   }
 }
 
+async function scenarioNativeStackCommandDefaults() {
+  section('Native stack command defaults — no npm fallback when commands omitted');
+
+  // Simulates detection failure: no commands supplied → should resolve to native defaults, not npm.
+  const nativeDefaults = [
+    { stack: 'swift',  test: 'xcodebuild test',  install: '# no install step' },
+    { stack: 'kotlin', test: './gradlew test',    install: '# no install step' },
+    { stack: 'rust',   test: 'cargo test',        install: '# no install step' },
+    { stack: 'dotnet', test: 'dotnet test',       install: 'dotnet restore'    },
+    { stack: 'java',   test: 'mvn test',          install: 'mvn install'       },
+  ];
+
+  for (const { stack, test: expectedTest, install: expectedInstall } of nativeDefaults) {
+    const config = {
+      ...BASE,
+      tier: 'm',
+      techStack: stack,
+      testCommand: '',
+      devCommand: '',
+      buildCommand: '',
+      installCommand: '',
+      typeCheckCommand: '',
+      isDiscovery: false,
+    };
+    const dir = await scaffold(`native-cmd-defaults-${stack}`, 'm', config);
+    const claudeMd = path.join(dir, 'CLAUDE.md');
+    if (!fs.existsSync(claudeMd)) { fail(`native-cmd-defaults[${stack}]: CLAUDE.md missing`); continue; }
+    const content = fs.readFileSync(claudeMd, 'utf8');
+
+    if (!content.includes('npm test') && !content.includes('npm install') && !content.includes('npm run')) {
+      pass(`native-cmd-defaults[${stack}]: no npm commands in CLAUDE.md`);
+    } else {
+      fail(`native-cmd-defaults[${stack}]: npm command found in CLAUDE.md for native stack`);
+    }
+
+    if (content.includes(expectedTest)) {
+      pass(`native-cmd-defaults[${stack}]: test command = ${expectedTest}`);
+    } else {
+      fail(`native-cmd-defaults[${stack}]: expected test command "${expectedTest}" not found`);
+    }
+
+    if (content.includes(expectedInstall)) {
+      pass(`native-cmd-defaults[${stack}]: install command = ${expectedInstall}`);
+    } else {
+      fail(`native-cmd-defaults[${stack}]: expected install command "${expectedInstall}" not found`);
+    }
+  }
+}
+
 async function scenarioWizardCoverage() {
   section('Wizard coverage — full CLI execution via --answers');
 
@@ -771,6 +820,7 @@ async function main() {
   await scenarioCommitSkillAllTiers();
   await scenarioNewRuleFiles();
   await scenarioNewStacks();
+  await scenarioNativeStackCommandDefaults();
   await scenarioWizardCoverage();
 
   // ── Summary ────────────────────────────────────────────────────────────────
