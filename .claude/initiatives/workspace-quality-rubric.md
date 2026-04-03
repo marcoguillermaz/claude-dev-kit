@@ -2,7 +2,7 @@
 
 **Branch**: `feat/workspace-quality-rubric`
 **Started**: 2026-04-03
-**Status**: Phase 1 - Research in progress
+**Status**: Complete — all phases done, merged to main as v1.7.0
 **Model**: Opus 4.6 (research + rubric definition phases)
 
 ---
@@ -230,9 +230,9 @@ Dalla ricerca emergono 5 principi trasversali a tutte le fonti:
 
 ## Azioni Future (fuori scope rubric)
 
-- **Scaffoldare `.claude/commands/README.md`** in Tier M/L: spiega cosa sono i commands, quando usarli vs skills, come crearne uno. No file di esempio finti.
+- ~~**Scaffoldare `.claude/commands/README.md`** in Tier M/L~~ — COMPLETATO v1.7.0
 - **Non scaffoldare `agents/`**: pattern non documentato ufficialmente da Anthropic. Monitorare.
-- **Menzionare `agents/` in files-guide.md** (Tier M/L): una riga come pattern emergente.
+- ~~**Menzionare `agents/` in files-guide.md** (Tier M/L)~~ — COMPLETATO v1.7.0
 
 ---
 
@@ -602,3 +602,8 @@ Final score: (20.5 / 30) x 100 = 68% — Functional
   - permissions.deny: stack-specific deny entries aggiunti (xcodebuild archive, cargo publish, gradlew publish, mvn deploy, gem push, twine upload, dotnet nuget push)
   - CLAUDE.md auto-population: Framework e Language risolti da wizard data
   - Integration tests: 249/249 PASS (16 nuovi check: 12 security variant selection + 4 deny verification)
+- [x] P3 residui completati:
+  - P3.2: `[API_TESTS_PATH]` aggiunto a interpolate() — risolto come `tests/api/` (hasApi=true) o `# N/A — no API routes` (hasApi=false)
+  - P3.3: `[SITEMAP_OR_ROUTE_LIST]` ora risolve a `N/A — no web frontend` anche per native stacks (swift/kotlin/rust/dotnet/java)
+  - `.claude/commands/README.md` scaffoldato in Tier M/L — guida commands vs skills vs rules
+  - `agents/` e `commands/` documentati in files-guide.md

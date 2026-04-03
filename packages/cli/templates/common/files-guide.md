@@ -176,6 +176,20 @@ Key settings configured:
 
 ---
 
+## .claude/agents/ — Custom agent definitions (Tier M/L)
+
+Agent files define sub-process personas that Claude spawns via the Agent tool during specific pipeline phases. They run with restricted tool access (typically read-only) and return structured results to the main session.
+
+This project scaffolds agents for dependency scanning (Phase 1) and context review (Phase 8.5, Tier L only). You can add custom agents for project-specific parallel tasks.
+
+---
+
+## .claude/commands/ — Custom commands (Tier M/L)
+
+Reusable prompt templates invoked with `/command-name`. See `.claude/commands/README.md` for usage and examples.
+
+---
+
 ## Quick reference — "Where does this information go?"
 
 | Information type | File |
