@@ -67,7 +67,7 @@ npx mg-claude-dev-kit doctor --report # JSON output for CI pipelines
 npx mg-claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
 ```
 
-19 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS, output-style.md, claudemd-standards.md, pipeline-standards.md, commit skill, skills with allowed-tools frontmatter, context-review.md includes C12.
+17 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS, output-style.md (tier M/L), docs/claudemd-standards.md (tier M/L), docs/pipeline-standards.md (tier M/L), commit skill (tier M/L), skills with allowed-tools frontmatter, context-review.md includes C12. Checks 12–16 are skipped (pass/skip) for Tier 0 projects.
 
 `--report` outputs machine-readable JSON — consumable by CI pipelines and external audit systems. Each check returns `id`, `status` (pass / warn / fail / skip), and `fix` message.
 
@@ -316,7 +316,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.6.0` — conditional docs scaffold (sitemap/db-map) + staff-manager→CDK skill sync. Integration tests 186 → 194.
+`v1.6.1` — native stack polish pass (Swift/Kotlin/Rust/.NET/Java). Integration tests 194 → 233.
+
+**v1.6.1 changes**: native stack scaffold validated end-to-end via 5-round audit on a Swift/macOS project. Fixes: Stop hook `stop_hook_active` guard added to all tiers (PR#32); arch-audit timestamp moved from unreliable external path to `.claude/session/last-arch-audit` (PR#32/33); `perf-audit` applicability check added — exits cleanly for native apps instead of running web-only checks; `skill-dev` applicability check added — skips React/Next.js-specific checks (D9, J3) on non-web stacks; `dependency-scanner` Check 1 extended with Swift native navigation patterns (`NavigationLink`, `.sheet()`, `fullScreenCover()`); `CLAUDE.md` Key Commands no longer defaults to `npm test`/`npm install` for native stacks — uses platform-appropriate defaults (`xcodebuild test`, `cargo test`, `dotnet test`, etc.); `skill-dev` Severity guide made stack-agnostic (removed `useEffect`/`'use client'`/`'use server'` examples); `perf-audit` applicability check no longer interpolates `[HAS_FRONTEND]` as a boolean literal in narrative text; `context-review.md` all three `...` path instances replaced with `<project-path-hash>` + `ls ~/.claude/projects/` hint (C2, C4, C13); doctor Playwright detection narrowed to actual `browser_*` MCP tool invocations only. +39 integration checks (233 total).
 
 **v1.6.0 changes**: `docs/sitemap.md` and `docs/db-map.md` added as Tier M+L scaffold templates, pruned conditionally when `hasFrontend=false` / `hasDatabase=false` via new `pruneConditionalDocs()`; `printPlan` updated to show these files conditionally and remove phantom `docs/dependency-map.md`. 29 template files upgraded (common rules + 11 skills across Tier M/L, 2 skills in Tier S) via a 4-level agnosticity-filtered sync from an internal pilot project — L1 lexical, L2 structural, L3 CDK File/Placeholder Registry, L3b CDK Pattern Recognition, L4 conditional; domain tokens stripped, CDK Configuration placeholders preserved. +8 integration checks (194 total).
 

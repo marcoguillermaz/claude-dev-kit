@@ -71,4 +71,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.6.0` — conditional docs scaffold (sitemap/db-map Tier M+L) + staff-manager→CDK skill sync (29 templates). `pruneConditionalDocs()` prunes sitemap/db-map when `hasFrontend`/`hasDatabase` false. 29 template files upgraded via 4-level agnosticity filter. 194 integration checks.
+`v1.6.1` — native stack polish pass (Swift/Kotlin/Rust/.NET/Java). Stop hook guard, arch-audit timer path, native command defaults, perf-audit/skill-dev applicability checks, dependency-scanner native patterns, context-review path fixes, doctor Playwright detection fix. 233 integration checks.
