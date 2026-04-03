@@ -95,6 +95,8 @@ const WIZARD_PLACEHOLDERS = [
   'E2E_COMMAND',
   'AUDIT_MODEL',
   'DESIGN_SYSTEM_NAME',
+  'FRAMEWORK_VALUE',
+  'LANGUAGE_VALUE',
 ];
 // All other placeholders (skill config, ADR template, state machines, etc.)
 // are intentionally left for the user/Claude to fill in at first session.
@@ -792,6 +794,65 @@ async function scenarioWizardCoverage() {
   }
 }
 
+async function scenarioSecurityVariants() {
+  section('Security rule variants — stack-aware security.md selection');
+
+  const variants = [
+    { stack: 'swift',  hasApi: true,  expected: 'Native Apple', label: 'swift → native-apple', denyIncludes: 'xcodebuild archive' },
+    { stack: 'kotlin', hasApi: true,  expected: 'Native Android', label: 'kotlin → native-android', denyIncludes: 'gradlew publish' },
+    { stack: 'rust',   hasApi: false, expected: 'Systems & Backend', label: 'rust (no API) → systems', denyIncludes: 'cargo publish' },
+    { stack: 'go',     hasApi: false, expected: 'Systems & Backend', label: 'go (no API) → systems', denyIncludes: null },
+    { stack: 'rust',   hasApi: true,  expected: 'Security Rules\n', label: 'rust (with API) → web', denyIncludes: 'cargo publish' },
+    { stack: 'node-ts', hasApi: true, expected: 'Security Rules\n', label: 'node-ts → web', denyIncludes: null },
+  ];
+
+  for (const { stack, hasApi, expected, label, denyIncludes } of variants) {
+    const config = {
+      ...BASE,
+      tier: 'm',
+      techStack: stack,
+      hasApi,
+      isDiscovery: false,
+    };
+    const dir = await scaffold(`security-variant-${stack}-${hasApi ? 'api' : 'noapi'}`, 'm', config);
+    const securityPath = path.join(dir, '.claude', 'rules', 'security.md');
+
+    if (!fs.existsSync(securityPath)) {
+      fail(`security-variant[${label}]: security.md missing`);
+      continue;
+    }
+
+    const content = fs.readFileSync(securityPath, 'utf8');
+    if (content.includes(expected)) {
+      pass(`security-variant[${label}]: correct variant`);
+    } else {
+      fail(`security-variant[${label}]: expected "${expected}" in security.md`);
+    }
+
+    // Verify no other security variant files leaked into output
+    const rulesDir = path.join(dir, '.claude', 'rules');
+    const ruleFiles = fs.readdirSync(rulesDir);
+    const securityFiles = ruleFiles.filter(f => f.startsWith('security'));
+    if (securityFiles.length === 1 && securityFiles[0] === 'security.md') {
+      pass(`security-variant[${label}]: no variant files leaked`);
+    } else {
+      fail(`security-variant[${label}]: unexpected security files: ${securityFiles.join(', ')}`);
+    }
+
+    // Verify stack-specific deny entries in settings.json
+    if (denyIncludes) {
+      const settingsPath = path.join(dir, '.claude', 'settings.json');
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      const denyList = (settings.permissions?.deny || []).join(' ');
+      if (denyList.includes(denyIncludes)) {
+        pass(`security-variant[${label}]: deny includes ${denyIncludes}`);
+      } else {
+        fail(`security-variant[${label}]: deny missing ${denyIncludes}`);
+      }
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -821,6 +882,7 @@ async function main() {
   await scenarioNewRuleFiles();
   await scenarioNewStacks();
   await scenarioNativeStackCommandDefaults();
+  await scenarioSecurityVariants();
   await scenarioWizardCoverage();
 
   // ── Summary ────────────────────────────────────────────────────────────────
