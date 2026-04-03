@@ -233,7 +233,7 @@ const checks = [
           const skillFile = path.join(skillsDir, skill, 'SKILL.md');
           if (!fs.existsSync(skillFile)) continue;
           const content = fs.readFileSync(skillFile, 'utf8');
-          const usesPlaywright = content.includes('Playwright') || content.includes('browser_');
+          const usesPlaywright = content.includes('browser_');
           const hasAllowedTools = content.startsWith('---') && content.includes('allowed-tools');
           if (usesPlaywright && !hasAllowedTools) missingTools.push(skill);
         }

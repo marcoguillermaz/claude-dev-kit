@@ -282,7 +282,7 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`.
 
 Each entry **must** include a `Regression risk` field:
 - **Behavior-preserving** (pure refactoring — no change to external contracts, UI, DB writes, emails, redirects): proceed at the assigned severity.
-- **Behavior-adjacent** (fix touches a path that could affect observable output): downgrade severity by one level AND add the note `"Requires dedicated pipeline block — not a fast-lane fix."`. List the existing Vitest/Playwright tests that cover the affected path — if none exist, add `"No coverage — regression risk is unverifiable without adding tests first."` and treat as Critical regardless of check category.
+- **Behavior-adjacent** (fix touches a path that could affect observable output): downgrade severity by one level AND add the note `"Requires dedicated pipeline block — not a fast-lane fix."`. List the existing automated tests that cover the affected path — if none exist, add `"No coverage — regression risk is unverifiable without adding tests first."` and treat as Critical regardless of check category.
 - If the fix cannot be proven behavior-preserving from static analysis alone: default to behavior-adjacent.
 
 ### Severity guide
