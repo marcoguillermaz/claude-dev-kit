@@ -97,6 +97,7 @@ const WIZARD_PLACEHOLDERS = [
   'DESIGN_SYSTEM_NAME',
   'FRAMEWORK_VALUE',
   'LANGUAGE_VALUE',
+  'API_TESTS_PATH',
 ];
 // All other placeholders (skill config, ADR template, state machines, etc.)
 // are intentionally left for the user/Claude to fill in at first session.
