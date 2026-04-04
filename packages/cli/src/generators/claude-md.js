@@ -37,6 +37,9 @@ export async function generateClaudeMd(config, targetDir) {
     content = injectActiveSkills(content, config);
   }
 
+  // Strip sections containing only placeholder content to save context tokens
+  content = stripUnfilledSections(content);
+
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
 }
 
@@ -89,6 +92,8 @@ function buildCommandsBlock(config) {
   const build = config.buildCommand || ncd.build || 'npm run build';
   const test = config.testCommand || ncd.test || 'npm test';
   const typeCheck = config.typeCheckCommand || ncd.typeCheck || '';
+  const migration = config.migrationCommand || '';
+  const e2e = config.e2eCommand || '';
 
   const lines = ['```bash'];
   if (install) lines.push(`${install}     # install dependencies`);
@@ -96,6 +101,8 @@ function buildCommandsBlock(config) {
   if (build) lines.push(`${build}       # production build`);
   if (test) lines.push(`${test}         # run tests`);
   if (typeCheck) lines.push(`${typeCheck}  # type check`);
+  if (migration && migration !== '# not configured') lines.push(`${migration}  # run migrations`);
+  if (e2e && e2e !== '# not configured') lines.push(`${e2e}  # end-to-end tests`);
   lines.push('```');
   return lines.join('\n');
 }
@@ -140,6 +147,41 @@ function injectActiveSkills(content, config) {
     return content.replace('\n## Environment', section + '\n## Environment');
   }
   return content + section;
+}
+
+/**
+ * Remove sections that contain only placeholder content (bracket patterns,
+ * HTML comments, empty lines). These waste context tokens every session
+ * until the user fills them in. Stripped sections are documented in
+ * FIRST_SESSION.md so users know they exist.
+ */
+function stripUnfilledSections(content) {
+  const sectionsToStrip = new Set([
+    'RBAC / Roles',
+    'Key Workflows',
+    'Navigation by Role',
+    'Known Patterns',
+  ]);
+
+  const lines = content.split('\n');
+  const sections = [];
+  let current = { heading: null, lines: [] };
+
+  for (const line of lines) {
+    const match = line.match(/^## (.+)/);
+    if (match) {
+      sections.push(current);
+      current = { heading: match[1].trim(), lines: [line] };
+    } else {
+      current.lines.push(line);
+    }
+  }
+  sections.push(current);
+
+  const kept = sections.filter(s => !s.heading || !sectionsToStrip.has(s.heading));
+
+  // Rejoin and collapse runs of 3+ blank lines to 2
+  return kept.map(s => s.lines.join('\n')).join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
 function getMinimalTemplate() {

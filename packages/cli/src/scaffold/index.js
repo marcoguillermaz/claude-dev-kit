@@ -438,5 +438,6 @@ function interpolate(content, config) {
     .replace(/\[API_ROUTES_PATH\]/g, config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/')
     .replace(/\[BUNDLE_TOOL\]/g, ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — native app' : 'your build tool\'s bundle analyzer')
     .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
-    .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack));
+    .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack))
+    .replace(/\[MIGRATION_COMMAND\]/g, config.migrationCommand || '# not configured');
 }
