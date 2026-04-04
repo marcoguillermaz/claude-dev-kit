@@ -23,9 +23,14 @@ Your development scaffold is ready. This guide walks through setup and your firs
 
 **1. Fill in `CLAUDE.md`** — replace every `[PLACEHOLDER]`:
 - Overview: what the product does and who uses it
-- Tech stack: framework, language, database, auth
-- Key commands: install, dev, build, test, type-check
+- Tech stack: framework, language, database, auth (framework + language are auto-populated)
+- Key commands: install, dev, build, test, type-check (auto-populated from wizard)
 - Coding conventions: any non-obvious rules for your codebase
+
+**Sections removed to save context tokens** — add them back to `CLAUDE.md` when you have real content:
+- `## RBAC / Roles` — role/permission table (copy from tier template or write your own)
+- `## Key Workflows` — state machines, approval flows, document lifecycle
+- `## Known Patterns` — non-obvious gotchas discovered during development
 
 **2. Fill in `docs/requirements.md`** — list the blocks you plan to implement, in priority order. Even a rough list is enough to start.
 

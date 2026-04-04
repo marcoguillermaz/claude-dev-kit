@@ -98,6 +98,7 @@ const WIZARD_PLACEHOLDERS = [
   'FRAMEWORK_VALUE',
   'LANGUAGE_VALUE',
   'API_TESTS_PATH',
+  'MIGRATION_COMMAND',
 ];
 // All other placeholders (skill config, ADR template, state machines, etc.)
 // are intentionally left for the user/Claude to fill in at first session.
@@ -854,6 +855,71 @@ async function scenarioSecurityVariants() {
   }
 }
 
+async function scenarioPlaceholderNoiseReduction() {
+  section('Placeholder noise reduction — unfilled sections stripped from CLAUDE.md');
+
+  // Tier M — RBAC, Key Workflows, Known Patterns stripped
+  const configM = { ...BASE, tier: 'm', isDiscovery: false };
+  const dirM = await scaffold('noise-reduction-tier-m', 'm', configM);
+  const claudeM = fs.readFileSync(path.join(dirM, 'CLAUDE.md'), 'utf8');
+
+  for (const stripped of ['## RBAC / Roles', '## Key Workflows', '## Known Patterns']) {
+    if (!claudeM.includes(stripped)) {
+      pass(`Tier M: section "${stripped}" stripped`);
+    } else {
+      fail(`Tier M: section "${stripped}" should be stripped`);
+    }
+  }
+
+  for (const kept of ['## Overview', '## Tech Stack', '## Key Commands', '## Coding Conventions', '## Interaction Protocol', '## Reference Documents', '## Environment']) {
+    if (claudeM.includes(kept)) {
+      pass(`Tier M: section "${kept}" preserved`);
+    } else {
+      fail(`Tier M: section "${kept}" should be preserved`);
+    }
+  }
+
+  // Tier L — additionally strips Navigation by Role
+  const configL = { ...BASE, tier: 'l', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
+  const dirL = await scaffold('noise-reduction-tier-l', 'l', configL);
+  const claudeL = fs.readFileSync(path.join(dirL, 'CLAUDE.md'), 'utf8');
+
+  for (const stripped of ['## RBAC / Roles', '## Key Workflows', '## Navigation by Role', '## Known Patterns']) {
+    if (!claudeL.includes(stripped)) {
+      pass(`Tier L: section "${stripped}" stripped`);
+    } else {
+      fail(`Tier L: section "${stripped}" should be stripped`);
+    }
+  }
+
+  for (const kept of ['## Overview', '## Tech Stack', '## Key Commands', '## Interaction Protocol', '## Reference Documents', '## Environment']) {
+    if (claudeL.includes(kept)) {
+      pass(`Tier L: section "${kept}" preserved`);
+    } else {
+      fail(`Tier L: section "${kept}" should be preserved`);
+    }
+  }
+
+  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 80)
+  const lineCountM = claudeM.split('\n').length;
+  if (lineCountM < 80) {
+    pass(`Tier M: CLAUDE.md line count reduced (${lineCountM} lines)`);
+  } else {
+    fail(`Tier M: CLAUDE.md still ${lineCountM} lines — expected < 80 after stripping`);
+  }
+
+  // Tier S — Known Patterns stripped (only section applicable)
+  const configS = { ...BASE, tier: 's', isDiscovery: false };
+  const dirS = await scaffold('noise-reduction-tier-s', 's', configS);
+  const claudeS = fs.readFileSync(path.join(dirS, 'CLAUDE.md'), 'utf8');
+
+  if (!claudeS.includes('## Known Patterns')) {
+    pass('Tier S: section "## Known Patterns" stripped');
+  } else {
+    fail('Tier S: section "## Known Patterns" should be stripped');
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -884,6 +950,7 @@ async function main() {
   await scenarioNewStacks();
   await scenarioNativeStackCommandDefaults();
   await scenarioSecurityVariants();
+  await scenarioPlaceholderNoiseReduction();
   await scenarioWizardCoverage();
 
   // ── Summary ────────────────────────────────────────────────────────────────
