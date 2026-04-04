@@ -1,8 +1,8 @@
 
-# claude-dev-kit — Operational Guide
+# claude-dev-kit - Operational Guide
 
 **Version**: 1.6.1
-**Audience**: Builder PMs, tech leads, and development teams using Claude Code — from first exploration to structured, reviewable delivery
+**Audience**: Builder PMs, tech leads, and development teams using Claude Code - from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use it as a lookup.
 
 ---
@@ -10,18 +10,18 @@
 ## Table of Contents
 
 1. [What this is and why it exists](#1-what-this-is-and-why-it-exists)
-2. [Who is this for — two target audiences](#2-who-is-this-for--two-target-audiences)
+2. [Who is this for - two target audiences](#2-who-is-this-for--two-target-audiences)
 3. [Prerequisites](#3-prerequisites)
-4. [Installing the scaffold — three paths](#4-installing-the-scaffold--three-paths)
+4. [Installing the scaffold - three paths](#4-installing-the-scaffold--three-paths)
    - 4a. Greenfield
    - 4b. From context
    - 4c. In-place
-5. [Context Import — how Claude learns your project](#5-context-import--how-claude-learns-your-project)
+5. [Context Import - how Claude learns your project](#5-context-import--how-claude-learns-your-project)
 6. [The four pipeline tiers](#6-the-four-pipeline-tiers)
-   - Tier 0 — Discovery
-   - Tier S — Fast Lane
-   - Tier M — Standard
-   - Tier L — Full
+   - Tier 0 - Discovery
+   - Tier S - Fast Lane
+   - Tier M - Standard
+   - Tier L - Full
 7. [Day-to-day workflow](#7-day-to-day-workflow)
 8. [Governance files reference](#8-governance-files-reference)
 9. [Audit skills](#9-audit-skills)
@@ -37,20 +37,20 @@
 
 Claude Code is a powerful CLI assistant that can read, write, and reason about your entire codebase. Without shared process, it makes autonomous decisions that are hard to track and harder to review.
 
-`claude-dev-kit` scaffolds a legible, reviewable development process on top of Claude Code. It does not limit what Claude can do — it makes every meaningful action visible, auditable, and reversible.
+`claude-dev-kit` scaffolds a legible, reviewable development process on top of Claude Code. It does not limit what Claude can do - it makes every meaningful action visible, auditable, and reversible.
 
 **What you get:**
 
 - A one-question wizard that routes you to the right tier based on your team's experience level.
-- A development pipeline Claude follows strictly — requirements reviewed before code is written, tests verified before declaring done.
+- A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done.
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions.
 - A tiered system to match process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature.
-- Audit trails, commit attribution, secret scanning, and CODEOWNERS gates — so the team retains full visibility over AI-generated changes.
+- Audit trails, commit attribution, secret scanning, and CODEOWNERS gates - so the team retains full visibility over AI-generated changes.
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session, with no manual copy-pasting.
 
 **What it does not do:**
 
-- It does not write your code for you — Claude Code does that. This tool governs how.
+- It does not write your code for you - Claude Code does that. This tool governs how.
 - It does not enforce specific tech stack choices. Everything is configurable.
 - It does not slow you down for trivial changes. The Fast Lane (Tier S) has no gates.
 - It does not require governance knowledge upfront. Tier 0 gets you running in 5 minutes.
@@ -61,15 +61,15 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 
 ### Audience A: Builder PM or tech lead exploring Claude Code
 
-You want to build end-to-end with Claude Code — or evaluate it for your team. You may be a Product Manager with enough technical background to work in a terminal, a tech lead assessing the tool for your team, or a solo developer wanting a process before shipping anything real.
+You want to build end-to-end with Claude Code - or evaluate it for your team. You may be a Product Manager with enough technical background to work in a terminal, a tech lead assessing the tool for your team, or a solo developer wanting a process before shipping anything real.
 
 You don't need a full pipeline yet. You need to get started, understand what Claude Code can do, and have a process you can review.
 
-**Your path**: Tier 0 — Discovery.
+**Your path**: Tier 0 - Discovery.
 
 What you get: three files, one hard constraint (tests must pass before Claude declares done), and a `GETTING_STARTED.md` that walks you through the first session. Nothing else.
 
-When you're ready for more structure — usually after a few sessions, once Claude Code is part of the daily workflow — run:
+When you're ready for more structure - usually after a few sessions, once Claude Code is part of the daily workflow - run:
 
 ```bash
 npx mg-claude-dev-kit upgrade --tier=s
@@ -89,9 +89,9 @@ You're using Claude Code but the process is ad-hoc. Claude makes autonomous deci
 
 | Signal | Suggested tier |
 |---|---|
-| Low blast radius, single dev, reversible in minutes | Tier S — Fast Lane |
-| Single feature, moderate impact, 1–2 collaborators | Tier M — Standard |
-| High blast radius, team of 3+, complex domain, shared systems | Tier L — Full |
+| Low blast radius, single dev, reversible in minutes | Tier S - Fast Lane |
+| Single feature, moderate impact, 1–2 collaborators | Tier M - Standard |
+| High blast radius, team of 3+, complex domain, shared systems | Tier L - Full |
 
 Read sections 4a, 5, 6 (your tier), 7, and 8 of this guide.
 
@@ -104,8 +104,8 @@ Read sections 4a, 5, 6 (your tier), 7, and 8 of this guide.
 | Node.js | ≥ 18 | CLI runtime |
 | Claude Code | latest | The AI assistant being governed |
 | Git | any | Branch discipline enforced by pipeline |
-| `gh` CLI | any | Optional — needed only for cloning private repos in From context mode |
-| Pre-commit | any | Optional — needed only if you enable the pre-commit hook |
+| `gh` CLI | any | Optional - needed only for cloning private repos in From context mode |
+| Pre-commit | any | Optional - needed only if you enable the pre-commit hook |
 
 Install Claude Code:
 ```bash
@@ -114,7 +114,7 @@ npm install -g @anthropic-ai/claude-code
 
 ---
 
-## 4. Installing the scaffold — three paths
+## 4. Installing the scaffold - three paths
 
 Run this from any directory:
 
@@ -126,16 +126,16 @@ The wizard asks about your project state first:
 
 ```
 ? What's the state of this project?
-  ▸ Existing project — add CDK to a project that already has code
-    New project — starting from scratch, you'll fill in the details
-    From existing docs — share your docs and Claude populates everything
+  ▸ Existing project - add CDK to a project that already has code
+    New project - starting from scratch, you'll fill in the details
+    From existing docs - share your docs and Claude populates everything
 ```
 
 You will be asked to choose one of three paths:
 
 ---
 
-### 4a. Greenfield — new project from scratch
+### 4a. Greenfield - new project from scratch
 
 **Use when**: you are starting a new project and there is no existing codebase.
 
@@ -148,11 +148,11 @@ For experienced users, the wizard asks:
 - **3 diagnostic questions → auto-suggest tier**:
   1. "How many engineers will use Claude Code on this project?" (solo / small team / larger team)
   2. "What kind of work will you primarily do?" (bugfixes / feature blocks / complex/long-running)
-  3. The wizard suggests a tier with a description (phases, gates, overhead) — you confirm or pick a different one
+  3. The wizard suggests a tier with a description (phases, gates, overhead) - you confirm or pick a different one
 - Tech stack (Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java, other)
 - Test command, type check command, dev server command
-- **E2E test command (Playwright/Cypress — optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
-- **Feature flags (Tier M/L only)** — 7 questions that determine which audit skills are installed and set an `## Active Skills` section in CLAUDE.md:
+- **E2E test command (Playwright/Cypress - optional, Tier M/L only)**: leave blank to skip. When configured, Phase 4 becomes available and activates per block when the scope gate confirms UI flows are in scope
+- **Feature flags (Tier M/L only)** - 7 questions that determine which audit skills are installed and set an `## Active Skills` section in CLAUDE.md:
   - "Does your project expose an API (REST, GraphQL, RPC)?" → installs `/api-design` (`/security-audit` is always installed for Tier M/L)
   - "Does your project use a database?" → installs `/skill-db`
   - "Does your project have a frontend / UI?" → installs `/responsive-audit`, `/visual-audit`, `/ux-audit`
@@ -162,23 +162,23 @@ For experienced users, the wizard asks:
   - "Preferred model for deep analysis skills?" (if frontend) → `claude-sonnet-4-6` (faster) or `claude-opus-4-6` (thorough); populates `[AUDIT_MODEL]` frontmatter
 - Whether to include pre-commit config and `.github/` files
 
-Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs — ready to open in Claude Code. Tier M/L also include `FIRST_SESSION.md` — a step-by-step guide to the first block cycle.
+Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs - ready to open in Claude Code. Tier M/L also include `FIRST_SESSION.md` - a step-by-step guide to the first block cycle.
 
 **After running:**
-1. Read `FIRST_SESSION.md` (Tier M/L) — your team's guide to the first session.
-2. Review `CLAUDE.md` — it has placeholder values. Fill in the project-specific details.
+1. Read `FIRST_SESSION.md` (Tier M/L) - your team's guide to the first session.
+2. Review `CLAUDE.md` - it has placeholder values. Fill in the project-specific details.
 3. Update `.github/CODEOWNERS` with real GitHub usernames.
 4. If you enabled pre-commit: run `pip install pre-commit && pre-commit install`.
 5. Open Claude Code: `claude` from the project root.
 
 ---
 
-### 4b. From context — populate from existing repos and docs
+### 4b. From context - populate from existing repos and docs
 
 **Use when**: you are starting a new governance project but want to bootstrap it from an existing codebase or documentation (e.g. an existing product you're about to extend, or a spec document).
 
 The wizard asks for:
-- One or more source repositories (GitHub URL, `org/repo`, or local path — one per line, empty line to finish)
+- One or more source repositories (GitHub URL, `org/repo`, or local path - one per line, empty line to finish)
 - Optional source documents (PDF, Markdown, TXT file paths)
 - New project name
 - Which repo is the primary (if multiple)
@@ -188,20 +188,20 @@ What happens:
 1. Each source repo is cloned into `.claude/context/repos/<name>/` using `gh` CLI (private repos) or `git clone --depth=1` (public).
 2. Source documents are copied to `.claude/context/docs/`.
 3. The governance scaffold is created.
-4. `CONTEXT_IMPORT.md` is generated in the project root — this file contains the paths and a structured workflow for Claude to follow on the first session.
+4. `CONTEXT_IMPORT.md` is generated in the project root - this file contains the paths and a structured workflow for Claude to follow on the first session.
 5. `.claude/context/` and `CONTEXT_IMPORT.md` are added to `.gitignore` (they contain local paths and potentially large repos).
 
 **After running:** open Claude Code. Claude will automatically detect `CONTEXT_IMPORT.md` and run the Discovery Workflow before doing anything else. See section 4 for details.
 
 ---
 
-### 4c. In-place — add governance to an existing project
+### 4c. In-place - add governance to an existing project
 
 **Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
 
 The CLI:
 1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `Package.swift`, `Gemfile`, `pom.xml`, `build.gradle`, `*.csproj`, and Xcode project directories (matched by `.xcodeproj` / `.xcworkspace` suffix). Supported stacks: Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java.
-2. Shows detected values pre-filled in every prompt — you confirm or override.
+2. Shows detected values pre-filled in every prompt - you confirm or override.
 3. Counts your source files to suggest an appropriate tier.
 4. Creates all governance files **without overwriting** `CLAUDE.md`, `MEMORY.md`, `.gitignore`, or `README.md` if they already exist.
 5. Generates `CONTEXT_IMPORT.md` pointing to the current directory.
@@ -213,27 +213,27 @@ Detected values you will be asked to confirm:
 - Project name (defaults to directory name)
 - Tech stack and framework
 - Test, type check, dev server, build, install commands
-- E2E test command (optional — leave blank to skip; if configured, Phase 4 activates conditionally in Tier M/L)
+- E2E test command (optional - leave blank to skip; if configured, Phase 4 activates conditionally in Tier M/L)
 - Pipeline tier (suggested based on project size)
 
-**After running:** open Claude Code with `claude`. Claude detects `CONTEXT_IMPORT.md` and runs the Discovery pass automatically — reads your codebase, generates `CLAUDE.md` and `docs/`, and asks about anything it could not infer from the code. See section 5 for details.
+**After running:** open Claude Code with `claude`. Claude detects `CONTEXT_IMPORT.md` and runs the Discovery pass automatically - reads your codebase, generates `CLAUDE.md` and `docs/`, and asks about anything it could not infer from the code. See section 5 for details.
 
 ---
 
-## 5. Context Import — how Claude learns your project
+## 5. Context Import - how Claude learns your project
 
 `CONTEXT_IMPORT.md` is a bridge file generated by the CLI. It contains:
 
-- **Import mode** — `from-context` or `in-place`
-- **Source repositories** — paths to cloned repos under `.claude/context/repos/`
-- **Source documents** — paths to copied docs under `.claude/context/docs/`
-- **Primary repository** — the main codebase for context priority
+- **Import mode** - `from-context` or `in-place`
+- **Source repositories** - paths to cloned repos under `.claude/context/repos/`
+- **Source documents** - paths to copied docs under `.claude/context/docs/`
+- **Primary repository** - the main codebase for context priority
 
 On every Claude Code session, Claude reads this file first. If the status is `PENDING_DISCOVERY`, it runs the following workflow **before any other work**:
 
 ### Discovery Workflow (6 steps)
 
-**Step 1 — Read source repositories**
+**Step 1 - Read source repositories**
 
 For each listed repo, Claude reads:
 - Root files: `README.md`, `package.json` / `requirements.txt` / `go.mod`, `CLAUDE.md`
@@ -241,22 +241,22 @@ For each listed repo, Claude reads:
 
 It extracts: tech stack, framework, key commands, folder conventions, naming conventions, roles/RBAC, state machines, known patterns, test setup.
 
-**Step 2 — Read source documents**
+**Step 2 - Read source documents**
 
 For each listed document: extracts product requirements, business rules, user roles, workflows, data model hints, and potential ADRs.
 
-**Step 3 — Populate project files**
+**Step 3 - Populate project files**
 
 Using the extracted information, Claude populates:
 
-- `CLAUDE.md` — project overview, tech stack, key commands, conventions
-- `.claude/rules/pipeline.md` — replaces `[TYPE_CHECK_COMMAND]`, `[TEST_COMMAND]`, `[BUILD_COMMAND]`, `[DEV_COMMAND]`
-- `.claude/settings.json` — replaces `[TEST_COMMAND]` in the Stop hook
-- `docs/requirements.md` (Tier M/L) — product requirements and key workflows
-- `docs/implementation-checklist.md` (Tier M/L) — initial planned blocks
-- `docs/adr/` — one ADR file per architectural decision found in source docs
+- `CLAUDE.md` - project overview, tech stack, key commands, conventions
+- `.claude/rules/pipeline.md` - replaces `[TYPE_CHECK_COMMAND]`, `[TEST_COMMAND]`, `[BUILD_COMMAND]`, `[DEV_COMMAND]`
+- `.claude/settings.json` - replaces `[TEST_COMMAND]` in the Stop hook
+- `docs/requirements.md` (Tier M/L) - product requirements and key workflows
+- `docs/implementation-checklist.md` (Tier M/L) - initial planned blocks
+- `docs/adr/` - one ADR file per architectural decision found in source docs
 
-**Step 4 — Present discovery summary**
+**Step 4 - Present discovery summary**
 
 Claude outputs a structured summary:
 ```
@@ -288,15 +288,15 @@ Claude outputs a structured summary:
 - .claude/settings.json ✓
 - docs/requirements.md ✓
 
-### Gaps — questions for you
+### Gaps - questions for you
 [anything that could not be inferred]
 ```
 
-**Step 5 — Ask targeted gap questions**
+**Step 5 - Ask targeted gap questions**
 
 Claude asks about anything it could not infer: auth mechanism, deployment target, team size, permission model details.
 
-**Step 6 — Mark discovery complete**
+**Step 6 - Mark discovery complete**
 
 After you confirm the summary and answer gap questions, Claude updates `CONTEXT_IMPORT.md`: `Status: PENDING_DISCOVERY` → `Status: COMPLETE`.
 
@@ -310,7 +310,7 @@ From that point on, `CONTEXT_IMPORT.md` is a historical record. Claude does not 
 
 The pipeline is the sequence of phases Claude follows for every development task. You choose the tier when running `init`. You can change it later by upgrading: `npx mg-claude-dev-kit upgrade --tier=m`.
 
-### Tier 0 — Discovery
+### Tier 0 - Discovery
 
 **Use for**: teams exploring Claude Code for the first time. No pipeline knowledge required.
 **What it provides**: one constraint (tests must pass) and project context (CLAUDE.md). Nothing else.
@@ -321,10 +321,10 @@ The pipeline is the sequence of phases Claude follows for every development task
 | `.claude/settings.json` | Stop hook: tests must pass before Claude declares a task complete. |
 | `GETTING_STARTED.md` | Step-by-step guide for the first session. Share it with your team. |
 
-**The Stop hook is the only governance control in Tier 0** — and it's the most important one. Claude cannot skip tests. Fill in `CLAUDE.md` and start using Claude Code. Add more structure when you're ready.
+**The Stop hook is the only governance control in Tier 0** - and it's the most important one. Claude cannot skip tests. Fill in `CLAUDE.md` and start using Claude Code. Add more structure when you're ready.
 
 **After running init (Tier 0):**
-1. Edit `CLAUDE.md` — fill in the project description and verify the commands.
+1. Edit `CLAUDE.md` - fill in the project description and verify the commands.
 2. Read `GETTING_STARTED.md` for what to expect.
 3. Run `claude` from the project root. Your first session starts immediately.
 
@@ -334,106 +334,106 @@ npx mg-claude-dev-kit upgrade --tier=s   # adds branch discipline + commit rules
 npx mg-claude-dev-kit upgrade --tier=m   # adds phased pipeline + review gates + docs
 npx mg-claude-dev-kit upgrade --tier=l   # adds full governance + audit skills
 ```
-Upgrade is non-destructive — it adds new files without overwriting your existing `CLAUDE.md` or `settings.json`.
+Upgrade is non-destructive - it adds new files without overwriting your existing `CLAUDE.md` or `settings.json`.
 
 ---
 
-### Tier S — Fast Lane
+### Tier S - Fast Lane
 
-**Use for**: low blast radius tasks — single dev, reversible in minutes, no shared system impact. Bugfixes, isolated changes, hotfixes.
-**Branch prefix**: `fix/description` — Claude detects this and switches to Fast Lane automatically.
+**Use for**: low blast radius tasks - single dev, reversible in minutes, no shared system impact. Bugfixes, isolated changes, hotfixes.
+**Branch prefix**: `fix/description` - Claude detects this and switches to Fast Lane automatically.
 
 | Phase | Action |
 |---|---|
 | FL-0 | Check `.claude/session/` for interrupted fix. Create session file. Confirm `fix/*` branch. **Escalation check**: if the fix touches a shared utility with >5 import consumers, escalate to Tier M. |
 | FL-1 | **Compact scope confirm** (one list of files + changes, wait for execution keyword). Implement. Run type check + tests. Commit. |
 | FL-2 | Merge to staging. Wait for deploy. Verify in 1–3 steps. |
-| FL-3 | Merge to main. Verify production deploy. One-line summary: `fix complete ✅ — description · type check ✅ · tests N/N ✅` |
+| FL-3 | Merge to main. Verify production deploy. One-line summary: `fix complete ✅ - description · type check ✅ · tests N/N ✅` |
 | FL-4 | Update checklist if fix closes a tracked item. Delete session file (only after fix confirmed in production). |
 
 **One lightweight gate** in FL-1 (compact scope confirm). Claude proceeds autonomously after execution keyword.
 
-**Escalation** — Claude automatically escalates to Tier M if: scope expands beyond 3 files, a migration is required, or a shared utility with >5 consumers is touched.
+**Escalation** - Claude automatically escalates to Tier M if: scope expands beyond 3 files, a migration is required, or a shared utility with >5 consumers is touched.
 
 ---
 
-### Tier M — Standard
+### Tier M - Standard
 
 **Use for**: feature blocks, 1–2 week changes, ≤15 files, no complex domain changes.
 **Branch prefix**: `feature/block-name`.
 
 | Phase | Action | Gate |
 |---|---|---|
-| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | — |
+| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
 | 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (agent) + spec doc if Mode A. | ⏸ **STOP** |
-| 1.5 | Design review — data flow, trade-offs, discarded alternatives. *(skip for ≤3 files, no migrations)* | ⏸ **STOP** |
-| 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | — |
-| 3 | Type check + build + tests. Intermediate commit. | — |
-| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state). *(if routes were added/modified)* | — |
-| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | — |
-| 5b | Test data setup — insert representative records for all relevant states. | — |
-| 5c | Staging deploy + smoke test (both themes if UI changes). | — |
+| 1.5 | Design review - data flow, trade-offs, discarded alternatives. *(skip for ≤3 files, no migrations)* | ⏸ **STOP** |
+| 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | - |
+| 3 | Type check + build + tests. Intermediate commit. | - |
+| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state). *(if routes were added/modified)* | - |
+| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | - |
+| 5b | Test data setup - insert representative records for all relevant states. | - |
+| 5c | Staging deploy + smoke test (both themes if UI changes). | - |
 | 6 | Outcome checklist with actual results. | ⏸ **STOP** |
-| 8 | Block closure: session file (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main. | — |
-| 8.5 | Context review C1–C12. Mandatory closing message. `/compact`. | — |
+| 8 | Block closure: session file (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main. | - |
+| 8.5 | Context review C1–C12. Mandatory closing message. `/compact`. | - |
 
 **After running init (Tier M):**
-1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle.
+1. Read `FIRST_SESSION.md` - your team's guide to the first block cycle.
 2. Fill in `CLAUDE.md` placeholders and `docs/requirements.md` with planned blocks.
 3. Run `claude` from the project root. Claude orients itself in Phase 0 automatically.
 
 **Two STOP gates** (Phases 1 and 6). Claude presents results at each and waits for an explicit execution keyword before proceeding.
 
-**Phase 1 — mode selection + scope gate**:
+**Phase 1 - mode selection + scope gate**:
 
-At the start of every block, Claude auto-selects the working mode based on block signals and declares it with a one-line rationale. You can override before the STOP gate — no explicit confirmation required to proceed.
+At the start of every block, Claude auto-selects the working mode based on block signals and declares it with a one-line rationale. You can override before the STOP gate - no explicit confirmation required to proceed.
 
-- **Mode A — Spec-first** (auto-selected when any signal is present: Tier 2 sweep triggered, new feature with unclear shape, new API endpoint or contract change, domain model change, multi-component work): Claude generates `docs/specs/[block-name].md` before any implementation. The spec contains: goal (one sentence), acceptance criteria (EARS format: WHEN/IF/WHILE + MUST/SHALL, 3–5 criteria), in-scope file list (from dependency scan), explicit out-of-scope, and definition of done. The STOP gate becomes a spec review — no code until the spec is approved. Completed specs are archived to `docs/specs/archive/` at block close.
-- **Mode B — Scope-confirm** (auto-selected when all signals are absent: Tier 1 sweep, refactor, bug fix, isolated change with clearly bounded scope): standard structured sweep, then proceed.
+- **Mode A - Spec-first** (auto-selected when any signal is present: Tier 2 sweep triggered, new feature with unclear shape, new API endpoint or contract change, domain model change, multi-component work): Claude generates `docs/specs/[block-name].md` before any implementation. The spec contains: goal (one sentence), acceptance criteria (EARS format: WHEN/IF/WHILE + MUST/SHALL, 3–5 criteria), in-scope file list (from dependency scan), explicit out-of-scope, and definition of done. The STOP gate becomes a spec review - no code until the spec is approved. Completed specs are archived to `docs/specs/archive/` at block close.
+- **Mode B - Scope-confirm** (auto-selected when all signals are absent: Tier 1 sweep, refactor, bug fix, isolated change with clearly bounded scope): standard structured sweep, then proceed.
 
 **Scope sweep** (both modes): Claude auto-selects Tier 1 or Tier 2:
-- **Tier 1 — Standard Sweep** (≤5 files, single entity, no migration, no new pattern): 8 dimensions.
-- **Tier 2 — Deep Sweep** (>5 files, new entity, migration, multi-role): Tier 1 + states/conditions/pre-mortem.
-- Claude declares: "does this block include critical UI flows?" (yes/no). If yes and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5). These become the mandatory test scenarios for Phase 4 — Claude implements them exactly as defined and does not invent additional cases.
+- **Tier 1 - Standard Sweep** (≤5 files, single entity, no migration, no new pattern): 8 dimensions.
+- **Tier 2 - Deep Sweep** (>5 files, new entity, migration, multi-role): Tier 1 + states/conditions/pre-mortem.
+- Claude declares: "does this block include critical UI flows?" (yes/no). If yes and `[E2E_COMMAND]` is configured, Claude asks the user to list the **UAT scenarios** (numbered user journeys, 1–5). These become the mandatory test scenarios for Phase 4 - Claude implements them exactly as defined and does not invent additional cases.
 
 ---
 
-### Tier L — Full
+### Tier L - Full
 
 **Use for**: complex domain changes, long-running projects, teams of 3+, architectural decisions.
 **Branch prefix**: `feature/block-name`.
 
 | Phase | Action | Gate |
 |---|---|---|
-| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | — |
+| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
 | 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (agent) + spec doc if Mode A. | ⏸ **STOP** |
-| 1.5 | Design review — data flow, data structures, discarded alternatives. *(skip for ≤3 files)* | ⏸ **STOP** |
+| 1.5 | Design review - data flow, data structures, discarded alternatives. *(skip for ≤3 files)* | ⏸ **STOP** |
 | 1.6 | Visual & UX design. ASCII wireframe + component map + UX rationale. *(UI blocks only)* | ⏸ **STOP** |
-| Plan lock | EnterPlanMode → user enables auto-accept → ExitPlanMode → `/compact` | — |
-| 2 | Implementation. Destructive migration rollback comments. Security checklist (5 checks). `/simplify`. | — |
-| 3 | Type check + build + unit tests. Intermediate commit. | — |
-| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state, cleanup). | — |
-| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | — |
-| 5b | Test data setup — cleanup-first, all relevant states. | — |
-| 5c | Staging deploy + smoke test (all roles, both themes if UI). | — |
-| 5d | **Block-scoped quality audit** — `/ui-audit`, `/visual-audit`, `/ux-audit`, `/responsive-audit` scoped to block routes. Severity: Critical → fix before Phase 6; Major → flag in checklist; Minor → backlog. | — |
+| Plan lock | EnterPlanMode → user enables auto-accept → ExitPlanMode → `/compact` | - |
+| 2 | Implementation. Destructive migration rollback comments. Security checklist (5 checks). `/simplify`. | - |
+| 3 | Type check + build + unit tests. Intermediate commit. | - |
+| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state, cleanup). | - |
+| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if `[E2E_COMMAND]` configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | - |
+| 5b | Test data setup - cleanup-first, all relevant states. | - |
+| 5c | Staging deploy + smoke test (all roles, both themes if UI). | - |
+| 5d | **Block-scoped quality audit** - `/ui-audit`, `/visual-audit`, `/ux-audit`, `/responsive-audit` scoped to block routes. Severity: Critical → fix before Phase 6; Major → flag in checklist; Minor → backlog. | - |
 | 6 | Outcome checklist: build/test + design system compliance + features + audit results. | ⏸ **STOP** |
-| 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | — |
-| 8.5 | C1–C3 via context-reviewer agent. C4–C12 in main session. **Mandatory closing message**. `/compact`. | — |
+| 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | - |
+| 8.5 | C1–C3 via context-reviewer agent. C4–C12 in main session. **Mandatory closing message**. `/compact`. | - |
 
 **After running init (Tier L):**
-1. Read `FIRST_SESSION.md` — your team's guide to the first block cycle (covers R1–R4 and all 11 phases).
-2. Fill in `CLAUDE.md` placeholders — especially RBAC, key workflows, and `[E2E_COMMAND]` if applicable.
+1. Read `FIRST_SESSION.md` - your team's guide to the first block cycle (covers R1–R4 and all 11 phases).
+2. Fill in `CLAUDE.md` placeholders - especially RBAC, key workflows, and `[E2E_COMMAND]` if applicable.
 3. Fill in `docs/requirements.md` with planned blocks and acceptance criteria.
 4. Run `claude` from the project root. Claude orients itself in Phase 0 automatically.
 
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before any code is written.
 
-**Phase 1 — mode selection + scope gate**: same as Tier M (see above). For Tier L, Mode A will be auto-selected for nearly all blocks — domain model changes, multi-component work, and API contract changes are all Tier 2 sweep triggers. Mode B may apply to isolated refactors or bug fixes that don't touch shared contracts. Claude also declares: "does this block have UI changes requiring Phase 5d audit?" in addition to the UAT scenario declaration.
+**Phase 1 - mode selection + scope gate**: same as Tier M (see above). For Tier L, Mode A will be auto-selected for nearly all blocks - domain model changes, multi-component work, and API contract changes are all Tier 2 sweep triggers. Mode B may apply to isolated refactors or bug fixes that don't touch shared contracts. Claude also declares: "does this block have UI changes requiring Phase 5d audit?" in addition to the UAT scenario declaration.
 
-**Structural Requirements Changes (R1–R4)** — separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
+**Structural Requirements Changes (R1–R4)** - separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
 - **R1**: update requirements section by section, STOP for approval
-- **R2**: impact analysis — which blocks, which files, which tests
+- **R2**: impact analysis - which blocks, which files, which tests
 - **R3**: update checklist + backlog, STOP before touching code
 - **R4**: execute block by block via standard pipeline
 
@@ -516,11 +516,11 @@ In Claude Code: press `Shift+Tab` to toggle between default, auto-accept, and pl
 
 ## 8. Governance files reference
 
-### FIRST_SESSION.md (Tier M/L — remove after first block)
+### FIRST_SESSION.md (Tier M/L - remove after first block)
 
 Scaffolded by the CLI for Tier M and Tier L. A practical guide to the first block cycle: what was created, how to fill in CLAUDE.md, how to start the first session, what each pipeline phase does, and recovery procedures.
 
-**Remove this file** once your team completes the first full block cycle — it is only needed at the start.
+**Remove this file** once your team completes the first full block cycle - it is only needed at the start.
 
 ---
 
@@ -529,11 +529,11 @@ Scaffolded by the CLI for Tier M and Tier L. A practical guide to the first bloc
 The primary project context file. Claude reads it at the start of every session.
 
 **Auto-populated fields** (filled by the scaffold from wizard/detection data):
-- **Project name** — from wizard input
-- **Tech Stack Summary** — from detected stack (e.g. "Node.js + TypeScript", "Swift / macOS")
-- **Framework** — auto-detected from dependencies (e.g. "Next.js", "Django"). Shows "N/A - native app" for Swift/Kotlin/Rust/.NET/Java. Shows an italic hint when not detected.
-- **Language** — derived from tech stack (e.g. "TypeScript", "Python", "Swift", "C#")
-- **Key Commands** — from wizard input or native defaults (e.g. `xcodebuild test` for Swift)
+- **Project name** - from wizard input
+- **Tech Stack Summary** - from detected stack (e.g. "Node.js + TypeScript", "Swift / macOS")
+- **Framework** - auto-detected from dependencies (e.g. "Next.js", "Django"). Shows "N/A - native app" for Swift/Kotlin/Rust/.NET/Java. Shows an italic hint when not detected.
+- **Language** - derived from tech stack (e.g. "TypeScript", "Python", "Swift", "C#")
+- **Key Commands** - from wizard input or native defaults (e.g. `xcodebuild test` for Swift)
 
 **What to fill in manually:**
 - Project overview (2–4 sentences)
@@ -557,9 +557,9 @@ The primary project context file. Claude reads it at the start of every session.
 Shared lessons and active project state. Updated at the end of every block.
 
 **Sections:**
-- **Active plan** — block-by-block status table. Updated every block.
-- **Key technical patterns** — non-obvious decisions worth preserving across sessions.
-- **Lessons** — things that went wrong and how to avoid them next time.
+- **Active plan** - block-by-block status table. Updated every block.
+- **Key technical patterns** - non-obvious decisions worth preserving across sessions.
+- **Lessons** - things that went wrong and how to avoid them next time.
 
 **Size discipline**: keep under 150 lines. Extract topics into separate files in `.claude/` if it grows.
 
@@ -586,7 +586,7 @@ Permissions and hooks. Five hooks are pre-configured in Tier M/L (three in Tier 
 
 | Stack | Allow | Deny (additions) |
 |---|---|---|
-| Node.js (default) | git, node, npm, npx, curl | — |
+| Node.js (default) | git, node, npm, npx, curl | - |
 | Swift | git, swift, xcodebuild, xcrun, curl | xcodebuild archive, xcrun altool --upload-app |
 | Kotlin | git, gradlew, gradle, curl | gradlew publish |
 | Rust | git, cargo, rustc, curl | cargo publish |
@@ -594,9 +594,9 @@ Permissions and hooks. Five hooks are pre-configured in Tier M/L (three in Tier 
 | Java | git, mvn, gradlew, gradle, curl | mvn deploy, gradlew publish |
 | Ruby | git, bundle, rails, rake, curl | gem push |
 | Python | git, python, pip, uv, curl | twine upload |
-| Go | git, go, curl | — |
+| Go | git, go, curl | - |
 
-**`includeGitInstructions: false`** — the built-in Claude Code git instructions are suppressed in Tier M/L. `pipeline.md` and `git.md` cover this more precisely for your project.
+**`includeGitInstructions: false`** - the built-in Claude Code git instructions are suppressed in Tier M/L. `pipeline.md` and `git.md` cover this more precisely for your project.
 
 ---
 
@@ -609,7 +609,7 @@ You can add project-specific overrides at the bottom of this file. Example:
 ## Project-specific rules
 
 - Always run `npm run db:migrate` before running tests.
-- Do not touch `lib/legacy/` — it is scheduled for deletion in Q3.
+- Do not touch `lib/legacy/` - it is scheduled for deletion in Q3.
 ```
 
 ---
@@ -639,13 +639,13 @@ Commit format, branch naming rules, PR conventions. Loaded for all git operation
 
 ### .claude/rules/output-style.md (Tier M/L)
 
-Communication rules for Claude in this project. No sycophantic openers ("Certainly!", "Great question!"), no AI disclosure markers, plain vocabulary, directness-first, hyphen not em-dash. These rules apply to all of Claude's text output — not just code comments.
+Communication rules for Claude in this project. No sycophantic openers ("Certainly!", "Great question!"), no AI disclosure markers, plain vocabulary, directness-first, hyphen not em-dash. These rules apply to all of Claude's text output - not just code comments.
 
 ---
 
 ### .claude/rules/claudemd-standards.md (Tier M/L)
 
-Standards for maintaining `CLAUDE.md` itself. S1–S9 cover: size limit (≤200 lines), content filter (WHY/WHAT/HOW only — no code), progressive disclosure via @-imports, hook enforcement patterns, MCP instruction budget, and memory hygiene. Aligned with Anthropic documentation and Simon Willison's CLAUDE.md practices.
+Standards for maintaining `CLAUDE.md` itself. S1–S9 cover: size limit (≤200 lines), content filter (WHY/WHAT/HOW only - no code), progressive disclosure via @-imports, hook enforcement patterns, MCP instruction budget, and memory hygiene. Aligned with Anthropic documentation and Simon Willison's CLAUDE.md practices.
 
 ---
 
@@ -691,12 +691,12 @@ The key addition vs. standard ADRs is the **AI Coding Guidance** section:
 ## AI Coding Guidance
 
 When generating code in this area, Claude must:
-- Always use `createError()` from `lib/errors.ts` — never throw raw Error objects
-- Never access the database directly from route handlers — go through service functions
+- Always use `createError()` from `lib/errors.ts` - never throw raw Error objects
+- Never access the database directly from route handlers - go through service functions
 - Every new route must have an auth check as the first line
 ```
 
-This section is read by Claude and becomes a durable constraint — no need to repeat it in CLAUDE.md.
+This section is read by Claude and becomes a durable constraint - no need to repeat it in CLAUDE.md.
 
 ---
 
@@ -706,7 +706,7 @@ Session recovery files. One file per active block, named `block-[name].md`.
 
 Created at Phase 0, deleted at Phase 8 after confirmed block closure. If the session is interrupted, the file persists and Claude resumes from it automatically next session.
 
-Never commit these files — they are in `.gitignore` by design.
+Never commit these files - they are in `.gitignore` by design.
 
 ---
 
@@ -735,34 +735,34 @@ Generated by the CLI for From context and In-place init modes. Contains the disc
 
 ## 9. Audit skills
 
-Eleven audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time — no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Eleven audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 **Tier availability and install conditions:**
 
 | Command | S | M | L | Install condition | Requires |
 |---|---|---|---|---|---|
 | `/arch-audit` | ✓ | ✓ | ✓ | always | Internet access (fetches Anthropic docs) |
-| `/commit` | ✓ | ✓ | ✓ | always | — |
-| `/security-audit` | — | ✓ | ✓ | always | — |
-| `/skill-dev` | — | ✓ | ✓ | always | — |
-| `/skill-db` | — | ✓ | ✓ | `hasDatabase=true` | — |
-| `/api-design` | — | ✓ | ✓ | `hasApi=true` | — |
-| `/perf-audit` | — | ✓ | ✓ | always | — |
-| `/responsive-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/ux-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/visual-audit` | — | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/ui-audit` | — | ✓ | ✓ | `hasFrontend=true` AND `hasDesignSystem=true` | Dev server + Playwright MCP |
+| `/commit` | ✓ | ✓ | ✓ | always | - |
+| `/security-audit` | - | ✓ | ✓ | always | - |
+| `/skill-dev` | - | ✓ | ✓ | always | - |
+| `/skill-db` | - | ✓ | ✓ | `hasDatabase=true` | - |
+| `/api-design` | - | ✓ | ✓ | `hasApi=true` | - |
+| `/perf-audit` | - | ✓ | ✓ | always | - |
+| `/responsive-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/ux-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/visual-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
+| `/ui-audit` | - | ✓ | ✓ | `hasFrontend=true` AND `hasDesignSystem=true` | Dev server + Playwright MCP |
 
 **General rules:**
-- Code-audit skills are **audit-only** — no code is modified. Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
+- Code-audit skills are **audit-only** - no code is modified. Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
 - Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
-- Each skill runs in an isolated context fork (`context: fork`) — it does not pollute the main session window.
+- Each skill runs in an isolated context fork (`context: fork`) - it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
 - Before first run: fill in the `## Configuration` placeholders at the top of each `SKILL.md`.
 
 **Block-scoped audit in Phase 5d (Tier M/L)**: after the smoke test and before the outcome checklist, two tracks run in parallel:
-- **Track A (UI)** — if the block touches UI routes: `/ui-audit` (static, concurrent with first Playwright skill) → `/visual-audit` → `/ux-audit` → `/responsive-audit` (sequential, shared Playwright session).
-- **Track B (API/DB)** — if the block touches API routes or applies migrations: `/security-audit` and `/api-design` (concurrent, static); `/skill-db` (if migration applied).
+- **Track A (UI)** - if the block touches UI routes: `/ui-audit` (static, concurrent with first Playwright skill) → `/visual-audit` → `/ux-audit` → `/responsive-audit` (sequential, shared Playwright session).
+- **Track B (API/DB)** - if the block touches API routes or applies migrations: `/security-audit` and `/api-design` (concurrent, static); `/skill-db` (if migration applied).
 Severity actions: Critical must be fixed before Phase 6; Major flagged in checklist; Minor logged in backlog.
 
 **Severity actions for all skills:**
@@ -803,10 +803,10 @@ Add to `.claude/settings.json`:
 
 #### Steps and checks
 
-**Step 1 — Build API route inventory**
+**Step 1 - Build API route inventory**
 Reads the sitemap/route list and categorises all routes as: Public / Protected / Role-specific.
 
-**Step 2 — Auth & authorization (Explore subagent)**
+**Step 2 - Auth & authorization (Explore subagent)**
 
 | Check | What it catches |
 |---|---|
@@ -814,9 +814,9 @@ Reads the sitemap/route list and categorises all routes as: Public / Protected /
 | A2 | Privileged route (admin path) without an explicit role assertion |
 | A3 | POST/PUT/PATCH handler without schema validation import |
 | A4 | Template literals or string concatenation used to build DB queries with user input (injection risk) |
-| A5 | Route selects all columns (`SELECT *`) — may include password hashes, tokens, internal flags |
+| A5 | Route selects all columns (`SELECT *`) - may include password hashes, tokens, internal flags |
 
-**Step 3 — Response shape review**
+**Step 3 - Response shape review**
 
 | Check | What it catches |
 |---|---|
@@ -824,7 +824,7 @@ Reads the sitemap/route list and categorises all routes as: Public / Protected /
 | R2 | Internal DB error forwarded verbatim to client instead of a generic message |
 | R3 | Response object contains another user's data or internal system state |
 
-**Step 4 — HTTP security headers**
+**Step 4 - HTTP security headers**
 
 | Header | Risk if missing |
 |---|---|
@@ -833,7 +833,7 @@ Reads the sitemap/route list and categorises all routes as: Public / Protected /
 | `Referrer-Policy: strict-origin-when-cross-origin` | Data leakage via referrer |
 | `Content-Security-Policy` | XSS escalation |
 
-Note: `Strict-Transport-Security` is typically set by the hosting platform (Vercel, Fly, Railway) — skip if your infra handles it.
+Note: `Strict-Transport-Security` is typically set by the hosting platform (Vercel, Fly, Railway) - skip if your infra handles it.
 
 #### Severity guide
 
@@ -844,7 +844,7 @@ Note: `Strict-Transport-Security` is typically set by the hosting platform (Verc
 | Medium | Missing validation on write route; DB error leaked to client; missing security header |
 | Low | Informational over-exposure; header best-practice gap |
 
-**A13 — Horizontal access control (IDOR)**: write routes missing a caller-ownership check that would prevent one authenticated user from modifying another user's records.
+**A13 - Horizontal access control (IDOR)**: write routes missing a caller-ownership check that would prevent one authenticated user from modifying another user's records.
 
 After the report, the skill presents a numbered finding list and waits for user confirmation before writing to `docs/refactoring-backlog.md`.
 
@@ -864,13 +864,13 @@ After the report, the skill presents a numbered finding list and waits for user 
 | `[SHARED_LIB_PATH]` | `lib/`, `src/utils/`, `shared/` |
 | `[FEATURE_NAMING]` | `features/auth/`, `app/(auth)/` |
 
-**Note**: the skill uses `docs/sitemap.md` as its file inventory — it does not scan the filesystem freely. Populate or update `docs/sitemap.md` before running.
+**Note**: the skill uses `docs/sitemap.md` as its file inventory - it does not scan the filesystem freely. Populate or update `docs/sitemap.md` before running.
 
 #### Steps and checks
 
-**Step 1** — reads `docs/sitemap.md` (file list), `docs/refactoring-backlog.md` (to avoid duplicates). Builds a **debt-density map**: files with 3+ open backlog entries are flagged as high-debt zones and findings in those files have severity escalated by one level.
+**Step 1** - reads `docs/sitemap.md` (file list), `docs/refactoring-backlog.md` (to avoid duplicates). Builds a **debt-density map**: files with 3+ open backlog entries are flagged as high-debt zones and findings in those files have severity escalated by one level.
 
-**Step 2 — Pattern checks (Explore subagent)**
+**Step 2 - Pattern checks (Explore subagent)**
 
 | Check | What it catches |
 |---|---|
@@ -879,16 +879,16 @@ After the report, the skill presents a numbered finding list and waits for user 
 | D3 | Exported functions/components/constants that are never imported anywhere |
 | D4 | String or numeric literals used directly in logic that should be named constants or enums |
 | D5 | The same operation (error handling, data fetching, form submission) done in materially different ways |
-| D6 | Component files exceeding 250 lines — candidates for decomposition |
-| D7 | `@ts-ignore`, `@ts-expect-error`, `: any`, `as any` — suppressed TypeScript errors |
+| D6 | Component files exceeding 250 lines - candidates for decomposition |
+| D7 | `@ts-ignore`, `@ts-expect-error`, `: any`, `as any` - suppressed TypeScript errors |
 
-**Step 3 — Abstraction review** (run on the 5 largest components found in D6)
+**Step 3 - Abstraction review** (run on the 5 largest components found in D6)
 
 | Check | What it catches |
 |---|---|
 | A1 | Props passed through 3+ levels without being used by intermediate components (prop drilling) |
-| A2 | Utility functions used only once — premature abstractions, should be inlined |
-| A3 | The same inline pattern repeated 3+ times — missing abstraction candidate |
+| A2 | Utility functions used only once - premature abstractions, should be inlined |
+| A3 | The same inline pattern repeated 3+ times - missing abstraction candidate |
 
 #### Severity guide
 
@@ -920,9 +920,9 @@ After the report, the skill presents a numbered finding list and waits for user 
 
 #### Steps and checks
 
-**Step 1** — reads `docs/db-map.md` (tables, FKs, indexes, access control, ownership patterns).
+**Step 1** - reads `docs/db-map.md` (tables, FKs, indexes, access control, ownership patterns).
 
-**Step 2 — Schema quality (Explore subagent)**
+**Step 2 - Schema quality (Explore subagent)**
 
 | Check | What it catches |
 |---|---|
@@ -933,15 +933,15 @@ After the report, the skill presents a numbered finding list and waits for user 
 | S5 | FK constraints without an explicit `ON DELETE` clause (default RESTRICT causes confusing errors) |
 | S6 | Columns named `email`, `username`, `slug` without UNIQUE constraint |
 
-**Step 3 — N+1 query patterns** (5 most-used list-returning routes)
+**Step 3 - N+1 query patterns** (5 most-used list-returning routes)
 
 | Check | What it catches |
 |---|---|
 | Q1 | Fetch-then-loop: a list is fetched, then each item triggers a second query inside a loop |
 | Q2 | Routes using `SELECT *` when only a few columns are displayed in the UI |
-| Q3 | List queries with no LIMIT or pagination parameter — unbounded result sets |
+| Q3 | List queries with no LIMIT or pagination parameter - unbounded result sets |
 
-**Step 4 — Migration quality** (5 most recent migration files)
+**Step 4 - Migration quality** (5 most recent migration files)
 
 | Check | What it catches |
 |---|---|
@@ -974,9 +974,9 @@ After the report, the skill presents a numbered finding list and waits for user 
 
 #### Steps and checks
 
-**Step 1** — builds route inventory (path, methods, request/response shapes) from the sitemap.
+**Step 1** - builds route inventory (path, methods, request/response shapes) from the sitemap.
 
-**Step 2 — Naming and verb checks (Explore subagent)**
+**Step 2 - Naming and verb checks (Explore subagent)**
 
 | Check | What it catches |
 |---|---|
@@ -991,7 +991,7 @@ After the report, the skill presents a numbered finding list and waits for user 
 | N12 | Field naming inconsistency across related resources (e.g., `user_id` vs `userId`) |
 | N13 | Resource modeling / nesting depth > 3 levels deep |
 
-**Step 3 — Response shape consistency** (10 representative route handlers)
+**Step 3 - Response shape consistency** (10 representative route handlers)
 
 | Check | What it catches |
 |---|---|
@@ -1029,7 +1029,7 @@ After the report, the skill presents a numbered finding list and waits for user 
 **Tier**: S, M, L
 **Run when**: weekly, or after any Claude Code CLI update.
 
-This skill audits the **governance layer itself** — not your product code. It fetches the latest Anthropic documentation and compares it against your current `CLAUDE.md`, `settings.json`, `pipeline.md`, and `files-guide.md`.
+This skill audits the **governance layer itself** - not your product code. It fetches the latest Anthropic documentation and compares it against your current `CLAUDE.md`, `settings.json`, `pipeline.md`, and `files-guide.md`.
 
 #### Placeholders to configure
 
@@ -1040,27 +1040,27 @@ This skill audits the **governance layer itself** — not your product code. It 
 
 #### Steps
 
-**Step 1** — fetches 8 Anthropic doc pages and the latest 5 GitHub releases in parallel. Extracts: new keys/features, deprecations, breaking changes, best practice updates.
+**Step 1** - fetches 8 Anthropic doc pages and the latest 5 GitHub releases in parallel. Extracts: new keys/features, deprecations, breaking changes, best practice updates.
 
-**Step 2** — reads current `CLAUDE.md`, `pipeline.md`, `context-review.md`, `settings.json`, `files-guide.md`, and the project auto-memory.
+**Step 2** - reads current `CLAUDE.md`, `pipeline.md`, `context-review.md`, `settings.json`, `files-guide.md`, and the project auto-memory.
 
-**Step 3 — Gap analysis**: classifies each gap as:
+**Step 3 - Gap analysis**: classifies each gap as:
 
 - **AUTO-FIX**: deprecated settings keys with a direct replacement; new low-risk keys (token efficiency, attribution); stale file paths in `files-guide.md`; new hook events or agent frontmatter fields.
 - **RECOMMEND**: structural changes; new features requiring a decision (sandbox, new MCP servers); anything affecting pipeline gates.
 
-**Steps 4–5** — applies AUTO-FIX changes and updates the audit timestamp.
+**Steps 4–5** - applies AUTO-FIX changes and updates the audit timestamp.
 
 **Output:**
 ```
-## Arch Audit — [DATE]
+## Arch Audit - [DATE]
 ### Claude Code version checked: [version]
 
 ### ✅ Auto-fixed (N changes)
 - [file]: [what changed and why]
 
 ### 📋 Recommendations (N items)
-- [Priority] [description] — [why it matters]
+- [Priority] [description] - [why it matters]
 
 ### Next audit due: [DATE + 7 days]
 ```
@@ -1082,12 +1082,12 @@ This skill audits the **governance layer itself** — not your product code. It 
 | `[SITEMAP_OR_ROUTE_LIST]` | `docs/sitemap.md` |
 | `[MOBILE_ROUTES]` | `/`, `/invoices`, `/invoices/new`, `/profile` |
 | `[TEST_ACCOUNTS]` | `user@test.com / password123` |
-| `[SCOPE_NOTE]` | `Admin dashboard excluded — desktop-only usage` |
+| `[SCOPE_NOTE]` | `Admin dashboard excluded - desktop-only usage` |
 
 #### Modes
 
-- `quick` (default) — BP1 (375px) only, `[MOBILE_ROUTES]`
-- `full` — BP1 + BP2 (768px) + BP3 (1024px), all routes
+- `quick` (default) - BP1 (375px) only, `[MOBILE_ROUTES]`
+- `full` - BP1 + BP2 (768px) + BP3 (1024px), all routes
 
 #### Checks per screenshot
 
@@ -1095,9 +1095,9 @@ This skill audits the **governance layer itself** — not your product code. It 
 
 | Check | What it catches |
 |---|---|
-| S1 | `text-[Xvw]` / `font-size: Xvw` — viewport-unit font sizes, disables user zoom (WCAG 1.4.4) |
-| S2 | `overflow: hidden` on `html`/`body` — masks horizontal scroll, breaks `position: sticky` |
-| S3 | `<img>` without `max-w-full`/`w-full` — non-responsive images |
+| S1 | `text-[Xvw]` / `font-size: Xvw` - viewport-unit font sizes, disables user zoom (WCAG 1.4.4) |
+| S2 | `overflow: hidden` on `html`/`body` - masks horizontal scroll, breaks `position: sticky` |
+| S3 | `<img>` without `max-w-full`/`w-full` - non-responsive images |
 
 **Per-screenshot layout checks**
 
@@ -1114,19 +1114,19 @@ This skill audits the **governance layer itself** — not your product code. It 
 
 | Check | What it catches |
 |---|---|
-| VR1 | Hero/header reflow — multi-column layout not stacking vertically at mobile |
-| VR2 | Card content density — label truncation or value wrapping making content unreadable |
-| VR3 | Typography proportionality — headings > 2 lines or body text < 14px at mobile |
+| VR1 | Hero/header reflow - multi-column layout not stacking vertically at mobile |
+| VR2 | Card content density - label truncation or value wrapping making content unreadable |
+| VR3 | Typography proportionality - headings > 2 lines or body text < 14px at mobile |
 | VR4 | Primary CTA not above the fold (invisible within 812px viewport height) |
-| VR5 | Grid density mobile — 2-column cells narrower than 140px |
-| VR6 | Content hierarchy mobile — secondary content appearing above primary |
+| VR5 | Grid density mobile - 2-column cells narrower than 140px |
+| VR6 | Content hierarchy mobile - secondary content appearing above primary |
 
 #### Report format
 
 ```
 | Route | BP1 375px | BP2 768px | BP3 1024px | Issues |
 |---|---|---|---|---|
-| /path | PASS/WARN/FAIL | — | — | [description] |
+| /path | PASS/WARN/FAIL | - | - | [description] |
 
 Legend: PASS = no issues · WARN = minor · FAIL = broken (overflow, truncation, unusable layout)
 ```
@@ -1153,7 +1153,7 @@ After the report, the skill offers to implement the fixes found. **No changes ap
 You also need to **define your flows** in the `## Flow catalog` section of the `SKILL.md`. Start with 3–5 Priority 1 flows covering the most critical tasks per role. Example:
 
 ```markdown
-#### F1 — User: create invoice
+#### F1 - User: create invoice
 Role: user · Credential: user@test.com / password
 Steps:
 1. Login → /
@@ -1169,13 +1169,13 @@ Evaluate: D1, D3, D5, D6
 
 | Dimension | What it measures |
 |---|---|
-| D1 — Task completion | Can the user finish the task without confusion? |
-| D2 — Interaction consistency | Do similar operations work the same way across sections? |
-| D3 — Feedback clarity | Does the user always know what happened? |
-| D4 — Navigation clarity | Does the user always know where they are? |
-| D5 — Cognitive load | How many decisions or pieces of info per screen? |
-| D6 — Error recovery | When something goes wrong, is the path forward clear? |
-| D7 — User confidence | 5-point framework: C1 cancel paths, C2 destructive guards, C3 silent success prevention, C4 constraint visibility, C5 positive feedback |
+| D1 - Task completion | Can the user finish the task without confusion? |
+| D2 - Interaction consistency | Do similar operations work the same way across sections? |
+| D3 - Feedback clarity | Does the user always know what happened? |
+| D4 - Navigation clarity | Does the user always know where they are? |
+| D5 - Cognitive load | How many decisions or pieces of info per screen? |
+| D6 - Error recovery | When something goes wrong, is the path forward clear? |
+| D7 - User confidence | 5-point framework: C1 cancel paths, C2 destructive guards, C3 silent success prevention, C4 constraint visibility, C5 positive feedback |
 
 **Severity**: Critical (blocker) / Major (friction) / Minor (polish)
 
@@ -1205,27 +1205,27 @@ After the report, the skill offers to design fixes, run additional flows, or gen
 
 #### Modes
 
-- `standard` (default) — 10 pages, light + dark
-- `quick` — 5 pages
-- `full` — all routes, both themes
-- `page:/path` — single page deep-analysis
-- `role:name` — all pages for a given role
+- `standard` (default) - 10 pages, light + dark
+- `quick` - 5 pages
+- `full` - all routes, both themes
+- `page:/path` - single page deep-analysis
+- `role:name` - all pages for a given role
 
-#### Evaluation framework — 11 dimensions (score 1–5 each)
+#### Evaluation framework - 11 dimensions (score 1–5 each)
 
 | Dim | Name | Target |
 |---|---|---|
-| V1 | Typographic hierarchy — H1 vs body weight, label vs value distinction | ≥ 4 |
-| V2 | Spatial rhythm — padding consistency, breathing room, margin harmony | ≥ 4 |
-| V3 | Visual focal point — primary CTA most prominent, eye guided to key content | ≥ 4 |
-| V4 | Colour discipline — brand colour used sparingly, status colours semantic | ≥ 4 |
-| V5 | Information density — appropriate for page type (list=dense, form=airy) | ≥ 3 |
-| V6 | Dark-mode polish — intentional dark theme, borders visible, badges adapt | ≥ 4 |
-| V7 | Micro-polish — hover/focus states, transitions, empty states, icon alignment | ≥ 3 |
-| V8 | APCA contrast — body Lc ≥ 75, secondary Lc ≥ 60, decorative Lc ≥ 15 | ≥ 4 |
-| V9 | Gestalt compliance — proximity, figure/ground, similarity, continuity | ≥ 3 |
-| V10 | Typographic quality — lineHeight/fontSize ratio 1.4–1.8, no negative letterSpacing <14px, paragraph ≤680px | ≥ 3 |
-| V11 | Interaction state design — hover, focus-visible, active/pressed, disabled, loading skeleton all distinct | ≥ 4 |
+| V1 | Typographic hierarchy - H1 vs body weight, label vs value distinction | ≥ 4 |
+| V2 | Spatial rhythm - padding consistency, breathing room, margin harmony | ≥ 4 |
+| V3 | Visual focal point - primary CTA most prominent, eye guided to key content | ≥ 4 |
+| V4 | Colour discipline - brand colour used sparingly, status colours semantic | ≥ 4 |
+| V5 | Information density - appropriate for page type (list=dense, form=airy) | ≥ 3 |
+| V6 | Dark-mode polish - intentional dark theme, borders visible, badges adapt | ≥ 4 |
+| V7 | Micro-polish - hover/focus states, transitions, empty states, icon alignment | ≥ 3 |
+| V8 | APCA contrast - body Lc ≥ 75, secondary Lc ≥ 60, decorative Lc ≥ 15 | ≥ 4 |
+| V9 | Gestalt compliance - proximity, figure/ground, similarity, continuity | ≥ 3 |
+| V10 | Typographic quality - lineHeight/fontSize ratio 1.4–1.8, no negative letterSpacing <14px, paragraph ≤680px | ≥ 3 |
+| V11 | Interaction state design - hover, focus-visible, active/pressed, disabled, loading skeleton all distinct | ≥ 4 |
 
 **Scoring rules**: 1–2 on any dimension = Critical · 3 on V1/V3/V4/V11 = Major · 3 on V2/V5/V6/V7/V9/V10 = Minor
 
@@ -1252,23 +1252,23 @@ After the report, the skill offers to invoke `/frontend-design` for a page mocku
 | `[API_ROUTES_PATH]` | `app/api/`, `routes/` |
 | `[BUNDLE_TOOL]` | `@next/bundle-analyzer`, `vite-bundle-visualizer`, `webpack-bundle-analyzer` |
 
-Note: the default scope excludes Lighthouse public scores, Core Web Vitals public metrics, and SEO — appropriate for internal apps. For public-facing apps, remove the "Out of scope" note in `SKILL.md`.
+Note: the default scope excludes Lighthouse public scores, Core Web Vitals public metrics, and SEO - appropriate for internal apps. For public-facing apps, remove the "Out of scope" note in `SKILL.md`.
 
 #### Steps and checks
 
-**Step 1** — reads the sitemap (pages, server/client markers, data fetching patterns).
+**Step 1** - reads the sitemap (pages, server/client markers, data fetching patterns).
 
-**Step 2 — Rendering boundary audit (Explore subagent)**
+**Step 2 - Rendering boundary audit (Explore subagent)**
 
 | Check | What it catches |
 |---|---|
 | P1 | `'use client'` on a component with no browser API, event handler, useState, useEffect, or third-party hook |
-| P2 | `useEffect` block performing data loading — should be server-side |
+| P2 | `useEffect` block performing data loading - should be server-side |
 | P3 | Large libraries imported in full in client components: moment.js, full lodash, full chart/PDF/i18n bundles |
-| P4 | `<img>` tags or inline `backgroundImage` with external URLs — bypasses framework image optimization |
-| P5 | Three or more sequential `await` calls where values are independent — candidates for `Promise.all` |
+| P4 | `<img>` tags or inline `backgroundImage` with external URLs - bypasses framework image optimization |
+| P5 | Three or more sequential `await` calls where values are independent - candidates for `Promise.all` |
 
-**Step 3 — API query efficiency** (5 most-used list routes)
+**Step 3 - API query efficiency** (5 most-used list routes)
 
 | Check | What it catches |
 |---|---|
@@ -1276,7 +1276,7 @@ Note: the default scope excludes Lighthouse public scores, Core Web Vitals publi
 | Q2 | List endpoints with no LIMIT or pagination parameter |
 | Q3 | Routes returning all fields when the UI renders only a subset |
 
-**Step 4 — Bundle size** (if `[BUNDLE_TOOL]` configured): flags chunks > 500 KB (uncompressed).
+**Step 4 - Bundle size** (if `[BUNDLE_TOOL]` configured): flags chunks > 500 KB (uncompressed).
 
 #### Severity guide
 
@@ -1290,19 +1290,19 @@ Note: the default scope excludes Lighthouse public scores, Core Web Vitals publi
 
 ## 10. Multi-agent orchestration (Tier M / L)
 
-Two custom agent definitions are scaffolded in `.claude/agents/`. They are invoked by Claude during specific pipeline phases as connected sub-processes — not as standalone tools.
+Two custom agent definitions are scaffolded in `.claude/agents/`. They are invoked by Claude during specific pipeline phases as connected sub-processes - not as standalone tools.
 
 ### Design principle
 
-Agents are used only where tasks are **genuinely independent and read-only**. The pipeline deliberately keeps Phase 2 (implementation) and all document-update phases monolithic. This is not a limitation — it is intentional. Sequential, single-agent writes are traceable and human-reviewable. Parallel writes across agents introduce synchronisation complexity that the governance model cannot easily audit.
+Agents are used only where tasks are **genuinely independent and read-only**. The pipeline deliberately keeps Phase 2 (implementation) and all document-update phases monolithic. This is not a limitation - it is intentional. Sequential, single-agent writes are traceable and human-reviewable. Parallel writes across agents introduce synchronisation complexity that the governance model cannot easily audit.
 
-### dependency-scanner (Tier M + L — Phase 1)
+### dependency-scanner (Tier M + L - Phase 1)
 
 **File**: `.claude/agents/dependency-scanner.md`
 **Tools available**: `Glob`, `Grep`, `Read` (no `Write`, no `Bash`)
 **Invoked**: Phase 1, after reading reference documents, before the STOP gate
 
-The dependency scan has 6 checks that are structurally independent — no check depends on the output of another. Today, run sequentially in the main session, they consume 20–40% of the context window before a single line of code is written. Delegated to this agent in a single call, they run in parallel and return a structured report with file paths and line numbers.
+The dependency scan has 6 checks that are structurally independent - no check depends on the output of another. Today, run sequentially in the main session, they consume 20–40% of the context window before a single line of code is written. Delegated to this agent in a single call, they run in parallel and return a structured report with file paths and line numbers.
 
 The agent receives all affected entities in one prompt:
 - Routes being moved, modified, or removed
@@ -1314,7 +1314,7 @@ It returns a report structured by check (C1–C6) with a "Mandatory additions" s
 
 **The orchestrator adds every file from "Mandatory additions" to the file list before presenting the Phase 1 STOP gate.**
 
-### context-reviewer (Tier L — Phase 8.5)
+### context-reviewer (Tier L - Phase 8.5)
 
 **File**: `.claude/agents/context-reviewer.md`
 **Tools available**: `Grep`, `Read`
@@ -1323,17 +1323,17 @@ It returns a report structured by check (C1–C6) with a "Mandatory additions" s
 Checks C1–C3 of the context review are pure grep operations:
 - C1: credential pattern scan in MEMORY.md
 - C2: unresolved `[PLACEHOLDER_NAME]` patterns in CLAUDE.md and pipeline.md
-- C3: field name staleness against the latest schema/migration file (multi-framework: SQL migrations, Prisma, Drizzle, Rails — C3 is N/A if no schema file is found)
+- C3: field name staleness against the latest schema/migration file (multi-framework: SQL migrations, Prisma, Drizzle, Rails - C3 is N/A if no schema file is found)
 
-These have no dependencies on each other and require no judgment — pass/fail is deterministic from the grep output. Checks C4–C12 require reasoning about the current block's state and remain in the main session.
+These have no dependencies on each other and require no judgment - pass/fail is deterministic from the grep output. Checks C4–C12 require reasoning about the current block's state and remain in the main session.
 
-### What stays monolithic — and why
+### What stays monolithic - and why
 
 | Phase | Reason |
 |---|---|
-| Phase 2 — Implementation | Writes have cross-file dependencies; sequential authorship is auditable |
-| Phase 3 — Build + tests | Sequential toolchain constraint (type check → build → test) |
-| Phase 8 — Block closure | Document updates have content dependencies between them |
+| Phase 2 - Implementation | Writes have cross-file dependencies; sequential authorship is auditable |
+| Phase 3 - Build + tests | Sequential toolchain constraint (type check → build → test) |
+| Phase 8 - Block closure | Document updates have content dependencies between them |
 | Phase 8.5 C4–C12 | Require judgment about the current block's state |
 
 ---
@@ -1391,7 +1391,7 @@ Every commit made during a Claude Code session includes:
 Co-authored-by: Claude <noreply@anthropic.com>
 ```
 
-This makes AI contributions visible in `git log` and GitHub's contributor history — without obscuring the human author.
+This makes AI contributions visible in `git log` and GitHub's contributor history - without obscuring the human author.
 
 ---
 
@@ -1411,8 +1411,8 @@ This means no change to the governance layer itself (pipeline rules, settings, h
 
 `.pre-commit-config.yaml` includes:
 
-- **gitleaks** — scans every commit for secrets (API keys, tokens, passwords)
-- **AI commit audit** — flags commits with `Co-authored-by: Claude` for team awareness
+- **gitleaks** - scans every commit for secrets (API keys, tokens, passwords)
+- **AI commit audit** - flags commits with `Co-authored-by: Claude` for team awareness
 
 To activate:
 ```bash
@@ -1445,13 +1445,13 @@ chore: bump dependencies
 - Scope is optional but encouraged for large codebases
 
 **STOP gates are hard stops**
-When Claude presents a STOP gate, it waits for your explicit confirmation. Do not say "yes continue" to a requirements summary you haven't read — the whole point of the gate is a human decision checkpoint.
+When Claude presents a STOP gate, it waits for your explicit confirmation. Do not say "yes continue" to a requirements summary you haven't read - the whole point of the gate is a human decision checkpoint.
 
 **Tests before declare-done**
 Claude cannot mark a task complete with failing tests. If you need to temporarily disable the hook (dry-run, docs-only task): set `"Stop": []` in `settings.json`, then restore it immediately after.
 
 **No unrequested changes**
-Claude implements only what was approved in Phase 1. If it notices a problem in an adjacent area, it notes it in the session file and the refactoring backlog — it does not fix it silently.
+Claude implements only what was approved in Phase 1. If it notices a problem in an adjacent area, it notes it in the session file and the refactoring backlog - it does not fix it silently.
 
 **Secret hygiene**
 Never commit `.env`, `.env.local`, `.env.production`, or any file containing tokens, API keys, or passwords. These must be in `.gitignore`. The pre-commit hook enforces this, but `.gitignore` is the primary line of defense.
@@ -1476,7 +1476,7 @@ Non-destructive files are updated to the latest template version:
 - `.claude/files-guide.md`
 - `.github/PULL_REQUEST_TEMPLATE.md`
 
-Files containing your customizations are **not overwritten** — they are flagged for manual review:
+Files containing your customizations are **not overwritten** - they are flagged for manual review:
 - `CLAUDE.md`
 - `.claude/rules/pipeline.md`
 - `.claude/settings.json`
@@ -1507,16 +1507,16 @@ Runs 17 checks and reports pass/fail:
 9. Stop hook is configured with a non-empty command
 10. Stop hook command has no unfilled `[TEST_COMMAND]` placeholder
 11. `.github/CODEOWNERS` covers `.claude/`
-12. `.claude/rules/output-style.md` present (tier M/L — warn if missing)
-13. `docs/claudemd-standards.md` present (tier M/L — warn if missing)
-14. `docs/pipeline-standards.md` present (tier M/L — warn if missing)
-15. `.claude/skills/commit/` present (tier M/L — warn if missing)
+12. `.claude/rules/output-style.md` present (tier M/L - warn if missing)
+13. `docs/claudemd-standards.md` present (tier M/L - warn if missing)
+14. `docs/pipeline-standards.md` present (tier M/L - warn if missing)
+15. `.claude/skills/commit/` present (tier M/L - warn if missing)
 16. Skills invoking Playwright `browser_*` tools declare `allowed-tools` frontmatter (warn if missing)
-17. `.claude/rules/context-review.md` includes C12 (warn if not present — upgrade needed)
+17. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
 
 Checks 12–17 are skipped (`pass/skip`) for Tier 0 projects (no `pipeline.md`).
 
-**`--report` output format** — machine-readable JSON consumed by CI systems or external audit tools:
+**`--report` output format** - machine-readable JSON consumed by CI systems or external audit tools:
 
 ```json
 {
@@ -1530,7 +1530,7 @@ Checks 12–17 are skipped (`pass/skip`) for Tier 0 projects (no `pipeline.md`).
 }
 ```
 
-**CI integration** — add `.github/workflows/claude-dev-kit-verify.yml` (scaffolded by `init`, also available as a standalone template) to run the doctor on every PR. Prevents merging when the scaffold is broken or bypassed.
+**CI integration** - add `.github/workflows/claude-dev-kit-verify.yml` (scaffolded by `init`, also available as a standalone template) to run the doctor on every PR. Prevents merging when the scaffold is broken or bypassed.
 
 ---
 
@@ -1544,7 +1544,7 @@ Do not edit the scaffolded rule files directly if you want to preserve upgrade c
 
 ---
 
-### CLAUDE.md vs. MEMORY.md vs. ADRs — what goes where
+### CLAUDE.md vs. MEMORY.md vs. ADRs - what goes where
 
 | Content | Location |
 |---|---|
@@ -1586,7 +1586,7 @@ No. In-place mode uses safe scaffold mode: files that already exist are never ov
 
 **Q: What is CONTEXT_IMPORT.md and can I delete it after discovery?**
 
-After Claude marks the status as `COMPLETE`, the file is a historical record. You can delete it — but it is useful to keep as a reference for what was imported and when. The pipeline templates check for `Status: PENDING_DISCOVERY` specifically, so a `COMPLETE` file does not trigger any workflow.
+After Claude marks the status as `COMPLETE`, the file is a historical record. You can delete it - but it is useful to keep as a reference for what was imported and when. The pipeline templates check for `Status: PENDING_DISCOVERY` specifically, so a `COMPLETE` file does not trigger any workflow.
 
 ---
 
@@ -1599,7 +1599,7 @@ git worktree add .claude/worktrees/feature-name -b worktree-feature-name staging
 
 Rules:
 - Each worktree has its own branch.
-- Merge to `staging` sequentially — never two unrelated branches at once. Smoke-test the first before merging the second.
+- Merge to `staging` sequentially - never two unrelated branches at once. Smoke-test the first before merging the second.
 - Migration numbering: check `ls supabase/migrations/` in the main repo before numbering a new migration in a worktree. Two worktrees must never use the same migration number.
 
 ---
@@ -1612,14 +1612,14 @@ Yes. Edit `.claude/rules/pipeline.md` directly, or run `npx mg-claude-dev-kit up
 
 **Q: What is the difference between MEMORY.md at the project root and the auto-memory at `~/.claude/`?**
 
-- **Project-root `MEMORY.md`** — committed to the repo. Shared across the team. Contains the active block plan and stable lessons relevant to the project. Reviewed and updated by Claude at block closure.
-- **Auto-memory (`~/.claude/projects/.../memory/`)** — local to your machine, never committed. Claude Code manages this automatically. Contains session-specific patterns and per-developer notes.
+- **Project-root `MEMORY.md`** - committed to the repo. Shared across the team. Contains the active block plan and stable lessons relevant to the project. Reviewed and updated by Claude at block closure.
+- **Auto-memory (`~/.claude/projects/.../memory/`)** - local to your machine, never committed. Claude Code manages this automatically. Contains session-specific patterns and per-developer notes.
 
 ---
 
 **Q: The discovery workflow populated CLAUDE.md with wrong information. What do I do?**
 
-Edit `CLAUDE.md` directly — it is a regular Markdown file. Correct the wrong values. You do not need to re-run discovery. Discovery is a one-time bootstrap; you own the file after that.
+Edit `CLAUDE.md` directly - it is a regular Markdown file. Correct the wrong values. You do not need to re-run discovery. Discovery is a one-time bootstrap; you own the file after that.
 
 ---
 
@@ -1629,7 +1629,7 @@ Edit `CLAUDE.md` → Key Commands section. The `[E2E_COMMAND]` line determines w
 - To **enable**: replace `# not configured` with your actual command (e.g. `npx playwright test`)
 - To **disable**: set it back to `# not configured`
 
-Phase 4 requires three conditions: (1) a real command configured, (2) scope gate confirming critical UI flows for this block, and (3) the user explicitly defining the UAT scenarios at the scope gate (numbered user journeys). Claude implements exactly those scenarios — it never invents test cases.
+Phase 4 requires three conditions: (1) a real command configured, (2) scope gate confirming critical UI flows for this block, and (3) the user explicitly defining the UAT scenarios at the scope gate (numbered user journeys). Claude implements exactly those scenarios - it never invents test cases.
 
 ---
 
@@ -1653,4 +1653,4 @@ Create a directory under `.claude/skills/your-skill-name/` containing a `SKILL.m
 
 ---
 
-*Last updated: 2026-04-01 — v1.6.0*
+*Last updated: 2026-04-01 - v1.6.0*
