@@ -71,4 +71,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.7.0` — stack-aware content specialization. Security rule variants (web/native-apple/native-android/systems), stack-specific permissions.deny, CLAUDE.md Framework/Language auto-population, security-audit applicability check, workspace quality rubric, `/simplify` skill, CI rubric tests. 459 integration checks.
+`v1.8.0` — workspace quality rubric. Skill adaptation for 8 native/backend stacks, Tier S skill promotion (skill-dev, perf-audit, security-audit, simplify), CI rubric tests (D2/D5/D7/D8), GitHub Actions, humanized docs. 459 integration checks.

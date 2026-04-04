@@ -345,7 +345,9 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.7.0` - stack-aware content specialization. Security rules, permissions, and CLAUDE.md fields adapt to your tech stack. Integration tests 233 → 249.
+`v1.8.0` - workspace quality rubric. Skill adaptation for 8 native/backend stacks, Tier S promotion, `/simplify` skill, CI rubric tests, GitHub Actions, humanized docs. 459 integration checks.
+
+**v1.8.0 changes**: 6 CDK bug fixes (generateClaudeMd in in-place mode, [HAS_API] interpolation, cheatsheet pruning, web convention strip, security-audit conditional pruning, native Tech Stack cleanup). perf-audit, security-audit, skill-dev adapted for 8 stacks (swift, kotlin, rust, go, python, ruby, java, dotnet) via interpolation maps (PERF_TOOL, PROFILER_COMMAND, LINT_COMMAND, SECURITY_CHECKLIST_ITEMS). 3 skills promoted to Tier S + new `/simplify` skill (S1-S6, haiku model, fork context) added to all tiers. `injectActiveSkills()` tier-aware. `scenarioRubricScore()` validates D2/D5/D7/D8 for node-ts/swift/python with quality floor. `npm test` script. `.github/workflows/test.yml` CI (matrix node 20/22). Docs humanized per output-style.md. +210 integration checks (459 total).
 
 **v1.7.0 changes**: security.md now selects from 4 variants based on tech stack: web (default), native-apple (Swift - App Sandbox, Keychain, TCC), native-android (Kotlin - Manifest, Keystore, network security), systems (Rust/Go/.NET/Java without API - memory safety, process execution, file permissions). `permissions.deny` adds stack-specific release guards: `xcodebuild archive`, `cargo publish`, `gradlew publish`, `mvn deploy`, `gem push`, `twine upload`, `dotnet nuget push`. CLAUDE.md `Framework` and `Language` fields auto-populated from wizard data - no more placeholder text for fields CDK can resolve. `security-audit` skill has applicability check for native apps: bail-out with native-specific guidance when project has no API routes. New `docs/workspace-quality-rubric.md` - reusable 8-dimension rubric for evaluating AI workspace quality (D1-D8, weighted scoring 0-100%). +16 integration checks (249 total).
 
