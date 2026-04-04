@@ -99,6 +99,10 @@ const WIZARD_PLACEHOLDERS = [
   'LANGUAGE_VALUE',
   'API_TESTS_PATH',
   'MIGRATION_COMMAND',
+  'PERF_TOOL',
+  'PROFILER_COMMAND',
+  'LINT_COMMAND',
+  'SECURITY_CHECKLIST_ITEMS',
 ];
 // All other placeholders (skill config, ADR template, state machines, etc.)
 // are intentionally left for the user/Claude to fill in at first session.
@@ -279,10 +283,37 @@ async function scenarioTierS_full() {
   assertExists(dir, '.claude/rules/git.md');
   assertExists(dir, '.claude/rules/security.md');
 
-  // Skills (arch-audit only in Tier S)
+  // Skills (Tier S: arch-audit, commit, simplify, skill-dev, perf-audit, security-audit)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
-  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+  assertExists(dir, '.claude/skills/simplify/SKILL.md');
+  assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
+  assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertNotExists(dir, '.claude/agents');
+
+  // Tier S must NOT have M/L-only skills
+  assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
+  assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
+
+  // Active Skills section in CLAUDE.md
+  const claudeS = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  if (claudeS.includes('## Active Skills')) {
+    pass('Tier S: Active Skills section present in CLAUDE.md');
+  } else {
+    fail('Tier S: Active Skills section missing from CLAUDE.md');
+  }
+  if (claudeS.includes('/skill-dev') && claudeS.includes('/perf-audit') && claudeS.includes('/security-audit') && claudeS.includes('/simplify')) {
+    pass('Tier S: Active Skills lists promoted skills');
+  } else {
+    fail('Tier S: Active Skills missing promoted skills');
+  }
+  if (!claudeS.includes('/api-design') && !claudeS.includes('/skill-db')) {
+    pass('Tier S: Active Skills does not list M/L-only skills');
+  } else {
+    fail('Tier S: Active Skills incorrectly lists M/L-only skills');
+  }
 
   // Optional inclusions
   assertExists(dir, '.github/PULL_REQUEST_TEMPLATE.md');
@@ -354,6 +385,7 @@ async function scenarioTierM() {
   assertExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/simplify/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
   assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
 
@@ -394,6 +426,7 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/simplify/SKILL.md');
   assertExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertExists(dir, '.claude/skills/ux-audit/SKILL.md');
   assertExists(dir, '.claude/skills/visual-audit/SKILL.md');
@@ -593,9 +626,9 @@ async function scenarioSkillPruning() {
   assertNotExists(dir, 'docs/sitemap.md');
   assertNotExists(dir, 'docs/db-map.md');
 
-  // Skills that must be absent
+  // Skills that must be absent (hasApi=false → api-design + security-audit pruned)
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
-  // security-audit is always included (generic check, not API-specific)
+  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
@@ -607,7 +640,44 @@ async function scenarioSkillPruning() {
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
-  assertExists(dir, '.claude/skills/security-audit/SKILL.md');
+}
+
+async function scenarioTierSSkillPruning() {
+  section('Tier S skill pruning — hasApi=false → security-audit pruned');
+  const config = {
+    ...BASE,
+    tier: 's',
+    isDiscovery: false,
+    hasApi: false,
+    hasDatabase: false,
+    hasFrontend: false,
+  };
+  const dir = await scaffold('tier-s-pruned', 's', config);
+
+  // security-audit must be pruned when hasApi=false
+  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+
+  // Universal skills must remain
+  assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
+  assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/simplify/SKILL.md');
+  assertExists(dir, '.claude/skills/commit/SKILL.md');
+
+  // Active Skills must not list security-audit
+  const claude = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  if (!claude.includes('/security-audit')) {
+    pass('Tier S pruned: Active Skills does not list security-audit');
+  } else {
+    fail('Tier S pruned: Active Skills should not list security-audit when hasApi=false');
+  }
+
+  // Active Skills must list universal skills
+  if (claude.includes('/skill-dev') && claude.includes('/perf-audit') && claude.includes('/simplify')) {
+    pass('Tier S pruned: Active Skills lists universal skills');
+  } else {
+    fail('Tier S pruned: Active Skills missing universal skills');
+  }
 }
 
 async function scenarioUiAuditPruning() {
@@ -852,6 +922,11 @@ async function scenarioSecurityVariants() {
         fail(`security-variant[${label}]: deny missing ${denyIncludes}`);
       }
     }
+
+    // Verify security-audit skill pruned when hasApi=false
+    if (!hasApi) {
+      assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+    }
   }
 }
 
@@ -918,6 +993,520 @@ async function scenarioPlaceholderNoiseReduction() {
   } else {
     fail('Tier S: section "## Known Patterns" should be stripped');
   }
+
+  // Native stack (swift, hasApi=false) — web convention stripped, no [HAS_API] literal
+  const configNative = { ...BASE, tier: 'm', isDiscovery: false, techStack: 'swift', hasApi: false, hasDatabase: false, hasFrontend: false, hasDesignSystem: false };
+  const dirNative = await scaffold('noise-reduction-native', 'm', configNative);
+  const claudeNative = fs.readFileSync(path.join(dirNative, 'CLAUDE.md'), 'utf8');
+
+  if (!claudeNative.includes('Every API route')) {
+    pass('Native: "Every API route" convention stripped');
+  } else {
+    fail('Native: "Every API route" convention should be stripped when hasApi=false');
+  }
+
+  // No [HAS_API] literal should appear in any scaffolded skill file
+  const skillFiles = walkFiles(path.join(dirNative, '.claude', 'skills'));
+  let hasApiLiteral = false;
+  for (const f of skillFiles) {
+    const content = fs.readFileSync(f, 'utf8');
+    if (content.includes('[HAS_API]')) {
+      hasApiLiteral = true;
+      fail(`[HAS_API] placeholder found in ${path.relative(dirNative, f)}`);
+    }
+  }
+  if (!hasApiLiteral) {
+    pass('Native: no [HAS_API] placeholder in skill files');
+  }
+}
+
+async function scenarioInPlaceClaudeMdGeneration() {
+  section('In-place — generateClaudeMd runs when no pre-existing CLAUDE.md');
+
+  const dir = path.join(OUTPUT_DIR, 'in-place-claudemd-gen');
+  await fs.ensureDir(dir);
+
+  // No pre-existing CLAUDE.md — scaffold should generate a processed one
+  const config = { ...BASE, tier: 'm', isDiscovery: false, mode: 'in-place', techStack: 'swift', hasApi: false, hasDatabase: false, hasFrontend: false, hasDesignSystem: false, testCommand: 'xcodebuild test -scheme TestProject' };
+  await scaffoldTierSafe('m', dir, config, TEMPLATES_DIR);
+
+  // Simulate what init-in-place.js does: call generateClaudeMd when no pre-existing CLAUDE.md
+  await generateClaudeMd(config, dir);
+
+  const claude = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+
+  // Active Skills section must be present
+  if (claude.includes('## Active Skills')) {
+    pass('in-place gen: Active Skills section present');
+  } else {
+    fail('in-place gen: Active Skills section missing');
+  }
+
+  // Unfilled sections must be stripped
+  for (const stripped of ['## RBAC / Roles', '## Key Workflows', '## Known Patterns']) {
+    if (!claude.includes(stripped)) {
+      pass(`in-place gen: "${stripped}" stripped`);
+    } else {
+      fail(`in-place gen: "${stripped}" should be stripped`);
+    }
+  }
+
+  // Web-centric convention must be stripped for hasApi=false
+  if (!claude.includes('Every API route')) {
+    pass('in-place gen: "Every API route" convention stripped for native');
+  } else {
+    fail('in-place gen: "Every API route" convention should be stripped when hasApi=false');
+  }
+
+  // Native stack: Auth/Storage/Email placeholders removed
+  if (!claude.includes('**Auth**:')) {
+    pass('in-place gen: Auth placeholder removed for native');
+  } else {
+    fail('in-place gen: Auth placeholder should be removed for native stack');
+  }
+
+  // Deploy should have native default
+  if (claude.includes('_native distribution_')) {
+    pass('in-place gen: Deploy has native default');
+  } else {
+    fail('in-place gen: Deploy should show native distribution for native stack');
+  }
+}
+
+async function scenarioCheatsheetPruning() {
+  section('Cheatsheet pruning — removed skills stripped from cheatsheet');
+
+  const config = { ...BASE, tier: 'm', isDiscovery: false, hasApi: false, hasDatabase: false };
+  const dir = await scaffold('cheatsheet-pruning', 'm', config);
+
+  const cheatPath = path.join(dir, '.claude', 'cheatsheet.md');
+  if (!fs.existsSync(cheatPath)) {
+    fail('cheatsheet pruning: cheatsheet.md missing');
+    return;
+  }
+  const cheat = fs.readFileSync(cheatPath, 'utf8');
+
+  if (!cheat.includes('/api-design')) {
+    pass('cheatsheet: /api-design row removed (hasApi=false)');
+  } else {
+    fail('cheatsheet: /api-design row should be removed when hasApi=false');
+  }
+
+  if (!cheat.includes('/skill-db')) {
+    pass('cheatsheet: /skill-db row removed (hasDatabase=false)');
+  } else {
+    fail('cheatsheet: /skill-db row should be removed when hasDatabase=false');
+  }
+
+  if (!cheat.includes('/security-audit')) {
+    pass('cheatsheet: /security-audit row removed (hasApi=false)');
+  } else {
+    fail('cheatsheet: /security-audit row should be removed when hasApi=false');
+  }
+
+  // Doc reference must be correct
+  if (cheat.includes('refactoring-backlog.md')) {
+    pass('cheatsheet: correct doc reference (refactoring-backlog.md)');
+  } else {
+    fail('cheatsheet: wrong doc reference — expected refactoring-backlog.md');
+  }
+
+  if (!cheat.includes('backlog-refinement.md')) {
+    pass('cheatsheet: old doc reference (backlog-refinement.md) absent');
+  } else {
+    fail('cheatsheet: old doc reference backlog-refinement.md still present');
+  }
+}
+
+async function scenarioNativeSkillAdaptation() {
+  section('Native skill adaptation — perf-audit, skill-dev, security-audit for non-web stacks');
+
+  const stacks = [
+    { stack: 'swift',  perfTool: 'Instruments',   lintCmd: 'swiftlint',  secChecklist: 'Keychain API' },
+    { stack: 'kotlin', perfTool: 'Android Studio', lintCmd: 'detekt',     secChecklist: 'Android Keystore' },
+    { stack: 'rust',   perfTool: 'cargo bench',    lintCmd: 'clippy',     secChecklist: 'unsafe block' },
+    { stack: 'go',     perfTool: 'pprof',          lintCmd: 'staticcheck', secChecklist: 'Goroutine leak' },
+    { stack: 'python', perfTool: 'cProfile',       lintCmd: 'ruff',       secChecklist: 'Pickle deserialization' },
+    { stack: 'ruby',   perfTool: 'stackprof',      lintCmd: 'rubocop',    secChecklist: 'Mass assignment' },
+    { stack: 'java',   perfTool: 'JProfiler',      lintCmd: 'spotbugs',   secChecklist: 'Deserialization' },
+    { stack: 'dotnet', perfTool: 'dotTrace',        lintCmd: 'dotnet format', secChecklist: 'Configuration secrets' },
+  ];
+
+  for (const { stack, perfTool, lintCmd, secChecklist } of stacks) {
+    // hasApi=true so security-audit is not pruned
+    const config = {
+      ...BASE,
+      tier: 'm',
+      techStack: stack,
+      hasApi: true,
+      hasDatabase: true,
+      hasFrontend: false,
+      hasDesignSystem: false,
+      isDiscovery: false,
+    };
+    const dir = await scaffold(`native-skill-${stack}`, 'm', config);
+
+    // perf-audit: native path present with resolved tool placeholders
+    const perfPath = path.join(dir, '.claude', 'skills', 'perf-audit', 'SKILL.md');
+    if (fs.existsSync(perfPath)) {
+      const perf = fs.readFileSync(perfPath, 'utf8');
+
+      if (perf.includes('Step 6') && perf.includes('Native/Backend Performance Audit')) {
+        pass(`native-skill[${stack}]: perf-audit has native path (Step 6)`);
+      } else {
+        fail(`native-skill[${stack}]: perf-audit missing native path`);
+      }
+
+      if (perf.includes(perfTool)) {
+        pass(`native-skill[${stack}]: perf-audit [PERF_TOOL] resolved to ${perfTool}`);
+      } else {
+        fail(`native-skill[${stack}]: perf-audit [PERF_TOOL] not resolved — expected ${perfTool}`);
+      }
+
+      if (!perf.includes('[PERF_TOOL]') && !perf.includes('[PROFILER_COMMAND]')) {
+        pass(`native-skill[${stack}]: perf-audit no unresolved placeholders`);
+      } else {
+        fail(`native-skill[${stack}]: perf-audit has unresolved placeholders`);
+      }
+
+      // Must NOT exit for native stacks anymore
+      if (!perf.includes('output the following and stop')) {
+        pass(`native-skill[${stack}]: perf-audit no exit guard for native`);
+      } else {
+        fail(`native-skill[${stack}]: perf-audit still exits for native stacks`);
+      }
+    } else {
+      fail(`native-skill[${stack}]: perf-audit/SKILL.md missing`);
+    }
+
+    // skill-dev: language-specific checks present with resolved lint command
+    const devPath = path.join(dir, '.claude', 'skills', 'skill-dev', 'SKILL.md');
+    if (fs.existsSync(devPath)) {
+      const dev = fs.readFileSync(devPath, 'utf8');
+
+      if (dev.includes('DL1') && dev.includes('Language-specific')) {
+        pass(`native-skill[${stack}]: skill-dev has DL1 language-specific checks`);
+      } else {
+        fail(`native-skill[${stack}]: skill-dev missing DL1 checks`);
+      }
+
+      if (dev.includes(lintCmd)) {
+        pass(`native-skill[${stack}]: skill-dev [LINT_COMMAND] resolved to ${lintCmd}`);
+      } else {
+        fail(`native-skill[${stack}]: skill-dev [LINT_COMMAND] not resolved — expected ${lintCmd}`);
+      }
+
+      if (!dev.includes('[LINT_COMMAND]')) {
+        pass(`native-skill[${stack}]: skill-dev no unresolved [LINT_COMMAND]`);
+      } else {
+        fail(`native-skill[${stack}]: skill-dev has unresolved [LINT_COMMAND]`);
+      }
+    } else {
+      fail(`native-skill[${stack}]: skill-dev/SKILL.md missing`);
+    }
+
+    // security-audit: native checklist present with resolved items
+    const secPath = path.join(dir, '.claude', 'skills', 'security-audit', 'SKILL.md');
+    if (fs.existsSync(secPath)) {
+      const sec = fs.readFileSync(secPath, 'utf8');
+
+      if (sec.includes('Step 3e') && sec.includes('Native application security')) {
+        pass(`native-skill[${stack}]: security-audit has native supplement (Step 3e)`);
+      } else {
+        fail(`native-skill[${stack}]: security-audit missing native supplement`);
+      }
+
+      if (sec.includes(secChecklist)) {
+        pass(`native-skill[${stack}]: security-audit checklist resolved — contains ${secChecklist}`);
+      } else {
+        fail(`native-skill[${stack}]: security-audit checklist not resolved — expected ${secChecklist}`);
+      }
+
+      if (!sec.includes('[SECURITY_CHECKLIST_ITEMS]')) {
+        pass(`native-skill[${stack}]: security-audit no unresolved [SECURITY_CHECKLIST_ITEMS]`);
+      } else {
+        fail(`native-skill[${stack}]: security-audit has unresolved [SECURITY_CHECKLIST_ITEMS]`);
+      }
+    } else {
+      fail(`native-skill[${stack}]: security-audit/SKILL.md missing`);
+    }
+  }
+
+  // Additional: verify node-ts (web stack) still gets web path, no exit
+  const webConfig = { ...BASE, tier: 'm', isDiscovery: false };
+  const webDir = await scaffold('native-skill-web-baseline', 'm', webConfig);
+  const webPerf = fs.readFileSync(path.join(webDir, '.claude', 'skills', 'perf-audit', 'SKILL.md'), 'utf8');
+  if (webPerf.includes('Step 1') && webPerf.includes('Step 6')) {
+    pass('web-baseline: perf-audit has both web (Step 1) and native (Step 6) paths');
+  } else {
+    fail('web-baseline: perf-audit missing expected paths');
+  }
+}
+
+// ── Rubric scoring ──────────────────────────────────────────────────────────
+
+const rubricDims = {};
+
+function rubricPass(dim, label) {
+  if (!rubricDims[dim]) rubricDims[dim] = { passed: 0, failed: 0 };
+  rubricDims[dim].passed++;
+  pass(`rubric ${dim}: ${label}`);
+}
+
+function rubricFail(dim, label) {
+  if (!rubricDims[dim]) rubricDims[dim] = { passed: 0, failed: 0 };
+  rubricDims[dim].failed++;
+  fail(`rubric ${dim}: ${label}`);
+}
+
+function computeDScore(dim) {
+  const d = rubricDims[dim];
+  if (!d || (d.passed + d.failed) === 0) return 0;
+  const rate = d.passed / (d.passed + d.failed);
+  if (rate >= 1.0) return 3;
+  if (rate >= 0.66) return 2;
+  if (rate >= 0.33) return 1;
+  return 0;
+}
+
+function resetRubricDims() {
+  for (const k of Object.keys(rubricDims)) delete rubricDims[k];
+}
+
+async function scenarioRubricScore() {
+  section('Rubric scoring — D2/D5/D7/D8 for 3 representative stacks');
+
+  const rubricConfigs = [
+    {
+      name: 'node-ts',
+      config: { ...BASE, tier: 'm', techStack: 'node-ts', isDiscovery: false },
+      isNative: false,
+      expectedFramework: null, // node-ts uses wizard default
+      hasApi: true,
+    },
+    {
+      name: 'swift',
+      config: {
+        ...BASE, tier: 'm', techStack: 'swift', isDiscovery: false,
+        hasApi: false, hasFrontend: false, hasDatabase: false, hasDesignSystem: false,
+        installCommand: '# no install step', devCommand: 'swift run',
+        buildCommand: 'xcodebuild build', testCommand: 'xcodebuild test',
+      },
+      isNative: true,
+      expectedFramework: 'N/A',
+      hasApi: false,
+    },
+    {
+      name: 'python',
+      config: { ...BASE, tier: 'm', techStack: 'python', isDiscovery: false },
+      isNative: false,
+      expectedFramework: null,
+      hasApi: true,
+    },
+  ];
+
+  const weights = { D2: 1.0, D5: 1.0, D7: 2.0, D8: 1.0 };
+  const maxWeighted = Object.values(weights).reduce((a, b) => a + b * 3, 0); // 15
+
+  for (const { name, config, isNative, expectedFramework, hasApi } of rubricConfigs) {
+    resetRubricDims();
+    const dir = await scaffold(`rubric-${name}`, 'm', config);
+    const claudeMd = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+
+    // ── D2: Commands & conventions ──────────────────────────────────────
+    const commandPlaceholders = ['[INSTALL_COMMAND]', '[DEV_COMMAND]', '[BUILD_COMMAND]', '[TEST_COMMAND]', '[TYPE_CHECK_COMMAND]'];
+    const hasCommandPlaceholder = commandPlaceholders.some(p => claudeMd.includes(p));
+    if (!hasCommandPlaceholder) {
+      rubricPass('D2', `[${name}] no command placeholders in CLAUDE.md`);
+    } else {
+      rubricFail('D2', `[${name}] command placeholder found in CLAUDE.md`);
+    }
+
+    if (isNative) {
+      // Extract Key Commands block
+      const cmdMatch = claudeMd.match(/```bash([\s\S]*?)```/);
+      const cmdBlock = cmdMatch ? cmdMatch[1] : '';
+      if (!cmdBlock.includes('npm ')) {
+        rubricPass('D2', `[${name}] no npm in Key Commands for native stack`);
+      } else {
+        rubricFail('D2', `[${name}] npm found in Key Commands for native stack`);
+      }
+    }
+
+    if (!hasApi) {
+      if (!claudeMd.includes('Every API route')) {
+        rubricPass('D2', `[${name}] no "Every API route" convention when hasApi=false`);
+      } else {
+        rubricFail('D2', `[${name}] "Every API route" convention present when hasApi=false`);
+      }
+    }
+
+    // ── D5: Skill relevance ─────────────────────────────────────────────
+    if (claudeMd.includes('## Active Skills')) {
+      rubricPass('D5', `[${name}] Active Skills section present`);
+    } else {
+      rubricFail('D5', `[${name}] Active Skills section missing`);
+    }
+
+    // Extract skill names from Active Skills section
+    const activeMatch = claudeMd.match(/## Active Skills\n([\s\S]*?)(?:\n## |\n$|$)/);
+    const activeBlock = activeMatch ? activeMatch[1] : '';
+    const listedSkills = [...activeBlock.matchAll(/`\/([a-z-]+)`/g)].map(m => m[1]);
+
+    // Every listed skill must exist on disk
+    for (const skill of listedSkills) {
+      const skillPath = path.join(dir, '.claude', 'skills', skill, 'SKILL.md');
+      if (fs.existsSync(skillPath)) {
+        rubricPass('D5', `[${name}] listed skill /${skill} exists on disk`);
+      } else {
+        rubricFail('D5', `[${name}] listed skill /${skill} missing from disk`);
+      }
+    }
+
+    // No pruned skill should be listed
+    if (!hasApi) {
+      if (!activeBlock.includes('/api-design') && !activeBlock.includes('/security-audit')) {
+        rubricPass('D5', `[${name}] no API-only skills listed when hasApi=false`);
+      } else {
+        rubricFail('D5', `[${name}] API-only skill listed when hasApi=false`);
+      }
+    }
+
+    // Cheatsheet consistency
+    const cheatPath = path.join(dir, '.claude', 'cheatsheet.md');
+    if (fs.existsSync(cheatPath)) {
+      const cheat = fs.readFileSync(cheatPath, 'utf8');
+      let cheatClean = true;
+      if (!hasApi && cheat.includes('/api-design')) cheatClean = false;
+      if (!hasApi && cheat.includes('/security-audit')) cheatClean = false;
+      if (config.hasDatabase === false && cheat.includes('/skill-db')) cheatClean = false;
+      if (cheatClean) {
+        rubricPass('D5', `[${name}] cheatsheet has no phantom skill rows`);
+      } else {
+        rubricFail('D5', `[${name}] cheatsheet lists pruned skills`);
+      }
+    }
+
+    // ── D7: Safety & guardrails ─────────────────────────────────────────
+    const settingsPath = path.join(dir, '.claude', 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+
+      // Stop hook
+      const hooks = settings.hooks;
+      if (hooks && hooks.Stop && Array.isArray(hooks.Stop) && hooks.Stop.length > 0) {
+        rubricPass('D7', `[${name}] Stop hook present`);
+      } else {
+        rubricFail('D7', `[${name}] Stop hook missing`);
+      }
+
+      // Stop hook resolved
+      const hookStr = JSON.stringify(hooks);
+      if (!hookStr.includes('[TEST_COMMAND]')) {
+        rubricPass('D7', `[${name}] Stop hook test command resolved`);
+      } else {
+        rubricFail('D7', `[${name}] Stop hook has unresolved [TEST_COMMAND]`);
+      }
+
+      // Deny list
+      const deny = settings.permissions && settings.permissions.deny;
+      if (Array.isArray(deny) && deny.length > 0) {
+        rubricPass('D7', `[${name}] permissions.deny non-empty`);
+      } else {
+        rubricFail('D7', `[${name}] permissions.deny empty or missing`);
+      }
+
+      if (Array.isArray(deny) && deny.some(d => d.includes('push --force'))) {
+        rubricPass('D7', `[${name}] deny blocks force-push`);
+      } else {
+        rubricFail('D7', `[${name}] deny missing force-push block`);
+      }
+
+      if (Array.isArray(deny) && deny.some(d => d.includes('push origin main'))) {
+        rubricPass('D7', `[${name}] deny blocks push to main`);
+      } else {
+        rubricFail('D7', `[${name}] deny missing push-to-main block`);
+      }
+    } else {
+      rubricFail('D7', `[${name}] settings.json missing`);
+    }
+
+    // Security rule file
+    if (fs.existsSync(path.join(dir, '.claude', 'rules', 'security.md'))) {
+      rubricPass('D7', `[${name}] security.md rule file present`);
+    } else {
+      rubricFail('D7', `[${name}] security.md rule file missing`);
+    }
+
+    // ── D8: Cross-file coherence ────────────────────────────────────────
+    // Test command coherence: CLAUDE.md Key Commands vs Stop hook
+    const cmdBlockMatch = claudeMd.match(/```bash([\s\S]*?)```/);
+    const cmdBlockText = cmdBlockMatch ? cmdBlockMatch[1] : '';
+    const testCmd = config.testCommand;
+    if (cmdBlockText.includes(testCmd)) {
+      rubricPass('D8', `[${name}] test command in CLAUDE.md matches config`);
+    } else {
+      rubricFail('D8', `[${name}] test command mismatch in CLAUDE.md`);
+    }
+
+    // Framework value resolved
+    if (expectedFramework) {
+      if (claudeMd.includes(expectedFramework)) {
+        rubricPass('D8', `[${name}] Framework value resolved (${expectedFramework})`);
+      } else {
+        rubricFail('D8', `[${name}] Framework value not resolved`);
+      }
+    } else {
+      // For non-native: just check it's not a placeholder
+      if (!claudeMd.includes('[FRAMEWORK_VALUE]')) {
+        rubricPass('D8', `[${name}] Framework placeholder resolved`);
+      } else {
+        rubricFail('D8', `[${name}] Framework placeholder unresolved`);
+      }
+    }
+
+    // Cheatsheet doc reference
+    if (fs.existsSync(cheatPath)) {
+      const cheat = fs.readFileSync(cheatPath, 'utf8');
+      if (!cheat.includes('backlog-refinement.md')) {
+        rubricPass('D8', `[${name}] cheatsheet has correct doc reference`);
+      } else {
+        rubricFail('D8', `[${name}] cheatsheet has stale backlog-refinement.md reference`);
+      }
+    }
+
+    // No [HAS_API] literal in skills
+    const skillsDir = path.join(dir, '.claude', 'skills');
+    const skillFiles = fs.existsSync(skillsDir) ? walkFiles(skillsDir) : [];
+    const hasApiLiteral = skillFiles.some(f => {
+      if (!f.endsWith('.md')) return false;
+      return fs.readFileSync(f, 'utf8').includes('[HAS_API]');
+    });
+    if (!hasApiLiteral) {
+      rubricPass('D8', `[${name}] no [HAS_API] literal in skill files`);
+    } else {
+      rubricFail('D8', `[${name}] [HAS_API] literal found in skill files`);
+    }
+
+    // ── Aggregate ───────────────────────────────────────────────────────
+    const scores = {};
+    let weightedTotal = 0;
+    for (const dim of ['D2', 'D5', 'D7', 'D8']) {
+      scores[dim] = computeDScore(dim);
+      weightedTotal += scores[dim] * weights[dim];
+    }
+    const pct = Math.round((weightedTotal / maxWeighted) * 100);
+    console.log(
+      `  ${c.cyan('◆')} Rubric [${name}]: D2=${scores.D2} D5=${scores.D5} D7=${scores.D7} D8=${scores.D8} → ${weightedTotal}/${maxWeighted} (${pct}%)`
+    );
+
+    // Quality floor: every dimension must score ≥ 2
+    for (const dim of ['D2', 'D5', 'D7', 'D8']) {
+      if (scores[dim] < 2) {
+        fail(`rubric floor: [${name}] ${dim} scored ${scores[dim]} (minimum 2)`);
+      }
+    }
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -944,6 +1533,7 @@ async function main() {
   await scenarioSkillDevApplicabilityCheck();
   await scenarioPipelineGateCount();
   await scenarioSkillPruning();
+  await scenarioTierSSkillPruning();
   await scenarioUiAuditPruning();
   await scenarioCommitSkillAllTiers();
   await scenarioNewRuleFiles();
@@ -951,7 +1541,11 @@ async function main() {
   await scenarioNativeStackCommandDefaults();
   await scenarioSecurityVariants();
   await scenarioPlaceholderNoiseReduction();
+  await scenarioInPlaceClaudeMdGeneration();
+  await scenarioCheatsheetPruning();
+  await scenarioNativeSkillAdaptation();
   await scenarioWizardCoverage();
+  await scenarioRubricScore();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

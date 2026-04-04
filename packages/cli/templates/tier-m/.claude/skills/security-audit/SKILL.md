@@ -18,12 +18,12 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 
 Before any other step: read `CLAUDE.md` and check the Framework and Language fields.
 
-- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (the `[HAS_API]` field is `false` or the Framework field is `N/A — native app`): output the following and stop — do not proceed to Step 0:
+- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (the Framework field is `N/A — native app` or no route handler directories exist): output the following and stop — do not proceed to Step 0:
 
   > **security-audit** targets web applications with API routes, middleware, and database access policies. This project uses a native stack with no server-side API surface. For native app security, audit manually: App Sandbox entitlements, Keychain access patterns, TCC permissions (camera, microphone, file access), code signing, and hardened runtime configuration.
 
-- If the project has API routes (`[HAS_API]` is `true`), even on a native stack: proceed to Step 0. The API surface is auditable.
-- If unsure: check for route handler files (e.g., `src/app/api/`, `routes/`, `handlers/`). If none exist, output the message above and stop.
+- If the project has API routes (check for `src/app/api/`, `routes/`, `handlers/`, or similar directories), even on a native stack: proceed to Step 0. The API surface is auditable.
+- If unsure: check for route handler files. If none exist, output the message above and stop.
 
 ---
 
@@ -225,6 +225,47 @@ Flag: each match. `USING` controls which rows are visible; `WITH CHECK` controls
 
 ---
 
+## Step 3e — Native application security checks
+
+**This step runs only when the project uses a native or non-web stack** (check CLAUDE.md Language field: Swift, Kotlin, Rust, Go, Python, Ruby, Java, C#). For web-only projects (Node.js/TypeScript with a web frontend), skip to Step 4.
+
+These checks supplement the API-level checks in Step 2. They audit the application's own security posture beyond its HTTP surface.
+
+### Stack-specific security checklist
+
+[SECURITY_CHECKLIST_ITEMS]
+
+### NS1 — Secrets management audit
+Grep all source files for patterns that indicate hardcoded secrets:
+- String literals containing `password`, `secret`, `token`, `key`, `api_key` (case-insensitive)
+- Base64-encoded strings longer than 40 characters in source (potential embedded credentials)
+- Configuration files committed to git that contain non-placeholder secret values
+
+Flag: each hardcoded secret. Secrets must come from environment variables, platform keychain, or a secrets manager.
+
+### NS2 — Dependency vulnerability scan
+Run the appropriate dependency audit tool:
+- Swift: check for known CVEs in Package.resolved dependencies
+- Kotlin: `./gradlew dependencyCheckAnalyze` or review build.gradle for outdated dependencies
+- Rust: `cargo audit`
+- Go: `govulncheck ./...`
+- Python: `pip-audit` or `safety check`
+- Ruby: `bundle-audit check`
+- Java: `mvn org.owasp:dependency-check-maven:check`
+- dotnet: `dotnet list package --vulnerable`
+
+Flag: Critical/High CVEs as Critical/High findings. Medium/Low CVEs noted in report.
+
+### NS3 — Input validation on external boundaries
+For each entry point (CLI args, file parsing, IPC, network input):
+- Verify input is validated/sanitized before use
+- Check for path traversal in file operations (user input in file paths)
+- Check for buffer overflow risk in languages without bounds checking
+
+Flag: each unvalidated external input.
+
+---
+
 ## Step 4 — HTTP security headers check
 
 **Static check**: read `next.config.ts`. Verify these headers are configured:
@@ -316,6 +357,14 @@ Flag: any header present in config but absent in live response — this means th
 | RLS-1 | Tables missing ENABLE ROW LEVEL SECURITY | N | ✅/❌ |
 | RLS-2 | RLS enabled but zero policies | N | ✅/❌ |
 | RLS-3 | INSERT/UPDATE policies missing WITH CHECK | N | ✅/❌ |
+
+### Native Application Security (if applicable)
+| # | Check | Matches | Severity | Verdict |
+|---|---|---|---|---|
+| NS1 | Hardcoded secrets | N | Critical | ✅/❌ |
+| NS2 | Dependency vulnerabilities | N | High | ✅/❌ |
+| NS3 | Unvalidated external input | N | High | ✅/❌ |
+| Stack checklist | [language-specific items] | N | varies | ✅/❌ |
 
 ### Supabase Security Advisors
 | Level | Count | Items |

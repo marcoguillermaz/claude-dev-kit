@@ -30,7 +30,7 @@
 
 ## Audit skills
 
-Run these on demand. Each skill reads the codebase, produces a structured report, and appends findings to `docs/backlog-refinement.md`.
+Run these on demand. Each skill reads the codebase, produces a structured report, and appends findings to `docs/refactoring-backlog.md`.
 
 | Skill | What it checks | When to run |
 |---|---|---|
@@ -39,6 +39,7 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/skill-db` | Missing indexes, access control gaps, constraint completeness, N+1 queries | After migration waves; before production releases |
 | `/api-design` | HTTP verb correctness, URL structure, response shape, error codes, pagination | After adding 3+ new routes; quarterly |
 | `/perf-audit` | Server/client boundaries, heavy imports, serial awaits, image optimization, N+1 | Before production releases; after major UI changes |
+| `/simplify` | Early returns, nesting depth, local duplication, dead code, magic values | After writing code (Phase 2); on demand |
 
 > **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
 > **Prerequisites for screenshot-based skills**: dev server must be running (check your project's dev command for the URL).

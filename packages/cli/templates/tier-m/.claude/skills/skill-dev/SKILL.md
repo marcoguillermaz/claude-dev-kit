@@ -42,6 +42,18 @@ Run as-is (stack-agnostic):
 - CHECK D10 (empty catch blocks, console.log in production)
 - CHECK J1 (over-large modules), J2 (coupling depth), J4 (utility consolidation — adapt directory name from `lib/` to your project's equivalent)
 
+Run additionally (language-specific — CHECK DL1):
+- **Swift**: force unwrap (`!`) audit — flag each `!` on optionals outside guard/if-let; SwiftLint patterns; retain cycle risk in closures (missing `[weak self]`)
+- **Kotlin**: null safety violations (`!!` operator); detekt patterns; coroutine scope leaks (GlobalScope usage)
+- **Rust**: clippy warnings (`cargo clippy -- -W clippy::all`); unnecessary `.clone()` calls; overly complex lifetime annotations; `unwrap()` in library/production code
+- **Go**: `go vet` patterns; errcheck (unchecked error returns); staticcheck findings; naked goroutines (no context cancellation)
+- **Python**: type hint coverage on public functions; ruff/pylint patterns; bare `except:` clauses; mutable default arguments
+- **Ruby**: rubocop patterns; method length > 25 lines; missing frozen_string_literal comment
+- **Java**: spotbugs patterns; unchecked casts; empty catch blocks swallowing checked exceptions; raw types usage
+- **dotnet**: nullable reference type warnings; IDisposable not disposed; async void methods (except event handlers)
+
+**Lint command**: `[LINT_COMMAND]` — run before the audit if available. Include lint output summary in the report.
+
 Announce skipped checks and reason at the top of the audit report.
 
 ---
@@ -231,6 +243,11 @@ For remaining findings, apply severity modifiers in this exact order:
 | D8 | @ts-ignore + any + floating promises | N | High | ✅/⚠️ |
 | D9 | useEffect antipatterns | N | Medium | ✅/⚠️ |
 | D10 | Empty catch + console.log | N | Medium | ✅/⚠️ |
+
+### Language-Specific Checks (native/backend stacks only)
+| # | Check | Matches | Severity | Verdict |
+|---|---|---|---|---|
+| DL1 | Language-specific lint + analysis | N | Medium | ✅/⚠️ |
 
 ### Structural Checks
 | # | Check | Verdict | Notes |

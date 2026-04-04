@@ -196,15 +196,16 @@ Slash-command skills scaffolded in `.claude/skills/`. Run any time — no pipeli
 | `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, VR1–VR6 visual checks | BP0, R1–R9, VR1–VR6 |
 | `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, user confidence framework C1–C5 | H1–H10, BF1–BF6, D1–D7 |
 | `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, Gestalt, typographic quality, interaction states | V1–V11 per page |
+| `/simplify` | S M L | Early returns, nesting depth, local duplication, conditional simplification, dead code, magic values | S1–S6 |
 | `/commit` | S M L | Conventional Commits 1.0.0 — auto-detects type, scope, description. Three-commit block pattern. | — |
 | `/ui-audit` | M L | Design token compliance, component adoption, accessibility, empty states (requires design system) | Checks 1–17, S1–S8 |
 
 **Notes:**
-- `/arch-audit` and `/commit` are available in all tiers (S/M/L).
+- `/arch-audit`, `/simplify`, and `/commit` are available in all tiers (S/M/L). `/simplify` is the only skill that applies changes directly (all others are audit-only).
 - `/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit` require the dev server running on localhost and the Playwright MCP server configured.
 - `/ui-audit` is only installed when you answer **Yes** to "Do you use a component library or design system?" at init time.
 - Skills are conditionally installed based on wizard answers: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
-- All code-audit skills are **audit-only** — no code is modified. Findings go to `docs/refactoring-backlog.md`.
+- All code-audit skills are **audit-only** — no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md`.
 - Before first run: fill in the `## Configuration` placeholders in each `SKILL.md` (paths, test accounts, route lists).
 
 Full check-by-check reference: [`docs/operational-guide.docs`](docs/operational-guide.docs) § Audit skills.
