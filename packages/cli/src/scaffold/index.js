@@ -99,9 +99,12 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
     await fs.remove(path.join(targetDir, '.github'));
   }
 
-  // Conditionally remove docs and skills that are not applicable for this project
+  // Conditionally remove docs, skills, and cheatsheet rows that are not applicable
   if (tier === 'm' || tier === 'l') {
     await pruneConditionalDocs(targetDir, config);
+    await pruneSkills(targetDir, config);
+    await pruneCheatsheet(targetDir, config);
+  } else if (tier === 's') {
     await pruneSkills(targetDir, config);
   }
 
@@ -137,6 +140,7 @@ async function pruneSkills(targetDir, config) {
 
   if (config.hasApi === false) {
     skipSkills.add('api-design');
+    skipSkills.add('security-audit');
   }
 
   if (config.hasDatabase === false) {
@@ -164,6 +168,26 @@ async function pruneSkills(targetDir, config) {
   for (const skill of skipSkills) {
     await fs.remove(path.join(skillsDir, skill));
   }
+}
+
+/**
+ * Remove cheatsheet rows for skills that were pruned.
+ */
+async function pruneCheatsheet(targetDir, config) {
+  const cheatPath = path.join(targetDir, '.claude', 'cheatsheet.md');
+  if (!(await fs.pathExists(cheatPath))) return;
+
+  let content = await fs.readFile(cheatPath, 'utf8');
+
+  if (config.hasApi === false) {
+    content = content.replace(/^\| `\/api-design` .*\n/m, '');
+    content = content.replace(/^\| `\/security-audit` .*\n/m, '');
+  }
+  if (config.hasDatabase === false) {
+    content = content.replace(/^\| `\/skill-db` .*\n/m, '');
+  }
+
+  await fs.writeFile(cheatPath, content);
 }
 
 /**
@@ -309,6 +333,9 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   if (tier === 'm' || tier === 'l') {
     await pruneConditionalDocs(targetDir, config);
     await pruneSkills(targetDir, config);
+    await pruneCheatsheet(targetDir, config);
+  } else if (tier === 's') {
+    await pruneSkills(targetDir, config);
   }
 
   // Post-process settings.json: replace default permissions.allow with stack-aware permissions
@@ -389,6 +416,104 @@ function languageFromStack(techStack) {
   return map[techStack] || '[TypeScript / Python / Go / etc.]';
 }
 
+/**
+ * Stack-specific profiling tool names for perf-audit native path.
+ */
+const perfToolByStack = {
+  swift: 'Instruments (Time Profiler, Allocations, Energy Diagnostics)',
+  kotlin: 'Android Studio Profiler (CPU, Memory, Energy) + LeakCanary',
+  rust: 'cargo bench + cargo flamegraph + criterion',
+  go: 'pprof + trace + go test -bench',
+  python: 'cProfile + py-spy + memory_profiler',
+  ruby: 'rack-mini-profiler + stackprof + derailed_benchmarks',
+  java: 'JProfiler / VisualVM + JMH benchmarks',
+  dotnet: 'dotTrace + BenchmarkDotNet + PerfView',
+};
+
+/**
+ * Stack-specific profiling commands for perf-audit native path.
+ */
+const profilerCommandByStack = {
+  swift: 'xcrun xctrace record --template "Time Profiler" --launch -- ./build/MyApp',
+  kotlin: './gradlew benchmark  # or Android Studio Profiler via IDE',
+  rust: 'cargo bench && cargo flamegraph -- target/release/my_binary',
+  go: 'go test -bench=. -benchmem -cpuprofile=cpu.prof ./... && go tool pprof cpu.prof',
+  python: 'python -m cProfile -o profile.out main.py && py-spy record -o flamegraph.svg -- python main.py',
+  ruby: 'STACKPROF=1 bundle exec rspec && stackprof tmp/stackprof-*.dump --text',
+  java: 'java -jar target/benchmarks.jar  # JMH benchmark runner',
+  dotnet: 'dotnet run -c Release --project Benchmarks/',
+};
+
+/**
+ * Stack-specific lint/analysis commands for skill-dev.
+ */
+const lintCommandByStack = {
+  swift: 'swiftlint lint --strict',
+  kotlin: './gradlew detekt',
+  rust: 'cargo clippy -- -W clippy::all',
+  go: 'go vet ./... && staticcheck ./...',
+  python: 'ruff check . && mypy .',
+  ruby: 'bundle exec rubocop',
+  java: 'mvn spotbugs:check',
+  dotnet: 'dotnet format --verify-no-changes',
+  'node-ts': 'npx eslint .',
+  'node-js': 'npx eslint .',
+};
+
+/**
+ * Stack-specific security checklist items for security-audit native supplement.
+ */
+const securityChecklistByStack = {
+  swift: `- Keychain API usage — no UserDefaults for secrets or tokens
+- App Transport Security (ATS) — no blanket NSAllowsArbitraryLoads
+- Data Protection API (NSFileProtectionComplete on sensitive files)
+- Entitlements audit — minimal privilege, no unnecessary capabilities
+- Code signing and hardened runtime enabled
+- TCC permissions (camera, microphone, file access) — request only when needed`,
+  kotlin: `- Android Keystore for cryptographic keys — no hardcoded secrets
+- EncryptedSharedPreferences — no plaintext SharedPreferences for tokens
+- Certificate pinning configuration for API connections
+- ProGuard/R8 obfuscation enabled for release builds
+- Content Provider permissions — exported=false by default
+- WebView security — JavaScript disabled unless required, no addJavascriptInterface on untrusted content`,
+  rust: `- unsafe block audit — each usage justified with a safety comment
+- Memory safety — no use-after-free, double-free, or buffer overflow patterns
+- cargo audit — dependency vulnerability scan
+- Input validation on all FFI boundaries
+- Constant-time comparison for secrets (ring or subtle crate)
+- No panic in library code — use Result for error handling`,
+  go: `- Input validation on all external boundaries (HTTP, CLI, file)
+- Goroutine leak detection — context cancellation propagated correctly
+- crypto/ stdlib usage — no custom crypto implementations
+- sql.Exec with parameterized queries — no string concatenation in SQL
+- govulncheck — dependency vulnerability scan
+- No sensitive data in error messages or logs`,
+  python: `- SQL injection — parameterized queries only, no f-strings or % formatting in SQL
+- Command injection — subprocess with list args, never shell=True with user input
+- Pickle deserialization — never on untrusted data
+- pip-audit or safety — dependency vulnerability scan
+- SSRF — validate and allowlist URLs before requests.get()
+- No secrets in source — use environment variables or secret manager`,
+  ruby: `- Mass assignment protection — strong parameters on all controllers
+- CSRF token verification enabled (protect_from_forgery)
+- Brakeman static analysis — run before each release
+- SQL injection — parameterized queries, no string interpolation in where()
+- bundler-audit — dependency vulnerability scan
+- Secure cookie settings (httponly, secure, samesite)`,
+  java: `- Deserialization safety — no ObjectInputStream on untrusted data
+- SQL injection — PreparedStatement only, no string concatenation
+- OWASP dependency-check — run in CI
+- XML External Entity (XXE) prevention — disable external entities in parsers
+- Secure random (SecureRandom, not java.util.Random for security contexts)
+- No sensitive data in logs (mask PII, tokens, passwords)`,
+  dotnet: `- Configuration secrets — use Secret Manager or Azure Key Vault, not appsettings.json
+- Anti-forgery tokens on all state-changing endpoints
+- dotnet list package --vulnerable — dependency audit
+- SQL injection — parameterized queries or EF Core, no string interpolation in raw SQL
+- HTTPS enforcement and HSTS header configured
+- No sensitive data in exception details (ProblemDetails in production)`,
+};
+
 function interpolate(content, config) {
   const techStackLabels = {
     'node-ts': 'Node.js + TypeScript',
@@ -439,5 +564,9 @@ function interpolate(content, config) {
     .replace(/\[BUNDLE_TOOL\]/g, ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — native app' : 'your build tool\'s bundle analyzer')
     .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
     .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack))
-    .replace(/\[MIGRATION_COMMAND\]/g, config.migrationCommand || '# not configured');
+    .replace(/\[MIGRATION_COMMAND\]/g, config.migrationCommand || '# not configured')
+    .replace(/\[PERF_TOOL\]/g, perfToolByStack[config.techStack] || 'your platform profiler')
+    .replace(/\[PROFILER_COMMAND\]/g, profilerCommandByStack[config.techStack] || '# configure profiling command for your stack')
+    .replace(/\[LINT_COMMAND\]/g, lintCommandByStack[config.techStack] || config.lintCommand || '# configure lint command for your stack')
+    .replace(/\[SECURITY_CHECKLIST_ITEMS\]/g, securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack');
 }

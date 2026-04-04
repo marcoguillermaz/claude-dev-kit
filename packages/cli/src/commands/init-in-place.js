@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { detectStack } from '../utils/detect-stack.js';
 import { scaffoldTierSafe } from '../scaffold/index.js';
+import { generateClaudeMd } from '../generators/claude-md.js';
 import { generateContextImport } from '../generators/context-import.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
 import { AUDIT_MODELS } from '../utils/constants.js';
@@ -300,10 +301,20 @@ export async function initInPlace(options) {
 
   // ── Scaffold (safe mode — no overwrites) ─────────────────────────────
 
+  const fsCheck = (await import('fs-extra')).default;
+  const claudeMdExisted = await fsCheck.pathExists(path.join(cwd, 'CLAUDE.md'));
+
   const spinner = ora('Adding governance scaffold to existing project...').start();
 
   try {
     await scaffoldTierSafe(config.tier, cwd, config, TEMPLATES_DIR);
+
+    // Generate processed CLAUDE.md (Active Skills, @-imports, section stripping)
+    // only when CLAUDE.md was freshly created — never overwrite a pre-existing one
+    if (!claudeMdExisted && (config.tier === 's' || config.tier === 'm' || config.tier === 'l')) {
+      await generateClaudeMd(config, cwd);
+    }
+
     spinner.text = 'Generating CONTEXT_IMPORT.md...';
     await generateContextImport(config, cwd, [{ name: path.basename(cwd), path: cwd, source: '.' }], []);
     spinner.succeed('Governance scaffold added.');

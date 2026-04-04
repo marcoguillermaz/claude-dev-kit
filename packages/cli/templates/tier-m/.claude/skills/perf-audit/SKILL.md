@@ -19,12 +19,8 @@ argument-hint: [target:section:<section>|target:page:<route>|mode:audit|mode:app
 
 Before any other step: read `CLAUDE.md` and check the Framework and Language fields.
 
-- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) or the Framework field is `N/A — native app`: output the following and stop — do not proceed to Step 1:
-
-  > **perf-audit** targets web applications (Core Web Vitals, bundle composition, server/client boundaries). This project uses a native stack. Use platform-native profiling tools instead: Instruments (Swift/macOS/iOS), Android Studio Profiler (Kotlin/Android), Valgrind/perf (C/C++).
-
-- If the CLAUDE.md Framework field is `N/A — no web frontend`: output the same message and stop.
-- If the project is a web application: proceed to Step 1.
+- If the project is a **web application** (Framework is NOT `N/A — native app` and NOT `N/A — no web frontend`): proceed to **Step 1 — Web Performance Audit** (Steps 1–5).
+- If the project is a **native or backend-only application** (Framework is `N/A — native app` or `N/A — no web frontend`): skip Steps 1–5 and proceed directly to **Step 6 — Native/Backend Performance Audit**.
 
 
 
@@ -318,3 +314,136 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - `pdfjs-dist` and `pdf-lib` in `serverExternalPackages` are intentional and documented — note as correctly configured.
 - Tiptap in `'use client'` files is acceptable — it requires browser APIs. Only flag if used in a read-only display context.
 - `app/(app)/layout.tsx` with `'use client'` and `cookies()` is intentional — session and theme synchronization. Do NOT flag under B1 Flag B or B8 Pattern A.
+
+---
+
+## Step 6 — Native/Backend Performance Audit
+
+**This path runs for non-web projects only.** Web projects use Steps 1–5 above.
+
+### Profiling tools
+
+**Primary tool**: [PERF_TOOL]
+**Profile command**: `[PROFILER_COMMAND]`
+
+Run the profiler on the main execution path. Identify the top 5 hotspots by CPU time and the top 5 by memory allocation. If profiling data is not available, proceed with static analysis and recommend running the profiler.
+
+---
+
+### Step 6a — Algorithmic and resource checks (Explore agent)
+
+Launch a **single Explore subagent** (model: haiku) with all source files from the project:
+
+"Run these 4 checks on the provided source files. For each: state total match count, list every match as `file:line — excerpt`, and state PASS or FAIL.
+
+**CHECK NP1 — Nested iteration on collections**
+Grep for nested loops (for/while/map/forEach inside another loop body) operating on collections or arrays.
+Flag: O(n²) or worse complexity. Exclude small fixed-size iterations (< 10 items known at compile time).
+
+**CHECK NP2 — Memory allocation in hot paths**
+Flag:
+- Object/string/array/buffer creation inside loops (new allocation per iteration)
+- Unbounded caches or collections that grow without eviction
+- Missing cleanup of heavyweight resources (file handles, DB connections, network sockets)
+
+**CHECK NP3 — I/O bottleneck patterns**
+Flag:
+- Synchronous file I/O on the main/UI thread
+- Sequential network calls that could be parallelized
+- Unbuffered reads/writes on large files
+- Missing timeout on network or IPC operations
+
+**CHECK NP4 — Concurrency inefficiency**
+Flag:
+- Thread/goroutine/task creation inside loops without pooling
+- Shared mutable state without synchronization primitives
+- Blocking calls on async/concurrent paths
+- Missing cancellation support on long-running operations"
+
+---
+
+### Step 6b — Stack-specific checks (main context)
+
+Read the 10 largest source files by line count. Apply the checks relevant to the project language:
+
+**Swift**: main-thread work (no heavy computation on DispatchQueue.main), image loading without downsampling, Core Data fetch batch size, ARC retain cycle risk (strong reference in closures capturing self), Instruments allocation spike patterns
+**Kotlin**: StrictMode violations, RecyclerView ViewHolder recycling, main-thread DB access, bitmap memory management, coroutine scope leaks
+**Rust**: unnecessary `.clone()` calls, allocation in hot paths, `Box<dyn Trait>` where generics suffice, missing `#[inline]` on small hot functions
+**Go**: excessive goroutine creation, channel buffer sizing, escape analysis (`go build -gcflags='-m'`), sync.Pool for short-lived objects, defer in hot loops
+**Python**: GIL contention, list comprehension vs generator for large datasets, unnecessary deep copies, regex compilation in loops
+**Ruby**: N+1 queries (ActiveRecord), object allocation in hot loops, GC pressure from short-lived strings, eager loading vs lazy loading
+**Java**: autoboxing in loops, unnecessary object creation, GC pause patterns, stream vs loop performance, connection pool sizing
+**dotnet**: excessive LINQ allocations, async/await state machine overhead, LOH fragmentation, string concatenation in loops (use StringBuilder)
+
+---
+
+### Step 6c — Produce report and update backlog
+
+### Output format (native audit)
+
+```
+## Perf Audit — [DATE] — [SCOPE] — mode: [audit | apply]
+### Sources: platform profiling documentation, language performance guides
+
+### Executive summary
+- [2-8 bullets: one per Critical/High finding or notable PASS]
+
+### Scope reviewed
+- Source files scanned: [N files]
+- Profiling tool: [PERF_TOOL]
+- Profile data: [available / not available — recommend running profiler]
+
+### Algorithmic & Resource Checks
+| # | Check | Matches | Severity | Verdict |
+|---|---|---|---|---|
+| NP1 | Nested iteration on collections | N | High | ✅/⚠️ |
+| NP2 | Memory allocation in hot paths | N | Medium | ✅/⚠️ |
+| NP3 | I/O bottleneck patterns | N | High | ✅/⚠️ |
+| NP4 | Concurrency inefficiency | N | Medium | ✅/⚠️ |
+
+### Stack-Specific Checks
+| Check | Verdict | Notes |
+|---|---|---|
+| [check name] | ✅/⚠️ | [details] |
+
+### Findings requiring action ([N] total)
+[Sorted Critical → High → Medium → Low]
+Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
+
+### Quick wins
+[isolated, low-risk, self-contained fixes]
+
+### Strategic refactors
+[multi-file changes or architectural decisions needed]
+```
+
+### Backlog decision gate (native audit)
+
+Present all findings with severity Medium or above:
+
+```
+Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+
+[1] [HIGH]     PERF-? — file:line — one-line description
+[2] [MEDIUM]   PERF-? — file:line — one-line description
+
+Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+```
+
+**Wait for explicit user response before writing anything.**
+
+Then write approved entries to `docs/refactoring-backlog.md` using the same ID format (`PERF-[n]`).
+
+### Severity guide (native audit)
+
+- **Critical**: O(n²+) in a hot path processing user-visible data; memory leak causing OOM on long sessions; main-thread blocking > 1s
+- **High**: synchronous I/O blocking UI/main thread; sequential network calls with >500ms combined latency; goroutine/thread/coroutine leak; unbounded collection growth
+- **Medium**: unnecessary allocations in moderate-frequency paths; missing cancellation on background tasks; suboptimal data structure choice; missing resource cleanup
+- **Low**: minor allocation optimization; style-level concurrency improvement; profiler not configured
+
+---
+
+### Native audit — execution notes
+
+- In `mode:audit` (default): report only. After report, ask: "Vuoi che implementi le ottimizzazioni di priorità High/Critical?"
+- In `mode:apply`: apply only Quick wins. Describe each change before writing.

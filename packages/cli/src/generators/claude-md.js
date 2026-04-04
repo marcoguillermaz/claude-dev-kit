@@ -31,10 +31,24 @@ export async function generateClaudeMd(config, targetDir) {
   const commands = buildCommandsBlock(config);
   content = content.replace(/```bash[\s\S]*?```/, commands);
 
-  // Inject rule @-imports and Active Skills section for tier M/L
-  if (tier === 'm' || tier === 'l') {
+  // Inject rule @-imports and Active Skills section for tier S/M/L
+  if (tier === 's' || tier === 'm' || tier === 'l') {
     content = injectRuleImports(content);
     content = injectActiveSkills(content, config);
+  }
+
+  // Strip web-centric convention for projects without API routes
+  if (config.hasApi === false) {
+    content = content.replace(/^- Every API route:.*\n/m, '');
+  }
+
+  // Strip irrelevant Tech Stack placeholders for native stacks
+  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
+  if (nativeStacks.includes(config.techStack)) {
+    content = content.replace(/^- \*\*Auth\*\*:.*\n/m, '');
+    content = content.replace(/^- \*\*Storage\*\*:.*\n/m, '');
+    content = content.replace(/^- \*\*Email\*\*:.*\n/m, '');
+    content = content.replace(/^- \*\*Deploy\*\*:.*$/m, '- **Deploy**: _native distribution_');
   }
 
   // Strip sections containing only placeholder content to save context tokens
@@ -130,14 +144,24 @@ function injectRuleImports(content) {
  * based on feature flags from the wizard.
  */
 function injectActiveSkills(content, config) {
-  // Always installed
-  const active = ['arch-audit', 'skill-dev', 'perf-audit', 'commit'];
+  // Always installed (all tiers with skills)
+  const active = ['arch-audit', 'skill-dev', 'perf-audit', 'simplify', 'commit'];
 
-  if (config.hasApi !== false) active.push('api-design', 'security-audit');
-  if (config.hasDatabase !== false) active.push('skill-db');
-  if (config.hasFrontend !== false) {
-    active.push('responsive-audit', 'visual-audit', 'ux-audit');
-    if (config.hasDesignSystem !== false) active.push('ui-audit');
+  const tier = (config.tier || 's').toLowerCase();
+
+  // Tier S: only security-audit as conditional skill
+  if (tier === 's') {
+    if (config.hasApi !== false) active.push('security-audit');
+  }
+
+  // Tier M/L: full conditional skill set
+  if (tier === 'm' || tier === 'l') {
+    if (config.hasApi !== false) active.push('api-design', 'security-audit');
+    if (config.hasDatabase !== false) active.push('skill-db');
+    if (config.hasFrontend !== false) {
+      active.push('responsive-audit', 'visual-audit', 'ux-audit');
+      if (config.hasDesignSystem !== false) active.push('ui-audit');
+    }
   }
 
   const section = `\n## Active Skills\n${active.map(s => `- \`/${s}\``).join('\n')}\n`;

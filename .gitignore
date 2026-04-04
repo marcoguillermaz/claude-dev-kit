@@ -53,3 +53,7 @@ packages/cli/test/integration/output/
 
 # Local-only scripts (not part of published CLI)
 packages/cli/src/commands/sync-from-pilot.js
+
+# claude-dev-kit
+.claude/context/
+CONTEXT_IMPORT.md
