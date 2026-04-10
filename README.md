@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/mg-claude-dev-kit.svg)](https://www.npmjs.com/package/mg-claude-dev-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js ≥ 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
+[![Node.js ≥ 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
 
 > Scaffold for legible, reviewable AI-assisted development.
@@ -188,11 +188,11 @@ Slash-command skills scaffolded in `.claude/skills/`. Run any time - no pipeline
 | Command | Tier | What it audits | Checks |
 |---|---|---|---|
 | `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6, C1–C17, P1–P5, T1–T5, PE1–PE12, H1a–H1f |
-| `/security-audit` | M L | API routes, auth guards, input validation, response shapes, HTTP headers, CVE scan | A1–A13, R1–R4 |
-| `/skill-dev` | M L | Coupling, duplication, dead code, TS suppressions, useEffect antipatterns, debt-density escalation | D1–D10, J1–J5 |
+| `/security-audit` | S M L | API routes, auth, input validation, HTTP headers, CVE scan. Native 3-path selector (WEB / WEB+NATIVE / NATIVE-ONLY) with platform checks NS4–NS6 | A1–A13, R1–R4, NS1–NS6 |
+| `/skill-dev` | S M L | Coupling, duplication, dead code, TS suppressions, useEffect antipatterns, debt-density escalation | D1–D10, J1–J5 |
 | `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, unused indexes, migration quality | S1–S7, Q1–Q5 |
 | `/api-design` | M L | URL naming, HTTP verbs, response envelope, status codes, pagination, validation, naming conventions | N1–N13, P1–P4, V1–V3 |
-| `/perf-audit` | M L | Rendering boundaries, bundle size, heavy imports, serial awaits, query efficiency, tree-shaking | P1–P5, Q1–Q3 |
+| `/perf-audit` | S M L | Bundle size, heavy imports, serial awaits, query efficiency. Stack-specific grep patterns for 8 stacks. Native resource checks NR1–NR4 (launch weight, memory, energy, binary size) | P1–P5, Q1–Q3, NR1–NR4 |
 | `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, VR1–VR6 visual checks | BP0, R1–R9, VR1–VR6 |
 | `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, user confidence framework C1–C5 | H1–H10, BF1–BF6, D1–D7 |
 | `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, Gestalt, typographic quality, interaction states | V1–V11 per page |
@@ -201,7 +201,7 @@ Slash-command skills scaffolded in `.claude/skills/`. Run any time - no pipeline
 | `/ui-audit` | M L | Design token compliance, component adoption, accessibility, empty states (requires design system) | Checks 1–17, S1–S8 |
 
 **Notes:**
-- `/arch-audit`, `/simplify`, and `/commit` are available in all tiers (S/M/L). `/simplify` is the only skill that applies changes directly (all others are audit-only).
+- `/arch-audit`, `/security-audit`, `/skill-dev`, `/perf-audit`, `/simplify`, and `/commit` are available in all tiers (S/M/L). `/simplify` is the only skill that applies changes directly (all others are audit-only).
 - `/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit` require the dev server running on localhost and the Playwright MCP server configured.
 - `/ui-audit` is only installed when you answer **Yes** to "Do you use a component library or design system?" at init time.
 - Skills are conditionally installed based on wizard answers: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
@@ -330,7 +330,7 @@ Framework is auto-detected from dependencies (Next.js, Remix, SvelteKit, Vite, E
 
 ## Requirements
 
-- Node.js ≥ 18
+- Node.js ≥ 22
 - [Claude Code CLI](https://claude.ai/code)
 - Git
 - `gh` CLI (optional - needed for cloning private repos in From context mode)
@@ -345,9 +345,11 @@ Full operational guide for your team: [`docs/operational-guide.docs`](docs/opera
 
 ## Status
 
-`v1.8.0` - workspace quality rubric. Skill adaptation for 8 native/backend stacks, Tier S promotion, `/simplify` skill, CI rubric tests, GitHub Actions, humanized docs. 459 integration checks.
+`v1.9.0` - alignment block (Phases 1-3). CI consolidation, ESLint+Prettier, 199 unit tests, CLAUDE.md single-authority generation, security-audit 3-path selector (NS1-NS6), perf-audit native resource checks (NR1-NR4), Node.js >=22. 459 integration checks.
 
-**v1.8.0 changes**: 6 CDK bug fixes (generateClaudeMd in in-place mode, [HAS_API] interpolation, cheatsheet pruning, web convention strip, security-audit conditional pruning, native Tech Stack cleanup). perf-audit, security-audit, skill-dev adapted for 8 stacks (swift, kotlin, rust, go, python, ruby, java, dotnet) via interpolation maps (PERF_TOOL, PROFILER_COMMAND, LINT_COMMAND, SECURITY_CHECKLIST_ITEMS). 3 skills promoted to Tier S + new `/simplify` skill (S1-S6, haiku model, fork context) added to all tiers. `injectActiveSkills()` tier-aware. `scenarioRubricScore()` validates D2/D5/D7/D8 for node-ts/swift/python with quality floor. `npm test` script. `.github/workflows/test.yml` CI (matrix node 20/22). Docs humanized per output-style.md. +210 integration checks (459 total).
+**v1.9.0 alignment block** (cross-model review - GPT-4.1, Gemini, Mistral, Perplexity): **Phase 1 - Foundation**: consolidated CI from two workflows to one (4 jobs, Node matrix [22, 24]); added ESLint flat config + Prettier; built `node:test` unit test framework (199 tests across 22 suites) covering `interpolate()`, `pruneSkills()`, `patchSettingsPermissions()`, `buildCommandsBlock()`, `injectRuleImports()`, `injectActiveSkills()`, `stripUnfilledSections()`, `generateClaudeMd()`. **Phase 2 - Architecture**: eliminated CLAUDE.md double-write (`scaffoldTier` + `generateClaudeMd` both producing CLAUDE.md) - `generateClaudeMd` is now the single authority, imports `interpolate()` from scaffold; removed 3 duplicate helper functions (33 lines); added `skipFiles` parameter to `copyTemplateDir`/`copyTemplateDirSafe`. **Phase 3 - Native stack depth**: security-audit exit guard replaced with 3-path selector (WEB / WEB+NATIVE / NATIVE-ONLY) enabling NS4-NS6 platform checks (per-stack grep patterns, sensitive data protection, code signing credentials); perf-audit Step 6b enhanced from suggestive to systematic grep-pattern-based checks for all 8 stacks; added Step 6d resource footprint checks (NR1-NR4: launch weight, memory management, energy/background, binary size). Node.js requirement raised to >=22.
+
+**v1.8.0 changes**: 6 CDK bug fixes (generateClaudeMd in in-place mode, [HAS_API] interpolation, cheatsheet pruning, web convention strip, security-audit conditional pruning, native Tech Stack cleanup). perf-audit, security-audit, skill-dev adapted for 8 stacks (swift, kotlin, rust, go, python, ruby, java, dotnet) via interpolation maps (PERF_TOOL, PROFILER_COMMAND, LINT_COMMAND, SECURITY_CHECKLIST_ITEMS). 3 skills promoted to Tier S + new `/simplify` skill (S1-S6, haiku model, fork context) added to all tiers. `injectActiveSkills()` tier-aware. `scenarioRubricScore()` validates D2/D5/D7/D8 for node-ts/swift/python with quality floor. `npm test` script. `.github/workflows/ci.yml` CI (matrix node 22/24). Docs humanized per output-style.md. +210 integration checks (459 total).
 
 **v1.7.0 changes**: security.md now selects from 4 variants based on tech stack: web (default), native-apple (Swift - App Sandbox, Keychain, TCC), native-android (Kotlin - Manifest, Keystore, network security), systems (Rust/Go/.NET/Java without API - memory safety, process execution, file permissions). `permissions.deny` adds stack-specific release guards: `xcodebuild archive`, `cargo publish`, `gradlew publish`, `mvn deploy`, `gem push`, `twine upload`, `dotnet nuget push`. CLAUDE.md `Framework` and `Language` fields auto-populated from wizard data - no more placeholder text for fields CDK can resolve. `security-audit` skill has applicability check for native apps: bail-out with native-specific guidance when project has no API routes. New `docs/workspace-quality-rubric.md` - reusable 8-dimension rubric for evaluating AI workspace quality (D1-D8, weighted scoring 0-100%). +16 integration checks (249 total).
 
