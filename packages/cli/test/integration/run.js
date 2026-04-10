@@ -246,7 +246,13 @@ const BASE = {
 
 async function scenarioTier0() {
   section('Tier 0 — Discovery');
-  const config = { ...BASE, tier: '0', isDiscovery: true, includePreCommit: false, includeGithub: false };
+  const config = {
+    ...BASE,
+    tier: '0',
+    isDiscovery: true,
+    includePreCommit: false,
+    includeGithub: false,
+  };
   const dir = await scaffold('tier-0', '0', config);
 
   assertExists(dir, 'CLAUDE.md');
@@ -304,7 +310,12 @@ async function scenarioTierS_full() {
   } else {
     fail('Tier S: Active Skills section missing from CLAUDE.md');
   }
-  if (claudeS.includes('/skill-dev') && claudeS.includes('/perf-audit') && claudeS.includes('/security-audit') && claudeS.includes('/simplify')) {
+  if (
+    claudeS.includes('/skill-dev') &&
+    claudeS.includes('/perf-audit') &&
+    claudeS.includes('/security-audit') &&
+    claudeS.includes('/simplify')
+  ) {
     pass('Tier S: Active Skills lists promoted skills');
   } else {
     fail('Tier S: Active Skills missing promoted skills');
@@ -334,7 +345,13 @@ async function scenarioTierS_full() {
 
 async function scenarioTierS_minimal() {
   section('Tier S — Greenfield (minimal: no precommit, no github)');
-  const config = { ...BASE, tier: 's', isDiscovery: false, includePreCommit: false, includeGithub: false };
+  const config = {
+    ...BASE,
+    tier: 's',
+    isDiscovery: false,
+    includePreCommit: false,
+    includeGithub: false,
+  };
   const dir = await scaffold('tier-s-minimal', 's', config);
 
   assertExists(dir, 'CLAUDE.md');
@@ -350,7 +367,13 @@ async function scenarioTierS_minimal() {
 
 async function scenarioTierM() {
   section('Tier M — Greenfield (Standard)');
-  const config = { ...BASE, tier: 'm', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
+  const config = {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+  };
   const dir = await scaffold('tier-m', 'm', config);
 
   // Core
@@ -396,7 +419,13 @@ async function scenarioTierM() {
 
 async function scenarioTierL() {
   section('Tier L — Greenfield (Full)');
-  const config = { ...BASE, tier: 'l', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
+  const config = {
+    ...BASE,
+    tier: 'l',
+    isDiscovery: false,
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+  };
   const dir = await scaffold('tier-l', 'l', config);
 
   // Core
@@ -532,7 +561,9 @@ async function scenarioArchAuditTimestamp() {
       if (raw.includes('.claude/session/last-arch-audit')) {
         pass(`Tier ${tier}: SessionStart reads from .claude/session/last-arch-audit`);
       } else {
-        fail(`Tier ${tier}: SessionStart still uses external ~/.claude/projects/ path for last-audit`);
+        fail(
+          `Tier ${tier}: SessionStart still uses external ~/.claude/projects/ path for last-audit`,
+        );
       }
     }
 
@@ -564,7 +595,12 @@ async function scenarioPerfAuditPlaceholders() {
     }
     const raw = fs.readFileSync(skillPath, 'utf8');
 
-    for (const placeholder of ['[FRAMEWORK]', '[SITEMAP_OR_ROUTE_LIST]', '[API_ROUTES_PATH]', '[BUNDLE_TOOL]']) {
+    for (const placeholder of [
+      '[FRAMEWORK]',
+      '[SITEMAP_OR_ROUTE_LIST]',
+      '[API_ROUTES_PATH]',
+      '[BUNDLE_TOOL]',
+    ]) {
       if (raw.includes(placeholder)) {
         fail(`Tier ${tier}: perf-audit contains unresolved placeholder ${placeholder}`);
       } else {
@@ -673,7 +709,11 @@ async function scenarioTierSSkillPruning() {
   }
 
   // Active Skills must list universal skills
-  if (claude.includes('/skill-dev') && claude.includes('/perf-audit') && claude.includes('/simplify')) {
+  if (
+    claude.includes('/skill-dev') &&
+    claude.includes('/perf-audit') &&
+    claude.includes('/simplify')
+  ) {
     pass('Tier S pruned: Active Skills lists universal skills');
   } else {
     fail('Tier S pruned: Active Skills missing universal skills');
@@ -752,12 +792,54 @@ async function scenarioNewStacks() {
   section('New named stacks — placeholder resolution + basic structure');
 
   const newStacks = [
-    { stack: 'swift',  testCmd: 'swift test',          devCmd: 'swift run',              buildCmd: 'swift build -c release', installCmd: 'swift package resolve', label: 'Swift / macOS' },
-    { stack: 'kotlin', testCmd: './gradlew test',       devCmd: './gradlew run',           buildCmd: './gradlew build',         installCmd: './gradlew dependencies', label: 'Kotlin / Android' },
-    { stack: 'rust',   testCmd: 'cargo test',           devCmd: 'cargo run',              buildCmd: 'cargo build --release',   installCmd: 'cargo build',            label: 'Rust' },
-    { stack: 'dotnet', testCmd: 'dotnet test',          devCmd: 'dotnet run',             buildCmd: 'dotnet build',            installCmd: 'dotnet restore',          label: '.NET / C#' },
-    { stack: 'ruby',   testCmd: 'bundle exec rspec',    devCmd: 'bundle exec rails server', buildCmd: 'bundle exec rake assets:precompile', installCmd: 'bundle install', label: 'Ruby' },
-    { stack: 'java',   testCmd: 'mvn test',             devCmd: 'mvn exec:java',          buildCmd: 'mvn package',             installCmd: 'mvn install',            label: 'Java' },
+    {
+      stack: 'swift',
+      testCmd: 'swift test',
+      devCmd: 'swift run',
+      buildCmd: 'swift build -c release',
+      installCmd: 'swift package resolve',
+      label: 'Swift / macOS',
+    },
+    {
+      stack: 'kotlin',
+      testCmd: './gradlew test',
+      devCmd: './gradlew run',
+      buildCmd: './gradlew build',
+      installCmd: './gradlew dependencies',
+      label: 'Kotlin / Android',
+    },
+    {
+      stack: 'rust',
+      testCmd: 'cargo test',
+      devCmd: 'cargo run',
+      buildCmd: 'cargo build --release',
+      installCmd: 'cargo build',
+      label: 'Rust',
+    },
+    {
+      stack: 'dotnet',
+      testCmd: 'dotnet test',
+      devCmd: 'dotnet run',
+      buildCmd: 'dotnet build',
+      installCmd: 'dotnet restore',
+      label: '.NET / C#',
+    },
+    {
+      stack: 'ruby',
+      testCmd: 'bundle exec rspec',
+      devCmd: 'bundle exec rails server',
+      buildCmd: 'bundle exec rake assets:precompile',
+      installCmd: 'bundle install',
+      label: 'Ruby',
+    },
+    {
+      stack: 'java',
+      testCmd: 'mvn test',
+      devCmd: 'mvn exec:java',
+      buildCmd: 'mvn package',
+      installCmd: 'mvn install',
+      label: 'Java',
+    },
   ];
 
   for (const { stack, testCmd, devCmd, buildCmd, installCmd } of newStacks) {
@@ -786,11 +868,11 @@ async function scenarioNativeStackCommandDefaults() {
 
   // Simulates detection failure: no commands supplied → should resolve to native defaults, not npm.
   const nativeDefaults = [
-    { stack: 'swift',  test: 'xcodebuild test',  install: '# no install step' },
-    { stack: 'kotlin', test: './gradlew test',    install: '# no install step' },
-    { stack: 'rust',   test: 'cargo test',        install: '# no install step' },
-    { stack: 'dotnet', test: 'dotnet test',       install: 'dotnet restore'    },
-    { stack: 'java',   test: 'mvn test',          install: 'mvn install'       },
+    { stack: 'swift', test: 'xcodebuild test', install: '# no install step' },
+    { stack: 'kotlin', test: './gradlew test', install: '# no install step' },
+    { stack: 'rust', test: 'cargo test', install: '# no install step' },
+    { stack: 'dotnet', test: 'dotnet test', install: 'dotnet restore' },
+    { stack: 'java', test: 'mvn test', install: 'mvn install' },
   ];
 
   for (const { stack, test: expectedTest, install: expectedInstall } of nativeDefaults) {
@@ -807,10 +889,17 @@ async function scenarioNativeStackCommandDefaults() {
     };
     const dir = await scaffold(`native-cmd-defaults-${stack}`, 'm', config);
     const claudeMd = path.join(dir, 'CLAUDE.md');
-    if (!fs.existsSync(claudeMd)) { fail(`native-cmd-defaults[${stack}]: CLAUDE.md missing`); continue; }
+    if (!fs.existsSync(claudeMd)) {
+      fail(`native-cmd-defaults[${stack}]: CLAUDE.md missing`);
+      continue;
+    }
     const content = fs.readFileSync(claudeMd, 'utf8');
 
-    if (!content.includes('npm test') && !content.includes('npm install') && !content.includes('npm run')) {
+    if (
+      !content.includes('npm test') &&
+      !content.includes('npm install') &&
+      !content.includes('npm run')
+    ) {
       pass(`native-cmd-defaults[${stack}]: no npm commands in CLAUDE.md`);
     } else {
       fail(`native-cmd-defaults[${stack}]: npm command found in CLAUDE.md for native stack`);
@@ -825,7 +914,9 @@ async function scenarioNativeStackCommandDefaults() {
     if (content.includes(expectedInstall)) {
       pass(`native-cmd-defaults[${stack}]: install command = ${expectedInstall}`);
     } else {
-      fail(`native-cmd-defaults[${stack}]: expected install command "${expectedInstall}" not found`);
+      fail(
+        `native-cmd-defaults[${stack}]: expected install command "${expectedInstall}" not found`,
+      );
     }
   }
 }
@@ -836,8 +927,9 @@ async function scenarioWizardCoverage() {
   const CLI = path.resolve(__dirname, '../../src/index.js');
   const FIXTURES_DIR = path.resolve(__dirname, '../fixtures/wizard-answers');
 
-  const fixtures = fs.readdirSync(FIXTURES_DIR)
-    .filter(f => f.endsWith('.json'))
+  const fixtures = fs
+    .readdirSync(FIXTURES_DIR)
+    .filter((f) => f.endsWith('.json'))
     .sort();
 
   for (const fixtureFile of fixtures) {
@@ -870,12 +962,48 @@ async function scenarioSecurityVariants() {
   section('Security rule variants — stack-aware security.md selection');
 
   const variants = [
-    { stack: 'swift',  hasApi: true,  expected: 'Native Apple', label: 'swift → native-apple', denyIncludes: 'xcodebuild archive' },
-    { stack: 'kotlin', hasApi: true,  expected: 'Native Android', label: 'kotlin → native-android', denyIncludes: 'gradlew publish' },
-    { stack: 'rust',   hasApi: false, expected: 'Systems & Backend', label: 'rust (no API) → systems', denyIncludes: 'cargo publish' },
-    { stack: 'go',     hasApi: false, expected: 'Systems & Backend', label: 'go (no API) → systems', denyIncludes: null },
-    { stack: 'rust',   hasApi: true,  expected: 'Security Rules\n', label: 'rust (with API) → web', denyIncludes: 'cargo publish' },
-    { stack: 'node-ts', hasApi: true, expected: 'Security Rules\n', label: 'node-ts → web', denyIncludes: null },
+    {
+      stack: 'swift',
+      hasApi: true,
+      expected: 'Native Apple',
+      label: 'swift → native-apple',
+      denyIncludes: 'xcodebuild archive',
+    },
+    {
+      stack: 'kotlin',
+      hasApi: true,
+      expected: 'Native Android',
+      label: 'kotlin → native-android',
+      denyIncludes: 'gradlew publish',
+    },
+    {
+      stack: 'rust',
+      hasApi: false,
+      expected: 'Systems & Backend',
+      label: 'rust (no API) → systems',
+      denyIncludes: 'cargo publish',
+    },
+    {
+      stack: 'go',
+      hasApi: false,
+      expected: 'Systems & Backend',
+      label: 'go (no API) → systems',
+      denyIncludes: null,
+    },
+    {
+      stack: 'rust',
+      hasApi: true,
+      expected: 'Security Rules\n',
+      label: 'rust (with API) → web',
+      denyIncludes: 'cargo publish',
+    },
+    {
+      stack: 'node-ts',
+      hasApi: true,
+      expected: 'Security Rules\n',
+      label: 'node-ts → web',
+      denyIncludes: null,
+    },
   ];
 
   for (const { stack, hasApi, expected, label, denyIncludes } of variants) {
@@ -886,7 +1014,11 @@ async function scenarioSecurityVariants() {
       hasApi,
       isDiscovery: false,
     };
-    const dir = await scaffold(`security-variant-${stack}-${hasApi ? 'api' : 'noapi'}`, 'm', config);
+    const dir = await scaffold(
+      `security-variant-${stack}-${hasApi ? 'api' : 'noapi'}`,
+      'm',
+      config,
+    );
     const securityPath = path.join(dir, '.claude', 'rules', 'security.md');
 
     if (!fs.existsSync(securityPath)) {
@@ -904,7 +1036,7 @@ async function scenarioSecurityVariants() {
     // Verify no other security variant files leaked into output
     const rulesDir = path.join(dir, '.claude', 'rules');
     const ruleFiles = fs.readdirSync(rulesDir);
-    const securityFiles = ruleFiles.filter(f => f.startsWith('security'));
+    const securityFiles = ruleFiles.filter((f) => f.startsWith('security'));
     if (securityFiles.length === 1 && securityFiles[0] === 'security.md') {
       pass(`security-variant[${label}]: no variant files leaked`);
     } else {
@@ -946,7 +1078,15 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  for (const kept of ['## Overview', '## Tech Stack', '## Key Commands', '## Coding Conventions', '## Interaction Protocol', '## Reference Documents', '## Environment']) {
+  for (const kept of [
+    '## Overview',
+    '## Tech Stack',
+    '## Key Commands',
+    '## Coding Conventions',
+    '## Interaction Protocol',
+    '## Reference Documents',
+    '## Environment',
+  ]) {
     if (claudeM.includes(kept)) {
       pass(`Tier M: section "${kept}" preserved`);
     } else {
@@ -955,11 +1095,22 @@ async function scenarioPlaceholderNoiseReduction() {
   }
 
   // Tier L — additionally strips Navigation by Role
-  const configL = { ...BASE, tier: 'l', isDiscovery: false, e2eCommand: 'npx playwright test', hasE2E: true };
+  const configL = {
+    ...BASE,
+    tier: 'l',
+    isDiscovery: false,
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+  };
   const dirL = await scaffold('noise-reduction-tier-l', 'l', configL);
   const claudeL = fs.readFileSync(path.join(dirL, 'CLAUDE.md'), 'utf8');
 
-  for (const stripped of ['## RBAC / Roles', '## Key Workflows', '## Navigation by Role', '## Known Patterns']) {
+  for (const stripped of [
+    '## RBAC / Roles',
+    '## Key Workflows',
+    '## Navigation by Role',
+    '## Known Patterns',
+  ]) {
     if (!claudeL.includes(stripped)) {
       pass(`Tier L: section "${stripped}" stripped`);
     } else {
@@ -967,7 +1118,14 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  for (const kept of ['## Overview', '## Tech Stack', '## Key Commands', '## Interaction Protocol', '## Reference Documents', '## Environment']) {
+  for (const kept of [
+    '## Overview',
+    '## Tech Stack',
+    '## Key Commands',
+    '## Interaction Protocol',
+    '## Reference Documents',
+    '## Environment',
+  ]) {
     if (claudeL.includes(kept)) {
       pass(`Tier L: section "${kept}" preserved`);
     } else {
@@ -995,7 +1153,16 @@ async function scenarioPlaceholderNoiseReduction() {
   }
 
   // Native stack (swift, hasApi=false) — web convention stripped, no [HAS_API] literal
-  const configNative = { ...BASE, tier: 'm', isDiscovery: false, techStack: 'swift', hasApi: false, hasDatabase: false, hasFrontend: false, hasDesignSystem: false };
+  const configNative = {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+    techStack: 'swift',
+    hasApi: false,
+    hasDatabase: false,
+    hasFrontend: false,
+    hasDesignSystem: false,
+  };
   const dirNative = await scaffold('noise-reduction-native', 'm', configNative);
   const claudeNative = fs.readFileSync(path.join(dirNative, 'CLAUDE.md'), 'utf8');
 
@@ -1027,7 +1194,18 @@ async function scenarioInPlaceClaudeMdGeneration() {
   await fs.ensureDir(dir);
 
   // No pre-existing CLAUDE.md — scaffold should generate a processed one
-  const config = { ...BASE, tier: 'm', isDiscovery: false, mode: 'in-place', techStack: 'swift', hasApi: false, hasDatabase: false, hasFrontend: false, hasDesignSystem: false, testCommand: 'xcodebuild test -scheme TestProject' };
+  const config = {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+    mode: 'in-place',
+    techStack: 'swift',
+    hasApi: false,
+    hasDatabase: false,
+    hasFrontend: false,
+    hasDesignSystem: false,
+    testCommand: 'xcodebuild test -scheme TestProject',
+  };
   await scaffoldTierSafe('m', dir, config, TEMPLATES_DIR);
 
   // Simulate what init-in-place.js does: call generateClaudeMd when no pre-existing CLAUDE.md
@@ -1122,14 +1300,29 @@ async function scenarioNativeSkillAdaptation() {
   section('Native skill adaptation — perf-audit, skill-dev, security-audit for non-web stacks');
 
   const stacks = [
-    { stack: 'swift',  perfTool: 'Instruments',   lintCmd: 'swiftlint',  secChecklist: 'Keychain API' },
-    { stack: 'kotlin', perfTool: 'Android Studio', lintCmd: 'detekt',     secChecklist: 'Android Keystore' },
-    { stack: 'rust',   perfTool: 'cargo bench',    lintCmd: 'clippy',     secChecklist: 'unsafe block' },
-    { stack: 'go',     perfTool: 'pprof',          lintCmd: 'staticcheck', secChecklist: 'Goroutine leak' },
-    { stack: 'python', perfTool: 'cProfile',       lintCmd: 'ruff',       secChecklist: 'Pickle deserialization' },
-    { stack: 'ruby',   perfTool: 'stackprof',      lintCmd: 'rubocop',    secChecklist: 'Mass assignment' },
-    { stack: 'java',   perfTool: 'JProfiler',      lintCmd: 'spotbugs',   secChecklist: 'Deserialization' },
-    { stack: 'dotnet', perfTool: 'dotTrace',        lintCmd: 'dotnet format', secChecklist: 'Configuration secrets' },
+    { stack: 'swift', perfTool: 'Instruments', lintCmd: 'swiftlint', secChecklist: 'Keychain API' },
+    {
+      stack: 'kotlin',
+      perfTool: 'Android Studio',
+      lintCmd: 'detekt',
+      secChecklist: 'Android Keystore',
+    },
+    { stack: 'rust', perfTool: 'cargo bench', lintCmd: 'clippy', secChecklist: 'unsafe block' },
+    { stack: 'go', perfTool: 'pprof', lintCmd: 'staticcheck', secChecklist: 'Goroutine leak' },
+    {
+      stack: 'python',
+      perfTool: 'cProfile',
+      lintCmd: 'ruff',
+      secChecklist: 'Pickle deserialization',
+    },
+    { stack: 'ruby', perfTool: 'stackprof', lintCmd: 'rubocop', secChecklist: 'Mass assignment' },
+    { stack: 'java', perfTool: 'JProfiler', lintCmd: 'spotbugs', secChecklist: 'Deserialization' },
+    {
+      stack: 'dotnet',
+      perfTool: 'dotTrace',
+      lintCmd: 'dotnet format',
+      secChecklist: 'Configuration secrets',
+    },
   ];
 
   for (const { stack, perfTool, lintCmd, secChecklist } of stacks) {
@@ -1217,9 +1410,13 @@ async function scenarioNativeSkillAdaptation() {
       }
 
       if (sec.includes(secChecklist)) {
-        pass(`native-skill[${stack}]: security-audit checklist resolved — contains ${secChecklist}`);
+        pass(
+          `native-skill[${stack}]: security-audit checklist resolved — contains ${secChecklist}`,
+        );
       } else {
-        fail(`native-skill[${stack}]: security-audit checklist not resolved — expected ${secChecklist}`);
+        fail(
+          `native-skill[${stack}]: security-audit checklist not resolved — expected ${secChecklist}`,
+        );
       }
 
       if (!sec.includes('[SECURITY_CHECKLIST_ITEMS]')) {
@@ -1235,7 +1432,10 @@ async function scenarioNativeSkillAdaptation() {
   // Additional: verify node-ts (web stack) still gets web path, no exit
   const webConfig = { ...BASE, tier: 'm', isDiscovery: false };
   const webDir = await scaffold('native-skill-web-baseline', 'm', webConfig);
-  const webPerf = fs.readFileSync(path.join(webDir, '.claude', 'skills', 'perf-audit', 'SKILL.md'), 'utf8');
+  const webPerf = fs.readFileSync(
+    path.join(webDir, '.claude', 'skills', 'perf-audit', 'SKILL.md'),
+    'utf8',
+  );
   if (webPerf.includes('Step 1') && webPerf.includes('Step 6')) {
     pass('web-baseline: perf-audit has both web (Step 1) and native (Step 6) paths');
   } else {
@@ -1261,7 +1461,7 @@ function rubricFail(dim, label) {
 
 function computeDScore(dim) {
   const d = rubricDims[dim];
-  if (!d || (d.passed + d.failed) === 0) return 0;
+  if (!d || d.passed + d.failed === 0) return 0;
   const rate = d.passed / (d.passed + d.failed);
   if (rate >= 1.0) return 3;
   if (rate >= 0.66) return 2;
@@ -1287,10 +1487,18 @@ async function scenarioRubricScore() {
     {
       name: 'swift',
       config: {
-        ...BASE, tier: 'm', techStack: 'swift', isDiscovery: false,
-        hasApi: false, hasFrontend: false, hasDatabase: false, hasDesignSystem: false,
-        installCommand: '# no install step', devCommand: 'swift run',
-        buildCommand: 'xcodebuild build', testCommand: 'xcodebuild test',
+        ...BASE,
+        tier: 'm',
+        techStack: 'swift',
+        isDiscovery: false,
+        hasApi: false,
+        hasFrontend: false,
+        hasDatabase: false,
+        hasDesignSystem: false,
+        installCommand: '# no install step',
+        devCommand: 'swift run',
+        buildCommand: 'xcodebuild build',
+        testCommand: 'xcodebuild test',
       },
       isNative: true,
       expectedFramework: 'N/A',
@@ -1314,8 +1522,14 @@ async function scenarioRubricScore() {
     const claudeMd = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
 
     // ── D2: Commands & conventions ──────────────────────────────────────
-    const commandPlaceholders = ['[INSTALL_COMMAND]', '[DEV_COMMAND]', '[BUILD_COMMAND]', '[TEST_COMMAND]', '[TYPE_CHECK_COMMAND]'];
-    const hasCommandPlaceholder = commandPlaceholders.some(p => claudeMd.includes(p));
+    const commandPlaceholders = [
+      '[INSTALL_COMMAND]',
+      '[DEV_COMMAND]',
+      '[BUILD_COMMAND]',
+      '[TEST_COMMAND]',
+      '[TYPE_CHECK_COMMAND]',
+    ];
+    const hasCommandPlaceholder = commandPlaceholders.some((p) => claudeMd.includes(p));
     if (!hasCommandPlaceholder) {
       rubricPass('D2', `[${name}] no command placeholders in CLAUDE.md`);
     } else {
@@ -1351,7 +1565,7 @@ async function scenarioRubricScore() {
     // Extract skill names from Active Skills section
     const activeMatch = claudeMd.match(/## Active Skills\n([\s\S]*?)(?:\n## |\n$|$)/);
     const activeBlock = activeMatch ? activeMatch[1] : '';
-    const listedSkills = [...activeBlock.matchAll(/`\/([a-z-]+)`/g)].map(m => m[1]);
+    const listedSkills = [...activeBlock.matchAll(/`\/([a-z-]+)`/g)].map((m) => m[1]);
 
     // Every listed skill must exist on disk
     for (const skill of listedSkills) {
@@ -1416,13 +1630,13 @@ async function scenarioRubricScore() {
         rubricFail('D7', `[${name}] permissions.deny empty or missing`);
       }
 
-      if (Array.isArray(deny) && deny.some(d => d.includes('push --force'))) {
+      if (Array.isArray(deny) && deny.some((d) => d.includes('push --force'))) {
         rubricPass('D7', `[${name}] deny blocks force-push`);
       } else {
         rubricFail('D7', `[${name}] deny missing force-push block`);
       }
 
-      if (Array.isArray(deny) && deny.some(d => d.includes('push origin main'))) {
+      if (Array.isArray(deny) && deny.some((d) => d.includes('push origin main'))) {
         rubricPass('D7', `[${name}] deny blocks push to main`);
       } else {
         rubricFail('D7', `[${name}] deny missing push-to-main block`);
@@ -1478,7 +1692,7 @@ async function scenarioRubricScore() {
     // No [HAS_API] literal in skills
     const skillsDir = path.join(dir, '.claude', 'skills');
     const skillFiles = fs.existsSync(skillsDir) ? walkFiles(skillsDir) : [];
-    const hasApiLiteral = skillFiles.some(f => {
+    const hasApiLiteral = skillFiles.some((f) => {
       if (!f.endsWith('.md')) return false;
       return fs.readFileSync(f, 'utf8').includes('[HAS_API]');
     });
@@ -1497,7 +1711,7 @@ async function scenarioRubricScore() {
     }
     const pct = Math.round((weightedTotal / maxWeighted) * 100);
     console.log(
-      `  ${c.cyan('◆')} Rubric [${name}]: D2=${scores.D2} D5=${scores.D5} D7=${scores.D7} D8=${scores.D8} → ${weightedTotal}/${maxWeighted} (${pct}%)`
+      `  ${c.cyan('◆')} Rubric [${name}]: D2=${scores.D2} D5=${scores.D5} D7=${scores.D7} D8=${scores.D8} → ${weightedTotal}/${maxWeighted} (${pct}%)`,
     );
 
     // Quality floor: every dimension must score ≥ 2
@@ -1552,7 +1766,7 @@ async function main() {
   console.log();
   console.log(c.bold('─────────────────────────────────'));
   console.log(
-    `${c.green(`✓ ${passed} passed`)}  ${failed > 0 ? c.red(`✗ ${failed} failed`) : c.dim(`✗ ${failed} failed`)}  ${c.yellow(`⚠ ${warned} warned`)}`
+    `${c.green(`✓ ${passed} passed`)}  ${failed > 0 ? c.red(`✗ ${failed} failed`) : c.dim(`✗ ${failed} failed`)}  ${c.yellow(`⚠ ${warned} warned`)}`,
   );
 
   if (failures.length > 0) {

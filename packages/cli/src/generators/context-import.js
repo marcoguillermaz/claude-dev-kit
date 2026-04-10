@@ -14,26 +14,35 @@ export async function generateContextImport(config, targetDir, clonedRepos, copi
   const mode = config.mode === 'in-place' ? 'in-place' : 'from-context';
 
   // Build repo list section
-  const repoList = clonedRepos.length > 0
-    ? clonedRepos.map(r => {
-        const contextPath = r.error
-          ? `⚠ ${r.source} — clone failed: ${r.error}`
-          : `- \`.claude/context/repos/${r.name}/\` ← from \`${r.source}\``;
-        return contextPath;
-      }).join('\n')
-    : mode === 'in-place'
-      ? '- `.` (current directory — the project itself)'
-      : '*(none provided)*';
+  const repoList =
+    clonedRepos.length > 0
+      ? clonedRepos
+          .map((r) => {
+            const contextPath = r.error
+              ? `⚠ ${r.source} — clone failed: ${r.error}`
+              : `- \`.claude/context/repos/${r.name}/\` ← from \`${r.source}\``;
+            return contextPath;
+          })
+          .join('\n')
+      : mode === 'in-place'
+        ? '- `.` (current directory — the project itself)'
+        : '*(none provided)*';
 
   // Build docs list section
-  const docList = copiedDocs.length > 0
-    ? copiedDocs.map(d => `- \`.claude/context/docs/${path.basename(d)}\``).join('\n')
-    : '*(none provided)*';
+  const docList =
+    copiedDocs.length > 0
+      ? copiedDocs.map((d) => `- \`.claude/context/docs/${path.basename(d)}\``).join('\n')
+      : '*(none provided)*';
 
   // Primary repo
   const primaryLabel = config.primaryRepo
-    ? path.basename(config.primaryRepo.split('/').pop()?.replace(/\.git$/, '') || config.primaryRepo)
-    : (clonedRepos[0]?.name || '.');
+    ? path.basename(
+        config.primaryRepo
+          .split('/')
+          .pop()
+          ?.replace(/\.git$/, '') || config.primaryRepo,
+      )
+    : clonedRepos[0]?.name || '.';
 
   template = template
     .replace('[IMPORT_MODE]', mode)

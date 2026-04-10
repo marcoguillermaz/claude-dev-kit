@@ -26,7 +26,7 @@ Before any other step: read `CLAUDE.md` and check the Framework and Language fie
 
 ## Context and scope
 
-**In scope**: bundle composition, server/client component boundaries, dynamic rendering triggers, lazy loading, data fetching efficiency (caching, parallelism, N+1), re-render patterns, image optimization.
+**In scope**: bundle composition, server/client component boundaries, dynamic rendering triggers, lazy loading, data fetching efficiency (caching, parallelism, N+1), re-render patterns, image optimization. For native stacks: algorithmic complexity, stack-specific hot-path patterns, memory management, launch weight, energy impact, binary size.
 **Out of scope**: SEO, CWV as ranking signals, `robots.txt`, `sitemap.xml`, OG tags, Lighthouse site audit, accessibility (→ `/ui-audit`), DB schema (→ `/skill-db`).
 **Default mode**: audit (report only, no code changes). `mode:apply` makes focused non-breaking fixes.
 
@@ -364,16 +364,86 @@ Flag:
 
 ### Step 6b — Stack-specific checks (main context)
 
-Read the 10 largest source files by line count. Apply the checks relevant to the project language:
+Read the 10 largest source files by line count. Apply the checks relevant to the project language. Each check includes grep patterns — run them, then read flagged files for context.
 
-**Swift**: main-thread work (no heavy computation on DispatchQueue.main), image loading without downsampling, Core Data fetch batch size, ARC retain cycle risk (strong reference in closures capturing self), Instruments allocation spike patterns
-**Kotlin**: StrictMode violations, RecyclerView ViewHolder recycling, main-thread DB access, bitmap memory management, coroutine scope leaks
-**Rust**: unnecessary `.clone()` calls, allocation in hot paths, `Box<dyn Trait>` where generics suffice, missing `#[inline]` on small hot functions
-**Go**: excessive goroutine creation, channel buffer sizing, escape analysis (`go build -gcflags='-m'`), sync.Pool for short-lived objects, defer in hot loops
-**Python**: GIL contention, list comprehension vs generator for large datasets, unnecessary deep copies, regex compilation in loops
-**Ruby**: N+1 queries (ActiveRecord), object allocation in hot loops, GC pressure from short-lived strings, eager loading vs lazy loading
-**Java**: autoboxing in loops, unnecessary object creation, GC pause patterns, stream vs loop performance, connection pool sizing
-**dotnet**: excessive LINQ allocations, async/await state machine overhead, LOH fragmentation, string concatenation in loops (use StringBuilder)
+**Swift**:
+- Main-thread work: grep for `DispatchQueue.main.sync` outside UI layer files — synchronous dispatch on main blocks the UI. Also grep for `URLSession.shared.data` without `Task { }` wrapper in non-async contexts.
+- Image downsampling: grep for `UIImage(named:` or `NSImage(named:` in collection view / table view code — flag if no `preparingThumbnail` or `CGImageSource` downsampling nearby.
+- Core Data batch size: grep for `NSFetchRequest` — flag if `fetchBatchSize` is 0 or not set (default fetches all objects into memory).
+- Retain cycles: grep for closures capturing `self` — flag `{ self.` or `{ [self]` without `[weak self]` in long-lived contexts (completion handlers, observers, timers).
+- Allocation spikes: grep for object creation inside `for`/`while` loops (e.g. `= String(`, `= Data(`, `= NSMutableAttributedString(`).
+
+**Kotlin**:
+- Main-thread DB: grep for `Room` or `SQLite` calls outside `Dispatchers.IO` or `withContext(Dispatchers.IO)`.
+- RecyclerView recycling: grep for `onBindViewHolder` — flag if view inflation (`inflate(`) happens inside bind instead of `onCreateViewHolder`.
+- Bitmap memory: grep for `BitmapFactory.decode` — flag if no `inSampleSize` option is set (loads full-resolution bitmaps).
+- Coroutine leaks: grep for `GlobalScope.launch` — flag each occurrence (no lifecycle-aware cancellation).
+- StrictMode: grep for `StrictMode` in Application class — flag if absent in debug build (disk/network violations on main thread go undetected).
+
+**Rust**:
+- Unnecessary clone: grep for `.clone()` — flag if the value is only read after cloning (borrow would suffice).
+- Hot-path allocation: grep for `Vec::new()`, `String::new()`, `Box::new(` inside loop bodies — flag if the allocation could be hoisted or reused.
+- Dynamic dispatch: grep for `Box<dyn` — flag if the trait has a single implementor (generics avoid vtable overhead).
+- Missing inline: grep for `pub fn` in hot-path modules with body < 5 lines — consider `#[inline]` for small frequently-called functions.
+
+**Go**:
+- Goroutine creation in loops: grep for `go func` or `go ` inside `for` — flag if no semaphore/pool limits the concurrency.
+- Channel sizing: grep for `make(chan` — flag unbuffered channels (`make(chan T)`) in producer-consumer patterns (causes blocking).
+- Defer in loops: grep for `defer` inside `for` — deferred calls accumulate until the function returns, not the loop iteration.
+- Escape analysis: recommend running `go build -gcflags='-m' 2>&1 | grep 'escapes to heap'` on hot-path packages.
+
+**Python**:
+- Regex in loops: grep for `re.compile` or `re.search`/`re.match` with literal pattern inside `for`/`while` — flag if pattern is constant (compile once outside loop).
+- List vs generator: grep for list comprehensions `[... for ... in ...]` passed to `sum(`, `max(`, `min(`, `any(`, `all(` — generator expression avoids materializing the full list.
+- Deep copies: grep for `copy.deepcopy` — flag in hot paths (extremely expensive).
+- GIL contention: grep for `threading.Thread` doing CPU-bound work — flag (use `multiprocessing` or `concurrent.futures.ProcessPoolExecutor` instead).
+
+**Ruby**:
+- N+1 queries: grep for `.each` followed by association access (e.g. `user.company`) — flag if no `.includes(` or `.eager_load(` on the parent query.
+- String allocation: grep for string interpolation `"#{` inside loops — flag if the string could be built with `StringIO` or array join.
+- GC pressure: grep for `.map { |x| x.` patterns creating intermediate arrays — flag if `.lazy.map` or `.each_with_object` would avoid allocation.
+
+**Java**:
+- Autoboxing: grep for `Integer`, `Long`, `Double` in loop variable declarations — flag (use primitive types `int`, `long`, `double`).
+- String concat in loops: grep for `+=` on String variables inside loops — flag (use `StringBuilder`).
+- Connection pool: grep for `DriverManager.getConnection` — flag if no connection pool (HikariCP, c3p0) is configured.
+- Stream overhead: grep for `.stream().` on small collections (< 10 items) — traditional loop may be faster due to stream pipeline overhead.
+
+**dotnet**:
+- LINQ allocations: grep for `.Select(`, `.Where(`, `.ToList()` chains — flag if intermediate `.ToList()` materializes unnecessarily before final consumption.
+- String concatenation: grep for `+=` on string inside loops — flag (use `StringBuilder` or `string.Join`).
+- LOH fragmentation: grep for `new byte[` with size > 85000 — flag (Large Object Heap allocations are expensive to collect).
+- Async overhead: grep for `async` methods that contain only a single `await` with no branching — flag as candidates for removing async wrapper (avoids state machine overhead).
+
+---
+
+### Step 6d — Resource footprint checks (main context)
+
+**CHECK NR1 — Launch / startup weight**
+Identify the application entry point:
+- Swift: `@main` struct or `AppDelegate.didFinishLaunchingWithOptions`
+- Kotlin: `Application.onCreate` or `MainActivity.onCreate`
+- Rust/Go/Python/Ruby/Java/dotnet: `main()` function or entry module
+
+Grep for heavy operations in the entry point: database initialization, network calls, large file reads, complex object graph construction. Flag any operation that could be deferred (lazy initialization) or moved to a background thread/task.
+
+**CHECK NR2 — Memory management patterns**
+- Swift: grep for missing `autoreleasepool` in batch processing loops. Grep for `NSCache` or `Dictionary` used as cache without size limit.
+- Kotlin: grep for `static` or `companion object` holding Activity/Context references (memory leak). Check `onDestroy` for missing listener/observer cleanup.
+- Rust: grep for `Vec` that grows via `push` in a loop without `with_capacity` pre-allocation.
+- Go: grep for `sync.Map` or map growth without periodic cleanup — flag unbounded maps.
+- All: grep for large static/global collections that persist for the process lifetime.
+
+**CHECK NR3 — Energy and background patterns** (mobile stacks only)
+- Swift: grep for `Timer.scheduledTimer` or `DispatchSource.makeTimerSource` — flag if no `tolerance` set (tight timers prevent CPU sleep). Grep for `CLLocationManager` with `startUpdatingLocation` — flag if `startMonitoringSignificantLocationChanges` would suffice.
+- Kotlin: grep for `AlarmManager.setRepeating` or `Handler.postDelayed` in loops — flag excessive wake-ups. Grep for `LocationRequest` with high frequency updates.
+- Flag: any background polling pattern (repeated network calls on a timer) that could use push notifications or event-driven updates instead.
+
+**CHECK NR4 — Binary / artifact size**
+- Grep for large embedded assets in source directories (images > 1MB, bundled databases, embedded fonts). Flag if assets could be downloaded on demand.
+- Swift: check for `DEBUG` conditional code that may leak into release builds (grep for `#if DEBUG` blocks containing large test fixtures or mock data).
+- Kotlin: check for `debugImplementation` dependencies accidentally in `implementation` (grep `build.gradle` for heavy debug-only libraries in the wrong configuration).
+- All: grep for unused imports at module/package level — flag files importing modules they don't use (increases link time and potentially binary size).
 
 ---
 
@@ -404,7 +474,15 @@ Read the 10 largest source files by line count. Apply the checks relevant to the
 ### Stack-Specific Checks
 | Check | Verdict | Notes |
 |---|---|---|
-| [check name] | ✅/⚠️ | [details] |
+| [check name per 6b] | ✅/⚠️ | [details] |
+
+### Resource Footprint Checks
+| # | Check | Matches | Severity | Verdict |
+|---|---|---|---|---|
+| NR1 | Launch / startup weight | N | High | ✅/⚠️ |
+| NR2 | Memory management patterns | N | Medium | ✅/⚠️ |
+| NR3 | Energy / background patterns | N | Medium | ✅/⚠️ |
+| NR4 | Binary / artifact size | N | Low | ✅/⚠️ |
 
 ### Findings requiring action ([N] total)
 [Sorted Critical → High → Medium → Low]
@@ -436,10 +514,10 @@ Then write approved entries to `docs/refactoring-backlog.md` using the same ID f
 
 ### Severity guide (native audit)
 
-- **Critical**: O(n²+) in a hot path processing user-visible data; memory leak causing OOM on long sessions; main-thread blocking > 1s
-- **High**: synchronous I/O blocking UI/main thread; sequential network calls with >500ms combined latency; goroutine/thread/coroutine leak; unbounded collection growth
-- **Medium**: unnecessary allocations in moderate-frequency paths; missing cancellation on background tasks; suboptimal data structure choice; missing resource cleanup
-- **Low**: minor allocation optimization; style-level concurrency improvement; profiler not configured
+- **Critical**: O(n²+) in a hot path processing user-visible data; memory leak causing OOM on long sessions; main-thread blocking > 1s; Activity/Context leak via static reference (Kotlin)
+- **High**: synchronous I/O blocking UI/main thread (NP3); sequential network calls with >500ms combined latency; goroutine/thread/coroutine leak; unbounded collection growth (NR2); heavy initialization in app entry point delaying launch (NR1); GlobalScope.launch without lifecycle cancellation
+- **Medium**: unnecessary allocations in moderate-frequency paths (NP2); missing cancellation on background tasks; suboptimal data structure choice; missing resource cleanup; excessive timer/location wake-ups (NR3); retain cycles in closures; regex compilation in loops
+- **Low**: minor allocation optimization; style-level concurrency improvement; profiler not configured; binary size overhead from unused assets (NR4); missing `#[inline]` on small functions
 
 ---
 

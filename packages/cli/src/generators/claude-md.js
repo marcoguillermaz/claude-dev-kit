@@ -1,13 +1,17 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { interpolate } from '../scaffold/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 /**
  * Generate CLAUDE.md from the tier template, applying wizard answers.
- * The template is pre-populated with all placeholders; we replace what we know.
+ * Single authoritative writer — scaffold/index.js does NOT copy CLAUDE.md.
+ *
+ * Pipeline: raw template → interpolate() (all placeholders) → command block
+ *           → rule imports → active skills → conditional stripping → write
  */
 export async function generateClaudeMd(config, targetDir) {
   const tier = (config.tier || 's').toLowerCase();
@@ -20,14 +24,10 @@ export async function generateClaudeMd(config, targetDir) {
     content = getMinimalTemplate();
   }
 
-  // Apply known values from wizard answers
-  content = content
-    .replace(/\[PROJECT_NAME\]/g, config.projectName)
-    .replace(/\[TECH_STACK_SUMMARY\]/g, techStackSummary(config.techStack))
-    .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
-    .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack));
+  // Resolve all template placeholders (stack labels, commands, booleans, conditionals)
+  content = interpolate(content, config);
 
-  // Inject commands
+  // Overwrite the command block with formatted version (adds inline comments)
   const commands = buildCommandsBlock(config);
   content = content.replace(/```bash[\s\S]*?```/, commands);
 
@@ -57,46 +57,42 @@ export async function generateClaudeMd(config, targetDir) {
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
 }
 
-function frameworkValue(config) {
-  if (config.framework) return config.framework;
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  if (nativeStacks.includes(config.techStack)) return 'N/A — native app';
-  return '_fill in: e.g. Next.js 15, Express, Django, Rails_';
-}
-
-function languageFromStack(techStack) {
-  const map = {
-    'node-ts': 'TypeScript',
-    'node-js': 'JavaScript',
-    python: 'Python',
-    go: 'Go',
-    swift: 'Swift',
-    kotlin: 'Kotlin',
-    rust: 'Rust',
-    dotnet: 'C#',
-    ruby: 'Ruby',
-    java: 'Java',
-  };
-  return map[techStack] || '_fill in: TypeScript / Python / Go / etc._';
-}
-
-function techStackSummary(stack) {
-  const map = {
-    'node-ts': 'Node.js + TypeScript',
-    'node-js': 'Node.js + JavaScript',
-    python: 'Python',
-    go: 'Go',
-    other: 'Mixed',
-  };
-  return map[stack] || stack;
-}
-
 const NATIVE_CMD_DEFAULTS = {
-  swift:  { install: '# no install step', dev: 'swift run',     build: 'xcodebuild build',      test: 'xcodebuild test',  typeCheck: '' },
-  kotlin: { install: '# no install step', dev: './gradlew run',  build: './gradlew build',       test: './gradlew test',   typeCheck: '' },
-  rust:   { install: '# no install step', dev: 'cargo run',      build: 'cargo build --release', test: 'cargo test',       typeCheck: '' },
-  dotnet: { install: 'dotnet restore',    dev: 'dotnet run',     build: 'dotnet build',          test: 'dotnet test',      typeCheck: '' },
-  java:   { install: 'mvn install',       dev: 'mvn exec:java',  build: 'mvn package',           test: 'mvn test',         typeCheck: '' },
+  swift: {
+    install: '# no install step',
+    dev: 'swift run',
+    build: 'xcodebuild build',
+    test: 'xcodebuild test',
+    typeCheck: '',
+  },
+  kotlin: {
+    install: '# no install step',
+    dev: './gradlew run',
+    build: './gradlew build',
+    test: './gradlew test',
+    typeCheck: '',
+  },
+  rust: {
+    install: '# no install step',
+    dev: 'cargo run',
+    build: 'cargo build --release',
+    test: 'cargo test',
+    typeCheck: '',
+  },
+  dotnet: {
+    install: 'dotnet restore',
+    dev: 'dotnet run',
+    build: 'dotnet build',
+    test: 'dotnet test',
+    typeCheck: '',
+  },
+  java: {
+    install: 'mvn install',
+    dev: 'mvn exec:java',
+    build: 'mvn package',
+    test: 'mvn test',
+    typeCheck: '',
+  },
 };
 
 function buildCommandsBlock(config) {
@@ -132,7 +128,7 @@ function injectRuleImports(content) {
     '@.claude/rules/pipeline-standards.md',
   ];
   // If any import already present, skip (idempotent)
-  if (imports.every(i => content.includes(i))) return content;
+  if (imports.every((i) => content.includes(i))) return content;
 
   const importBlock = '\n' + imports.join('\n') + '\n';
   // Insert after the first heading line (# ...)
@@ -164,7 +160,7 @@ function injectActiveSkills(content, config) {
     }
   }
 
-  const section = `\n## Active Skills\n${active.map(s => `- \`/${s}\``).join('\n')}\n`;
+  const section = `\n## Active Skills\n${active.map((s) => `- \`/${s}\``).join('\n')}\n`;
 
   // Append before Environment section, or at end of file
   if (content.includes('\n## Environment')) {
@@ -202,11 +198,22 @@ function stripUnfilledSections(content) {
   }
   sections.push(current);
 
-  const kept = sections.filter(s => !s.heading || !sectionsToStrip.has(s.heading));
+  const kept = sections.filter((s) => !s.heading || !sectionsToStrip.has(s.heading));
 
   // Rejoin and collapse runs of 3+ blank lines to 2
-  return kept.map(s => s.lines.join('\n')).join('\n').replace(/\n{3,}/g, '\n\n');
+  return kept
+    .map((s) => s.lines.join('\n'))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n');
 }
+
+// Exported for unit testing only — not part of the public API
+export const _testHelpers = {
+  buildCommandsBlock,
+  injectRuleImports,
+  injectActiveSkills,
+  stripUnfilledSections,
+};
 
 function getMinimalTemplate() {
   return `# [PROJECT_NAME] — Project Context

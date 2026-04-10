@@ -14,24 +14,34 @@ const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 export async function initFromContext(options) {
   console.log();
-  console.log(chalk.dim('Provide existing repos and/or docs. Claude will read them and populate your project files.'));
+  console.log(
+    chalk.dim(
+      'Provide existing repos and/or docs. Claude will read them and populate your project files.',
+    ),
+  );
   console.log();
 
   // ── Collect source repos ─────────────────────────────────────────────
 
   const sourceInputs = [];
-  console.log(chalk.bold('Source repositories') + chalk.dim(' (GitHub URL, org/repo, or local path — empty line when done):'));
+  console.log(
+    chalk.bold('Source repositories') +
+      chalk.dim(' (GitHub URL, org/repo, or local path — empty line when done):'),
+  );
 
   while (true) {
-    const { source } = await inquirer.prompt([{
-      type: 'input',
-      name: 'source',
-      message: `  Repo ${sourceInputs.length + 1}:`,
-      validate: (v) => {
-        if (sourceInputs.length === 0 && v.trim() === '') return 'At least one repository is required';
-        return true;
+    const { source } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'source',
+        message: `  Repo ${sourceInputs.length + 1}:`,
+        validate: (v) => {
+          if (sourceInputs.length === 0 && v.trim() === '')
+            return 'At least one repository is required';
+          return true;
+        },
       },
-    }]);
+    ]);
 
     if (source.trim() === '') break;
     sourceInputs.push(source.trim());
@@ -40,15 +50,20 @@ export async function initFromContext(options) {
   // ── Collect source docs ──────────────────────────────────────────────
 
   console.log();
-  console.log(chalk.bold('Source documents') + chalk.dim(' (PDF, MD, TXT file paths — optional, empty line when done):'));
+  console.log(
+    chalk.bold('Source documents') +
+      chalk.dim(' (PDF, MD, TXT file paths — optional, empty line when done):'),
+  );
 
   const docInputs = [];
   while (true) {
-    const { doc } = await inquirer.prompt([{
-      type: 'input',
-      name: 'doc',
-      message: `  Doc ${docInputs.length + 1}:`,
-    }]);
+    const { doc } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'doc',
+        message: `  Doc ${docInputs.length + 1}:`,
+      },
+    ]);
     if (doc.trim() === '') break;
 
     const resolved = doc.startsWith('~')
@@ -64,45 +79,52 @@ export async function initFromContext(options) {
 
   // ── Primary repo + project config ───────────────────────────────────
 
-  const { projectName, primaryRepo, tier, includePreCommit, includeGithub } = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'projectName',
-      message: 'New project name:',
-      default: path.basename(sourceInputs[0]?.split('/').pop()?.replace(/\.git$/, '') || process.cwd()),
-      validate: (v) => v.trim().length > 0 || 'Required',
-    },
-    {
-      type: 'list',
-      name: 'primaryRepo',
-      message: 'Which is the primary repository?',
-      when: sourceInputs.length > 1,
-      choices: sourceInputs,
-    },
-    {
-      type: 'list',
-      name: 'tier',
-      message: 'Pipeline tier:',
-      when: !options.tier,
-      choices: [
-        { name: 'S — Fast Lane    (bugfixes, ≤3 files)', value: 's' },
-        { name: 'M — Standard     (feature blocks, 1–2 weeks)', value: 'm' },
-        { name: 'L — Full         (complex domain, long-running)', value: 'l' },
-      ],
-    },
-    {
-      type: 'confirm',
-      name: 'includePreCommit',
-      message: 'Include pre-commit config?',
-      default: true,
-    },
-    {
-      type: 'confirm',
-      name: 'includeGithub',
-      message: 'Include .github/ (PR template + CODEOWNERS)?',
-      default: true,
-    },
-  ]);
+  const { projectName, primaryRepo, tier, includePreCommit, includeGithub } = await inquirer.prompt(
+    [
+      {
+        type: 'input',
+        name: 'projectName',
+        message: 'New project name:',
+        default: path.basename(
+          sourceInputs[0]
+            ?.split('/')
+            .pop()
+            ?.replace(/\.git$/, '') || process.cwd(),
+        ),
+        validate: (v) => v.trim().length > 0 || 'Required',
+      },
+      {
+        type: 'list',
+        name: 'primaryRepo',
+        message: 'Which is the primary repository?',
+        when: sourceInputs.length > 1,
+        choices: sourceInputs,
+      },
+      {
+        type: 'list',
+        name: 'tier',
+        message: 'Pipeline tier:',
+        when: !options.tier,
+        choices: [
+          { name: 'S — Fast Lane    (bugfixes, ≤3 files)', value: 's' },
+          { name: 'M — Standard     (feature blocks, 1–2 weeks)', value: 'm' },
+          { name: 'L — Full         (complex domain, long-running)', value: 'l' },
+        ],
+      },
+      {
+        type: 'confirm',
+        name: 'includePreCommit',
+        message: 'Include pre-commit config?',
+        default: true,
+      },
+      {
+        type: 'confirm',
+        name: 'includeGithub',
+        message: 'Include .github/ (PR template + CODEOWNERS)?',
+        default: true,
+      },
+    ],
+  );
 
   const config = {
     projectName,
@@ -119,7 +141,7 @@ export async function initFromContext(options) {
     console.log();
     console.log(chalk.yellow('Dry run — no files will be written.'));
     console.log();
-    config.sourceRepos = sourceInputs.map(s => ({ source: s }));
+    config.sourceRepos = sourceInputs.map((s) => ({ source: s }));
     config.sourceDocs = docInputs;
     printPlan(config);
     return;
@@ -130,12 +152,14 @@ export async function initFromContext(options) {
   const targetDir = path.join(process.cwd(), projectName);
 
   if (await fs.pathExists(targetDir)) {
-    const { overwrite } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'overwrite',
-      message: `Directory '${projectName}' already exists. Continue and add files into it?`,
-      default: false,
-    }]);
+    const { overwrite } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'overwrite',
+        message: `Directory '${projectName}' already exists. Continue and add files into it?`,
+        default: false,
+      },
+    ]);
     if (!overwrite) {
       console.log(chalk.dim('Aborted.'));
       process.exit(0);
@@ -151,7 +175,10 @@ export async function initFromContext(options) {
   const clonedRepos = [];
 
   for (const source of sourceInputs) {
-    const repoName = source.split('/').pop().replace(/\.git$/, '');
+    const repoName = source
+      .split('/')
+      .pop()
+      .replace(/\.git$/, '');
     const repoTarget = path.join(contextDir, 'repos', repoName);
     spinner.text = `Cloning ${repoName}...`;
     try {
@@ -212,7 +239,10 @@ export async function initFromContext(options) {
   console.log(chalk.bold('Next steps:'));
   printNextSteps(config);
   console.log();
-  console.log(chalk.yellow.bold('Important:') + ' CONTEXT_IMPORT.md is added to .gitignore — it contains local paths.');
+  console.log(
+    chalk.yellow.bold('Important:') +
+      ' CONTEXT_IMPORT.md is added to .gitignore — it contains local paths.',
+  );
   console.log(chalk.dim('Docs: https://github.com/marcoguillermaz/claude-dev-kit'));
 }
 
@@ -224,7 +254,7 @@ async function appendToGitignore(dir, entries) {
     content = await fs.readFile(gitignorePath, 'utf8');
   }
 
-  const toAdd = entries.filter(e => !content.includes(e));
+  const toAdd = entries.filter((e) => !content.includes(e));
   if (toAdd.length > 0) {
     const additions = '\n# claude-dev-kit context import\n' + toAdd.join('\n') + '\n';
     await fs.appendFile(gitignorePath, additions);
