@@ -1,0 +1,70 @@
+# Claude Code + Project — Cheat Sheet
+
+> Quick reference for commands, pipeline shortcuts, and available skills.
+
+---
+
+## Claude Code — Session
+
+| Command | Action |
+|---|---|
+| `/clear` | Clear conversation context |
+| `/compact [note]` | Compact conversation (CLAUDE.md survives) |
+| `/model <name>` | Switch model: `sonnet`, `opus`, `haiku` |
+| `/memory` | View/edit CLAUDE.md and auto-memory |
+| `/resume` | Resume a previous session |
+
+---
+
+## Pipeline shortcuts
+
+| Situation | Action |
+|---|---|
+| Starting a new block | `git checkout -b feature/block-name` |
+| Quick fix (≤3 files) | `git checkout -b fix/description` — use Fast Lane |
+| Session interrupted | Check `.claude/session/` for recovery file |
+| Context window ~50% | Run `/compact` before continuing |
+| End of block | Run context review (C1–C12) then `/compact` |
+
+---
+
+## Audit skills
+
+Run these on demand. Each skill reads the codebase, produces a structured report, and appends findings to `docs/refactoring-backlog.md`.
+
+| Skill | What it checks | When to run |
+|---|---|---|
+| `/skill-dev` | Coupling, duplication, dead code, magic strings, oversized components | Before major refactoring; quarterly review |
+| `/perf-audit` | Server/client boundaries, heavy imports, serial awaits, image optimization, N+1 | Before production releases; after major UI changes |
+
+> **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
+> **Prerequisites for screenshot-based skills**: dev server must be running (check your project's dev command for the URL).
+
+---
+
+## Git workflow
+
+| Action | Command |
+|---|---|
+| New feature branch | `git checkout -b feature/block-name` |
+| New fix branch | `git checkout -b fix/description` |
+| Merge to staging | `git checkout staging && git merge feature/name --no-ff && git push` |
+| Promote to production | `git checkout main && git merge staging --no-ff && git push` |
+
+---
+
+## Useful checks
+
+```bash
+# Verify type safety
+# type checking handled by compiler
+
+# Run tests
+xcodebuild test -scheme mac-transcription-collector
+
+# Check what Claude has touched in this session
+cat ~/.claude/audit/mac-transcription-collector.jsonl | tail -20 | jq .
+
+# Validate Claude setup
+npx mg-claude-dev-kit doctor
+```
