@@ -124,8 +124,8 @@ function buildCommandsBlock(config) {
 function injectRuleImports(content) {
   const imports = [
     '@.claude/rules/output-style.md',
-    '@.claude/rules/claudemd-standards.md',
-    '@.claude/rules/pipeline-standards.md',
+    '@docs/claudemd-standards.md',
+    '@docs/pipeline-standards.md',
   ];
   // If any import already present, skip (idempotent)
   if (imports.every((i) => content.includes(i))) return content;

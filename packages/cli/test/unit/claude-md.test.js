@@ -93,8 +93,8 @@ describe('injectRuleImports', () => {
     const input = '# My Project\n\n## Overview\nSome text';
     const result = injectRuleImports(input);
     assert.ok(result.includes('@.claude/rules/output-style.md'));
-    assert.ok(result.includes('@.claude/rules/claudemd-standards.md'));
-    assert.ok(result.includes('@.claude/rules/pipeline-standards.md'));
+    assert.ok(result.includes('@docs/claudemd-standards.md'));
+    assert.ok(result.includes('@docs/pipeline-standards.md'));
     // imports appear between # heading and ## Overview
     const headingIdx = result.indexOf('# My Project');
     const importIdx = result.indexOf('@.claude/rules/output-style.md');
@@ -105,12 +105,12 @@ describe('injectRuleImports', () => {
 
   it('is idempotent — skips if all imports present', () => {
     const input =
-      '# My Project\n@.claude/rules/output-style.md\n@.claude/rules/claudemd-standards.md\n@.claude/rules/pipeline-standards.md\n\n## Overview';
+      '# My Project\n@.claude/rules/output-style.md\n@docs/claudemd-standards.md\n@docs/pipeline-standards.md\n\n## Overview';
     const result = injectRuleImports(input);
     // count occurrences — should be exactly 1 each
     const count = (str, sub) => str.split(sub).length - 1;
     assert.equal(count(result, '@.claude/rules/output-style.md'), 1);
-    assert.equal(count(result, '@.claude/rules/claudemd-standards.md'), 1);
+    assert.equal(count(result, '@docs/claudemd-standards.md'), 1);
   });
 });
 
