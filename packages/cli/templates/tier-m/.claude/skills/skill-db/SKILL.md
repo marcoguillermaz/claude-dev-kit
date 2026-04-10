@@ -1,7 +1,7 @@
 ---
 name: skill-db
 user-invocable: true
-model: opus
+model: sonnet
 context: fork
 argument-hint: [target:section:<section>|target:table:<table>]
 ---
