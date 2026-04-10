@@ -71,4 +71,4 @@ node packages/cli/test/integration/run.js
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.8.0` — workspace quality rubric. Skill adaptation for 8 native/backend stacks, Tier S skill promotion (skill-dev, perf-audit, security-audit, simplify), CI rubric tests (D2/D5/D7/D8), GitHub Actions, humanized docs. 459 integration checks.
+`v1.9.0` — alignment block (Phases 1-3). CI consolidation, ESLint+Prettier, 199 unit tests, CLAUDE.md single-authority generation, security-audit 3-path selector (NS1-NS6), perf-audit native resource checks (NR1-NR4), Node.js >=22. 459 integration checks.

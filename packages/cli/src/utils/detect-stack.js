@@ -20,29 +20,25 @@ export async function detectStack(dir) {
 
   const exists = (f) => fs.pathExists(path.join(dir, f));
 
-  // Check if a directory entry with the given name exists in dir
-  const existsDir = async (name) => {
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      return entries.some(e => e.isDirectory() && e.name === name);
-    } catch { return false; }
-  };
-
   // Find a directory whose name ends with the given suffix; returns the name or null
   const findDirEndingWith = async (suffix) => {
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      const match = entries.find(e => e.isDirectory() && e.name.endsWith(suffix));
+      const match = entries.find((e) => e.isDirectory() && e.name.endsWith(suffix));
       return match ? match.name : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   };
 
   // Check if any file in dir matches a predicate on its name
   const existsFileMatching = async (predicate) => {
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      return entries.some(e => e.isFile() && predicate(e.name));
-    } catch { return false; }
+      return entries.some((e) => e.isFile() && predicate(e.name));
+    } catch {
+      return false;
+    }
   };
 
   // ── Language detection ────────────────────────────────────────────────
@@ -56,7 +52,7 @@ export async function detectStack(dir) {
     result.installCommand = 'npm install';
 
     // TypeScript
-    if (await exists('tsconfig.json') || deps['typescript']) {
+    if ((await exists('tsconfig.json')) || deps['typescript']) {
       result.techStack = 'node-ts';
       result.typeCheckCommand = 'npx tsc --noEmit';
       result.detectedFiles.push('tsconfig.json');
@@ -101,13 +97,18 @@ export async function detectStack(dir) {
     // Complexity hints for tier suggestion
     const fileCount = await countFiles(dir, ['node_modules', '.git', '.next', 'dist', 'build']);
     result.suggestedTier = fileCount > 100 ? 'l' : fileCount > 30 ? 'm' : 's';
-  }
-
-  else if (await exists('pyproject.toml') || await exists('requirements.txt') || await exists('setup.py')) {
+  } else if (
+    (await exists('pyproject.toml')) ||
+    (await exists('requirements.txt')) ||
+    (await exists('setup.py'))
+  ) {
     result.techStack = 'python';
     result.detectedFiles.push(
-      (await exists('pyproject.toml')) ? 'pyproject.toml' :
-      (await exists('requirements.txt')) ? 'requirements.txt' : 'setup.py'
+      (await exists('pyproject.toml'))
+        ? 'pyproject.toml'
+        : (await exists('requirements.txt'))
+          ? 'requirements.txt'
+          : 'setup.py',
     );
     result.installCommand = 'pip install -r requirements.txt';
     result.testCommand = 'pytest';
@@ -115,16 +116,20 @@ export async function detectStack(dir) {
     if (await exists('manage.py')) {
       result.framework = 'Django';
       result.devCommand = 'python manage.py runserver';
-    } else if (await exists('main.py') || await exists('app.py')) {
+    } else if ((await exists('main.py')) || (await exists('app.py'))) {
       result.framework = 'FastAPI / Flask';
       result.devCommand = 'uvicorn main:app --reload';
     }
 
-    const fileCount = await countFiles(dir, ['__pycache__', '.git', 'venv', '.venv', 'node_modules']);
+    const fileCount = await countFiles(dir, [
+      '__pycache__',
+      '.git',
+      'venv',
+      '.venv',
+      'node_modules',
+    ]);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (await exists('go.mod')) {
+  } else if (await exists('go.mod')) {
     result.techStack = 'go';
     result.detectedFiles.push('go.mod');
     result.installCommand = 'go mod download';
@@ -134,9 +139,7 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'vendor']);
     result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
-  }
-
-  else if (await exists('Gemfile')) {
+  } else if (await exists('Gemfile')) {
     result.techStack = 'ruby';
     result.detectedFiles.push('Gemfile');
     result.installCommand = 'bundle install';
@@ -146,9 +149,7 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', '.bundle', 'tmp', 'log']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (await exists('pom.xml')) {
+  } else if (await exists('pom.xml')) {
     result.techStack = 'java';
     result.detectedFiles.push('pom.xml');
     result.installCommand = 'mvn install';
@@ -158,12 +159,10 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'target']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (await exists('build.gradle.kts') || await exists('AndroidManifest.xml')) {
+  } else if ((await exists('build.gradle.kts')) || (await exists('AndroidManifest.xml'))) {
     result.techStack = 'kotlin';
     result.detectedFiles.push(
-      (await exists('build.gradle.kts')) ? 'build.gradle.kts' : 'AndroidManifest.xml'
+      (await exists('build.gradle.kts')) ? 'build.gradle.kts' : 'AndroidManifest.xml',
     );
     result.installCommand = './gradlew dependencies';
     result.testCommand = './gradlew test';
@@ -172,9 +171,7 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (await exists('build.gradle')) {
+  } else if (await exists('build.gradle')) {
     // Java via Gradle (non-Kotlin) — build.gradle.kts already caught above
     result.techStack = 'java';
     result.detectedFiles.push('build.gradle');
@@ -185,9 +182,7 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
     result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
-  }
-
-  else if (await exists('Package.swift')) {
+  } else if (await exists('Package.swift')) {
     result.techStack = 'swift';
     result.detectedFiles.push('Package.swift');
     result.installCommand = 'swift package resolve';
@@ -197,11 +192,10 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', '.build']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if ((await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'))) {
+  } else if ((await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'))) {
     result.techStack = 'swift';
-    const detected = (await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'));
+    const detected =
+      (await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'));
     result.detectedFiles.push(detected);
     result.testCommand = 'xcodebuild test';
     result.buildCommand = 'xcodebuild build';
@@ -210,11 +204,9 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'build', 'DerivedData']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (
-    await existsFileMatching(n => n.endsWith('.csproj')) ||
-    await existsFileMatching(n => n.endsWith('.sln'))
+  } else if (
+    (await existsFileMatching((n) => n.endsWith('.csproj'))) ||
+    (await existsFileMatching((n) => n.endsWith('.sln')))
   ) {
     result.techStack = 'dotnet';
     result.detectedFiles.push('*.csproj / *.sln');
@@ -225,9 +217,7 @@ export async function detectStack(dir) {
 
     const fileCount = await countFiles(dir, ['.git', 'bin', 'obj']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
-  }
-
-  else if (await exists('Cargo.toml')) {
+  } else if (await exists('Cargo.toml')) {
     result.techStack = 'rust';
     result.detectedFiles.push('Cargo.toml');
     result.installCommand = 'cargo build';

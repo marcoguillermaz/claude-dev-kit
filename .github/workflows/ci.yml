@@ -10,29 +10,80 @@ jobs:
   verify:
     name: Verify CLI
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: cd packages/cli && npm install
+        run: npm install --prefix packages/cli
 
-      - name: Verify CLI starts
+      - name: CLI starts
         run: node packages/cli/src/index.js --help
 
-      - name: Verify doctor --report
+      - name: Doctor report
         run: node packages/cli/src/index.js doctor --report || true
-        # doctor exits 1 when checks fail — expected in CI context (no project scaffold here)
+        # doctor exits 1 in CI because no scaffold exists here — this is expected.
+        # The check validates that the doctor command itself runs without crashing.
 
-      - name: Verify doctor --ci
-        run: node packages/cli/src/index.js doctor --ci || true
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install --prefix packages/cli
+
+      - name: ESLint
+        run: npx --prefix packages/cli eslint packages/cli/src/ packages/cli/test/
+
+      - name: Prettier
+        run: npx --prefix packages/cli prettier --check packages/cli/src/ packages/cli/test/
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install --prefix packages/cli
+
+      - name: Run unit tests
+        run: npm run test:unit --prefix packages/cli
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install --prefix packages/cli
+
+      - name: Run 459 integration checks
+        run: npm test --prefix packages/cli

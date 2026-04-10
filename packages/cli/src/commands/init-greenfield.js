@@ -50,268 +50,279 @@ export async function initGreenfield(options) {
     isDiscovery = familiarity === '0';
 
     answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'projectName',
-      message: 'Project name:',
-      default: path.basename(process.cwd()),
-      validate: (v) => v.trim().length > 0 || 'Required',
-    },
-    {
-      type: 'input',
-      name: 'description',
-      message: 'Short description (one line):',
-      validate: (v) => v.trim().length > 0 || 'Required',
-    },
-    // Diagnostic tier selection for experienced users
-    {
-      type: 'list',
-      name: 'teamSize',
-      message: 'How many engineers will regularly use Claude Code on this project?',
-      when: () => !isDiscovery && !options.tier,
-      choices: [
-        { name: 'Just me', value: 'solo' },
-        { name: 'Small team (2–5)', value: 'small' },
-        { name: 'Larger team (6+)', value: 'large' },
-      ],
-    },
-    {
-      type: 'list',
-      name: 'workScope',
-      message: 'What kind of work will you primarily do?',
-      when: () => !isDiscovery && !options.tier,
-      choices: [
-        { name: 'Bugfixes and small patches (≤3 files)', value: 'bugfix' },
-        { name: 'Feature blocks (1–2 week chunks)', value: 'feature' },
-        { name: 'Complex features or long-running projects', value: 'complex' },
-      ],
-    },
-    {
-      type: 'list',
-      name: 'tier',
-      message: (a) => {
-        const suggested = suggestTierFromDiagnostics(a);
-        const tierDesc = {
-          '0': '0 — Discovery    Context only, no pipeline.',
-          s: 'S — Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
-          m: 'M — Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
-          l: 'L — Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
-        };
-        return `Suggested: ${tierDesc[suggested]}\n  Pipeline tier:`;
+      {
+        type: 'input',
+        name: 'projectName',
+        message: 'Project name:',
+        default: path.basename(process.cwd()),
+        validate: (v) => v.trim().length > 0 || 'Required',
       },
-      when: () => !isDiscovery && !options.tier,
-      default: (a) => suggestTierFromDiagnostics(a),
-      choices: [
-        { name: '0 — Discovery (context only, no pipeline)', value: '0' },
-        { name: 'S — Fast Lane (bugfixes, ≤3 files, 1 gate)', value: 's' },
-        { name: 'M — Standard (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
-        { name: 'L — Full (complex domain, full governance, 4 gates)', value: 'l' },
-      ],
-    },
-    {
-      type: 'list',
-      name: 'techStack',
-      message: 'Primary tech stack:',
-      choices: [
-        { name: 'Node.js / TypeScript', value: 'node-ts' },
-        { name: 'Node.js / JavaScript', value: 'node-js' },
-        { name: 'Python', value: 'python' },
-        { name: 'Go', value: 'go' },
-        { name: 'Swift / macOS / iOS', value: 'swift' },
-        { name: 'Kotlin / Android', value: 'kotlin' },
-        { name: 'Rust', value: 'rust' },
-        { name: '.NET / C#', value: 'dotnet' },
-        { name: 'Ruby', value: 'ruby' },
-        { name: 'Java', value: 'java' },
-        { name: 'Other / mixed', value: 'other' },
-      ],
-    },
-    {
-      type: 'input',
-      name: 'testCommand',
-      message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
-      default: (a) =>
-        ({
-          'node-ts': 'npx vitest run',
-          'node-js': 'npm test',
-          python: 'pytest',
-          go: 'go test ./...',
-          swift: 'swift test',
-          kotlin: './gradlew test',
-          rust: 'cargo test',
-          dotnet: 'dotnet test',
-          ruby: 'bundle exec rspec',
-          java: 'mvn test',
-          other: '',
-        })[a.techStack] ?? 'npm test',
-    },
-    {
-      type: 'input',
-      name: 'typeCheckCommand',
-      message: 'Type check command (leave blank if none):',
-      when: (a) => !isDiscovery && a.techStack === 'node-ts',
-      default: 'npx tsc --noEmit',
-    },
-    {
-      type: 'input',
-      name: 'devCommand',
-      message: (a) => {
-        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
-        return isNative
-          ? 'Launch command (optional, leave blank to skip):'
-          : 'Dev server command:';
+      {
+        type: 'input',
+        name: 'description',
+        message: 'Short description (one line):',
+        validate: (v) => v.trim().length > 0 || 'Required',
       },
-      default: (a) =>
-        ({
-          'node-ts': 'npm run dev',
-          'node-js': 'npm run dev',
-          python: 'uvicorn main:app --reload',
-          go: 'go run .',
-          ruby: 'bundle exec rails server',
-          swift: 'swift run',
-          kotlin: './gradlew run',
-          rust: 'cargo run',
-          dotnet: 'dotnet run',
-          java: 'mvn exec:java',
-          other: '',
-        })[a.techStack] || 'npm run dev',
-    },
-    {
-      type: 'input',
-      name: 'e2eCommand',
-      message: (a) => {
-        const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
-        if (webStacks.includes(a.techStack)) {
-          return 'E2E test command (Playwright/Cypress — leave blank to skip):';
-        }
-        const nativeExamples = {
-          swift: 'XCUITest', kotlin: 'Espresso',
-          rust: 'cargo test --test integration', dotnet: 'dotnet test --filter Category=UI',
-          java: 'mvn verify -P integration',
-        };
-        const ex = nativeExamples[a.techStack];
-        return ex
-          ? `UI/integration test command (${ex} — leave blank to skip):`
-          : 'Integration test command (optional, leave blank to skip):';
+      // Diagnostic tier selection for experienced users
+      {
+        type: 'list',
+        name: 'teamSize',
+        message: 'How many engineers will regularly use Claude Code on this project?',
+        when: () => !isDiscovery && !options.tier,
+        choices: [
+          { name: 'Just me', value: 'solo' },
+          { name: 'Small team (2–5)', value: 'small' },
+          { name: 'Larger team (6+)', value: 'large' },
+        ],
       },
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
+      {
+        type: 'list',
+        name: 'workScope',
+        message: 'What kind of work will you primarily do?',
+        when: () => !isDiscovery && !options.tier,
+        choices: [
+          { name: 'Bugfixes and small patches (≤3 files)', value: 'bugfix' },
+          { name: 'Feature blocks (1–2 week chunks)', value: 'feature' },
+          { name: 'Complex features or long-running projects', value: 'complex' },
+        ],
       },
-      default: '',
-    },
-    // Feature flags — tier M/L only
-    {
-      type: 'list',
-      name: 'hasApi',
-      message: 'Does your project expose an API (REST, GraphQL, RPC)? (controls whether api-design checks are included)',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
+      {
+        type: 'list',
+        name: 'tier',
+        message: (a) => {
+          const suggested = suggestTierFromDiagnostics(a);
+          const tierDesc = {
+            0: '0 — Discovery    Context only, no pipeline.',
+            s: 'S — Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
+            m: 'M — Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
+            l: 'L — Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
+          };
+          return `Suggested: ${tierDesc[suggested]}\n  Pipeline tier:`;
+        },
+        when: () => !isDiscovery && !options.tier,
+        default: (a) => suggestTierFromDiagnostics(a),
+        choices: [
+          { name: '0 — Discovery (context only, no pipeline)', value: '0' },
+          { name: 'S — Fast Lane (bugfixes, ≤3 files, 1 gate)', value: 's' },
+          { name: 'M — Standard (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
+          { name: 'L — Full (complex domain, full governance, 4 gates)', value: 'l' },
+        ],
       },
-      choices: [
-        { name: 'No',  value: false },
-        { name: 'Yes', value: true },
-      ],
-      default: false,
-    },
-    {
-      type: 'list',
-      name: 'hasDatabase',
-      message: 'Does your project use a database? (controls whether skill-db checks are included)',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
+      {
+        type: 'list',
+        name: 'techStack',
+        message: 'Primary tech stack:',
+        choices: [
+          { name: 'Node.js / TypeScript', value: 'node-ts' },
+          { name: 'Node.js / JavaScript', value: 'node-js' },
+          { name: 'Python', value: 'python' },
+          { name: 'Go', value: 'go' },
+          { name: 'Swift / macOS / iOS', value: 'swift' },
+          { name: 'Kotlin / Android', value: 'kotlin' },
+          { name: 'Rust', value: 'rust' },
+          { name: '.NET / C#', value: 'dotnet' },
+          { name: 'Ruby', value: 'ruby' },
+          { name: 'Java', value: 'java' },
+          { name: 'Other / mixed', value: 'other' },
+        ],
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    },
-    {
-      type: 'list',
-      name: 'hasFrontend',
-      message: 'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
+      {
+        type: 'input',
+        name: 'testCommand',
+        message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
+        default: (a) =>
+          ({
+            'node-ts': 'npx vitest run',
+            'node-js': 'npm test',
+            python: 'pytest',
+            go: 'go test ./...',
+            swift: 'swift test',
+            kotlin: './gradlew test',
+            rust: 'cargo test',
+            dotnet: 'dotnet test',
+            ruby: 'bundle exec rspec',
+            java: 'mvn test',
+            other: '',
+          })[a.techStack] ?? 'npm test',
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    },
-    {
-      type: 'list',
-      name: 'hasDesignSystem',
-      message: (a) => {
-        const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(a.techStack);
-        return isNative
-          ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
-          : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';
+      {
+        type: 'input',
+        name: 'typeCheckCommand',
+        message: 'Type check command (leave blank if none):',
+        when: (a) => !isDiscovery && a.techStack === 'node-ts',
+        default: 'npx tsc --noEmit',
       },
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+      {
+        type: 'input',
+        name: 'devCommand',
+        message: (a) => {
+          const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
+          return isNative
+            ? 'Launch command (optional, leave blank to skip):'
+            : 'Dev server command:';
+        },
+        default: (a) =>
+          ({
+            'node-ts': 'npm run dev',
+            'node-js': 'npm run dev',
+            python: 'uvicorn main:app --reload',
+            go: 'go run .',
+            ruby: 'bundle exec rails server',
+            swift: 'swift run',
+            kotlin: './gradlew run',
+            rust: 'cargo run',
+            dotnet: 'dotnet run',
+            java: 'mvn exec:java',
+            other: '',
+          })[a.techStack] || 'npm run dev',
       },
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    },
-    {
-      type: 'input',
-      name: 'designSystemName',
-      message: 'Design system name (e.g. shadcn/ui, MUI, Ant Design):',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return (tier === 'm' || tier === 'l') && a.hasFrontend === true && a.hasDesignSystem === true;
+      {
+        type: 'input',
+        name: 'e2eCommand',
+        message: (a) => {
+          const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
+          if (webStacks.includes(a.techStack)) {
+            return 'E2E test command (Playwright/Cypress — leave blank to skip):';
+          }
+          const nativeExamples = {
+            swift: 'XCUITest',
+            kotlin: 'Espresso',
+            rust: 'cargo test --test integration',
+            dotnet: 'dotnet test --filter Category=UI',
+            java: 'mvn verify -P integration',
+          };
+          const ex = nativeExamples[a.techStack];
+          return ex
+            ? `UI/integration test command (${ex} — leave blank to skip):`
+            : 'Integration test command (optional, leave blank to skip):';
+        },
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return tier === 'm' || tier === 'l';
+        },
+        default: '',
       },
-      default: 'component library',
-    },
-    {
-      type: 'list',
-      name: 'auditModel',
-      message: 'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+      // Feature flags — tier M/L only
+      {
+        type: 'list',
+        name: 'hasApi',
+        message:
+          'Does your project expose an API (REST, GraphQL, RPC)? (controls whether api-design checks are included)',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return tier === 'm' || tier === 'l';
+        },
+        choices: [
+          { name: 'No', value: false },
+          { name: 'Yes', value: true },
+        ],
+        default: false,
       },
-      choices: AUDIT_MODELS,
-      default: 'claude-sonnet-4-6',
-    },
-    {
-      type: 'confirm',
-      name: 'hasPrd',
-      message: 'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
-      when: (a) => {
-        if (isDiscovery) return false;
-        const tier = options.tier || a.tier;
-        return tier === 'm' || tier === 'l';
+      {
+        type: 'list',
+        name: 'hasDatabase',
+        message:
+          'Does your project use a database? (controls whether skill-db checks are included)',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return tier === 'm' || tier === 'l';
+        },
+        choices: [
+          { name: 'Yes', value: true },
+          { name: 'No', value: false },
+        ],
       },
-      default: false,
-    },
-    {
-      type: 'confirm',
-      name: 'includePreCommit',
-      message: 'Include pre-commit config (secret scanning + AI commit audit)?',
-      default: true,
-      when: !isDiscovery,
-    },
-    {
-      type: 'confirm',
-      name: 'includeGithub',
-      message: 'Include .github/ (PR template + CODEOWNERS)?',
-      default: true,
-      when: !isDiscovery,
-    },
+      {
+        type: 'list',
+        name: 'hasFrontend',
+        message:
+          'Does your project have a UI? (controls whether visual-audit, ux-audit, responsive-audit are included)',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return tier === 'm' || tier === 'l';
+        },
+        choices: [
+          { name: 'Yes', value: true },
+          { name: 'No', value: false },
+        ],
+      },
+      {
+        type: 'list',
+        name: 'hasDesignSystem',
+        message: (a) => {
+          const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(
+            a.techStack,
+          );
+          return isNative
+            ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
+            : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';
+        },
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+        },
+        choices: [
+          { name: 'Yes', value: true },
+          { name: 'No', value: false },
+        ],
+      },
+      {
+        type: 'input',
+        name: 'designSystemName',
+        message: 'Design system name (e.g. shadcn/ui, MUI, Ant Design):',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return (
+            (tier === 'm' || tier === 'l') && a.hasFrontend === true && a.hasDesignSystem === true
+          );
+        },
+        default: 'component library',
+      },
+      {
+        type: 'list',
+        name: 'auditModel',
+        message:
+          'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
+        },
+        choices: AUDIT_MODELS,
+        default: 'claude-sonnet-4-6',
+      },
+      {
+        type: 'confirm',
+        name: 'hasPrd',
+        message:
+          'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
+        when: (a) => {
+          if (isDiscovery) return false;
+          const tier = options.tier || a.tier;
+          return tier === 'm' || tier === 'l';
+        },
+        default: false,
+      },
+      {
+        type: 'confirm',
+        name: 'includePreCommit',
+        message: 'Include pre-commit config (secret scanning + AI commit audit)?',
+        default: true,
+        when: !isDiscovery,
+      },
+      {
+        type: 'confirm',
+        name: 'includeGithub',
+        message: 'Include .github/ (PR template + CODEOWNERS)?',
+        default: true,
+        when: !isDiscovery,
+      },
     ]);
   } // end else (interactive path)
 
@@ -362,16 +373,26 @@ export async function initGreenfield(options) {
     console.log(chalk.green.bold('✓ Discovery scaffold complete'));
     console.log();
     console.log(chalk.bold('What was created:'));
-    console.log(`  ${chalk.cyan('CLAUDE.md')}             — fill this in: project overview, stack, key commands`);
-    console.log(`  ${chalk.cyan('.claude/settings.json')} — Stop hook: tests must pass before Claude declares done`);
-    console.log(`  ${chalk.cyan('GETTING_STARTED.md')}    — your team's guide to the first session`);
+    console.log(
+      `  ${chalk.cyan('CLAUDE.md')}             — fill this in: project overview, stack, key commands`,
+    );
+    console.log(
+      `  ${chalk.cyan('.claude/settings.json')} — Stop hook: tests must pass before Claude declares done`,
+    );
+    console.log(
+      `  ${chalk.cyan('GETTING_STARTED.md')}    — your team's guide to the first session`,
+    );
     console.log();
     console.log(chalk.bold('Next steps:'));
-    console.log(`  1. Edit ${chalk.cyan('CLAUDE.md')} — add your project description and fill in the commands`);
+    console.log(
+      `  1. Edit ${chalk.cyan('CLAUDE.md')} — add your project description and fill in the commands`,
+    );
     console.log(`  2. Run ${chalk.cyan('claude')} from this directory to start your first session`);
     console.log(`  3. Read ${chalk.cyan('GETTING_STARTED.md')} — or share it with your team`);
     console.log();
-    console.log(chalk.dim("When you're ready for more structure: npx mg-claude-dev-kit upgrade --tier=s"));
+    console.log(
+      chalk.dim("When you're ready for more structure: npx mg-claude-dev-kit upgrade --tier=s"),
+    );
   } else {
     console.log(chalk.green.bold('✓ Greenfield scaffold complete'));
     console.log();

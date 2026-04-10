@@ -45,7 +45,6 @@ export async function upgrade(options) {
   console.log();
 
   const updates = [];
-  const skipped = [];
 
   for (const file of UPGRADEABLE_FILES) {
     const templatePath = path.join(TEMPLATES_DIR, file.template);
@@ -70,13 +69,15 @@ export async function upgrade(options) {
     console.log(chalk.green('✓ All upgradeable files are up to date.'));
   } else {
     console.log(chalk.bold(`${updates.length} file(s) to upgrade:`));
-    updates.forEach(u => console.log(`  ${chalk.cyan('→')} ${u.target} ${chalk.dim(`(${u.reason})`)}`));
+    updates.forEach((u) =>
+      console.log(`  ${chalk.cyan('→')} ${u.target} ${chalk.dim(`(${u.reason})`)}`),
+    );
   }
 
   // Files that need manual review
   console.log();
   console.log(chalk.bold('Requires manual review (may contain your customizations):'));
-  REVIEW_REQUIRED.forEach(f => {
+  REVIEW_REQUIRED.forEach((f) => {
     const exists = fs.existsSync(path.join(cwd, f));
     if (exists) {
       console.log(`  ${chalk.yellow('⚠')} ${f} — compare with template manually`);

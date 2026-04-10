@@ -80,7 +80,8 @@ const checks = [
     label: '.env files in .gitignore',
     check: (cwd) => {
       const p = path.join(cwd, '.gitignore');
-      if (!fs.existsSync(p)) return { pass: false, fix: 'Create a .gitignore file that excludes .env files.' };
+      if (!fs.existsSync(p))
+        return { pass: false, fix: 'Create a .gitignore file that excludes .env files.' };
       const content = fs.readFileSync(p, 'utf8');
       const covered = content.includes('.env') || content.includes('.env.local');
       return {
@@ -96,7 +97,12 @@ const checks = [
       const p = path.join(cwd, 'CLAUDE.md');
       if (!fs.existsSync(p)) return { pass: true, skip: true };
       const content = fs.readFileSync(p, 'utf8');
-      const patterns = [/sk_live_\w{10,}/, /sbp_\w{10,}/, /re_[a-zA-Z0-9]{10,}/, /password\s*[:=]\s*["'][^"']{6,}/i];
+      const patterns = [
+        /sk_live_\w{10,}/,
+        /sbp_\w{10,}/,
+        /re_[a-zA-Z0-9]{10,}/,
+        /password\s*[:=]\s*["'][^"']{6,}/i,
+      ];
       const hit = patterns.some((r) => r.test(content));
       return {
         pass: !hit,
@@ -109,7 +115,12 @@ const checks = [
     label: 'Stop hook configured (test gate)',
     check: (cwd) => {
       const p = path.join(cwd, '.claude', 'settings.json');
-      if (!fs.existsSync(p)) return { pass: false, warn: true, fix: 'Add a Stop hook to settings.json to enforce test-passing before task completion.' };
+      if (!fs.existsSync(p))
+        return {
+          pass: false,
+          warn: true,
+          fix: 'Add a Stop hook to settings.json to enforce test-passing before task completion.',
+        };
       try {
         const settings = JSON.parse(fs.readFileSync(p, 'utf8'));
         const hasStop = settings?.hooks?.Stop?.length > 0;
@@ -135,8 +146,8 @@ const checks = [
         if (stopHooks.length === 0) return { pass: true, skip: true };
         const hasPlaceholder = stopHooks.some((entry) =>
           (entry?.hooks || []).some(
-            (h) => typeof h.command === 'string' && h.command.includes('[TEST_COMMAND]')
-          )
+            (h) => typeof h.command === 'string' && h.command.includes('[TEST_COMMAND]'),
+          ),
         );
         return {
           pass: !hasPlaceholder,
@@ -155,7 +166,12 @@ const checks = [
       const p = path.join(githubDir, 'CODEOWNERS');
       // If .github/ is absent the user opted out of GitHub files — skip silently
       if (!fs.existsSync(githubDir)) return { skip: true };
-      if (!fs.existsSync(p)) return { pass: false, warn: true, fix: 'Create .github/CODEOWNERS and add /.claude/ with tech lead as required reviewer.' };
+      if (!fs.existsSync(p))
+        return {
+          pass: false,
+          warn: true,
+          fix: 'Create .github/CODEOWNERS and add /.claude/ with tech lead as required reviewer.',
+        };
       const content = fs.readFileSync(p, 'utf8');
       return {
         pass: content.includes('.claude/'),
@@ -237,7 +253,9 @@ const checks = [
           const hasAllowedTools = content.startsWith('---') && content.includes('allowed-tools');
           if (usesPlaywright && !hasAllowedTools) missingTools.push(skill);
         }
-      } catch { return { pass: true, skip: true }; }
+      } catch {
+        return { pass: true, skip: true };
+      }
       return {
         pass: missingTools.length === 0,
         warn: true,
@@ -335,9 +353,11 @@ export async function doctor(options = {}) {
   console.log();
   console.log(
     chalk.bold('Results: ') +
-    chalk.green(`${passed} passed`) + ' · ' +
-    (warned > 0 ? chalk.yellow(`${warned} warnings`) : chalk.dim('0 warnings')) + ' · ' +
-    (failed > 0 ? chalk.red(`${failed} failed`) : chalk.dim('0 failed'))
+      chalk.green(`${passed} passed`) +
+      ' · ' +
+      (warned > 0 ? chalk.yellow(`${warned} warnings`) : chalk.dim('0 warnings')) +
+      ' · ' +
+      (failed > 0 ? chalk.red(`${failed} failed`) : chalk.dim('0 failed')),
   );
 
   if (failed > 0) {

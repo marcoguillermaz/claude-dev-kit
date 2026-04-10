@@ -1,15 +1,15 @@
 import chalk from 'chalk';
 import { execSync } from 'child_process';
 
-const TIER_LABELS = { '0': 'Discovery', S: 'Fast Lane', M: 'Standard', L: 'Full' };
+const TIER_LABELS = { 0: 'Discovery', S: 'Fast Lane', M: 'Standard', L: 'Full' };
 
 export function printPlan(config) {
   const tier = (config.tier || 's').toUpperCase();
   const mode = config.mode || 'greenfield';
 
   console.log(chalk.bold('Project:') + ` ${config.projectName}`);
-  console.log(chalk.bold('Mode:')    + ` ${formatMode(mode)}`);
-  console.log(chalk.bold('Tier:')    + ` ${tier} — ${TIER_LABELS[tier] || tier}`);
+  console.log(chalk.bold('Mode:') + ` ${formatMode(mode)}`);
+  console.log(chalk.bold('Tier:') + ` ${tier} — ${TIER_LABELS[tier] || tier}`);
   if (config.techStack) console.log(chalk.bold('Stack:') + ` ${config.techStack}`);
 
   // 3.3 — commands summary (only non-misleading values)
@@ -17,28 +17,31 @@ export function printPlan(config) {
   if (cmdLines.length > 0) {
     console.log();
     console.log(chalk.bold('Commands:'));
-    cmdLines.forEach(l => console.log(`  ${l}`));
+    cmdLines.forEach((l) => console.log(`  ${l}`));
   }
 
   console.log();
   console.log(chalk.bold('Files that will be created:'));
-  getFilePlan(config).forEach(f => console.log(`  ${chalk.dim('+')} ${f}`));
+  getFilePlan(config).forEach((f) => console.log(`  ${chalk.dim('+')} ${f}`));
 
   // 3.1 — BUG-01: skills section for Tier S/M/L
   if (tier !== '0') {
     const { included, skipped } = getSkillsSummary(config);
     console.log();
-    console.log(chalk.bold('Skills included:  ') + included.map(s => chalk.cyan(s)).join('  '));
+    console.log(chalk.bold('Skills included:  ') + included.map((s) => chalk.cyan(s)).join('  '));
     if (skipped.length > 0) {
-      console.log(chalk.bold('Skills skipped:   ') + skipped.map(s => `${chalk.dim(s.name)} ${chalk.dim('(' + s.reason + ')')}`).join('  '));
+      console.log(
+        chalk.bold('Skills skipped:   ') +
+          skipped.map((s) => `${chalk.dim(s.name)} ${chalk.dim('(' + s.reason + ')')}`).join('  '),
+      );
     }
   }
 
   if (mode === 'from-context') {
     console.log();
     console.log(chalk.bold('Context sources:'));
-    (config.sourceRepos || []).forEach(r => console.log(`  ${chalk.dim('→')} ${r.source}`));
-    (config.sourceDocs  || []).forEach(d => console.log(`  ${chalk.dim('→')} ${d}`));
+    (config.sourceRepos || []).forEach((r) => console.log(`  ${chalk.dim('→')} ${r.source}`));
+    (config.sourceDocs || []).forEach((d) => console.log(`  ${chalk.dim('→')} ${d}`));
   }
 }
 
@@ -53,22 +56,42 @@ export function printNextSteps(config, opts = {}) {
   if (mode === 'greenfield') {
     const tier = (config.tier || 's').toUpperCase();
     if (tier === 'M' || tier === 'L') {
-      console.log('  1. Read ' + chalk.cyan('FIRST_SESSION.md') + ' — your team\'s guide to the first session');
+      console.log(
+        '  1. Read ' + chalk.cyan('FIRST_SESSION.md') + " — your team's guide to the first session",
+      );
     }
-    const step = (tier === 'M' || tier === 'L') ? 2 : 1;
+    const step = tier === 'M' || tier === 'L' ? 2 : 1;
     console.log(`  ${step}. Fill in the ` + chalk.cyan('CLAUDE.md') + ' placeholders');
-    console.log(`  ${step + 1}. Replace ` + chalk.cyan('[TEST_COMMAND]') + ' in ' + chalk.cyan('.claude/settings.json') + ' Stop hook');
-    console.log(`  ${step + 2}. Update ` + chalk.cyan('.github/CODEOWNERS') + ' with real GitHub usernames');
+    console.log(
+      `  ${step + 1}. Replace ` +
+        chalk.cyan('[TEST_COMMAND]') +
+        ' in ' +
+        chalk.cyan('.claude/settings.json') +
+        ' Stop hook',
+    );
+    console.log(
+      `  ${step + 2}. Update ` + chalk.cyan('.github/CODEOWNERS') + ' with real GitHub usernames',
+    );
     if (config.includePreCommit) {
-      console.log(`  ${step + 3}. Run ` + chalk.cyan(preCommitCmd) + ' to activate secret scanning');
+      console.log(
+        `  ${step + 3}. Run ` + chalk.cyan(preCommitCmd) + ' to activate secret scanning',
+      );
     }
-    console.log(`  ${step + (config.includePreCommit ? 4 : 3)}. Open Claude Code — run ` + chalk.cyan('/arch-audit') + ' to verify setup');
+    console.log(
+      `  ${step + (config.includePreCommit ? 4 : 3)}. Open Claude Code — run ` +
+        chalk.cyan('/arch-audit') +
+        ' to verify setup',
+    );
   }
 
   if (mode === 'from-context') {
     console.log('  1. ' + chalk.cyan('cd ' + config.projectName));
     console.log('  2. Open Claude Code: ' + chalk.cyan('claude'));
-    console.log('  3. Claude will detect ' + chalk.cyan('CONTEXT_IMPORT.md') + ' and start the discovery pass automatically');
+    console.log(
+      '  3. Claude will detect ' +
+        chalk.cyan('CONTEXT_IMPORT.md') +
+        ' and start the discovery pass automatically',
+    );
     console.log('     It will read your source repos and docs, then populate CLAUDE.md and docs/');
     console.log('  4. Confirm the discovery summary and answer any gap questions');
     console.log('  5. Run ' + chalk.cyan(doctorCmd) + ' after discovery completes');
@@ -82,13 +105,21 @@ export function printNextSteps(config, opts = {}) {
     console.log('       ' + chalk.cyan('claude'));
 
     console.log();
-    console.log('  2. ' + chalk.bold('Discovery pass') + chalk.dim(' — starts automatically on first open'));
-    console.log('       Claude reads ' + chalk.cyan('CONTEXT_IMPORT.md') + ' — your project briefing file —');
+    console.log(
+      '  2. ' + chalk.bold('Discovery pass') + chalk.dim(' — starts automatically on first open'),
+    );
+    console.log(
+      '       Claude reads ' + chalk.cyan('CONTEXT_IMPORT.md') + ' — your project briefing file —',
+    );
     console.log('       and scans your codebase. It generates CLAUDE.md, fills in docs/,');
     console.log('       and asks you about anything it could not infer from the code.');
-    console.log('       ' + chalk.dim('Takes 5–10 min. Confirm the output, then you\'re inside the pipeline.'));
+    console.log(
+      '       ' + chalk.dim("Takes 5–10 min. Confirm the output, then you're inside the pipeline."),
+    );
     console.log();
-    console.log('       ' + chalk.dim('Tip: open CONTEXT_IMPORT.md before starting Claude and review'));
+    console.log(
+      '       ' + chalk.dim('Tip: open CONTEXT_IMPORT.md before starting Claude and review'),
+    );
     console.log('       ' + chalk.dim('     what it will ask Claude to analyze. Edit if needed.'));
 
     let step = 3;
@@ -99,7 +130,7 @@ export function printNextSteps(config, opts = {}) {
     }
     if (config.includePreCommit && !ranPreCommit) {
       console.log();
-      console.log(`  ${step++}. Activate secret scanning:`);
+      console.log(`  ${step}. Activate secret scanning:`);
       console.log('       ' + chalk.cyan(preCommitCmd));
     }
   }
@@ -108,7 +139,10 @@ export function printNextSteps(config, opts = {}) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatMode(mode) {
-  return { greenfield: 'Greenfield', 'from-context': 'From context', 'in-place': 'In-place' }[mode] || mode;
+  return (
+    { greenfield: 'Greenfield', 'from-context': 'From context', 'in-place': 'In-place' }[mode] ||
+    mode
+  );
 }
 
 /**
@@ -120,7 +154,9 @@ function getPreCommitInstallCmd() {
     try {
       execSync('which brew', { stdio: 'pipe' });
       return 'brew install pre-commit && pre-commit install';
-    } catch { /* brew not available */ }
+    } catch {
+      /* brew not available */
+    }
   }
   return 'pip install pre-commit && pre-commit install';
 }
@@ -216,9 +252,9 @@ function getSkillsSummary(config) {
   } else {
     skipped.push(
       { name: 'responsive-audit', reason: 'no UI' },
-      { name: 'visual-audit',     reason: 'no UI' },
-      { name: 'ux-audit',         reason: 'no UI' },
-      { name: 'ui-audit',         reason: 'no UI' },
+      { name: 'visual-audit', reason: 'no UI' },
+      { name: 'ux-audit', reason: 'no UI' },
+      { name: 'ui-audit', reason: 'no UI' },
     );
   }
 
@@ -262,7 +298,12 @@ function getFilePlan(config) {
 
   if (tier === 'M' || tier === 'L') {
     if (mode === 'greenfield') {
-      base.push('FIRST_SESSION.md  ← start here', 'docs/requirements.md', 'docs/implementation-checklist.md', 'docs/refactoring-backlog.md');
+      base.push(
+        'FIRST_SESSION.md  ← start here',
+        'docs/requirements.md',
+        'docs/implementation-checklist.md',
+        'docs/refactoring-backlog.md',
+      );
     } else {
       base.push('docs/  (populated by Claude during discovery)');
     }

@@ -101,7 +101,7 @@ Read sections 4a, 5, 6 (your tier), 7, and 8 of this guide.
 
 | Requirement | Version | Why |
 |---|---|---|
-| Node.js | ≥ 18 | CLI runtime |
+| Node.js | ≥ 22 | CLI runtime |
 | Claude Code | latest | The AI assistant being governed |
 | Git | any | Branch discipline enforced by pipeline |
 | `gh` CLI | any | Optional - needed only for cloning private repos in From context mode |
@@ -743,18 +743,19 @@ Eleven audit skills are scaffolded across the tiers. Run them as slash commands 
 |---|---|---|---|---|---|
 | `/arch-audit` | ✓ | ✓ | ✓ | always | Internet access (fetches Anthropic docs) |
 | `/commit` | ✓ | ✓ | ✓ | always | - |
-| `/security-audit` | - | ✓ | ✓ | always | - |
-| `/skill-dev` | - | ✓ | ✓ | always | - |
+| `/security-audit` | ✓ | ✓ | ✓ | always | - |
+| `/skill-dev` | ✓ | ✓ | ✓ | always | - |
 | `/skill-db` | - | ✓ | ✓ | `hasDatabase=true` | - |
 | `/api-design` | - | ✓ | ✓ | `hasApi=true` | - |
-| `/perf-audit` | - | ✓ | ✓ | always | - |
+| `/perf-audit` | ✓ | ✓ | ✓ | always | - |
 | `/responsive-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/ux-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/visual-audit` | - | ✓ | ✓ | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/ui-audit` | - | ✓ | ✓ | `hasFrontend=true` AND `hasDesignSystem=true` | Dev server + Playwright MCP |
+| `/simplify` | ✓ | ✓ | ✓ | always | - |
 
 **General rules:**
-- Code-audit skills are **audit-only** - no code is modified. Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
+- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
 - Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
 - Each skill runs in an isolated context fork (`context: fork`) - it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
@@ -789,7 +790,12 @@ Add to `.claude/settings.json`:
 **Backlog prefix**: `SEC-n`
 **Run when**: shipping a new API route, after an auth refactor, or as a quarterly hygiene check.
 
-**Applicability check**: before starting, the skill reads CLAUDE.md and checks the Framework and Language fields. If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (`[HAS_API]` is `false`), it outputs a native-specific guidance message and stops. Projects with API routes proceed normally regardless of stack.
+**3-path selector**: before starting, the skill reads CLAUDE.md and determines the execution mode:
+- **WEB**: web or API project - full web audit (Steps 0-5) + Step 3e if non-JS stack
+- **WEB+NATIVE**: native app with API routes - full web audit + Step 3e native checks
+- **NATIVE-ONLY**: native app with no API routes - skips Steps 0-5, runs Step 3e (NS1-NS6 platform checks) + Step 6
+
+Step 3e includes NS4 (platform security per-stack grep checks), NS5 (sensitive data protection), NS6 (code signing credentials).
 
 #### Placeholders to configure
 
@@ -839,12 +845,14 @@ Note: `Strict-Transport-Security` is typically set by the hosting platform (Verc
 
 | Level | Examples |
 |---|---|
-| Critical | Unauthenticated route that exposes or modifies data; raw user input in query |
-| High | Privileged route without role check; PII exposed to non-owner caller; IDOR (A13 horizontal access control) |
-| Medium | Missing validation on write route; DB error leaked to client; missing security header |
-| Low | Informational over-exposure; header best-practice gap |
+| Critical | Unauthenticated route that exposes or modifies data; raw user input in query; hardcoded signing credentials (NS6) |
+| High | Privileged route without role check; PII exposed to non-owner caller; IDOR (A13); plaintext secrets in UserDefaults/SharedPreferences (NS5) |
+| Medium | Missing validation on write route; DB error leaked to client; missing security header; missing platform permission declaration (NS4) |
+| Low | Informational over-exposure; header best-practice gap; minor entitlement scope issue |
 
 **A13 - Horizontal access control (IDOR)**: write routes missing a caller-ownership check that would prevent one authenticated user from modifying another user's records.
+
+**Native checks (NS4-NS6)**: platform security grep patterns per stack (Swift: Keychain vs UserDefaults, entitlements, ATS; Kotlin: Keystore vs SharedPreferences, manifest permissions, network security config; Rust/Go: unsafe blocks, command injection, file permissions; Python/Ruby: eval/exec, subprocess shell=True, pickle deserialization; Java/.NET: reflection, serialization, JNDI), sensitive data protection patterns, and code signing credential exposure.
 
 After the report, the skill presents a numbered finding list and waits for user confirmation before writing to `docs/refactoring-backlog.md`.
 
@@ -1278,13 +1286,24 @@ Note: the default scope excludes Lighthouse public scores, Core Web Vitals publi
 
 **Step 4 - Bundle size** (if `[BUNDLE_TOOL]` configured): flags chunks > 500 KB (uncompressed).
 
+**Step 6b - Stack-specific performance checks**: systematic grep-pattern-based checks for all 8 stacks. Examples: Swift (DispatchQueue.main.sync, UIImage without downsampling, retain cycles), Kotlin (Room queries outside IO dispatcher, BitmapFactory without inSampleSize, GlobalScope.launch), Rust (.clone() in hot paths, Vec::new in loops), Go (goroutine leak patterns, defer in loops), Python (re.compile in loops, list vs generator), Ruby (N+1, string allocation in loops), Java (autoboxing, string concat in loops), .NET (LINQ allocations, LOH patterns).
+
+**Step 6d - Resource footprint (NR1-NR4)**: native and backend resource checks.
+
+| Check | What it catches |
+|---|---|
+| NR1 | Launch/startup weight - heavy initialization on main thread, synchronous disk I/O at launch |
+| NR2 | Memory management - retain cycles, unbounded caches, large allocations in loops |
+| NR3 | Energy/background patterns (mobile) - unnecessary background tasks, polling instead of push, GPS without purpose |
+| NR4 | Binary/artifact size - embedded assets, unused frameworks, debug symbols in release |
+
 #### Severity guide
 
 | Level | Examples |
 |---|---|
-| High | N+1 on high-traffic route; heavy library blocking initial render; data fetch in tight render loop |
-| Medium | 3+ unnecessary `use client`; serial awaits on 3+ independent calls; unoptimized images |
-| Low | Single unnecessary `use client`; minor over-fetching; single serial await pair |
+| High | N+1 on high-traffic route; heavy library blocking initial render; data fetch in tight render loop; NR1 main-thread blocking at launch |
+| Medium | 3+ unnecessary `use client`; serial awaits on 3+ independent calls; unoptimized images; NR2 unbounded cache; NR3 background polling |
+| Low | Single unnecessary `use client`; minor over-fetching; single serial await pair; NR4 minor binary size issue |
 
 ---
 

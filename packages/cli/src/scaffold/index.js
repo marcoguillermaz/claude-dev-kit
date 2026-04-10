@@ -3,15 +3,15 @@ import path from 'path';
 import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
 
 /**
- * Scaffold Tier 0 (Discovery) — minimal: CLAUDE.md, settings.json, GETTING_STARTED.md only.
+ * Scaffold Tier 0 (Discovery) — minimal: settings.json, GETTING_STARTED.md only.
+ * CLAUDE.md is generated separately by generateClaudeMd() — not copied here.
  * No pipeline, no docs folder, no pre-commit, no .github.
  */
 export async function scaffoldTier0(targetDir, config, templatesDir) {
   const tierDir = path.join(templatesDir, 'tier-0');
 
-  // Copy the three Tier 0 files with interpolation
+  // Copy Tier 0 files with interpolation (CLAUDE.md handled by generateClaudeMd)
   const files = [
-    { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
     { src: 'GETTING_STARTED.md', dest: 'GETTING_STARTED.md' },
     { src: '.claude/settings.json', dest: '.claude/settings.json' },
   ];
@@ -42,21 +42,29 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
   // Copy common files — skip rules/ here, handled separately below
-  await copyTemplateDir(commonDir, targetDir, config, {
-    'gitignore': '.gitignore',
-    'pre-commit-config.yaml': '.pre-commit-config.yaml',
-    'adr-template.md': 'docs/adr/template.md',
-    'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
-    'CODEOWNERS': '.github/CODEOWNERS',
-    'context-review.md': '.claude/rules/context-review.md',
-    'files-guide.md': '.claude/files-guide.md',
-    'pipeline-standards.md': 'docs/pipeline-standards.md',
-    'claudemd-standards.md': 'docs/claudemd-standards.md',
-  }, config, ['rules']);
+  await copyTemplateDir(
+    commonDir,
+    targetDir,
+    config,
+    {
+      gitignore: '.gitignore',
+      'pre-commit-config.yaml': '.pre-commit-config.yaml',
+      'adr-template.md': 'docs/adr/template.md',
+      'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
+      CODEOWNERS: '.github/CODEOWNERS',
+      'context-review.md': '.claude/rules/context-review.md',
+      'files-guide.md': '.claude/files-guide.md',
+      'pipeline-standards.md': 'docs/pipeline-standards.md',
+      'claudemd-standards.md': 'docs/claudemd-standards.md',
+    },
+    config,
+    ['rules'],
+  );
 
   // Copy tier-specific files (includes tier rules/ like pipeline.md)
+  // CLAUDE.md is skipped — generated separately by generateClaudeMd()
   if (await fs.pathExists(tierDir)) {
-    await copyTemplateDir(tierDir, targetDir, config, {}, config, []);
+    await copyTemplateDir(tierDir, targetDir, config, {}, config, [], ['CLAUDE.md']);
   }
 
   // Copy rules/ subdirectory from common — select security variant by stack family
@@ -199,23 +207,23 @@ async function patchSettingsPermissions(targetDir, config) {
   if (!(await fs.pathExists(settingsPath))) return;
 
   const permissionsAllowByStack = {
-    swift:  ['Bash(git:*)', 'Bash(swift:*)', 'Bash(xcodebuild:*)', 'Bash(xcrun:*)', 'Bash(curl:*)'],
+    swift: ['Bash(git:*)', 'Bash(swift:*)', 'Bash(xcodebuild:*)', 'Bash(xcrun:*)', 'Bash(curl:*)'],
     kotlin: ['Bash(git:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
-    rust:   ['Bash(git:*)', 'Bash(cargo:*)', 'Bash(rustc:*)', 'Bash(curl:*)'],
+    rust: ['Bash(git:*)', 'Bash(cargo:*)', 'Bash(rustc:*)', 'Bash(curl:*)'],
     dotnet: ['Bash(git:*)', 'Bash(dotnet:*)', 'Bash(curl:*)'],
-    java:   ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
-    ruby:   ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
-    go:     ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
+    java: ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
+    ruby: ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
+    go: ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
     python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(curl:*)'],
   };
 
   const denyByStack = {
-    swift:  ['Bash(xcodebuild archive*)', 'Bash(xcrun altool --upload-app*)'],
+    swift: ['Bash(xcodebuild archive*)', 'Bash(xcrun altool --upload-app*)'],
     kotlin: ['Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
-    rust:   ['Bash(cargo publish*)'],
+    rust: ['Bash(cargo publish*)'],
     dotnet: ['Bash(dotnet nuget push*)'],
-    java:   ['Bash(mvn deploy*)', 'Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
-    ruby:   ['Bash(gem push*)'],
+    java: ['Bash(mvn deploy*)', 'Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
+    ruby: ['Bash(gem push*)'],
     python: ['Bash(twine upload*)'],
   };
 
@@ -238,7 +246,15 @@ async function patchSettingsPermissions(targetDir, config) {
   }
 }
 
-async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
+async function copyTemplateDir(
+  srcDir,
+  destDir,
+  config,
+  fileNameMap,
+  userConfig,
+  skipDirs = [],
+  skipFiles = [],
+) {
   if (!(await fs.pathExists(srcDir))) return;
 
   const entries = await fs.readdir(srcDir, { withFileTypes: true });
@@ -248,15 +264,23 @@ async function copyTemplateDir(srcDir, destDir, config, fileNameMap, userConfig,
       if (skipDirs.includes(entry.name)) continue;
       const subSrc = path.join(srcDir, entry.name);
       const subDest = path.join(destDir, entry.name);
-      await copyTemplateDir(subSrc, subDest, config, {}, userConfig, []);
+      await copyTemplateDir(subSrc, subDest, config, {}, userConfig, [], []);
       continue;
     }
+
+    // Skip explicitly excluded files
+    if (skipFiles.includes(entry.name)) continue;
 
     // Map filename if needed
     const destName = fileNameMap[entry.name] || entry.name;
 
     // Skip github files if user opted out
-    if (!userConfig.includeGithub && (destName.startsWith('.github/') || destName === 'CODEOWNERS' || destName === 'PULL_REQUEST_TEMPLATE.md')) {
+    if (
+      !userConfig.includeGithub &&
+      (destName.startsWith('.github/') ||
+        destName === 'CODEOWNERS' ||
+        destName === 'PULL_REQUEST_TEMPLATE.md')
+    ) {
       continue;
     }
 
@@ -279,20 +303,28 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   const commonDir = path.join(templatesDir, 'common');
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
-  await copyTemplateDirSafe(commonDir, targetDir, config, {
-    'gitignore': '.gitignore',
-    'pre-commit-config.yaml': '.pre-commit-config.yaml',
-    'adr-template.md': 'docs/adr/template.md',
-    'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
-    'CODEOWNERS': '.github/CODEOWNERS',
-    'context-review.md': '.claude/rules/context-review.md',
-    'files-guide.md': '.claude/files-guide.md',
-    'pipeline-standards.md': 'docs/pipeline-standards.md',
-    'claudemd-standards.md': 'docs/claudemd-standards.md',
-  }, config, ['rules']);
+  await copyTemplateDirSafe(
+    commonDir,
+    targetDir,
+    config,
+    {
+      gitignore: '.gitignore',
+      'pre-commit-config.yaml': '.pre-commit-config.yaml',
+      'adr-template.md': 'docs/adr/template.md',
+      'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
+      CODEOWNERS: '.github/CODEOWNERS',
+      'context-review.md': '.claude/rules/context-review.md',
+      'files-guide.md': '.claude/files-guide.md',
+      'pipeline-standards.md': 'docs/pipeline-standards.md',
+      'claudemd-standards.md': 'docs/claudemd-standards.md',
+    },
+    config,
+    ['rules'],
+  );
 
+  // CLAUDE.md is skipped — generated separately by generateClaudeMd()
   if (await fs.pathExists(tierDir)) {
-    await copyTemplateDirSafe(tierDir, targetDir, config, {}, config, []);
+    await copyTemplateDirSafe(tierDir, targetDir, config, {}, config, [], ['CLAUDE.md']);
   }
 
   const commonRulesDir = path.join(commonDir, 'rules');
@@ -342,7 +374,15 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
   await patchSettingsPermissions(targetDir, config);
 }
 
-async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userConfig, skipDirs = []) {
+async function copyTemplateDirSafe(
+  srcDir,
+  destDir,
+  config,
+  fileNameMap,
+  userConfig,
+  skipDirs = [],
+  skipFiles = [],
+) {
   if (!(await fs.pathExists(srcDir))) return;
 
   const entries = await fs.readdir(srcDir, { withFileTypes: true });
@@ -352,13 +392,21 @@ async function copyTemplateDirSafe(srcDir, destDir, config, fileNameMap, userCon
       if (skipDirs.includes(entry.name)) continue;
       const subSrc = path.join(srcDir, entry.name);
       const subDest = path.join(destDir, entry.name);
-      await copyTemplateDirSafe(subSrc, subDest, config, {}, userConfig, []);
+      await copyTemplateDirSafe(subSrc, subDest, config, {}, userConfig, [], []);
       continue;
     }
 
+    // Skip explicitly excluded files
+    if (skipFiles.includes(entry.name)) continue;
+
     const destName = fileNameMap[entry.name] || entry.name;
 
-    if (!userConfig.includeGithub && (destName.startsWith('.github/') || destName === 'CODEOWNERS' || destName === 'PULL_REQUEST_TEMPLATE.md')) {
+    if (
+      !userConfig.includeGithub &&
+      (destName.startsWith('.github/') ||
+        destName === 'CODEOWNERS' ||
+        destName === 'PULL_REQUEST_TEMPLATE.md')
+    ) {
       continue;
     }
 
@@ -438,7 +486,8 @@ const profilerCommandByStack = {
   kotlin: './gradlew benchmark  # or Android Studio Profiler via IDE',
   rust: 'cargo bench && cargo flamegraph -- target/release/my_binary',
   go: 'go test -bench=. -benchmem -cpuprofile=cpu.prof ./... && go tool pprof cpu.prof',
-  python: 'python -m cProfile -o profile.out main.py && py-spy record -o flamegraph.svg -- python main.py',
+  python:
+    'python -m cProfile -o profile.out main.py && py-spy record -o flamegraph.svg -- python main.py',
   ruby: 'STACKPROF=1 bundle exec rspec && stackprof tmp/stackprof-*.dump --text',
   java: 'java -jar target/benchmarks.jar  # JMH benchmark runner',
   dotnet: 'dotnet run -c Release --project Benchmarks/',
@@ -530,18 +579,54 @@ function interpolate(content, config) {
   };
 
   const nativeCommandDefaults = {
-    swift:  { install: '# no install step', dev: 'swift run',    build: 'xcodebuild build',     test: 'xcodebuild test',  typeCheck: '# type checking handled by compiler' },
-    kotlin: { install: '# no install step', dev: './gradlew run', build: './gradlew build',      test: './gradlew test',   typeCheck: '# type checking handled by compiler' },
-    rust:   { install: '# no install step', dev: 'cargo run',    build: 'cargo build --release', test: 'cargo test',       typeCheck: '# type checking handled by compiler' },
-    dotnet: { install: 'dotnet restore',    dev: 'dotnet run',   build: 'dotnet build',          test: 'dotnet test',      typeCheck: '# type checking handled by compiler' },
-    java:   { install: 'mvn install',       dev: 'mvn exec:java', build: 'mvn package',          test: 'mvn test',         typeCheck: '# type checking handled by compiler' },
+    swift: {
+      install: '# no install step',
+      dev: 'swift run',
+      build: 'xcodebuild build',
+      test: 'xcodebuild test',
+      typeCheck: '# type checking handled by compiler',
+    },
+    kotlin: {
+      install: '# no install step',
+      dev: './gradlew run',
+      build: './gradlew build',
+      test: './gradlew test',
+      typeCheck: '# type checking handled by compiler',
+    },
+    rust: {
+      install: '# no install step',
+      dev: 'cargo run',
+      build: 'cargo build --release',
+      test: 'cargo test',
+      typeCheck: '# type checking handled by compiler',
+    },
+    dotnet: {
+      install: 'dotnet restore',
+      dev: 'dotnet run',
+      build: 'dotnet build',
+      test: 'dotnet test',
+      typeCheck: '# type checking handled by compiler',
+    },
+    java: {
+      install: 'mvn install',
+      dev: 'mvn exec:java',
+      build: 'mvn package',
+      test: 'mvn test',
+      typeCheck: '# type checking handled by compiler',
+    },
   };
   const ncd = nativeCommandDefaults[config.techStack] || {};
 
   return content
     .replace(/\[PROJECT_NAME\]/g, config.projectName || 'My Project')
-    .replace(/\[TECH_STACK_SUMMARY\]/g, techStackLabels[config.techStack] || config.techStack || 'Mixed')
-    .replace(/\[TYPE_CHECK_COMMAND\]/g, config.typeCheckCommand || ncd.typeCheck || 'npx tsc --noEmit')
+    .replace(
+      /\[TECH_STACK_SUMMARY\]/g,
+      techStackLabels[config.techStack] || config.techStack || 'Mixed',
+    )
+    .replace(
+      /\[TYPE_CHECK_COMMAND\]/g,
+      config.typeCheckCommand || ncd.typeCheck || 'npx tsc --noEmit',
+    )
     .replace(/\[TEST_COMMAND\]/g, config.testCommand || ncd.test || 'npm test')
     .replace(/\[BUILD_COMMAND\]/g, config.buildCommand || ncd.build || 'npm run build')
     .replace(/\[DEV_COMMAND\]/g, config.devCommand || ncd.dev || 'npm run dev')
@@ -557,16 +642,62 @@ function interpolate(content, config) {
     .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
     .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
     .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false')
-    .replace(/\[FRAMEWORK\]/g, ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack) ? 'N/A — native app' : config.hasFrontend === false ? 'N/A — no web frontend' : 'your frontend framework')
-    .replace(/\[SITEMAP_OR_ROUTE_LIST\]/g, config.hasFrontend === false || ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — no web frontend' : 'docs/sitemap.md')
-    .replace(/\[API_TESTS_PATH\]/g, config.hasApi === false ? '# N/A — no API routes' : 'tests/api/')
-    .replace(/\[API_ROUTES_PATH\]/g, config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/')
-    .replace(/\[BUNDLE_TOOL\]/g, ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack) ? 'N/A — native app' : 'your build tool\'s bundle analyzer')
+    .replace(
+      /\[FRAMEWORK\]/g,
+      ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)
+        ? 'N/A — native app'
+        : config.hasFrontend === false
+          ? 'N/A — no web frontend'
+          : 'your frontend framework',
+    )
+    .replace(
+      /\[SITEMAP_OR_ROUTE_LIST\]/g,
+      config.hasFrontend === false ||
+        ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+        ? 'N/A — no web frontend'
+        : 'docs/sitemap.md',
+    )
+    .replace(
+      /\[API_TESTS_PATH\]/g,
+      config.hasApi === false ? '# N/A — no API routes' : 'tests/api/',
+    )
+    .replace(
+      /\[API_ROUTES_PATH\]/g,
+      config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/',
+    )
+    .replace(
+      /\[BUNDLE_TOOL\]/g,
+      ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+        ? 'N/A — native app'
+        : "your build tool's bundle analyzer",
+    )
     .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
     .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack))
     .replace(/\[MIGRATION_COMMAND\]/g, config.migrationCommand || '# not configured')
     .replace(/\[PERF_TOOL\]/g, perfToolByStack[config.techStack] || 'your platform profiler')
-    .replace(/\[PROFILER_COMMAND\]/g, profilerCommandByStack[config.techStack] || '# configure profiling command for your stack')
-    .replace(/\[LINT_COMMAND\]/g, lintCommandByStack[config.techStack] || config.lintCommand || '# configure lint command for your stack')
-    .replace(/\[SECURITY_CHECKLIST_ITEMS\]/g, securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack');
+    .replace(
+      /\[PROFILER_COMMAND\]/g,
+      profilerCommandByStack[config.techStack] || '# configure profiling command for your stack',
+    )
+    .replace(
+      /\[LINT_COMMAND\]/g,
+      lintCommandByStack[config.techStack] ||
+        config.lintCommand ||
+        '# configure lint command for your stack',
+    )
+    .replace(
+      /\[SECURITY_CHECKLIST_ITEMS\]/g,
+      securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack',
+    );
 }
+
+// Named export — used by generators/claude-md.js to resolve all template placeholders
+export { interpolate };
+
+// Exported for unit testing only — not part of the public API
+export const _testHelpers = {
+  securityRuleVariant,
+  interpolate,
+  pruneSkills,
+  patchSettingsPermissions,
+};

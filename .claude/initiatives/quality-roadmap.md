@@ -1,8 +1,8 @@
 # Quality Roadmap — Session File
 
-**Branch**: `feat/workspace-quality-rubric`
+**Branch**: `feat/quality-roadmap` (merged as PRs #44, #45, #46)
 **Started**: 2026-04-04
-**Status**: In Progress — Items A+B+C complete (83.3%), simplify skill shipped
+**Status**: Complete — Items A-D shipped as v1.8.0. Item E (external review) open.
 **Origin**: findings from `improvement-and-quality-check` session (Items 1-2 shipped in PR #43, research Items 3/4/7 completed)
 
 ---
@@ -340,8 +340,6 @@ Item E (external review)   →  OPEN (no dependency)
 
 **Next steps**:
 1. Item E — external LLM review: execute prompt on GPT-4/Gemini/Mistral, synthesize findings
-2. PR — merge feat/workspace-quality-rubric → main with all Items A-D
-3. npm version bump + GitHub release
 
 ---
 
@@ -355,5 +353,5 @@ Item E (external review)   →  OPEN (no dependency)
 - [x] Item C: Score 83.3% post Items A+B+C
 - [x] Item D: CI rubric tests integrated (459 checks, D2/D5/D7/D8 for 3 stacks, GitHub Actions)
 - [ ] Item E: External LLM review executed and synthesized
-- [ ] PR: merge feat/workspace-quality-rubric → main
-- [ ] Version bump + GitHub release
+- [x] PR: merged as #44 (Items A-D), #45 (humanize docs), #46 (v1.8.0 bump)
+- [x] Version bump + GitHub release: v1.8.0 published (npm + GitHub)

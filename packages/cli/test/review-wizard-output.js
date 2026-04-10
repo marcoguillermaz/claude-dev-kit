@@ -21,17 +21,17 @@ import { printPlan, printNextSteps } from '../src/utils/print-plan.js';
 
 // ── Filter ───────────────────────────────────────────────────────────────────
 
-const GROUP_ARG = process.argv.find(a => a.startsWith('--group='));
-const FILTER    = GROUP_ARG ? GROUP_ARG.replace('--group=', '') : null;
+const GROUP_ARG = process.argv.find((a) => a.startsWith('--group='));
+const FILTER = GROUP_ARG ? GROUP_ARG.replace('--group=', '') : null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const c = {
-  bold:   (s) => `\x1b[1m${s}\x1b[0m`,
-  cyan:   (s) => `\x1b[36m${s}\x1b[0m`,
+  bold: (s) => `\x1b[1m${s}\x1b[0m`,
+  cyan: (s) => `\x1b[36m${s}\x1b[0m`,
   yellow: (s) => `\x1b[33m${s}\x1b[0m`,
-  dim:    (s) => `\x1b[2m${s}\x1b[0m`,
-  green:  (s) => `\x1b[32m${s}\x1b[0m`,
+  dim: (s) => `\x1b[2m${s}\x1b[0m`,
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
 };
 
 let scenarioCount = 0;
@@ -59,15 +59,25 @@ function run(group, label, config, { nextSteps = false } = {}) {
 // ── Base configs ─────────────────────────────────────────────────────────────
 
 const FULL_FLAGS = {
-  hasApi: true, hasDatabase: true, hasFrontend: true,
-  hasDesignSystem: true, hasE2E: false, hasPrd: false,
-  includeGithub: true, includePreCommit: true,
+  hasApi: true,
+  hasDatabase: true,
+  hasFrontend: true,
+  hasDesignSystem: true,
+  hasE2E: false,
+  hasPrd: false,
+  includeGithub: true,
+  includePreCommit: true,
 };
 
 const NO_FLAGS = {
-  hasApi: false, hasDatabase: false, hasFrontend: false,
-  hasDesignSystem: false, hasE2E: false, hasPrd: false,
-  includeGithub: false, includePreCommit: false,
+  hasApi: false,
+  hasDatabase: false,
+  hasFrontend: false,
+  hasDesignSystem: false,
+  hasE2E: false,
+  hasPrd: false,
+  includeGithub: false,
+  includePreCommit: false,
 };
 
 const BASE = {
@@ -86,34 +96,54 @@ const BASE = {
 
 // ── Group 1: Tier progression — node-ts, greenfield, full flags ───────────────
 
-run('tiers', 'Tier 0 — Discovery (node-ts, greenfield)', {
-  ...BASE,
-  tier: '0',
-  isDiscovery: true,
-  includePreCommit: false,
-  includeGithub: false,
-}, { nextSteps: true });
+run(
+  'tiers',
+  'Tier 0 — Discovery (node-ts, greenfield)',
+  {
+    ...BASE,
+    tier: '0',
+    isDiscovery: true,
+    includePreCommit: false,
+    includeGithub: false,
+  },
+  { nextSteps: true },
+);
 
-run('tiers', 'Tier S — Fast Lane (node-ts, greenfield, full)', {
-  ...BASE,
-  tier: 's',
-}, { nextSteps: true });
+run(
+  'tiers',
+  'Tier S — Fast Lane (node-ts, greenfield, full)',
+  {
+    ...BASE,
+    tier: 's',
+  },
+  { nextSteps: true },
+);
 
-run('tiers', 'Tier M — Standard (node-ts, greenfield, full)', {
-  ...BASE,
-  tier: 'm',
-  e2eCommand: 'npx playwright test',
-  hasE2E: true,
-  hasPrd: true,
-}, { nextSteps: true });
+run(
+  'tiers',
+  'Tier M — Standard (node-ts, greenfield, full)',
+  {
+    ...BASE,
+    tier: 'm',
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+    hasPrd: true,
+  },
+  { nextSteps: true },
+);
 
-run('tiers', 'Tier L — Full (node-ts, greenfield, full)', {
-  ...BASE,
-  tier: 'l',
-  e2eCommand: 'npx playwright test',
-  hasE2E: true,
-  hasPrd: true,
-}, { nextSteps: true });
+run(
+  'tiers',
+  'Tier L — Full (node-ts, greenfield, full)',
+  {
+    ...BASE,
+    tier: 'l',
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+    hasPrd: true,
+  },
+  { nextSteps: true },
+);
 
 // ── Group 2: Web stacks — Tier M, greenfield, all flags true ─────────────────
 
@@ -360,32 +390,42 @@ run('inclusions', 'includeGithub = false, includePreCommit = false', {
 
 // ── Group 6: Mode in-place ────────────────────────────────────────────────────
 
-run('mode', 'node-ts — Tier M, in-place, full flags', {
-  ...BASE,
-  tier: 'm',
-  mode: 'in-place',
-  e2eCommand: 'npx playwright test',
-  hasE2E: true,
-}, { nextSteps: true });
+run(
+  'mode',
+  'node-ts — Tier M, in-place, full flags',
+  {
+    ...BASE,
+    tier: 'm',
+    mode: 'in-place',
+    e2eCommand: 'npx playwright test',
+    hasE2E: true,
+  },
+  { nextSteps: true },
+);
 
-run('mode', 'swift — Tier M, in-place (no-api, has-db/ui, no-design-sys)', {
-  ...BASE,
-  tier: 'm',
-  mode: 'in-place',
-  techStack: 'swift',
-  projectName: 'mac-transcription-collector',
-  testCommand: 'swift test',
-  typeCheckCommand: '',
-  devCommand: 'swift run',
-  buildCommand: 'swift build -c release',
-  installCommand: 'swift package resolve',
-  e2eCommand: '',
-  hasApi: false,
-  hasDatabase: true,
-  hasFrontend: true,
-  hasDesignSystem: false,
-  includeGithub: false,
-}, { nextSteps: true });
+run(
+  'mode',
+  'swift — Tier M, in-place (no-api, has-db/ui, no-design-sys)',
+  {
+    ...BASE,
+    tier: 'm',
+    mode: 'in-place',
+    techStack: 'swift',
+    projectName: 'mac-transcription-collector',
+    testCommand: 'swift test',
+    typeCheckCommand: '',
+    devCommand: 'swift run',
+    buildCommand: 'swift build -c release',
+    installCommand: 'swift package resolve',
+    e2eCommand: '',
+    hasApi: false,
+    hasDatabase: true,
+    hasFrontend: true,
+    hasDesignSystem: false,
+    includeGithub: false,
+  },
+  { nextSteps: true },
+);
 
 run('mode', 'python — Tier L, in-place, full flags', {
   ...BASE,
@@ -401,18 +441,23 @@ run('mode', 'python — Tier L, in-place, full flags', {
   hasE2E: true,
 });
 
-run('mode', 'rust — Tier S, in-place, no github', {
-  ...BASE,
-  tier: 's',
-  mode: 'in-place',
-  techStack: 'rust',
-  testCommand: 'cargo test',
-  typeCheckCommand: '',
-  devCommand: 'cargo run',
-  buildCommand: 'cargo build --release',
-  installCommand: 'cargo build',
-  includeGithub: false,
-}, { nextSteps: true });
+run(
+  'mode',
+  'rust — Tier S, in-place, no github',
+  {
+    ...BASE,
+    tier: 's',
+    mode: 'in-place',
+    techStack: 'rust',
+    testCommand: 'cargo test',
+    typeCheckCommand: '',
+    devCommand: 'cargo run',
+    buildCommand: 'cargo build --release',
+    installCommand: 'cargo build',
+    includeGithub: false,
+  },
+  { nextSteps: true },
+);
 
 // ── Group 7: Command edge cases ───────────────────────────────────────────────
 
@@ -422,7 +467,7 @@ run('commands', 'devCommand = "npm run dev" on native stack (should be hidden)',
   techStack: 'swift',
   testCommand: 'swift test',
   typeCheckCommand: '',
-  devCommand: 'npm run dev',   // ← wrong default, should NOT appear
+  devCommand: 'npm run dev', // ← wrong default, should NOT appear
   buildCommand: 'swift build -c release',
   installCommand: 'swift package resolve',
   hasApi: false,
@@ -435,7 +480,7 @@ run('commands', 'devCommand = "npm run dev" on node-ts (should be shown)', {
   ...BASE,
   tier: 'm',
   techStack: 'node-ts',
-  devCommand: 'npm run dev',   // ← correct for this stack, SHOULD appear
+  devCommand: 'npm run dev', // ← correct for this stack, SHOULD appear
 });
 
 run('commands', 'testCommand empty, devCommand empty, no e2e (other stack)', {
@@ -468,7 +513,7 @@ run('commands', 'devCommand = "" on native stack (blank — should show nothing)
   techStack: 'kotlin',
   testCommand: './gradlew test',
   typeCheckCommand: '',
-  devCommand: '',              // ← blank, should not show
+  devCommand: '', // ← blank, should not show
   buildCommand: './gradlew build',
   installCommand: './gradlew dependencies',
   hasApi: false,
@@ -487,21 +532,45 @@ if (!FILTER || FILTER === 'nextsteps') {
   console.log('═'.repeat(72));
 
   const nextCases = [
-    { label: 'Greenfield Tier S — with precommit + github', config: { ...BASE, tier: 's', includePreCommit: true, includeGithub: true } },
-    { label: 'Greenfield Tier S — no precommit, no github',  config: { ...BASE, tier: 's', includePreCommit: false, includeGithub: false } },
-    { label: 'Greenfield Tier M — with precommit',            config: { ...BASE, tier: 'm', includePreCommit: true, includeGithub: true } },
-    { label: 'Greenfield Tier M — no precommit',              config: { ...BASE, tier: 'm', includePreCommit: false } },
-    { label: 'Greenfield Tier L — with precommit',            config: { ...BASE, tier: 'l', includePreCommit: true, includeGithub: true } },
-    { label: 'In-place Tier M — with precommit',              config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: true } },
-    { label: 'In-place Tier M — no precommit',                config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: false } },
-    { label: 'From-context Tier M',                           config: { ...BASE, tier: 'm', mode: 'from-context', projectName: 'my-project' } },
+    {
+      label: 'Greenfield Tier S — with precommit + github',
+      config: { ...BASE, tier: 's', includePreCommit: true, includeGithub: true },
+    },
+    {
+      label: 'Greenfield Tier S — no precommit, no github',
+      config: { ...BASE, tier: 's', includePreCommit: false, includeGithub: false },
+    },
+    {
+      label: 'Greenfield Tier M — with precommit',
+      config: { ...BASE, tier: 'm', includePreCommit: true, includeGithub: true },
+    },
+    {
+      label: 'Greenfield Tier M — no precommit',
+      config: { ...BASE, tier: 'm', includePreCommit: false },
+    },
+    {
+      label: 'Greenfield Tier L — with precommit',
+      config: { ...BASE, tier: 'l', includePreCommit: true, includeGithub: true },
+    },
+    {
+      label: 'In-place Tier M — with precommit',
+      config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: true },
+    },
+    {
+      label: 'In-place Tier M — no precommit',
+      config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: false },
+    },
+    {
+      label: 'From-context Tier M',
+      config: { ...BASE, tier: 'm', mode: 'from-context', projectName: 'my-project' },
+    },
   ];
 
   for (const { label, config } of nextCases) {
     scenarioCount++;
     console.log(sep);
-    console.log(c.bold(`  [${String(scenarioCount).padStart(2,'0')}] ${label}`));
-    console.log(sep.replace('─','─') + '\n');
+    console.log(c.bold(`  [${String(scenarioCount).padStart(2, '0')}] ${label}`));
+    console.log(sep.replace('─', '─') + '\n');
     printNextSteps(config);
   }
 }
@@ -509,7 +578,11 @@ if (!FILTER || FILTER === 'nextsteps') {
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 console.log('\n' + '═'.repeat(72));
-console.log(c.bold(c.green(`  ✓ ${scenarioCount} scenarios rendered`)) +
-  (FILTER ? c.dim(` (group: ${FILTER})`) : c.dim(' (all groups)')));
-console.log(c.dim('  Groups: tiers | stacks | native | flags | inclusions | mode | commands | nextsteps'));
+console.log(
+  c.bold(c.green(`  ✓ ${scenarioCount} scenarios rendered`)) +
+    (FILTER ? c.dim(` (group: ${FILTER})`) : c.dim(' (all groups)')),
+);
+console.log(
+  c.dim('  Groups: tiers | stacks | native | flags | inclusions | mode | commands | nextsteps'),
+);
 console.log('═'.repeat(72) + '\n');

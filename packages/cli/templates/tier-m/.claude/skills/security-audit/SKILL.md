@@ -7,7 +7,7 @@ effort: high
 argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 ---
 
-**Scope**: API routes, middleware/proxy, RLS policies, data validation, response shapes, environment variables, Supabase configuration, dependencies.
+**Scope**: API routes, middleware/proxy, RLS policies, data validation, response shapes, environment variables, Supabase configuration, dependencies. For native stacks: secrets management, platform security (Keychain/Keystore/entitlements), input validation, signing credentials, sensitive data protection.
 **Out of scope**: SEO, robots.txt, public crawlability, OpenGraph, sitemap.xml — this is a private internal webapp.
 **Do NOT make code changes. Audit only.**
 **All findings go to `docs/refactoring-backlog.md`.**
@@ -18,12 +18,11 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 
 Before any other step: read `CLAUDE.md` and check the Framework and Language fields.
 
-- If the project is a native application (Swift, Kotlin, Objective-C, C++, desktop GUI) with no API routes (the Framework field is `N/A — native app` or no route handler directories exist): output the following and stop — do not proceed to Step 0:
+- **Web or API project** (Framework is NOT `N/A — native app`, OR route handler directories exist such as `src/app/api/`, `routes/`, `handlers/`): proceed to **Step 0** — full web audit (Steps 0–5) + Step 3e if the language is non-JS.
+- **Native with API** (Framework is `N/A — native app` AND route handler directories exist): proceed to **Step 0** — full web audit (Steps 0–5) + Step 3e (native checks run in addition to web checks).
+- **Native only** (Framework is `N/A — native app` AND no route handler directories): skip Steps 0–5. Proceed directly to **Step 3e** (native-only audit). Then skip to **Step 6** for the report.
 
-  > **security-audit** targets web applications with API routes, middleware, and database access policies. This project uses a native stack with no server-side API surface. For native app security, audit manually: App Sandbox entitlements, Keychain access patterns, TCC permissions (camera, microphone, file access), code signing, and hardened runtime configuration.
-
-- If the project has API routes (check for `src/app/api/`, `routes/`, `handlers/`, or similar directories), even on a native stack: proceed to Step 0. The API surface is auditable.
-- If unsure: check for route handler files. If none exist, output the message above and stop.
+Announce the execution path: `Running security-audit — mode: [WEB | WEB+NATIVE | NATIVE-ONLY]`
 
 ---
 
@@ -257,12 +256,41 @@ Run the appropriate dependency audit tool:
 Flag: Critical/High CVEs as Critical/High findings. Medium/Low CVEs noted in report.
 
 ### NS3 — Input validation on external boundaries
-For each entry point (CLI args, file parsing, IPC, network input):
+For each entry point (CLI args, file parsing, IPC, network input, URL schemes, deep links, clipboard data):
 - Verify input is validated/sanitized before use
 - Check for path traversal in file operations (user input in file paths)
+- Check for command injection (user input passed to shell execution or subprocess)
 - Check for buffer overflow risk in languages without bounds checking
 
 Flag: each unvalidated external input.
+
+### NS4 — Platform security checks
+Execute each item from the stack-specific checklist above as a targeted grep/read check:
+- **Swift**: verify Keychain usage (not UserDefaults) for secrets, check ATS exceptions in Info.plist, verify Data Protection on sensitive files, audit entitlements for minimal privilege, confirm hardened runtime enabled, check TCC usage descriptions present
+- **Kotlin**: verify Android Keystore usage (not SharedPreferences) for secrets, check certificate pinning config, verify ProGuard/R8 enabled for release, audit ContentProvider export settings, check WebView JavaScript disabled by default
+- **Rust**: audit every `unsafe` block for safety justification comment, verify no use-after-free/double-free patterns, check FFI boundaries for input validation, verify constant-time comparison for secrets
+- **Go**: verify parameterized SQL queries (no string concatenation), check goroutine context cancellation propagated, verify crypto stdlib usage (no custom crypto), check govulncheck results
+- **Python**: verify parameterized queries (no f-strings in SQL), check subprocess usage (no shell=True with user input), verify no pickle on untrusted data, check for SSRF in URL handling
+- **Ruby**: verify strong parameters on controllers, check CSRF protection enabled, verify no string interpolation in where(), check secure cookie settings
+- **Java**: verify no ObjectInputStream on untrusted data, check PreparedStatement usage, verify XXE prevention in XML parsers, check SecureRandom usage
+- **dotnet**: verify Secret Manager or Key Vault usage (not appsettings.json for secrets), check anti-forgery tokens, verify HTTPS enforcement, check ProblemDetails in production
+
+Flag: each violation with severity based on exploitability.
+
+### NS5 — Sensitive data protection
+- Verify sensitive data written to disk uses platform encryption (Data Protection API on Apple, EncryptedSharedPreferences on Android, file permissions on systems stacks)
+- Check that temporary files with sensitive content are deleted after use
+- Verify no sensitive data in logs (grep for log/print statements near secret/token/password handling)
+- Check that error messages do not expose internal state or stack traces to users
+
+Flag: each unprotected sensitive data path.
+
+### NS6 — Code signing and distribution
+- No signing credentials, provisioning profiles, or keystores committed to repository (grep for `.p12`, `.mobileprovision`, `.keystore`, `.jks`, `.pem`, `.key` in tracked files)
+- No disabled code signing workarounds in build config
+- CI/CD signing credentials sourced from environment variables or secure storage, not checked-in files
+
+Flag: each signing credential in repository as Critical.
 
 ---
 
@@ -364,7 +392,9 @@ Flag: any header present in config but absent in live response — this means th
 | NS1 | Hardcoded secrets | N | Critical | ✅/❌ |
 | NS2 | Dependency vulnerabilities | N | High | ✅/❌ |
 | NS3 | Unvalidated external input | N | High | ✅/❌ |
-| Stack checklist | [language-specific items] | N | varies | ✅/❌ |
+| NS4 | Platform security (stack-specific) | N | varies | ✅/❌ |
+| NS5 | Sensitive data protection | N | High | ✅/❌ |
+| NS6 | Code signing credentials in repo | N | Critical | ✅/❌ |
 
 ### Supabase Security Advisors
 | Level | Count | Items |
@@ -438,9 +468,9 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ### Severity guide
 
-- **Critical**: unauthenticated route exposing or modifying data; RLS bypass; service role key in client code; NEXT_PUBLIC_ secret; cron route with no secret check; raw input in queries; Supabase advisor `level: error`; table missing `ENABLE ROW LEVEL SECURITY` on financial/personal data (RLS-1)
-- **High**: admin route without role check; sensitive field (CF, IBAN, P.IVA) exposed to non-owner; export route without role check; storage public URL on private bucket; open redirect; mass assignment; horizontal AC / IDOR on financial records (A13); state machine bypass on compensation/document transitions (A14); missing `WITH CHECK` on financial table INSERT/UPDATE policies (RLS-3); Supabase advisor `level: warning`; critical/high CVE in production dependency
-- **Medium**: missing Zod on write route body; unvalidated path param or query param used in DB filter (A3B/C); error message leaking DB internals; missing security header; no rate limiting on high-value endpoints; RLS enabled but zero policies (RLS-2)
+- **Critical**: unauthenticated route exposing or modifying data; RLS bypass; service role key in client code; NEXT_PUBLIC_ secret; cron route with no secret check; raw input in queries; Supabase advisor `level: error`; table missing `ENABLE ROW LEVEL SECURITY` on financial/personal data (RLS-1); hardcoded secrets in source code (NS1); signing credentials committed to repo (NS6); unsafe block without safety justification in Rust (NS4)
+- **High**: admin route without role check; sensitive field (CF, IBAN, P.IVA) exposed to non-owner; export route without role check; storage public URL on private bucket; open redirect; mass assignment; horizontal AC / IDOR on financial records (A13); state machine bypass on compensation/document transitions (A14); missing `WITH CHECK` on financial table INSERT/UPDATE policies (RLS-3); Supabase advisor `level: warning`; critical/high CVE in production dependency (NS2); unvalidated external input at system boundary (NS3); sensitive data written without platform encryption (NS5); ATS exception allowing arbitrary loads (NS4); disabled code signing (NS6)
+- **Medium**: missing Zod on write route body; unvalidated path param or query param used in DB filter (A3B/C); error message leaking DB internals; missing security header; no rate limiting on high-value endpoints; RLS enabled but zero policies (RLS-2); sensitive data in log output (NS5); missing TCC usage descriptions (NS4)
 - **Low**: header best-practice gap; informational Supabase advisor; moderate/low CVE not directly exploitable; state machine bypass on low-risk status fields
 
 ---

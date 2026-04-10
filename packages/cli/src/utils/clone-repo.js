@@ -47,7 +47,10 @@ function resolveSource(source) {
 
 async function cloneGitHub(url, targetDir) {
   // Extract repo name from URL for the folder name
-  const repoName = url.split('/').pop().replace(/\.git$/, '');
+  const repoName = url
+    .split('/')
+    .pop()
+    .replace(/\.git$/, '');
 
   await fs.ensureDir(targetDir);
 
@@ -72,7 +75,7 @@ async function cloneGitHub(url, targetDir) {
   if (result.status !== 0) {
     throw new Error(
       `Failed to clone ${url}:\n${result.stderr || result.stdout || 'Unknown error'}\n` +
-      `Tip: for private repos, run 'gh auth login' first.`
+        `Tip: for private repos, run 'gh auth login' first.`,
     );
   }
 
@@ -91,8 +94,17 @@ async function copyLocal(srcPath, targetDir) {
   await fs.copy(srcPath, targetDir, {
     filter: (src) => {
       const rel = path.relative(srcPath, src);
-      const skip = ['node_modules', '.git', '.next', 'dist', 'build', '__pycache__', '.venv', 'venv'];
-      return !skip.some(s => rel.startsWith(s));
+      const skip = [
+        'node_modules',
+        '.git',
+        '.next',
+        'dist',
+        'build',
+        '__pycache__',
+        '.venv',
+        'venv',
+      ];
+      return !skip.some((s) => rel.startsWith(s));
     },
   });
 
