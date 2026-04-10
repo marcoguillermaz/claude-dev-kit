@@ -28,6 +28,14 @@ credentials/
 .claude/session/
 .claude/worktrees/
 
+# Claude Code — regenerable scaffold output (canonical source: packages/cli/templates/)
+.claude/skills/
+.claude/agents/
+.claude/cheatsheet.md
+.claude/files-guide.md
+.claude/commands/
+.claude/initiatives/
+
 # Editor
 .vscode/
 .idea/
@@ -53,6 +61,22 @@ packages/cli/test/integration/output/
 
 # Local-only scripts (not part of published CLI)
 packages/cli/src/commands/sync-from-pilot.js
+scripts/
+
+# Internal project management (not product docs)
+FIRST_SESSION.md
+MEMORY.md
+.env.example
+.sync-report.md
+tasks/
+docs/reviews/
+docs/specs/
+docs/implementation-checklist.md
+docs/refactoring-backlog.md
+docs/requirements.md
+docs/claudemd-standards.md
+docs/pipeline-standards.md
+docs/adr/
 
 # claude-dev-kit
 .claude/context/
