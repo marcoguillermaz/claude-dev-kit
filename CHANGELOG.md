@@ -38,6 +38,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 - `responsive-audit` was not excluded for native stacks in `injectActiveSkills()` - CLAUDE.md listed it but the directory didn't exist for Swift/Kotlin/Rust projects
 - Tier M pipeline Phase 8.5 referenced non-existent `context-reviewer` agent - changed to inline grep
+- (CodeQL High) `init-in-place.js` incomplete URL substring sanitization - `remotes.includes('github.com')` replaced with regex domain match
+- (CodeQL Medium) `add.test.js` shell injection risk - `execSync` template literal replaced with `execFileSync` + args array
+- (CodeQL Medium) `review-wizard-output.js` no-op `.replace('─', '─')` removed
+- (CodeQL Medium) `ci.yml` and `claude-dev-kit-verify.yml` missing `permissions:` blocks - added `contents: read` (least privilege)
 
 ### Evaluated (decisions documented, no code change)
 - P5 Tier L: frozen - maintain functional, no new investment until real adoption signal
