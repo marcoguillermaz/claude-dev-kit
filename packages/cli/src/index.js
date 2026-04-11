@@ -4,6 +4,7 @@ import { program } from 'commander';
 import { init } from './commands/init.js';
 import { doctor } from './commands/doctor.js';
 import { upgrade } from './commands/upgrade.js';
+import { addSkill, addRule } from './commands/add.js';
 import chalk from 'chalk';
 
 program
@@ -34,6 +35,25 @@ program
   .description('Update template files to the latest claude-dev-kit version')
   .option('--dry-run', 'Show what would change without writing any files')
   .action(upgrade);
+
+const add = program
+  .command('add')
+  .description('Add a single skill or rule to the current project');
+
+add
+  .command('skill <name>')
+  .description('Install a skill (e.g. arch-audit, security-audit, api-design)')
+  .option('--force', 'Overwrite if the skill already exists')
+  .option('--dry-run', 'Show what would be created without writing files')
+  .action(addSkill);
+
+add
+  .command('rule <name>')
+  .description('Install a rule (e.g. git, output-style, security)')
+  .option('--stack <stack>', 'Tech stack for security variant (swift, kotlin, rust, dotnet, java, go)')
+  .option('--force', 'Overwrite if the rule already exists')
+  .option('--dry-run', 'Show what would be created without writing files')
+  .action(addRule);
 
 program.on('command:*', () => {
   console.error(chalk.red(`Unknown command: ${program.args.join(' ')}`));

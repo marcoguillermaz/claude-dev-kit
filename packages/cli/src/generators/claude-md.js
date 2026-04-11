@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { interpolate } from '../scaffold/index.js';
+import { getActiveSkills, NATIVE_STACKS } from '../scaffold/skill-registry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -43,8 +44,7 @@ export async function generateClaudeMd(config, targetDir) {
   }
 
   // Strip irrelevant Tech Stack placeholders for native stacks
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  if (nativeStacks.includes(config.techStack)) {
+  if (NATIVE_STACKS.includes(config.techStack)) {
     content = content.replace(/^- \*\*Auth\*\*:.*\n/m, '');
     content = content.replace(/^- \*\*Storage\*\*:.*\n/m, '');
     content = content.replace(/^- \*\*Email\*\*:.*\n/m, '');
@@ -140,25 +140,7 @@ function injectRuleImports(content) {
  * based on feature flags from the wizard.
  */
 function injectActiveSkills(content, config) {
-  // Always installed (all tiers with skills)
-  const active = ['arch-audit', 'skill-dev', 'perf-audit', 'simplify', 'commit'];
-
-  const tier = (config.tier || 's').toLowerCase();
-
-  // Tier S: only security-audit as conditional skill
-  if (tier === 's') {
-    if (config.hasApi !== false) active.push('security-audit');
-  }
-
-  // Tier M/L: full conditional skill set
-  if (tier === 'm' || tier === 'l') {
-    if (config.hasApi !== false) active.push('api-design', 'security-audit');
-    if (config.hasDatabase !== false) active.push('skill-db');
-    if (config.hasFrontend !== false) {
-      active.push('responsive-audit', 'visual-audit', 'ux-audit');
-      if (config.hasDesignSystem !== false) active.push('ui-audit');
-    }
-  }
+  const active = getActiveSkills(config);
 
   const section = `\n## Active Skills\n${active.map((s) => `- \`/${s}\``).join('\n')}\n`;
 

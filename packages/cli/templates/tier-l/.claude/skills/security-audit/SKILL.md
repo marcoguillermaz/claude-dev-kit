@@ -1,5 +1,6 @@
 ---
 name: security-audit
+description: Security audit: auth/authz on API routes, input validation, RLS policies, response shape review, secret exposure, HTTP headers. Native mode checks entitlements and Keychain.
 user-invocable: true
 model: sonnet
 context: fork

@@ -1,5 +1,6 @@
 ---
 name: ux-audit
+description: UX audit: evaluate user flows against ISO 9241-11 and Nielsen heuristics. Measures task completion, feedback clarity, cognitive load, error recovery via Playwright.
 user-invocable: true
 model: opus
 context: fork

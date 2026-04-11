@@ -1,5 +1,6 @@
 ---
 name: skill-dev
+description: Code quality audit: detect cross-module coupling, N+1 queries, dead exports, antipatterns, over-large components. Cross-checks against refactoring backlog.
 user-invocable: true
 model: sonnet
 context: fork

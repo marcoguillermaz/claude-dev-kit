@@ -84,6 +84,22 @@ export async function upgrade(options) {
     }
   });
 
+  // Detect and report custom skills (custom-* prefix — never touched by upgrade)
+  const customSkillsDir = path.join(cwd, '.claude', 'skills');
+  if (fs.existsSync(customSkillsDir)) {
+    const entries = fs.readdirSync(customSkillsDir, { withFileTypes: true });
+    const customSkills = entries
+      .filter((e) => e.isDirectory() && e.name.startsWith('custom-'))
+      .map((e) => e.name);
+    if (customSkills.length > 0) {
+      console.log();
+      console.log(chalk.bold('Custom skills (preserved — never modified by upgrade):'));
+      customSkills.forEach((s) =>
+        console.log(`  ${chalk.green('✓')} .claude/skills/${s}/`),
+      );
+    }
+  }
+
   if (options.dryRun || updates.length === 0) {
     if (options.dryRun) console.log();
     if (options.dryRun) console.log(chalk.yellow('Dry run — no files written.'));

@@ -1,5 +1,6 @@
 ---
 name: api-design
+description: API design audit: endpoint naming, HTTP verbs, response shapes, error codes, pagination, validation consistency. Run when adding or modifying API routes.
 user-invocable: true
 model: sonnet
 context: fork

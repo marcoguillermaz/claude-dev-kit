@@ -1,5 +1,6 @@
 ---
 name: perf-audit
+description: Performance audit: bundle size, lazy loading, data fetching, caching, N+1 queries, image optimization. Native mode checks memory, I/O, launch weight, energy.
 user-invocable: true
 model: sonnet
 context: fork

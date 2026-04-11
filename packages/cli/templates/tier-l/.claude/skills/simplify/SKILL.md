@@ -1,5 +1,6 @@
 ---
 name: simplify
+description: Scan changed files for complexity patterns: deep nesting, local duplication, dead code, magic values, conditional simplification. Apply minimal safe refactors to improve readability.
 user-invocable: true
 model: haiku
 context: fork

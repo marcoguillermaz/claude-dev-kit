@@ -280,7 +280,6 @@ async function scenarioTierS_full() {
   assertExists(dir, 'CLAUDE.md');
   assertExists(dir, 'README.md');
   assertExists(dir, '.claude/settings.json');
-  assertExists(dir, '.claude/files-guide.md');
   assertDirExists(dir, '.claude/session');
 
   // Rules
@@ -330,10 +329,15 @@ async function scenarioTierS_full() {
   assertExists(dir, '.github/PULL_REQUEST_TEMPLATE.md');
   assertExists(dir, '.github/CODEOWNERS');
   assertExists(dir, '.pre-commit-config.yaml');
-  assertExists(dir, 'docs/adr/template.md');
+
+  // Tier S skips informational docs (P2 — reduce file count)
+  assertNotExists(dir, '.claude/files-guide.md');
+  assertNotExists(dir, 'docs/adr/template.md');
+  assertNotExists(dir, 'docs/pipeline-standards.md');
+  assertNotExists(dir, 'docs/claudemd-standards.md');
 
   // Tier S must NOT have M/L-only files
-  assertNotExists(dir, 'FIRST_SESSION.md');
+  assertNotExists(dir, '.claude/FIRST_SESSION.md');
   assertNotExists(dir, 'MEMORY.md');
   assertNotExists(dir, 'docs/sitemap.md');
   assertNotExists(dir, 'docs/db-map.md');
@@ -379,7 +383,7 @@ async function scenarioTierM() {
   // Core
   assertExists(dir, 'CLAUDE.md');
   assertExists(dir, 'README.md');
-  assertExists(dir, 'FIRST_SESSION.md');
+  assertExists(dir, '.claude/FIRST_SESSION.md');
   assertExists(dir, 'MEMORY.md');
   assertExists(dir, '.claude/settings.json');
   assertExists(dir, '.claude/rules/pipeline.md');
@@ -430,7 +434,7 @@ async function scenarioTierL() {
 
   // Core
   assertExists(dir, 'CLAUDE.md');
-  assertExists(dir, 'FIRST_SESSION.md');
+  assertExists(dir, '.claude/FIRST_SESSION.md');
   assertExists(dir, 'MEMORY.md');
   assertExists(dir, '.claude/settings.json');
   assertExists(dir, '.claude/rules/pipeline.md');
@@ -748,15 +752,22 @@ async function scenarioCommitSkillAllTiers() {
 }
 
 async function scenarioNewRuleFiles() {
-  section('New rule files — output-style in tier S; standards docs in docs/');
+  section('New rule files — output-style in tier S; standards docs skipped for S, present in M');
   const config = { ...BASE, tier: 's', isDiscovery: false };
   const dir = await scaffold('tier-s-rules', 's', config);
 
-  // output-style.md stays in .claude/rules/ (operational rule)
+  // output-style.md stays in .claude/rules/ (operational rule — all tiers)
   assertExists(dir, '.claude/rules/output-style.md');
-  // Standards reference docs go to docs/ (not auto-loaded as rules)
-  assertExists(dir, 'docs/claudemd-standards.md');
-  assertExists(dir, 'docs/pipeline-standards.md');
+  // Standards reference docs skipped for Tier S (P2 — reduce file count)
+  assertNotExists(dir, 'docs/claudemd-standards.md');
+  assertNotExists(dir, 'docs/pipeline-standards.md');
+
+  // Verify Tier M still gets standards docs
+  const configM = { ...BASE, tier: 'm', isDiscovery: false };
+  const dirM = await scaffold('tier-m-rules', 'm', configM);
+  assertExists(dirM, '.claude/rules/output-style.md');
+  assertExists(dirM, 'docs/claudemd-standards.md');
+  assertExists(dirM, 'docs/pipeline-standards.md');
 }
 
 async function scenarioPipelineGateCount() {

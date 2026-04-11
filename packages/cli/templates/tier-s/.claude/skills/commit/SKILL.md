@@ -1,5 +1,6 @@
 ---
 name: commit
+description: Classify staged changes, generate conventional commit message (type/scope/body), and execute git commit. Use after any implementation phase to commit work.
 user-invocable: true
 model: haiku
 context: fork
