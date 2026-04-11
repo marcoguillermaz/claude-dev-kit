@@ -1015,7 +1015,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 17 checks:
+Runs 19 checks:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1034,8 +1034,10 @@ Runs 17 checks:
 15. `.claude/skills/commit/` present (Tier M/L - warn if missing)
 16. Skills invoking Playwright `browser_*` tools declare `allowed-tools` frontmatter (warn if missing)
 17. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
+18. Stop hook has `timeout` configured and ≤ 600000ms (warn if missing - prevents hanging test commands)
+19. No duplicate entries in `permissions.deny` list (warn if duplicates found)
 
-Checks 12-17 are skipped for Tier 0 projects.
+Checks 12-19 are skipped for Tier 0 projects.
 
 **`--report` output**: machine-readable JSON with timestamp, cwd, summary (passed/warned/failed/skipped), and per-check details. Consumed by CI systems or external audit tools.
 

@@ -58,10 +58,10 @@ describe('getSkillsToRemove', () => {
     assert.equal(result.length, 0);
   });
 
-  it('hasApi=false removes api-design and security-audit', () => {
+  it('hasApi=false removes api-design but keeps security-audit', () => {
     const result = getSkillsToRemove({ techStack: 'node-ts', hasApi: false });
     assert.ok(result.includes('api-design'));
-    assert.ok(result.includes('security-audit'));
+    assert.ok(!result.includes('security-audit'));
     assert.ok(!result.includes('perf-audit'));
   });
 
@@ -92,10 +92,10 @@ describe('getSkillsToRemove', () => {
     assert.ok(!result.includes('visual-audit'));
   });
 
-  it('combined: hasApi=false + hasFrontend=false removes both groups', () => {
+  it('combined: hasApi=false + hasFrontend=false removes both groups but keeps security-audit', () => {
     const result = getSkillsToRemove({ techStack: 'node-ts', hasApi: false, hasFrontend: false });
     assert.ok(result.includes('api-design'));
-    assert.ok(result.includes('security-audit'));
+    assert.ok(!result.includes('security-audit'));
     assert.ok(result.includes('responsive-audit'));
     assert.ok(result.includes('visual-audit'));
     assert.ok(result.includes('ux-audit'));
@@ -127,9 +127,9 @@ describe('getActiveSkills', () => {
     assert.ok(!result.includes('skill-db'));
   });
 
-  it('tier S hasApi=false excludes security-audit', () => {
+  it('tier S hasApi=false keeps security-audit (stack-agnostic)', () => {
     const result = getActiveSkills({ tier: 's', hasApi: false });
-    assert.ok(!result.includes('security-audit'));
+    assert.ok(result.includes('security-audit'));
     assert.ok(result.includes('arch-audit'));
   });
 
@@ -150,10 +150,10 @@ describe('getActiveSkills', () => {
     assert.ok(result.includes('ui-audit'));
   });
 
-  it('tier M hasApi=false excludes api-design and security-audit', () => {
+  it('tier M hasApi=false excludes api-design but keeps security-audit', () => {
     const result = getActiveSkills({ tier: 'm', hasApi: false });
     assert.ok(!result.includes('api-design'));
-    assert.ok(!result.includes('security-audit'));
+    assert.ok(result.includes('security-audit'));
   });
 
   it('tier M hasFrontend=false excludes all frontend skills', () => {
@@ -199,9 +199,9 @@ describe('getCheatsheetSkillsToRemove', () => {
     assert.equal(result.length, 0);
   });
 
-  it('hasApi=false removes security-audit and api-design from cheatsheet', () => {
+  it('hasApi=false removes api-design from cheatsheet but keeps security-audit', () => {
     const result = getCheatsheetSkillsToRemove({ techStack: 'node-ts', hasApi: false });
-    assert.ok(result.includes('security-audit'));
+    assert.ok(!result.includes('security-audit'));
     assert.ok(result.includes('api-design'));
   });
 

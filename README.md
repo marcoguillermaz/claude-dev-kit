@@ -114,7 +114,7 @@ The Stop hook in `settings.json` is the core enforcement mechanism. It blocks Cl
 npx mg-claude-dev-kit init                    # scaffold wizard
 npx mg-claude-dev-kit init --dry-run          # preview without writing
 npx mg-claude-dev-kit init --answers file.json  # skip prompts (CI/automation)
-npx mg-claude-dev-kit doctor                  # validate setup (17 checks)
+npx mg-claude-dev-kit doctor                  # validate setup (19 checks)
 npx mg-claude-dev-kit doctor --report         # JSON output for CI
 npx mg-claude-dev-kit doctor --ci             # silent, exit 1 on failure
 npx mg-claude-dev-kit upgrade                 # update template files

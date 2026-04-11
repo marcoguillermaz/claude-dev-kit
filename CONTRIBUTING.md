@@ -73,7 +73,7 @@ packages/cli/
 - **Tier boundaries**: no Tier L features in Tier M templates. No Tier M features in Tier S.
 - **Custom skills**: files matching `.claude/skills/custom-*/SKILL.md` are never touched by `upgrade` or `init`. This convention is documented for end users.
 - **Stack agnosticity**: templates contain no framework-specific assumptions. Stack adaptation happens in `interpolate()` and `skill-registry.js`.
-- **Doctor check count**: must match what README documents (currently 17).
+- **Doctor check count**: must match what README documents (currently 19).
 
 ---
 

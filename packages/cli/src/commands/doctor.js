@@ -278,6 +278,56 @@ const checks = [
       };
     },
   },
+  {
+    id: 'stop-hook-timeout',
+    label: 'Stop hook has timeout configured',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      try {
+        const settings = JSON.parse(fs.readFileSync(p, 'utf8'));
+        const stopHooks = settings?.hooks?.Stop || [];
+        if (stopHooks.length === 0) return { pass: true, skip: true };
+        const allHaveTimeout = stopHooks.every(
+          (entry) => typeof entry.timeout === 'number' && entry.timeout <= 600000,
+        );
+        return {
+          pass: allHaveTimeout,
+          warn: true,
+          fix: 'Add "timeout": 300000 to each Stop hook entry in .claude/settings.json. Without a timeout, a hanging test command blocks Claude indefinitely.',
+        };
+      } catch {
+        return { pass: true, skip: true };
+      }
+    },
+  },
+  {
+    id: 'permissions-no-duplicates',
+    label: 'No duplicate entries in permissions deny list',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      try {
+        const settings = JSON.parse(fs.readFileSync(p, 'utf8'));
+        const deny = settings?.permissions?.deny;
+        if (!Array.isArray(deny) || deny.length === 0) return { pass: true, skip: true };
+        const seen = new Set();
+        const dupes = [];
+        for (const entry of deny) {
+          if (seen.has(entry)) dupes.push(entry);
+          seen.add(entry);
+        }
+        return {
+          pass: dupes.length === 0,
+          warn: true,
+          info: dupes.length > 0 ? `duplicates: ${dupes.join(', ')}` : undefined,
+          fix: `Remove duplicate entries from permissions.deny in .claude/settings.json: ${dupes.join(', ')}`,
+        };
+      } catch {
+        return { pass: true, skip: true };
+      }
+    },
+  },
 ];
 
 export async function doctor(options = {}) {
