@@ -544,12 +544,12 @@ describe('pruneSkills', () => {
     await fs.remove(tmpDir);
   });
 
-  it('hasApi=false removes api-design and security-audit', async () => {
+  it('hasApi=false removes api-design but keeps security-audit', async () => {
     await setupSkills(tmpDir);
     await pruneSkills(tmpDir, { techStack: 'node-ts', hasApi: false });
     const left = remaining(tmpDir);
     assert.ok(!left.includes('api-design'));
-    assert.ok(!left.includes('security-audit'));
+    assert.ok(left.includes('security-audit'));
   });
 
   it('hasDatabase=false removes skill-db', async () => {
@@ -606,12 +606,12 @@ describe('pruneSkills', () => {
     // should complete without error
   });
 
-  it('combined: hasApi=false + hasFrontend=false removes both groups', async () => {
+  it('combined: hasApi=false + hasFrontend=false removes both groups but keeps security-audit', async () => {
     await setupSkills(tmpDir);
     await pruneSkills(tmpDir, { techStack: 'node-ts', hasApi: false, hasFrontend: false });
     const left = remaining(tmpDir);
     assert.ok(!left.includes('api-design'));
-    assert.ok(!left.includes('security-audit'));
+    assert.ok(left.includes('security-audit'));
     assert.ok(!left.includes('responsive-audit'));
     assert.ok(!left.includes('visual-audit'));
     assert.ok(!left.includes('ux-audit'));

@@ -132,9 +132,9 @@ describe('injectActiveSkills', () => {
     assert.ok(result.includes('`/security-audit`'));
   });
 
-  it('tier S with hasApi=false excludes security-audit', () => {
+  it('tier S with hasApi=false keeps security-audit (stack-agnostic)', () => {
     const result = injectActiveSkills(base, { tier: 's', hasApi: false });
-    assert.ok(!result.includes('`/security-audit`'));
+    assert.ok(result.includes('`/security-audit`'));
     assert.ok(result.includes('`/arch-audit`'));
   });
 
@@ -155,10 +155,10 @@ describe('injectActiveSkills', () => {
     assert.ok(result.includes('`/ui-audit`'));
   });
 
-  it('tier M hasApi=false excludes api-design and security-audit', () => {
+  it('tier M hasApi=false excludes api-design but keeps security-audit', () => {
     const result = injectActiveSkills(base, { tier: 'm', hasApi: false });
     assert.ok(!result.includes('`/api-design`'));
-    assert.ok(!result.includes('`/security-audit`'));
+    assert.ok(result.includes('`/security-audit`'));
   });
 
   it('tier M hasFrontend=false excludes all frontend skills', () => {
