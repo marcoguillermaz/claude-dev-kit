@@ -6,6 +6,7 @@
 
 - **Bug reports**: open an issue using the Bug Report template
 - **Feature requests**: open an issue using the Feature Request template
+- **Skill requests**: request a new audit skill using the Skill Request template
 - **New skills**: see [Custom Skills Guide](docs/custom-skills.md) for the SKILL.md format
 - **Pull requests**: improvements to the CLI, templates, skills, or documentation
 

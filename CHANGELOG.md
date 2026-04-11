@@ -16,6 +16,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `docs/custom-skills.md` - SKILL.md authoring guide (frontmatter schema, model selection, body patterns)
 - `skill-registry.js` - single source of truth for skill applicability rules (12 entries, 3 query functions)
 - `.github/FUNDING.yml` - GitHub Sponsors enabled
+- `.github/ISSUE_TEMPLATE/skill_request.md` - issue template for new skill requests (tier, stack, install condition)
+- `.github/ISSUE_TEMPLATE/config.yml` - issue chooser; blank issues disabled, support redirected to Discussions Q&A
+- `.github/workflows/discussion-monitor.yml` - weekly cron: finds unanswered Q&A discussions (>14 days), creates summary issue
+- GitHub Project board populated with Q1-Q2 roadmap deliverables (14 issues across 2 milestones)
 - Skill `description` field in all 12 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
 
 ### Changed
@@ -34,6 +38,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 - `responsive-audit` was not excluded for native stacks in `injectActiveSkills()` - CLAUDE.md listed it but the directory didn't exist for Swift/Kotlin/Rust projects
 - Tier M pipeline Phase 8.5 referenced non-existent `context-reviewer` agent - changed to inline grep
+- (CodeQL High) `init-in-place.js` incomplete URL substring sanitization - `remotes.includes('github.com')` replaced with regex domain match
+- (CodeQL Medium) `add.test.js` shell injection risk - `execSync` template literal replaced with `execFileSync` + args array
+- (CodeQL Medium) `review-wizard-output.js` no-op `.replace('─', '─')` removed
+- (CodeQL Medium) `ci.yml` and `claude-dev-kit-verify.yml` missing `permissions:` blocks - added `contents: read` (least privilege)
 
 ### Evaluated (decisions documented, no code change)
 - P5 Tier L: frozen - maintain functional, no new investment until real adoption signal
