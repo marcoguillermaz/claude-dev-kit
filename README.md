@@ -2,385 +2,196 @@
 
 [![npm version](https://img.shields.io/npm/v/mg-claude-dev-kit.svg)](https://www.npmjs.com/package/mg-claude-dev-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js ≥ 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
+[![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
+[![464 integration checks](https://img.shields.io/badge/integration-464%20checks-blue.svg)](#testing)
 
-> Scaffold for legible, reviewable AI-assisted development.
-> From first exploration to production-grade delivery - one scaffold, four tiers.
+> Governance layer for Claude Code.
+> Claude generates. Your team decides.
 
----
+Claude Code is a powerful CLI that reads, writes, and reasons about your entire codebase. Without shared process, it makes autonomous decisions that are hard to track and harder to review.
 
-## Who is this for?
-
-### Builder PM or tech lead exploring Claude Code
-
-You want to build end-to-end with Claude Code - or evaluate it for your team. You don't need a full pipeline yet. You need to get started, understand what the tool can do, and have a process you can actually review.
-
-**`npx mg-claude-dev-kit init`** → choose **Discovery** → 3 files, 5 minutes, working.
-
-### Team already shipping with Claude Code
-
-You're using Claude Code but the process is ad-hoc. Claude makes autonomous decisions you can't always trace. You want a structured, reviewable workflow without inventing one from scratch.
-
-**`npx mg-claude-dev-kit init`** → choose your tier (S / M / L) → full development scaffold.
+**claude-dev-kit** scaffolds a structured, reviewable development process on top of Claude Code. It enforces one non-negotiable rule mechanically: Claude cannot declare a task complete until your tests pass. Everything else scales with your needs.
 
 ---
 
-## Quickstart
+## Quick Start
 
 ```bash
 npx mg-claude-dev-kit init
 ```
 
-The wizard asks about your project state first:
-
-```
-? What's the state of this project?
-  ▸ Existing project - add CDK to a project that already has code
-    New project - starting from scratch, you'll fill in the details
-    From existing docs - share your docs and Claude populates everything
-```
+The wizard detects your project state and guides you through setup. Three paths available:
 
 | Path | Use when |
 |---|---|
-| **Existing project** | You're already inside a project - adds structure without overwriting anything |
-| **New project** | Starting from scratch, fill in the details |
-| **From existing docs** | You have existing repos or docs - Claude reads them and populates your project files |
+| **Existing project** | Add structure to a project that already has code |
+| **New project** | Starting from scratch |
+| **From existing docs** | Share repos or docs - Claude reads them and populates everything |
 
-### Automate / CI
-
-Skip all interactive prompts with a pre-filled answers file:
-
-```bash
-npx mg-claude-dev-kit init --answers ./my-answers.json
-npx mg-claude-dev-kit init-greenfield --answers ./my-answers.json
-npx mg-claude-dev-kit init-in-place --answers ./my-answers.json
-```
-
-Pass a JSON file with all wizard answers. Nine example fixtures are included in `packages/cli/test/fixtures/wizard-answers/` - copy one as a starting point. Useful for CI pipelines, scripted provisioning, and integration testing.
-
-### Validate your setup
-
-```bash
-npx mg-claude-dev-kit doctor          # interactive report
-npx mg-claude-dev-kit doctor --report # JSON output for CI pipelines
-npx mg-claude-dev-kit doctor --ci     # silent mode: exit 1 if any check fails
-```
-
-17 checks: Claude CLI, CLAUDE.md present + size, settings.json, Stop hook configured + no unfilled placeholder, pipeline.md, security.md, .env in .gitignore, no secrets in CLAUDE.md, CODEOWNERS, output-style.md (tier M/L), docs/claudemd-standards.md (tier M/L), docs/pipeline-standards.md (tier M/L), commit skill (tier M/L), skills with allowed-tools frontmatter, context-review.md includes C12. Checks 12–16 are skipped (pass/skip) for Tier 0 projects.
-
-`--report` outputs machine-readable JSON - consumable by CI pipelines and external audit systems. Each check returns `id`, `status` (pass / warn / fail / skip), and `fix` message.
-
-### Keep up to date
-
-```bash
-npx mg-claude-dev-kit upgrade
-```
-
-Updates non-destructive files (context-review, security rules, git rules, output-style, claudemd-standards, pipeline-standards) to the latest template.
-Files with your customizations (CLAUDE.md, pipeline.md, settings.json, all SKILL.md files) are flagged for manual review.
-
-### Upgrade your tier
-
-```bash
-npx mg-claude-dev-kit upgrade --tier=s   # add Fast Lane pipeline
-npx mg-claude-dev-kit upgrade --tier=m   # add Standard pipeline + docs
-npx mg-claude-dev-kit upgrade --tier=l   # add Full pipeline + audit skills
-```
-
-Upgrade is non-destructive - adds new files without overwriting your existing ones.
+After init, open Claude Code and start working. The scaffold is active immediately.
 
 ---
 
-## Tiers
+## What it does
 
-| Tier | Pipeline | Gates | Best for |
-|---|---|---|---|
-| **0 - Discovery** | Stop hook only | - | First exploration - zero process assumptions |
-| **S - Fast Lane** | 4 steps, 1 compact scope-confirm | - | Low blast radius, single dev, reversible in minutes |
-| **M - Standard** | 8 phases, 2 STOP gates + Phase 8.5 | 2 | Single feature, moderate impact, 1–2 collaborators |
-| **L - Full** | 11 phases, 4 STOP gates + Phase 8.5 + R1–R4 | 4 | High blast radius, team, complex domain, shared systems |
+### Tiered pipelines matched to risk
 
-**Spec-driven mode (Tier M / L)**: at the start of every block, Claude auto-selects the working mode based on block signals and declares it with a one-line rationale. You can override before the STOP gate. **Spec-first (Mode A)** - auto-selected when Tier 2 sweep triggers or the block has unclear shape: Claude generates `docs/specs/[block-name].md` - goal, EARS-format acceptance criteria, in-scope / out-of-scope - before writing a single line of code. The STOP gate becomes a spec review. **Scope-confirm (Mode B)** - auto-selected for Tier 1 scope (refactors, bug fixes, isolated changes): the existing structured sweep, then proceed.
+| Tier | Pipeline | Best for |
+|---|---|---|
+| **0 - Discovery** | Stop hook only | First exploration - zero process |
+| **S - Fast Lane** | 4 steps, scope-confirm | Single dev, low risk, quick fixes |
+| **M - Standard** | 8 phases, 2 STOP gates | Feature blocks, 1-2 collaborators |
+| **L - Full** | 14 phases, 4 STOP gates | Team projects, complex domain changes |
 
-**E2E / UAT testing (Tier M / L)**: at init time you can provide an optional E2E test command (Playwright/Cypress). When configured, Phase 4 activates per block only when the scope gate confirms critical UI flows are in scope **and the user explicitly lists the UAT scenarios to test** (numbered, 1–5 journeys). Claude implements exactly those scenarios - it does not invent test cases. If not configured or no UI flows declared, Phase 4 is skipped automatically.
+Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-**The one constraint every tier shares**: Claude cannot declare a task complete until your tests pass. Enforced by a Stop hook in `.claude/settings.json` - not just an instruction.
+### 12 audit skills
 
-**Every tier also shares**: a weekly arch-audit reminder (SessionStart hook checks if `/arch-audit` was run in the last 7 days), audit logging of all file changes, and branch discipline rules.
+Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
+
+| Skill | Tiers | Purpose |
+|---|---|---|
+| `/arch-audit` | S M L | Governance files vs Anthropic docs. Auto-fixes deprecations. |
+| `/security-audit` | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID. |
+| `/perf-audit` | S M L | Bundle size, serial awaits, query efficiency. 8-stack patterns. |
+| `/skill-dev` | S M L | Coupling, duplication, dead code, debt-density. |
+| `/simplify` | S M L | Early returns, nesting, dead code. Applies changes directly. |
+| `/commit` | S M L | Conventional Commits - auto-detects type, scope, description. |
+| `/api-design` | M L | URL naming, HTTP verbs, response envelope, pagination. |
+| `/skill-db` | M L | Schema normalization, indexes, N+1 queries, RLS. |
+| `/visual-audit` | M L | Typography, APCA contrast, spacing, dark-mode. |
+| `/ux-audit` | M L | ISO 9241-11, Nielsen heuristics, user confidence. |
+| `/responsive-audit` | M L | Layout at 320-1024px, tap targets, WCAG. |
+| `/ui-audit` | M L | Design token compliance, component adoption, accessibility. |
+
+Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
+
+### 11 tech stacks auto-detected
+
+Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java - plus generic fallback. Security rules, permissions, and CLAUDE.md fields adapt automatically.
+
+### Incremental adoption
+
+Install individual components without a full scaffold:
+
+```bash
+npx mg-claude-dev-kit add skill security-audit   # install one skill
+npx mg-claude-dev-kit add rule git                # install one rule
+npx mg-claude-dev-kit add rule security --stack swift  # stack-specific variant
+```
+
+Custom skills (`custom-*` prefix) are preserved across upgrades. See [Custom Skills Guide](docs/custom-skills.md).
 
 ---
 
-## What gets created
-
-### Tier 0 - Discovery
+## Architecture
 
 ```
 your-project/
-├── CLAUDE.md              ← project context: stack, commands, conventions
-├── GETTING_STARTED.md     ← your team's guide to the first session
-└── .claude/
-    ├── settings.json      ← Stop hook: tests must pass before Claude declares done
-    └── session/           ← session recovery files (gitignored)
-```
-
-### Tier S / M / L
-
-```
-your-project/
-├── CLAUDE.md                       ← project context (<200 lines, committed)
-├── FIRST_SESSION.md                ← first session guide for your team (M/L only, remove after)
-├── MEMORY.md                       ← shared lessons and active plan (M/L only)
-├── CONTEXT_IMPORT.md               ← discovery bridge file (from-context / in-place only)
-│
+├── CLAUDE.md                    # Project context (<200 lines)
 ├── .claude/
-│   ├── settings.json               ← permissions + governance hooks
+│   ├── settings.json            # Permissions + Stop hook (mechanical enforcement)
 │   ├── rules/
-│   │   ├── pipeline.md             ← development workflow (tier-appropriate)
-│   │   ├── context-review.md       ← end-of-block compliance checklist (C1–C12)
-│   │   ├── security.md             ← stack-aware: web / native-apple / native-android / systems
-│   │   ├── git.md                  ← commit format, branch rules
-│   │   ├── output-style.md         ← communication rules (no openers, plain vocabulary)
-│   │   ├── claudemd-standards.md   ← CLAUDE.md hygiene standards (S1–S9)
-│   │   └── pipeline-standards.md   ← engineering best practices reference (S1–S8)
-│   ├── agents/                     ← custom agent definitions (M/L)
-│   │   ├── dependency-scanner.md   ← Phase 1: parallel dependency scan (M/L)
-│   │   └── context-reviewer.md     ← Phase 8.5: C1-C3 grep checks (L only)
-│   ├── skills/                     ← audit skills: /security-audit /skill-dev /skill-db ... (M/L)
-│   ├── files-guide.md              ← reference: what every file does
-│   └── session/                    ← session recovery files (gitignored)
-│
-├── docs/
-│   ├── adr/template.md             ← ADR template with AI Coding Guidance section
-│   ├── requirements.md             ← product spec (M/L)
-│   ├── implementation-checklist.md ← block progress (M/L)
-│   ├── refactoring-backlog.md      ← tech debt tracker (M/L)
-│   └── specs/                      ← per-block spec documents (M/L, spec-first mode)
-│       └── archive/                ← implemented specs moved here at block close
-│
-├── .github/
-│   ├── PULL_REQUEST_TEMPLATE.md    ← with AI disclosure checklist
-│   └── CODEOWNERS                  ← .claude/ → tech lead review required
-│
-├── .pre-commit-config.yaml         ← gitleaks + AI commit audit
-└── README.md                       ← generated from wizard answers
+│   │   ├── pipeline.md          # Development workflow (tier-appropriate)
+│   │   ├── security.md          # Stack-aware: web / apple / android / systems
+│   │   ├── git.md               # Commit format, branch rules
+│   │   └── output-style.md      # Communication rules
+│   ├── skills/                  # Audit skills (conditional per project)
+│   └── session/                 # Session recovery (gitignored)
+├── docs/                        # Requirements, specs, backlog (M/L)
+├── .github/                     # PR template, CODEOWNERS
+└── .pre-commit-config.yaml      # Secret scanning
 ```
 
----
-
-## Multi-agent orchestration (Tier M / L)
-
-Two custom agent definitions are scaffolded in `.claude/agents/`. They run as connected sub-processes invoked by Claude during specific pipeline phases, not as standalone tools.
-
-| Agent | Tier | Phase | Role |
-|---|---|---|---|
-| `dependency-scanner` | M L | Phase 1 | Runs all 6 dependency checks in parallel (route hrefs, import consumers, shared type consumers, test references, FK references, access control policies). Returns a structured report with exact file paths. Runs with `Glob`, `Grep`, `Read` only - no write access. |
-| `context-reviewer` | L | Phase 8.5 | Handles grep-only checks C1–C3 (credential patterns, unresolved placeholders, field name staleness) in a single call. C4–C12 (judgment-required) remain in the main session. |
-
-**Design principle**: agents are used only where the work is genuinely parallelisable and read-only. Phase 2 (implementation) and all document-update phases remain monolithic: sequential, traceable, human-reviewable.
+The Stop hook in `settings.json` is the core enforcement mechanism. It blocks Claude from completing any task until tests pass. Present in every tier, including Discovery.
 
 ---
 
-## Audit skills (Tier M / L)
+## CLI Commands
 
-Slash-command skills scaffolded in `.claude/skills/`. Run any time - no pipeline phase required.
-
-| Command | Tier | What it audits | Checks |
-|---|---|---|---|
-| `/arch-audit` | S M L | Claude Code governance files vs. latest Anthropic docs. Auto-fixes deprecations. | Steps 1–6, C1–C17, P1–P5, T1–T5, PE1–PE12, H1a–H1f |
-| `/security-audit` | S M L | API routes, auth, input validation, HTTP headers, CVE scan. Native 3-path selector (WEB / WEB+NATIVE / NATIVE-ONLY) with platform checks NS4–NS6 | A1–A13, R1–R4, NS1–NS6 |
-| `/skill-dev` | S M L | Coupling, duplication, dead code, TS suppressions, useEffect antipatterns, debt-density escalation | D1–D10, J1–J5 |
-| `/skill-db` | M L | Schema normalization, indexes, access control, N+1 queries, unused indexes, migration quality | S1–S7, Q1–Q5 |
-| `/api-design` | M L | URL naming, HTTP verbs, response envelope, status codes, pagination, validation, naming conventions | N1–N13, P1–P4, V1–V3 |
-| `/perf-audit` | S M L | Bundle size, heavy imports, serial awaits, query efficiency. Stack-specific grep patterns for 8 stacks. Native resource checks NR1–NR4 (launch weight, memory, energy, binary size) | P1–P5, Q1–Q3, NR1–NR4 |
-| `/responsive-audit` | M L | Layout at 320px/375px/768px/1024px, tap targets, WCAG 1.4.4/1.4.10, VR1–VR6 visual checks | BP0, R1–R9, VR1–VR6 |
-| `/ux-audit` | M L | ISO 9241-11, Nielsen's 10 heuristics, Baymard BF1–BF6, user confidence framework C1–C5 | H1–H10, BF1–BF6, D1–D7 |
-| `/visual-audit` | M L | Typography, spacing, APCA contrast (Lc 75/60/45/15), dark-mode, Gestalt, typographic quality, interaction states | V1–V11 per page |
-| `/simplify` | S M L | Early returns, nesting depth, local duplication, conditional simplification, dead code, magic values | S1–S6 |
-| `/commit` | S M L | Conventional Commits 1.0.0 - auto-detects type, scope, description. Three-commit block pattern. | - |
-| `/ui-audit` | M L | Design token compliance, component adoption, accessibility, empty states (requires design system) | Checks 1–17, S1–S8 |
-
-**Notes:**
-- `/arch-audit`, `/security-audit`, `/skill-dev`, `/perf-audit`, `/simplify`, and `/commit` are available in all tiers (S/M/L). `/simplify` is the only skill that applies changes directly (all others are audit-only).
-- `/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit` require the dev server running on localhost and the Playwright MCP server configured.
-- `/ui-audit` is only installed when you answer **Yes** to "Do you use a component library or design system?" at init time.
-- Skills are conditionally installed based on wizard answers: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
-- All code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md`.
-- Before first run: fill in the `## Configuration` placeholders in each `SKILL.md` (paths, test accounts, route lists).
-
-Full check-by-check reference: [`docs/operational-guide.docs`](docs/operational-guide.docs) § Audit skills.
-
----
-
-## Context Import - how Claude populates your files
-
-When you use **From context** or **In-place** mode, the CLI generates `CONTEXT_IMPORT.md` in your project root.
-
-On the first Claude Code session, Claude reads this file and runs a structured Discovery Workflow:
-
-1. Reads each source repository (README, package.json, folder structure 1–2 levels deep)
-2. Reads any source documents (PDFs, Markdown, TXT)
-3. Extracts: tech stack, key commands, folder conventions, naming conventions, RBAC, state machines
-4. Populates `CLAUDE.md`, `docs/requirements.md`, pipeline placeholders
-5. Presents a discovery summary and asks targeted gap questions
-6. Marks `CONTEXT_IMPORT.md` as `COMPLETE`
-
-After that, the file is a historical record and Claude does not re-run discovery.
+```bash
+npx mg-claude-dev-kit init                    # scaffold wizard
+npx mg-claude-dev-kit init --dry-run          # preview without writing
+npx mg-claude-dev-kit init --answers file.json  # skip prompts (CI/automation)
+npx mg-claude-dev-kit doctor                  # validate setup (17 checks)
+npx mg-claude-dev-kit doctor --report         # JSON output for CI
+npx mg-claude-dev-kit doctor --ci             # silent, exit 1 on failure
+npx mg-claude-dev-kit upgrade                 # update template files
+npx mg-claude-dev-kit upgrade --tier=m        # promote to higher tier
+npx mg-claude-dev-kit add skill <name>        # install one skill
+npx mg-claude-dev-kit add rule <name>         # install one rule
+```
 
 ---
 
 ## Process controls
 
-### The one hard constraint every tier shares
-
-**Stop hook** - Claude cannot declare a task complete until tests pass:
+**Stop hook** (every tier) - Claude cannot declare done until tests pass:
 ```json
 "Stop": [{ "hooks": [{ "type": "command",
-  "command": "npm test || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass first.\"}'"
+  "command": "npm test || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass.\"}'"
 }] }]
 ```
 
-This is present in **every tier**, including Tier 0. It is the only mechanically enforced control - not an instruction, a hard block.
+**STOP gates** (Tier M/L) - Requirements reviewed before implementation. Spec-first or scope-confirm mode auto-selected per block.
 
-### Additional controls (Tier S–L)
+**Audit logging** - Every tool use appended to `~/.claude/audit/project.jsonl`.
 
-**Audit log** - every tool use appended to `~/.claude/audit/project.jsonl`.
+**AI attribution** - Every Claude-assisted commit tagged with `Co-authored-by`.
 
-**Weekly arch-audit reminder** - `SessionStart` hook checks timestamp; if `/arch-audit` hasn't run in 7 days, prints a reminder at session open. Keeps governance files aligned with Anthropic releases.
+**Weekly arch-audit** - SessionStart hook checks if `/arch-audit` ran in the last 7 days.
 
-**PostCompact reminder** - if `.claude/CLAUDE.local.md` exists, Claude is reminded to re-read it after every `/compact`. Prevents active overrides from being silently lost.
-
-**InstructionsLoaded logging** - raw hook payload appended to `/tmp/claude-instructions-YYYYMMDD.log` for debugging which context files were loaded.
-
-**LLM security review** (Tier L) - Haiku checks every session close for hardcoded secrets and missing auth.
-
-**AI commit attribution** - every Claude-assisted commit tagged: `Co-authored-by: Claude <noreply@anthropic.com>`
-
-### Stack-aware security rules
-
-The scaffold selects a security.md variant matched to your tech stack:
-
-| Variant | Stacks | Focus |
-|---|---|---|
-| Web (default) | Node.js, Python, Ruby, Go/Java/.NET with API | Auth, SQL injection, RLS, API responses |
-| Native Apple | Swift | App Sandbox, Keychain, TCC permissions, code signing |
-| Native Android | Kotlin | Manifest permissions, Keystore, network security, ProGuard |
-| Systems | Rust, Go, .NET, Java (no API) | Memory safety, process exec, file permissions |
-
-### Stack-aware permissions
-
-`permissions.allow` maps CLI tools to your stack (e.g. Swift gets `xcodebuild`, `xcrun`; Rust gets `cargo`). `permissions.deny` adds stack-specific release guards (e.g. `cargo publish`, `xcodebuild archive`, `gem push`) on top of the base protections (force push, `rm -rf /`, `DROP TABLE`).
+**CODEOWNERS** - Changes to `.claude/` require tech lead review.
 
 ---
 
-## Philosophy
+## Testing
 
-**Claude generates, humans decide.**
-
-Every meaningful action has a visible gate:
-- Tests must pass before Claude can declare completion (Stop hook - every tier)
-- Requirements reviewed before implementation starts (STOP gate - Tier M/L)
-- Scope defined before implementation starts - spec document or structured sweep (Phase 1 mode selection - Tier M/L)
-- AI-generated code tagged in git history (attribution - Tier S/M/L)
-- Changes to Claude's own config require human review (CODEOWNERS - Tier S/M/L)
-- Context files audited at every block close (C1–C12 - Tier M/L)
-
-**Interaction Protocol**: all non-trivial requests follow a plan-then-confirm cycle. Claude lists every intended action and waits for an explicit execution keyword (`Execute` · `Proceed` · `Confirmed`) before proceeding. Read-only operations (`Read`, `Grep`, `git status`) are always free.
-
-The goal is not to limit Claude - it's to keep humans in the loop at the moments that matter.
-
----
-
-## ADRs with AI Coding Guidance
-
-ADRs include a section written specifically for Claude:
-
-```markdown
-## AI Coding Guidance
-When generating API handlers: always use `createError()` in `lib/errors.ts`.
-Never return raw caught exceptions.
+```bash
+node packages/cli/test/integration/run.js    # 464 integration checks
+node --test packages/cli/test/unit/*.test.js   # 243 unit tests
 ```
 
-Architectural decisions become persistent constraints Claude respects across sessions, without bloating CLAUDE.md.
-
----
-
-## Supported stacks
-
-CDK auto-detects your tech stack and adapts the scaffold: commands, security rules, permissions, and CLAUDE.md fields are all stack-aware.
-
-| Stack | Detection | Security variant | CLAUDE.md Language |
-|---|---|---|---|
-| Node.js + TypeScript | `tsconfig.json` or `typescript` dep | Web | TypeScript |
-| Node.js + JavaScript | `package.json` without TS | Web | JavaScript |
-| Python | `pyproject.toml`, `requirements.txt`, `setup.py` | Web | Python |
-| Go | `go.mod` | Web or Systems | Go |
-| Swift | `Package.swift`, `.xcodeproj`, `.xcworkspace` | Native Apple | Swift |
-| Kotlin | `build.gradle.kts`, `build.gradle` (Android) | Native Android | Kotlin |
-| Rust | `Cargo.toml` | Web or Systems | Rust |
-| .NET / C# | `*.csproj`, `*.sln` | Web or Systems | C# |
-| Ruby | `Gemfile` | Web | Ruby |
-| Java | `pom.xml`, `build.gradle` | Web or Systems | Java |
-
-"Web or Systems" stacks use the web variant when `hasApi=true` and the systems variant when `hasApi=false`.
-
-Framework is auto-detected from dependencies (Next.js, Remix, SvelteKit, Vite, Express, Fastify, Hono, Django, FastAPI/Flask, Rails). When detected, it is auto-populated in CLAUDE.md. Native stacks show "N/A - native app".
+Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, full CLI execution via `--answers` fixtures.
 
 ---
 
 ## Requirements
 
-- Node.js ≥ 22
+- Node.js >= 22
 - [Claude Code CLI](https://claude.ai/code)
 - Git
-- `gh` CLI (optional - needed for cloning private repos in From context mode)
 
 ---
 
 ## Documentation
 
-Full operational guide for your team: [`docs/operational-guide.docs`](docs/operational-guide.docs)
+| Document | Audience | Content |
+|---|---|---|
+| [Operational Guide](docs/operational-guide.md) | Teams adopting CDK | Full reference: installation, tiers, workflow, governance, FAQ |
+| [Custom Skills Guide](docs/custom-skills.md) | Developers extending CDK | SKILL.md format, frontmatter schema, authoring patterns |
+| [Product Brief](docs/product-brief.md) | Stakeholders | Strategic positioning, target users, scope |
+| [Quality Rubric](docs/workspace-quality-rubric.md) | Teams evaluating workspaces | 8-dimension scoring (D1-D8, 0-100%) |
 
 ---
 
-## Status
+## Roadmap
 
-`v1.9.0` - alignment block (Phases 1-3). CI consolidation, ESLint+Prettier, 199 unit tests, CLAUDE.md single-authority generation, security-audit 3-path selector (NS1-NS6), perf-audit native resource checks (NR1-NR4), Node.js >=22. 459 integration checks.
+See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**v1.9.0 alignment block** (cross-model review - GPT-4.1, Gemini, Mistral, Perplexity): **Phase 1 - Foundation**: consolidated CI from two workflows to one (4 jobs, Node matrix [22, 24]); added ESLint flat config + Prettier; built `node:test` unit test framework (199 tests across 22 suites) covering `interpolate()`, `pruneSkills()`, `patchSettingsPermissions()`, `buildCommandsBlock()`, `injectRuleImports()`, `injectActiveSkills()`, `stripUnfilledSections()`, `generateClaudeMd()`. **Phase 2 - Architecture**: eliminated CLAUDE.md double-write (`scaffoldTier` + `generateClaudeMd` both producing CLAUDE.md) - `generateClaudeMd` is now the single authority, imports `interpolate()` from scaffold; removed 3 duplicate helper functions (33 lines); added `skipFiles` parameter to `copyTemplateDir`/`copyTemplateDirSafe`. **Phase 3 - Native stack depth**: security-audit exit guard replaced with 3-path selector (WEB / WEB+NATIVE / NATIVE-ONLY) enabling NS4-NS6 platform checks (per-stack grep patterns, sensitive data protection, code signing credentials); perf-audit Step 6b enhanced from suggestive to systematic grep-pattern-based checks for all 8 stacks; added Step 6d resource footprint checks (NR1-NR4: launch weight, memory management, energy/background, binary size). Node.js requirement raised to >=22.
+**Current**: v1.9.1 - skill registry, incremental adoption (`add skill`/`add rule`), custom skills convention, Tier S file reduction, Tier M pipeline fix.
 
-**v1.8.0 changes**: 6 CDK bug fixes (generateClaudeMd in in-place mode, [HAS_API] interpolation, cheatsheet pruning, web convention strip, security-audit conditional pruning, native Tech Stack cleanup). perf-audit, security-audit, skill-dev adapted for 8 stacks (swift, kotlin, rust, go, python, ruby, java, dotnet) via interpolation maps (PERF_TOOL, PROFILER_COMMAND, LINT_COMMAND, SECURITY_CHECKLIST_ITEMS). 3 skills promoted to Tier S + new `/simplify` skill (S1-S6, haiku model, fork context) added to all tiers. `injectActiveSkills()` tier-aware. `scenarioRubricScore()` validates D2/D5/D7/D8 for node-ts/swift/python with quality floor. `npm test` script. `.github/workflows/ci.yml` CI (matrix node 22/24). Docs humanized per output-style.md. +210 integration checks (459 total).
+**Next**: agent-to-skill conversion, skill scaffolder CLI, Anthropic drift tracker.
 
-**v1.7.0 changes**: security.md now selects from 4 variants based on tech stack: web (default), native-apple (Swift - App Sandbox, Keychain, TCC), native-android (Kotlin - Manifest, Keystore, network security), systems (Rust/Go/.NET/Java without API - memory safety, process execution, file permissions). `permissions.deny` adds stack-specific release guards: `xcodebuild archive`, `cargo publish`, `gradlew publish`, `mvn deploy`, `gem push`, `twine upload`, `dotnet nuget push`. CLAUDE.md `Framework` and `Language` fields auto-populated from wizard data - no more placeholder text for fields CDK can resolve. `security-audit` skill has applicability check for native apps: bail-out with native-specific guidance when project has no API routes. New `docs/workspace-quality-rubric.md` - reusable 8-dimension rubric for evaluating AI workspace quality (D1-D8, weighted scoring 0-100%). +16 integration checks (249 total).
-
-**v1.6.1 changes**: native stack scaffold validated end-to-end via 5-round audit on a Swift/macOS project. Fixes: Stop hook `stop_hook_active` guard added to all tiers (PR#32); arch-audit timestamp moved from unreliable external path to `.claude/session/last-arch-audit` (PR#32/33); `perf-audit` applicability check added - exits cleanly for native apps instead of running web-only checks; `skill-dev` applicability check added - skips React/Next.js-specific checks (D9, J3) on non-web stacks; `dependency-scanner` Check 1 extended with Swift native navigation patterns (`NavigationLink`, `.sheet()`, `fullScreenCover()`); `CLAUDE.md` Key Commands no longer defaults to `npm test`/`npm install` for native stacks - uses platform-appropriate defaults (`xcodebuild test`, `cargo test`, `dotnet test`, etc.); `skill-dev` Severity guide made stack-agnostic (removed `useEffect`/`'use client'`/`'use server'` examples); `perf-audit` applicability check no longer interpolates `[HAS_FRONTEND]` as a boolean literal in narrative text; `context-review.md` all three `...` path instances replaced with `<project-path-hash>` + `ls ~/.claude/projects/` hint (C2, C4, C13); doctor Playwright detection narrowed to actual `browser_*` MCP tool invocations only. +39 integration checks (233 total).
-
-**v1.6.0 changes**: `docs/sitemap.md` and `docs/db-map.md` added as Tier M+L scaffold templates, pruned conditionally when `hasFrontend=false` / `hasDatabase=false` via new `pruneConditionalDocs()`; `printPlan` updated to show these files conditionally and remove phantom `docs/dependency-map.md`. 29 template files upgraded (common rules + 11 skills across Tier M/L, 2 skills in Tier S) via a 4-level agnosticity-filtered sync from an internal pilot project - L1 lexical, L2 structural, L3 CDK File/Placeholder Registry, L3b CDK Pattern Recognition, L4 conditional; domain tokens stripped, CDK Configuration placeholders preserved. +8 integration checks (194 total).
-
-**v1.5.0 changes (Phases 1–4)**: 6 new stacks auto-detected and wizard-ready (Swift, Kotlin, Rust, .NET, Ruby, Java) - IMPROVEMENT-01; all wizard labels, hints, and defaults aligned across tiers and stacks (Phases 1–2); `printPlan` shows skills included/skipped, hides misleading devCommand defaults, detects brew/pip for pre-commit, adapts doctor command to local vs npm context (Phase 3); `--answers <json>` CLI flag bypasses all interactive prompts for automation and testing - 9 fixture JSON files, `scenarioWizardCoverage()` added to integration suite (Phase 4). `CONTEXT_IMPORT.md` excluded from wizard-placeholder check (intentional instruction text, not unfilled values).
-
-**v1.4.0 changes (Phase 0)**: `security-audit` now always installed for Tier M/L - no longer removed when `hasApi=false` (it is a generic security check, not API-specific); `auditModel` wizard choices updated to versioned model IDs (`claude-sonnet-4-6` / `claude-opus-4-6`); PRD question moved immediately after tier selection with inline context explaining feature blocks; `.github/` question now auto-detects `git remote -v` and defaults to N when no GitHub remote found; Tier 0 (Discovery) added to tier picker in both `init-in-place` and `init-greenfield`.
-
-**v1.3.0 changes**: `/arch-audit` expanded from C1–C10 to C1–C17 with two-tier execution (grep-tier haiku batch + judgment-tier main context), PE1–PE12 pipeline compliance, H1a–H1f hook compliance, T4/T5 skill model fitness; `/visual-audit` adds V9 Gestalt compliance, V10 Typographic quality, V11 Interaction state design (score /40 → /55); `/responsive-audit` adds VR1–VR6 visual checks via screenshot analysis; `/skill-dev` adds debt-density escalation + regression risk classification + backlog decision gate; `/api-design` adds N11–N13 naming/resource-modeling, API Maturity Assessment, mode system (audit/remediation/apply); `/perf-audit` adds Performance Maturity Assessment, Quick wins / Strategic refactors sections, mode system; `/security-audit` adds A13 (IDOR), Security Maturity Assessment, AC-1/AC-2 access control table analysis; `/ux-audit` adds D7 user-confidence framework C1–C5 (cancel paths, destructive guards, positive feedback). All `docs/backlog-refinement.md` references normalized to `docs/refactoring-backlog.md`.
-
-**v1.2.0 changes**: 3 new shared rule files (`output-style.md`, `claudemd-standards.md`, `pipeline-standards.md`) in `common/rules/` loaded by tier M/L; 2 new skills (`/commit` for all tiers, `/ui-audit` conditional on design system); 7 wizard feature flags (`hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`, `auditModel`, `hasPrd`, `hasE2E`) that conditionally install skills and set `Active Skills` section in CLAUDE.md; all 9 existing skills upgraded with deeper checks (APCA contrast, ISO 9241-11, WCAG 1.4.10, Conventional Commits, CVE scanning, unused indexes, structural judgment); context-reviewer agent updated from Italian prose check to unresolved-placeholder check; context-review C12 added (canonical docs currency); doctor expanded from 13 to 19 checks; integration tests 98 → 126.
-
-**v1.1.0 changes**: spec-driven mode selection at Phase 1 (Tier M/L) - per block, Claude asks whether to use Spec-first (generates `docs/specs/[block-name].md` with EARS acceptance criteria before implementation) or Scope-confirm (existing structured sweep). `docs/specs/archive/` tracks implemented specs. Bug fix: `pipeline.md` was never copied to tier S/M/L scaffold (critical scaffold regression).
-
-**v0.5.3 changes**: critical fix - Stop hook was missing from Tier S `settings.json`, breaking the core governance contract ("tests must pass in every tier"). Now enforced in all four tiers.
-
-**v0.5.2 changes**: UAT scenario definition at scope gate - when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios, never invents test cases. Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
-
-**v0.5.1 changes**: interactive tier selector (3 diagnostic questions → auto-suggest tier with explanation), conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation), `npx mg-claude-dev-kit doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder, `FIRST_SESSION.md` scaffolded for Tier M/L (team guide to first block cycle).
-
-**v0.5.0 changes**: session recovery (`.claude/session/`), scope gate with Tier 1/2 sweep auto-selection, Interaction Protocol in CLAUDE.md templates, three new settings hooks (arch-audit reminder, InstructionsLoaded, PostCompact), Phase 8.5 mandatory closing message, Phase 8 3-commit sequence, Phase 5b/5c/5d block-scoped quality audits (Tier L), Structural Requirements Changes pipeline R1–R4 (Tier L), Fast Lane session file + escalation rule + scope-confirm gate, evolved C1–C11 context review with explicit grep commands.
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and PR guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, project structure, and PR guidelines.
 
-To report a security issue, see [SECURITY.md](SECURITY.md) - do not open a public issue.
+To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)

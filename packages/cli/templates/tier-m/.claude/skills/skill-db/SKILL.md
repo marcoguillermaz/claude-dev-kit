@@ -1,5 +1,6 @@
 ---
 name: skill-db
+description: Database audit: schema quality, index coverage, RLS completeness, FK cascades, migration safety, query patterns. Runs live SQL verification against the database.
 user-invocable: true
 model: sonnet
 context: fork

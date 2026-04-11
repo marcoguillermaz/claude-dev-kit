@@ -1,5 +1,6 @@
 ---
 name: visual-audit
+description: Visual audit: typography, spacing, colour discipline, dark-mode polish, contrast, info density. Scores pages on 11 dimensions via Playwright screenshots.
 user-invocable: true
 model: opus
 context: fork

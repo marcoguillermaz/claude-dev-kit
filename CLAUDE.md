@@ -55,6 +55,12 @@ node packages/cli/test/integration/run.js
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
 
+## Mandatory Rules
+
+**Anthropic docs validation**: any change that touches Claude Code formats — skill frontmatter, settings.json, hooks, CLAUDE.md structure, or any field that Claude Code interprets — must be verified against Anthropic's official documentation before implementation. External LLM recommendations (GPT-4.1, Gemini, Mistral, etc.) are useful input but never authoritative. Anthropic docs are the single source of truth for Claude Code conventions.
+
+**Critical evaluation + explicit Go**: every proposed modification — including single-file changes — must be presented with concrete benefits, negative impacts, and alternatives before execution. Execution proceeds only after explicit user confirmation ("Go", "Proceed", "Confirmed"). Multi-step plans execute one point at a time with STOP between each point. No batching, no silent execution.
+
 ## Agentic Behavior
 
 **Plan Mode Default**: use `EnterPlanMode` for any task with 3+ steps or architectural decisions. If execution goes off track → STOP and re-plan before continuing.
@@ -67,7 +73,7 @@ node packages/cli/test/integration/run.js
 
 ## Reference Documents
 - `README.md` — public-facing, must stay in sync with all template/CLI changes
-- `docs/operational-guide.docs` — full reference, must stay in sync
+- `docs/operational-guide.md` — full reference, must stay in sync
 - Both updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version

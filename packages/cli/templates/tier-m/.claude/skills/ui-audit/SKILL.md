@@ -1,5 +1,6 @@
 ---
 name: ui-audit
+description: Audit UI for design token compliance, component adoption, and accessibility via axe-core. Static mode analyzes code without a server; full mode runs browser checks on live pages.
 user-invocable: true
 model: sonnet
 context: fork

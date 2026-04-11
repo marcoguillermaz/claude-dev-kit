@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
+import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
 
 /**
  * Scaffold Tier 0 (Discovery) — minimal: settings.json, GETTING_STARTED.md only.
@@ -42,24 +43,31 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
   // Copy common files — skip rules/ here, handled separately below
-  await copyTemplateDir(
-    commonDir,
-    targetDir,
-    config,
-    {
-      gitignore: '.gitignore',
-      'pre-commit-config.yaml': '.pre-commit-config.yaml',
-      'adr-template.md': 'docs/adr/template.md',
-      'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
-      CODEOWNERS: '.github/CODEOWNERS',
-      'context-review.md': '.claude/rules/context-review.md',
-      'files-guide.md': '.claude/files-guide.md',
-      'pipeline-standards.md': 'docs/pipeline-standards.md',
-      'claudemd-standards.md': 'docs/claudemd-standards.md',
-    },
-    config,
-    ['rules'],
-  );
+  const commonFileMap = {
+    gitignore: '.gitignore',
+    'pre-commit-config.yaml': '.pre-commit-config.yaml',
+    'adr-template.md': 'docs/adr/template.md',
+    'PULL_REQUEST_TEMPLATE.md': '.github/PULL_REQUEST_TEMPLATE.md',
+    CODEOWNERS: '.github/CODEOWNERS',
+    'context-review.md': '.claude/rules/context-review.md',
+    'files-guide.md': '.claude/files-guide.md',
+    'pipeline-standards.md': 'docs/pipeline-standards.md',
+    'claudemd-standards.md': 'docs/claudemd-standards.md',
+  };
+
+  // Tier S (Fast Lane): skip informational docs not needed for quick fixes
+  if (tier.toLowerCase() === 's') {
+    for (const key of [
+      'adr-template.md',
+      'files-guide.md',
+      'pipeline-standards.md',
+      'claudemd-standards.md',
+    ]) {
+      delete commonFileMap[key];
+    }
+  }
+
+  await copyTemplateDir(commonDir, targetDir, config, commonFileMap, config, ['rules']);
 
   // Copy tier-specific files (includes tier rules/ like pipeline.md)
   // CLAUDE.md is skipped — generated separately by generateClaudeMd()
@@ -125,8 +133,7 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
  * Docs are only pruned when a feature flag is explicitly set to false (not undefined).
  */
 async function pruneConditionalDocs(targetDir, config) {
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  const isNative = nativeStacks.includes(config.techStack);
+  const isNative = NATIVE_STACKS.includes(config.techStack);
 
   if (config.hasFrontend === false || isNative) {
     await fs.remove(path.join(targetDir, 'docs', 'sitemap.md'));
@@ -144,36 +151,7 @@ async function pruneSkills(targetDir, config) {
   const skillsDir = path.join(targetDir, '.claude', 'skills');
   if (!(await fs.pathExists(skillsDir))) return;
 
-  const skipSkills = new Set();
-
-  if (config.hasApi === false) {
-    skipSkills.add('api-design');
-    skipSkills.add('security-audit');
-  }
-
-  if (config.hasDatabase === false) {
-    skipSkills.add('skill-db');
-  }
-
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  const isNative = nativeStacks.includes(config.techStack);
-
-  if (config.hasFrontend === false) {
-    skipSkills.add('responsive-audit');
-    skipSkills.add('visual-audit');
-    skipSkills.add('ux-audit');
-    skipSkills.add('ui-audit');
-  } else if (isNative) {
-    // responsive-audit is a web concept — not applicable for native UIs
-    skipSkills.add('responsive-audit');
-  }
-
-  // ui-audit additionally requires a design system
-  if (config.hasFrontend !== false && config.hasDesignSystem === false) {
-    skipSkills.add('ui-audit');
-  }
-
-  for (const skill of skipSkills) {
+  for (const skill of getSkillsToRemove(config)) {
     await fs.remove(path.join(skillsDir, skill));
   }
 }
@@ -187,12 +165,8 @@ async function pruneCheatsheet(targetDir, config) {
 
   let content = await fs.readFile(cheatPath, 'utf8');
 
-  if (config.hasApi === false) {
-    content = content.replace(/^\| `\/api-design` .*\n/m, '');
-    content = content.replace(/^\| `\/security-audit` .*\n/m, '');
-  }
-  if (config.hasDatabase === false) {
-    content = content.replace(/^\| `\/skill-db` .*\n/m, '');
+  for (const skill of getCheatsheetSkillsToRemove(config)) {
+    content = content.replace(new RegExp(`^\\| \`\\/${skill}\` .*\\n`, 'm'), '');
   }
 
   await fs.writeFile(cheatPath, content);
@@ -443,8 +417,7 @@ function securityRuleVariant(config) {
 
 function frameworkValue(config) {
   if (config.framework) return config.framework;
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  if (nativeStacks.includes(config.techStack)) return 'N/A — native app';
+  if (NATIVE_STACKS.includes(config.techStack)) return 'N/A — native app';
   return '_fill in: e.g. Next.js 15, Express, Django, Rails_';
 }
 

@@ -1,5 +1,6 @@
 ---
 name: responsive-audit
+description: Responsive audit: test pages at 375/768/1024px breakpoints via Playwright. Checks overflow, tap targets, sidebar collapse, text reflow, WCAG 1.4.4 zoom.
 user-invocable: true
 model: opus
 context: fork

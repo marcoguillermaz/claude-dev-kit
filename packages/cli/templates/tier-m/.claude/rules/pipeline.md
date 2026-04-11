@@ -226,6 +226,7 @@ Only after explicit confirmation:
    - Proceed only if the user's confirmation unambiguously closes the block.
    - If the confirmation is ambiguous (partial approval, open questions): ask explicitly before deleting.
    - Never delete the session file speculatively.
+1b. **Delete first-session guide** (if it exists): remove `.claude/FIRST_SESSION.md`. This file is a one-time onboarding guide — it is no longer needed after the first block completes.
 2. Update `docs/implementation-checklist.md`: mark ✅, add Log row.
 3. Update `CLAUDE.md` only if block introduces non-obvious patterns or changes conventions.
 4. Update `docs/requirements.md` if spec changed during implementation.
@@ -244,8 +245,8 @@ Only after explicit confirmation:
 
 ## Phase 8.5 — Context review + compact
 
-**C1–C3** (grep-only — delegate to agent):
-Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. Pass the exact grep commands from `.claude/rules/context-review.md` for C1–C3 and the relevant file paths. Collect results; apply any fix in the main session before proceeding.
+**C1–C3** (grep-only — run in main session):
+Execute checks C1 through C3 from `.claude/rules/context-review.md` using Grep/Glob tools. These are mechanical pattern matches — no judgment needed. Apply any fix before proceeding to C4.
 
 **C4–C12** (judgment-required — run in main session):
 Execute checks C4 through C12 from `.claude/rules/context-review.md` in order.

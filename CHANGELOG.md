@@ -7,6 +7,41 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased] — v1.9.1
+
+### Added
+- `add skill <name>` command - install a single skill without full scaffold (12 skills available)
+- `add rule <name>` command - install a single rule with stack-specific security variants (`--stack swift|kotlin|rust|dotnet|java|go`)
+- `custom-*` skill convention - user-created skills preserved across `upgrade` and `init` operations
+- `docs/custom-skills.md` - SKILL.md authoring guide (frontmatter schema, model selection, body patterns)
+- `skill-registry.js` - single source of truth for skill applicability rules (12 entries, 3 query functions)
+- `.github/FUNDING.yml` - GitHub Sponsors enabled
+- Skill `description` field in all 12 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
+
+### Changed
+- `pruneSkills()` rewritten from 37 to 5 lines (delegates to skill registry)
+- `pruneCheatsheet()` rewritten from 15 to 9 lines (delegates to skill registry)
+- `injectActiveSkills()` rewritten from 28 to 10 lines (delegates to skill registry)
+- `NATIVE_STACKS` consolidated from 5 duplicate declarations to 1 export in skill-registry.js
+- `FIRST_SESSION.md` moved from project root to `.claude/FIRST_SESSION.md` with auto-deletion in pipeline Phase 8
+- Tier S file count reduced: 4 informational files skipped (files-guide, adr-template, pipeline-standards, claudemd-standards)
+- Post-init message simplified from 5-6 steps to 2-3
+- `upgrade` command now detects and reports custom skills as "preserved"
+- `operational-guide.docs` renamed to `operational-guide.md`
+- README rewritten in product-led style (badges, quick start, feature matrix, architecture diagram)
+- CONTRIBUTING.md updated with skill registry workflow and `add` commands
+
+### Fixed
+- `responsive-audit` was not excluded for native stacks in `injectActiveSkills()` - CLAUDE.md listed it but the directory didn't exist for Swift/Kotlin/Rust projects
+- Tier M pipeline Phase 8.5 referenced non-existent `context-reviewer` agent - changed to inline grep
+
+### Evaluated (decisions documented, no code change)
+- P5 Tier L: frozen - maintain functional, no new investment until real adoption signal
+- P6 Agents: agent-to-skill conversion scheduled for next cycle (saves 27K tokens/session)
+- P7 MCP: incremental adoption - GitHub MCP Q2, ecosystem reassessment Q4
+
+---
+
 ## [1.0.0] — 2026-03-22
 
 ### Changed — Scope and positioning

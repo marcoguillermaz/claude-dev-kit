@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { execSync } from 'child_process';
+import { NATIVE_STACKS } from '../scaffold/skill-registry.js';
 
 const TIER_LABELS = { 0: 'Discovery', S: 'Fast Lane', M: 'Standard', L: 'Full' };
 
@@ -55,30 +56,24 @@ export function printNextSteps(config, opts = {}) {
 
   if (mode === 'greenfield') {
     const tier = (config.tier || 's').toUpperCase();
+    let step = 1;
     if (tier === 'M' || tier === 'L') {
       console.log(
-        '  1. Read ' + chalk.cyan('FIRST_SESSION.md') + " — your team's guide to the first session",
-      );
-    }
-    const step = tier === 'M' || tier === 'L' ? 2 : 1;
-    console.log(`  ${step}. Fill in the ` + chalk.cyan('CLAUDE.md') + ' placeholders');
-    console.log(
-      `  ${step + 1}. Replace ` +
-        chalk.cyan('[TEST_COMMAND]') +
-        ' in ' +
-        chalk.cyan('.claude/settings.json') +
-        ' Stop hook',
-    );
-    console.log(
-      `  ${step + 2}. Update ` + chalk.cyan('.github/CODEOWNERS') + ' with real GitHub usernames',
-    );
-    if (config.includePreCommit) {
-      console.log(
-        `  ${step + 3}. Run ` + chalk.cyan(preCommitCmd) + ' to activate secret scanning',
+        `  ${step++}. Read ` +
+          chalk.cyan('.claude/FIRST_SESSION.md') +
+          " — your team's guide to the first session",
       );
     }
     console.log(
-      `  ${step + (config.includePreCommit ? 4 : 3)}. Open Claude Code — run ` +
+      `  ${step++}. Fill ` +
+        chalk.cyan('CLAUDE.md') +
+        ' placeholders + set test command in ' +
+        chalk.cyan('.claude/settings.json'),
+    );
+    console.log(
+      `  ${step}. Run ` +
+        chalk.cyan('claude') +
+        ' — start with ' +
         chalk.cyan('/arch-audit') +
         ' to verify setup',
     );
@@ -179,9 +174,8 @@ function getDoctorCmd() {
 function getCommandSummary(config) {
   const lines = [];
   const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
   const isWeb = webStacks.includes(config.techStack);
-  const isNative = nativeStacks.includes(config.techStack);
+  const isNative = NATIVE_STACKS.includes(config.techStack);
 
   if (config.testCommand) {
     lines.push(`${chalk.dim('Test:  ')} ${config.testCommand}`);
@@ -237,8 +231,7 @@ function getSkillsSummary(config) {
     skipped.push({ name: 'skill-db', reason: 'no database' });
   }
 
-  const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-  const isNative = nativeStacks.includes(config.techStack);
+  const isNative = NATIVE_STACKS.includes(config.techStack);
 
   if (config.hasFrontend !== false) {
     if (!isNative) included.push('responsive-audit');
@@ -281,9 +274,13 @@ function getFilePlan(config) {
     '.claude/rules/context-review.md',
     '.claude/rules/security.md',
     '.claude/rules/git.md',
-    '.claude/files-guide.md',
     '.claude/session/  (directory)',
   ];
+
+  // files-guide skipped for Tier S (reduced file count)
+  if (tier !== 'S') {
+    base.push('.claude/files-guide.md');
+  }
 
   if (mode === 'greenfield') {
     base.unshift('CLAUDE.md');
@@ -299,7 +296,7 @@ function getFilePlan(config) {
   if (tier === 'M' || tier === 'L') {
     if (mode === 'greenfield') {
       base.push(
-        'FIRST_SESSION.md  ← start here',
+        '.claude/FIRST_SESSION.md  ← start here',
         'docs/requirements.md',
         'docs/implementation-checklist.md',
         'docs/refactoring-backlog.md',
@@ -308,8 +305,7 @@ function getFilePlan(config) {
       base.push('docs/  (populated by Claude during discovery)');
     }
     base.push('docs/adr/template.md');
-    const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
-    const isNative = nativeStacks.includes(config.techStack);
+    const isNative = NATIVE_STACKS.includes(config.techStack);
     if (config.hasFrontend !== false && !isNative) {
       base.push('docs/sitemap.md');
     }

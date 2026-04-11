@@ -256,6 +256,7 @@ Only after explicit confirmation:
    - Proceed only if the user's confirmation unambiguously closes the block.
    - If the confirmation is ambiguous (partial approval, open questions): ask explicitly — "Confirm session file deletion and block closure?" — then wait for a clear yes.
    - Never delete the session file speculatively.
+1b. **Delete first-session guide** (if it exists): remove `.claude/FIRST_SESSION.md`. This file is a one-time onboarding guide — it is no longer needed after the first block completes.
 2. Update `docs/implementation-checklist.md`: mark ✅, add Log row.
 3. Update `CLAUDE.md` only if block introduces non-obvious patterns, changes access control rules, or adds a new convention.
 4. Update `docs/requirements.md` if spec changed during implementation.
