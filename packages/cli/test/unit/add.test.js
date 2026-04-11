@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.resolve(__dirname, '../../src/index.js');
@@ -11,7 +11,11 @@ const TMP = path.join(__dirname, '../integration/output/add-test');
 
 function run(args, cwd = TMP) {
   try {
-    return execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf8', stdio: 'pipe' });
+    return execFileSync('node', [CLI, ...args.split(' ')], {
+      cwd,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
   } catch (e) {
     return { stderr: e.stderr, stdout: e.stdout, exitCode: e.status };
   }

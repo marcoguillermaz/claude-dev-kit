@@ -570,7 +570,7 @@ if (!FILTER || FILTER === 'nextsteps') {
     scenarioCount++;
     console.log(sep);
     console.log(c.bold(`  [${String(scenarioCount).padStart(2, '0')}] ${label}`));
-    console.log(sep.replace('─', '─') + '\n');
+    console.log(sep + '\n');
     printNextSteps(config);
   }
 }

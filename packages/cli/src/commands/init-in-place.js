@@ -39,7 +39,7 @@ export async function initInPlace(options) {
     let hasGithubRemote = false;
     try {
       const remotes = execSync('git remote -v', { cwd, stdio: 'pipe' }).toString();
-      hasGithubRemote = remotes.includes('github.com');
+      hasGithubRemote = /(?:^|[@/])github\.com[:/]/.test(remotes);
     } catch {
       // not a git repo or git unavailable
     }
