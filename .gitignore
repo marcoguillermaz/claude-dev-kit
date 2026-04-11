@@ -65,6 +65,7 @@ scripts/
 
 # Internal project management (not product docs)
 FIRST_SESSION.md
+!packages/cli/templates/**/FIRST_SESSION.md
 MEMORY.md
 .env.example
 .sync-report.md

@@ -57,7 +57,12 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
 
   // Tier S (Fast Lane): skip informational docs not needed for quick fixes
   if (tier.toLowerCase() === 's') {
-    for (const key of ['adr-template.md', 'files-guide.md', 'pipeline-standards.md', 'claudemd-standards.md']) {
+    for (const key of [
+      'adr-template.md',
+      'files-guide.md',
+      'pipeline-standards.md',
+      'claudemd-standards.md',
+    ]) {
       delete commonFileMap[key];
     }
   }

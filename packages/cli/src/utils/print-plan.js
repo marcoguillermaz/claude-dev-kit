@@ -71,7 +71,11 @@ export function printNextSteps(config, opts = {}) {
         chalk.cyan('.claude/settings.json'),
     );
     console.log(
-      `  ${step}. Run ` + chalk.cyan('claude') + ' — start with ' + chalk.cyan('/arch-audit') + ' to verify setup',
+      `  ${step}. Run ` +
+        chalk.cyan('claude') +
+        ' — start with ' +
+        chalk.cyan('/arch-audit') +
+        ' to verify setup',
     );
   }
 

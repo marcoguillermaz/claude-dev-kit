@@ -94,9 +94,7 @@ export async function upgrade(options) {
     if (customSkills.length > 0) {
       console.log();
       console.log(chalk.bold('Custom skills (preserved — never modified by upgrade):'));
-      customSkills.forEach((s) =>
-        console.log(`  ${chalk.green('✓')} .claude/skills/${s}/`),
-      );
+      customSkills.forEach((s) => console.log(`  ${chalk.green('✓')} .claude/skills/${s}/`));
     }
   }
 

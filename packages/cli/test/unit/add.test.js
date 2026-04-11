@@ -74,9 +74,18 @@ describe('add skill', () => {
 
   it('installs all 12 registry skills', async () => {
     const skills = [
-      'arch-audit', 'commit', 'simplify', 'skill-dev', 'perf-audit',
-      'security-audit', 'api-design', 'skill-db', 'responsive-audit',
-      'visual-audit', 'ux-audit', 'ui-audit',
+      'arch-audit',
+      'commit',
+      'simplify',
+      'skill-dev',
+      'perf-audit',
+      'security-audit',
+      'api-design',
+      'skill-db',
+      'responsive-audit',
+      'visual-audit',
+      'ux-audit',
+      'ui-audit',
     ];
     for (const name of skills) {
       run(`add skill ${name} --force`);
@@ -122,7 +131,9 @@ describe('add rule', () => {
     const out = run('add rule security --stack swift --force');
     assert.ok(out.includes('security-native-apple.md'));
     const content = fs.readFileSync(path.join(TMP, '.claude/rules/security.md'), 'utf8');
-    assert.ok(content.includes('Keychain') || content.includes('Apple') || content.includes('entitlement'));
+    assert.ok(
+      content.includes('Keychain') || content.includes('Apple') || content.includes('entitlement'),
+    );
   });
 
   it('installs security rule with rust variant', () => {

@@ -47,7 +47,9 @@ export async function addSkill(name, options) {
   // Require .claude/ directory (signals an initialized project)
   if (!fs.existsSync(path.join(cwd, '.claude'))) {
     console.error(chalk.red('No .claude/ directory found.'));
-    console.log('Run ' + chalk.cyan('claude-dev-kit init') + ' first, or create .claude/ manually.');
+    console.log(
+      'Run ' + chalk.cyan('claude-dev-kit init') + ' first, or create .claude/ manually.',
+    );
     process.exit(1);
   }
 
@@ -84,10 +86,7 @@ export async function addSkill(name, options) {
   if (fs.existsSync(claudePath)) {
     const content = fs.readFileSync(claudePath, 'utf8');
     if (content.includes('## Active Skills') && !content.includes(`/${name}`)) {
-      const updated = content.replace(
-        /## Active Skills\n/,
-        `## Active Skills\n- \`/${name}\`\n`,
-      );
+      const updated = content.replace(/## Active Skills\n/, `## Active Skills\n- \`/${name}\`\n`);
       fs.writeFileSync(claudePath, updated);
       console.log(`${chalk.green('✓')} Added /${name} to CLAUDE.md Active Skills`);
     }
@@ -142,7 +141,9 @@ export async function addRule(name, options) {
     console.log(chalk.yellow('Dry run — no files written.'));
     console.log(`  Would create: .claude/rules/${name}.md`);
     if (name === 'security') {
-      console.log(`  Variant: ${sourceFile}${options.stack ? ` (--stack ${options.stack})` : ' (web default)'}`);
+      console.log(
+        `  Variant: ${sourceFile}${options.stack ? ` (--stack ${options.stack})` : ' (web default)'}`,
+      );
     }
     return;
   }
@@ -151,8 +152,7 @@ export async function addRule(name, options) {
   await fs.ensureDir(path.dirname(targetPath));
   await fs.copy(sourcePath, targetPath);
 
-  const variantNote = name === 'security' && sourceFile !== 'security.md'
-    ? ` (variant: ${sourceFile})`
-    : '';
+  const variantNote =
+    name === 'security' && sourceFile !== 'security.md' ? ` (variant: ${sourceFile})` : '';
   console.log(`${chalk.green('✓')} Installed .claude/rules/${name}.md${variantNote}`);
 }

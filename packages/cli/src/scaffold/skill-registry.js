@@ -22,18 +22,29 @@ export const NATIVE_STACKS = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
 
 /** @type {SkillEntry[]} */
 export const SKILL_REGISTRY = [
-  { name: 'arch-audit',       minTier: 's', requires: {},                                          cheatsheet: false },
-  { name: 'commit',           minTier: 's', requires: {},                                          cheatsheet: false },
-  { name: 'simplify',         minTier: 's', requires: {},                                          cheatsheet: true  },
-  { name: 'skill-dev',        minTier: 's', requires: {},                                          cheatsheet: true  },
-  { name: 'perf-audit',       minTier: 's', requires: {},                                          cheatsheet: true  },
-  { name: 'security-audit',   minTier: 's', requires: { hasApi: true },                            cheatsheet: true  },
-  { name: 'api-design',       minTier: 'm', requires: { hasApi: true },                            cheatsheet: true  },
-  { name: 'skill-db',         minTier: 'm', requires: { hasDatabase: true },                       cheatsheet: true  },
-  { name: 'responsive-audit', minTier: 'm', requires: { hasFrontend: true }, excludeNative: true,  cheatsheet: false },
-  { name: 'visual-audit',     minTier: 'm', requires: { hasFrontend: true },                       cheatsheet: false },
-  { name: 'ux-audit',         minTier: 'm', requires: { hasFrontend: true },                       cheatsheet: false },
-  { name: 'ui-audit',         minTier: 'm', requires: { hasFrontend: true, hasDesignSystem: true }, cheatsheet: false },
+  { name: 'arch-audit', minTier: 's', requires: {}, cheatsheet: false },
+  { name: 'commit', minTier: 's', requires: {}, cheatsheet: false },
+  { name: 'simplify', minTier: 's', requires: {}, cheatsheet: true },
+  { name: 'skill-dev', minTier: 's', requires: {}, cheatsheet: true },
+  { name: 'perf-audit', minTier: 's', requires: {}, cheatsheet: true },
+  { name: 'security-audit', minTier: 's', requires: { hasApi: true }, cheatsheet: true },
+  { name: 'api-design', minTier: 'm', requires: { hasApi: true }, cheatsheet: true },
+  { name: 'skill-db', minTier: 'm', requires: { hasDatabase: true }, cheatsheet: true },
+  {
+    name: 'responsive-audit',
+    minTier: 'm',
+    requires: { hasFrontend: true },
+    excludeNative: true,
+    cheatsheet: false,
+  },
+  { name: 'visual-audit', minTier: 'm', requires: { hasFrontend: true }, cheatsheet: false },
+  { name: 'ux-audit', minTier: 'm', requires: { hasFrontend: true }, cheatsheet: false },
+  {
+    name: 'ui-audit',
+    minTier: 'm',
+    requires: { hasFrontend: true, hasDesignSystem: true },
+    cheatsheet: false,
+  },
 ];
 
 const TIER_ORDER = { s: 0, m: 1, l: 2 };
@@ -56,9 +67,7 @@ function isSkillActive(skill, config) {
  * only the skills for its tier).
  */
 export function getSkillsToRemove(config) {
-  return SKILL_REGISTRY
-    .filter((s) => !isSkillActive(s, config))
-    .map((s) => s.name);
+  return SKILL_REGISTRY.filter((s) => !isSkillActive(s, config)).map((s) => s.name);
 }
 
 /**
@@ -67,9 +76,9 @@ export function getSkillsToRemove(config) {
  */
 export function getActiveSkills(config) {
   const tierLevel = TIER_ORDER[(config.tier || 's').toLowerCase()] ?? 0;
-  return SKILL_REGISTRY
-    .filter((s) => TIER_ORDER[s.minTier] <= tierLevel && isSkillActive(s, config))
-    .map((s) => s.name);
+  return SKILL_REGISTRY.filter(
+    (s) => TIER_ORDER[s.minTier] <= tierLevel && isSkillActive(s, config),
+  ).map((s) => s.name);
 }
 
 /**
@@ -77,7 +86,5 @@ export function getActiveSkills(config) {
  * Used by pruneCheatsheet().
  */
 export function getCheatsheetSkillsToRemove(config) {
-  return SKILL_REGISTRY
-    .filter((s) => s.cheatsheet && !isSkillActive(s, config))
-    .map((s) => s.name);
+  return SKILL_REGISTRY.filter((s) => s.cheatsheet && !isSkillActive(s, config)).map((s) => s.name);
 }

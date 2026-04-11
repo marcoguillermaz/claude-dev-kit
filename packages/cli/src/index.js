@@ -36,9 +36,7 @@ program
   .option('--dry-run', 'Show what would change without writing any files')
   .action(upgrade);
 
-const add = program
-  .command('add')
-  .description('Add a single skill or rule to the current project');
+const add = program.command('add').description('Add a single skill or rule to the current project');
 
 add
   .command('skill <name>')
@@ -50,7 +48,10 @@ add
 add
   .command('rule <name>')
   .description('Install a rule (e.g. git, output-style, security)')
-  .option('--stack <stack>', 'Tech stack for security variant (swift, kotlin, rust, dotnet, java, go)')
+  .option(
+    '--stack <stack>',
+    'Tech stack for security variant (swift, kotlin, rust, dotnet, java, go)',
+  )
   .option('--force', 'Overwrite if the rule already exists')
   .option('--dry-run', 'Show what would be created without writing files')
   .action(addRule);
