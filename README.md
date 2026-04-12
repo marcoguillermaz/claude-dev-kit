@@ -183,7 +183,7 @@ See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milest
 
 **Current**: v1.9.1 - skill registry, incremental adoption (`add skill`/`add rule`), custom skills convention, Tier S file reduction, Tier M pipeline fix.
 
-**Next**: agent-to-skill conversion, skill scaffolder CLI, Anthropic drift tracker.
+**Next**: agent-to-skill conversion, 4 new skills (`/test-audit`, `/migration-audit`, `/accessibility-audit`, `/doc-audit`).
 
 ---
 
