@@ -1034,7 +1034,7 @@ Runs 19 checks:
 15. `.claude/skills/commit/` present (Tier M/L - warn if missing)
 16. Skills invoking Playwright `browser_*` tools declare `allowed-tools` frontmatter (warn if missing)
 17. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
-18. Stop hook has `timeout` configured and ≤ 600000ms (warn if missing - prevents hanging test commands)
+18. Stop hook has `timeout` configured and ≤ 600s (warn if missing - prevents hanging test commands)
 19. No duplicate entries in `permissions.deny` list (warn if duplicates found)
 
 Checks 12-19 are skipped for Tier 0 projects.

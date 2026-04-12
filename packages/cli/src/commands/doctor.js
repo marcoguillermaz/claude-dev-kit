@@ -289,12 +289,12 @@ const checks = [
         const stopHooks = settings?.hooks?.Stop || [];
         if (stopHooks.length === 0) return { pass: true, skip: true };
         const allHaveTimeout = stopHooks.every(
-          (entry) => typeof entry.timeout === 'number' && entry.timeout <= 600000,
+          (entry) => typeof entry.timeout === 'number' && entry.timeout <= 600,
         );
         return {
           pass: allHaveTimeout,
           warn: true,
-          fix: 'Add "timeout": 300000 to each Stop hook entry in .claude/settings.json. Without a timeout, a hanging test command blocks Claude indefinitely.',
+          fix: 'Add "timeout": 300 to each Stop hook entry in .claude/settings.json (value is in seconds). Without a timeout, a hanging test command blocks Claude indefinitely.',
         };
       } catch {
         return { pass: true, skip: true };

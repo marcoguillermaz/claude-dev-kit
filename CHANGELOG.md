@@ -22,6 +22,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - GitHub Project board populated with Q1-Q2 roadmap deliverables (14 issues across 2 milestones)
 - Skill `description` field in all 12 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
 
+### Fixed
+- Hook `timeout` values corrected from milliseconds to seconds per Anthropic JSON schema (Tier M: 300000→300, Tier L: 600000→600)
+- Doctor check #18 threshold corrected from 600000 to 600 (seconds, not milliseconds)
+- Doctor check #18 fix message now suggests correct value (`"timeout": 300`)
+
 ### Changed
 - `pruneSkills()` rewritten from 37 to 5 lines (delegates to skill registry)
 - `pruneCheatsheet()` rewritten from 15 to 9 lines (delegates to skill registry)
