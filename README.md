@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![481 integration checks](https://img.shields.io/badge/integration-481%20checks-blue.svg)](#testing)
+[![484 integration checks](https://img.shields.io/badge/integration-484%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -150,8 +150,8 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 481 integration checks
-node --test packages/cli/test/unit/*.test.js   # 271 unit tests
+node packages/cli/test/integration/run.js    # 484 integration checks
+node --test packages/cli/test/unit/*.test.js   # 273 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, full CLI execution via `--answers` fixtures.
@@ -183,7 +183,7 @@ See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milest
 
 **Current**: v1.9.1 - skill registry, incremental adoption (`add skill`/`add rule`), custom skill scaffolder (`new skill`), Anthropic drift tracker, 481 integration checks.
 
-**Next**: agent-to-skill conversion, 4 new skills (`/test-audit`, `/migration-audit`, `/accessibility-audit`, `/doc-audit`).
+**Next**: 4 new skills (`/test-audit`, `/migration-audit`, `/accessibility-audit`, `/doc-audit`).
 
 ---
 

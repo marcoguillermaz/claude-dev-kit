@@ -74,8 +74,8 @@ Branch prefix `feature/` activates this pipeline automatically.
 
   Compose one `AskUserQuestion` with all open items from the sweep. Do NOT proceed to the dependency scan until an execution keyword is received.
 
-- **Dependency scan** (mandatory — always delegate to the `dependency-scanner` agent):
-  Invoke the `dependency-scanner` agent via the Agent tool. Pass the full list of affected routes, components, types/utilities, and DB tables. Every file listed under "Mandatory additions" must be in the file list before the STOP gate.
+- **Dependency scan** (mandatory — always run `/dependency-scan`):
+  Run `/dependency-scan` with the full list of affected routes, components, types/utilities, and DB tables. Every file listed under "Mandatory additions" must be in the file list before the STOP gate.
 
 - **Path A — Spec-first**: generate `docs/specs/[block-name].md` using this structure:
 
@@ -244,8 +244,8 @@ Only after explicit confirmation:
 
 ## Phase 8.5 — Context review + compact
 
-**C1–C3** (grep-only — delegate to agent):
-Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. Pass the exact grep commands from `.claude/rules/context-review.md` for C1–C3 and the relevant file paths. Collect results; apply any fix in the main session before proceeding.
+**C1–C3** (grep-only — delegate to `/context-review`):
+Run `/context-review`. It runs C1 (credential patterns), C2 (unresolved placeholders), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
 
 **C4–C12** (judgment-required — run in main session):
 Execute checks C4 through C12 from `.claude/rules/context-review.md` in order.
@@ -276,7 +276,7 @@ Then run `/compact` to free the session context.
 - **Green before commit**: type check + tests must pass before every commit.
 - **Conventional commits**: `feat(scope):`, `fix(scope):`, `docs:`, `chore:` — imperative, under 72 chars.
 - **No unrequested changes**: implement only what was approved in Phase 1.
-- **Dependency scan is mandatory**: always delegate to the `dependency-scanner` agent in Phase 1. Never produce a file list without first running the full scan.
+- **Dependency scan is mandatory**: always run `/dependency-scan` in Phase 1. Never produce a file list without first running the full scan.
 - **Context hygiene**: if context window reaches ~50% during Phase 2, run `/compact [keep: current implementation state and open TODOs]` before continuing.
 - **Secret hygiene**: never commit `.env*` files, tokens, or credentials.
 - **Read-only ops are always free**: `Read`, `Grep`, `Glob`, `git status/log/diff` may run without prior confirmation — no STOP gate needed for these.

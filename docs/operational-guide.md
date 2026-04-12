@@ -18,7 +18,7 @@
 8. [Day-to-day workflow](#8-day-to-day-workflow)
 9. [Governance files reference](#9-governance-files-reference)
 10. [Audit skills](#10-audit-skills)
-11. [Multi-agent orchestration](#11-multi-agent-orchestration-tier-ml)
+11. [Pipeline-integrated skills](#11-pipeline-integrated-skills-tier-ml)
 12. [Custom skills](#12-custom-skills)
 13. [Governance mechanics](#13-governance-mechanics)
 14. [Conventions and non-negotiables](#14-conventions-and-non-negotiables)
@@ -304,7 +304,7 @@ Upgrade is non-destructive - it adds new files without overwriting your existing
 | Phase | Action | Gate |
 |---|---|---|
 | 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
-| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (agent) + spec doc if Mode A. | STOP |
+| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (`/dependency-scan`) + spec doc if Mode A. | STOP |
 | 1.5 | Design review - data flow, trade-offs, discarded alternatives. *(skip for <=3 files, no migrations)* | STOP |
 | 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | - |
 | 3 | Type check + build + tests. Intermediate commit. | - |
@@ -348,7 +348,7 @@ Claude auto-selects the working mode based on block signals and declares it with
 | Phase | Action | Gate |
 |---|---|---|
 | 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
-| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (agent) + spec doc if Mode A. | STOP |
+| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (`/dependency-scan`) + spec doc if Mode A. | STOP |
 | 1.5 | Design review - data flow, data structures, discarded alternatives. *(skip for <=3 files)* | STOP |
 | 1.6 | Visual & UX design. ASCII wireframe + component map + UX rationale. *(UI blocks only)* | STOP |
 | Plan lock | EnterPlanMode -> user enables auto-accept -> ExitPlanMode -> `/compact` | - |
@@ -361,7 +361,7 @@ Claude auto-selects the working mode based on block signals and declares it with
 | 5d | **Block-scoped quality audit** - Track A (UI) and Track B (API/DB) with full skill suite. | - |
 | 6 | Outcome checklist: build/test + design system compliance + features + audit results. | STOP |
 | 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | - |
-| 8.5 | C1-C3 via context-reviewer agent. C4-C12 in main session. **Mandatory closing message**. `/compact`. | - |
+| 8.5 | C1-C3 via `/context-review`. C4-C12 in main session. **Mandatory closing message**. `/compact`. | - |
 
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before code is written.
 
@@ -660,7 +660,7 @@ End-of-block compliance checklist. Executed in Phase 8.5. Contains 12 checks (C1
 | C11 | No completed items remain in refactoring-backlog.md |
 | C12 | Canonical docs current (sitemap, db-map, PRD) |
 
-**In Tier L**: C1-C3 are delegated to the `context-reviewer` agent (grep-only, parallel). C4-C12 run in the main session.
+**In Tier L**: C1-C3 are delegated to `/context-review` (grep-only, forked context). C4-C12 run in the main session.
 **In Tier M**: all 12 checks run in the main session.
 
 **Phase complete only when all 12 checks pass.** Then Claude posts the mandatory closing message and runs `/compact`.
@@ -834,31 +834,29 @@ Conventional Commits automation. Auto-detects commit type, scope, and descriptio
 
 ---
 
-## 11. Multi-agent orchestration (Tier M / L)
+## 11. Pipeline-integrated skills (Tier M / L)
 
-Two custom agent definitions are scaffolded in `.claude/agents/`. They are invoked by Claude during specific pipeline phases as connected sub-processes.
+Two pipeline-integrated skills are scaffolded in `.claude/skills/`. They are invoked during specific pipeline phases as forked-context sub-processes, returning structured results to the main session.
 
 ### Design principle
 
-Agents are used only where tasks are **genuinely independent and read-only**. The pipeline keeps Phase 2 (implementation) and document-update phases monolithic. Sequential, single-agent writes are traceable and human-reviewable. Parallel writes across agents introduce synchronisation complexity that the governance model cannot audit.
+Skills are used only where tasks are **genuinely independent and read-only**. The pipeline keeps Phase 2 (implementation) and document-update phases monolithic. Sequential, single-session writes are traceable and human-reviewable.
 
-### dependency-scanner (Tier M + L - Phase 1)
+### /dependency-scan (Tier M + L - Phase 1)
 
-**File**: `.claude/agents/dependency-scanner.md`
-**Tools**: `Glob`, `Grep`, `Read` (no `Write`, no `Bash`)
+**File**: `.claude/skills/dependency-scan/SKILL.md`
 
-The dependency scan has 6 checks that are structurally independent. Delegated to this agent in a single call, they run in parallel and return a structured report with file paths and line numbers.
+The dependency scan has 6 checks that are structurally independent. Invoked via `/dependency-scan` in a single call, they run in a forked context and return a structured report with file paths and line numbers.
 
-The agent receives all affected entities in one prompt (routes, components, shared types, DB tables). It returns a report structured by check (C1-C6) with a "Mandatory additions" section. The orchestrator adds every file from "Mandatory additions" to the file list before presenting the Phase 1 STOP gate.
+The skill receives all affected entities in one prompt (routes, components, shared types, DB tables). It returns a report structured by check (C1-C6) with a "Mandatory additions" section. The orchestrator adds every file from "Mandatory additions" to the file list before presenting the Phase 1 STOP gate.
 
-### context-reviewer (Tier L only - Phase 8.5)
+### /context-review (Tier L only - Phase 8.5)
 
-**File**: `.claude/agents/context-reviewer.md`
-**Tools**: `Grep`, `Read`
+**File**: `.claude/skills/context-review/SKILL.md`
 
 Handles checks C1-C3 of the context review (credential scan, placeholder scan, field name staleness). These are pure grep operations with no dependencies on each other and require no judgment.
 
-**In Tier M**: all 12 context review checks (C1-C12) run in the main session. The context-reviewer agent is not used.
+**In Tier M**: all 12 context review checks (C1-C12) run in the main session. The `/context-review` skill is not used.
 
 ### What stays monolithic
 
