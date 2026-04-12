@@ -1,0 +1,97 @@
+name: Anthropic drift tracker
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday 9 AM UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no issues created)'
+        type: boolean
+        default: false
+      days:
+        description: 'Lookback window in days'
+        type: number
+        default: 7
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-drift:
+    name: Scan for Anthropic feature overlap
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Run drift scan
+        id: scan
+        run: |
+          node .github/drift-tracker/check-drift.mjs \
+            --days="${{ inputs.days || '7' }}" \
+            ${{ inputs.dry_run == true && '--dry-run' || '' }}
+
+      - name: Create drift issues
+        if: steps.scan.outputs.match_count != '0' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo '${{ steps.scan.outputs.matches_json }}' | jq -c '.[]' | while IFS= read -r match; do
+            FID=$(echo "$match" | jq -r '.featureId')
+            FNAME=$(echo "$match" | jq -r '.featureName')
+            BODY=$(echo "$match" | jq -r '.issueBody')
+
+            # Dedup: skip if open issue with this feature ID exists
+            EXISTING=$(gh issue list \
+              --repo "${{ github.repository }}" \
+              --label "anthropic-drift" \
+              --state open \
+              --search "in:title [drift:${FID}]" \
+              --json number -q 'length')
+
+            if [ "$EXISTING" -gt "0" ]; then
+              echo "Skipping $FID — open issue already exists"
+              continue
+            fi
+
+            gh issue create \
+              --repo "${{ github.repository }}" \
+              --title "[drift:${FID}] ${FNAME} — new native capability detected" \
+              --body "$BODY" \
+              --label "anthropic-drift"
+
+            echo "Created issue for $FID"
+          done
+
+      - name: Auto-close stale drift issues
+        if: inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CUTOFF=$(date -u -d '30 days ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-30d '+%Y-%m-%dT%H:%M:%SZ')
+          gh issue list \
+            --repo "${{ github.repository }}" \
+            --label "anthropic-drift" \
+            --state open \
+            --json number,createdAt -q \
+            ".[] | select(.createdAt < \"$CUTOFF\") | .number" | while read -r num; do
+            gh issue close "$num" \
+              --repo "${{ github.repository }}" \
+              --comment "Auto-closed: superseded by newer drift scan. Re-open if still relevant."
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Drift Tracker Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Features checked: ${{ steps.scan.outputs.features_checked || 'N/A' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Matches found: ${{ steps.scan.outputs.match_count || '0' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dry run: ${{ inputs.dry_run || 'false' }}" >> "$GITHUB_STEP_SUMMARY"
