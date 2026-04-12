@@ -71,10 +71,25 @@ node packages/cli/test/integration/run.js
 
 **Lessons Capture**: after any user correction, check if the pattern is non-obvious. If so, save it as a feedback memory immediately.
 
+## Roadmap Tracking
+
+When work starts or completes on a roadmap item (any issue linked to a GitHub milestone), update these three locations:
+
+**On start**: set status to `In Progress`, record start date in `.claude/initiatives/roadmap-status.md`. Update GitHub Project board start date via `gh api graphql`.
+
+**On completion** (PR created, before merging):
+1. `.claude/initiatives/roadmap-status.md` — set status to `Done`, record end date and PR number
+2. `docs/reviews/roadmap-v1.9.1.md` — update the deliverable's Status column to **Done** with PR reference
+3. GitHub Project board — set status to Done, update start/target dates via `gh api graphql`
+4. Close the GitHub issue with implementation summary
+
+These updates are part of the commit sequence (docs commit), not a post-merge afterthought.
+
 ## Reference Documents
 - `README.md` — public-facing, must stay in sync with all template/CLI changes
 - `docs/operational-guide.md` — full reference, must stay in sync
-- Both updated as mandatory final step after every round of changes (standing rule)
+- `.claude/initiatives/roadmap-status.md` — local roadmap progress tracking
+- All updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
 `v1.9.0` — alignment block (Phases 1-3). CI consolidation, ESLint+Prettier, 271 unit tests, CLAUDE.md single-authority generation, security-audit 3-path selector (NS1-NS6), perf-audit native resource checks (NR1-NR4), Node.js >=22. 481 integration checks.
