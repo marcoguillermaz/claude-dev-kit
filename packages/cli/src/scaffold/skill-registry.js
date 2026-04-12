@@ -45,6 +45,8 @@ export const SKILL_REGISTRY = [
     requires: { hasFrontend: true, hasDesignSystem: true },
     cheatsheet: false,
   },
+  { name: 'dependency-scan', minTier: 'm', requires: {}, cheatsheet: false },
+  { name: 'context-review', minTier: 'l', requires: {}, cheatsheet: false },
 ];
 
 const TIER_ORDER = { s: 0, m: 1, l: 2 };

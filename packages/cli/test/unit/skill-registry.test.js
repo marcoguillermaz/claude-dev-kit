@@ -23,8 +23,8 @@ describe('NATIVE_STACKS', () => {
 // ---------------------------------------------------------------------------
 
 describe('SKILL_REGISTRY', () => {
-  it('has 12 entries', () => {
-    assert.equal(SKILL_REGISTRY.length, 12);
+  it('has 14 entries', () => {
+    assert.equal(SKILL_REGISTRY.length, 14);
   });
 
   it('every entry has required fields', () => {
@@ -115,7 +115,7 @@ describe('getSkillsToRemove', () => {
 // ---------------------------------------------------------------------------
 
 describe('getActiveSkills', () => {
-  it('tier S default: base skills + security-audit', () => {
+  it('tier S default: base skills + security-audit, no pipeline skills', () => {
     const result = getActiveSkills({ tier: 's' });
     assert.ok(result.includes('arch-audit'));
     assert.ok(result.includes('skill-dev'));
@@ -125,6 +125,20 @@ describe('getActiveSkills', () => {
     assert.ok(result.includes('security-audit'));
     assert.ok(!result.includes('api-design'));
     assert.ok(!result.includes('skill-db'));
+    assert.ok(!result.includes('dependency-scan'));
+    assert.ok(!result.includes('context-review'));
+  });
+
+  it('tier M includes dependency-scan but not context-review', () => {
+    const result = getActiveSkills({ tier: 'm' });
+    assert.ok(result.includes('dependency-scan'));
+    assert.ok(!result.includes('context-review'));
+  });
+
+  it('tier L includes both dependency-scan and context-review', () => {
+    const result = getActiveSkills({ tier: 'l' });
+    assert.ok(result.includes('dependency-scan'));
+    assert.ok(result.includes('context-review'));
   });
 
   it('tier S hasApi=false keeps security-audit (stack-agnostic)', () => {

@@ -78,9 +78,9 @@ Then:
 
   Compose one `AskUserQuestion` with all open items. The user — not Claude — declares when scope is complete.
 
-- **Dependency scan** (mandatory — always delegate to the `dependency-scanner` agent):
-  Invoke via the Agent tool. Pass the full list of affected routes, components, types/utilities, DB tables in one prompt. The agent runs all 6 checks in parallel and returns exact file paths + line numbers. Do not run checks manually in the main session — an incomplete scan is an incomplete file list, which is a process error.
-  Every file listed under "Mandatory additions" in the agent's report must be in the file list before the STOP gate.
+- **Dependency scan** (mandatory — always run `/dependency-scan`):
+  Run `/dependency-scan` with the full list of affected routes, components, types/utilities, DB tables in one prompt. It runs all 6 checks and returns exact file paths + line numbers. Do not run checks manually in the main session — an incomplete scan is an incomplete file list, which is a process error.
+  Every file listed under "Mandatory additions" in the report must be in the file list before the STOP gate.
 - **All clarification questions must use `AskUserQuestion` tool** — never inline.
 
 - **Path A — Spec-first**: generate `docs/specs/[block-name].md` using this structure:
@@ -277,8 +277,8 @@ Only after explicit confirmation:
 
 ## Phase 8.5 — Context review + compact
 
-**C1–C3** (grep-only — delegate to agent):
-Invoke the `context-reviewer` agent via the Agent tool with `model: "haiku"`. It runs C1 (credential patterns), C2 (unresolved placeholders), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
+**C1–C3** (grep-only — delegate to `/context-review`):
+Run `/context-review`. It runs C1 (credential patterns), C2 (unresolved placeholders), C3 (field name staleness) in a single call and returns pass/fail per check with matched lines. Apply any fix in the main session before proceeding.
 
 **C4–C12** (judgment-required — run in main session):
 Execute checks C4 through C12 from `.claude/rules/context-review.md` in order.
@@ -309,7 +309,7 @@ Then run `/compact` to free the session context.
 - **Green before commit**: type check + tests must pass before every commit.
 - **Conventional commits**: `feat(scope):`, `fix(scope):`, `docs:`, `chore:` — imperative, under 72 chars.
 - **No unrequested changes**: implement only what was approved in Phase 1.
-- **Dependency scan is mandatory**: always delegate to the `dependency-scanner` agent in Phase 1. Never produce a file list without first running the full scan. An incomplete scan is a process error.
+- **Dependency scan is mandatory**: always run `/dependency-scan` in Phase 1. Never produce a file list without first running the full scan. An incomplete scan is a process error.
 - **Context hygiene**: if context window reaches ~50% during Phase 2, run `/compact [keep: current implementation state and open TODOs]` before continuing. Re-read `.claude/CLAUDE.local.md` after compact to restore active overrides.
 - **Secret hygiene**: never commit `.env*` files, tokens, or credentials.
 - **Immediate migration**: every migration file must be applied to the remote DB immediately after writing.
