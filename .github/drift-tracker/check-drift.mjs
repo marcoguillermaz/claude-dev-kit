@@ -51,18 +51,22 @@ export async function fetchPage(url) {
 
 export function stripHtml(html) {
   if (!html) return '';
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/\s+/g, ' ')
-    .trim();
+  let text = html;
+  // Remove script/style blocks (allow optional whitespace before closing >)
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script\s*>/gi, ' ');
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style\s*>/gi, ' ');
+  // Strip remaining tags
+  text = text.replace(/<[^>]+>/g, ' ');
+  // Decode entities — &amp; must be decoded LAST to avoid double-unescaping
+  text = text.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&amp;/g, '&');
+  // Normalize whitespace
+  text = text.replace(/\s+/g, ' ');
+  return text.trim();
 }
 
 export function extractRecentChangelog(html, days = 7) {
@@ -183,7 +187,7 @@ export function formatIssueBody(matchResult, feature, scanMeta) {
   lines.push('|---|---|');
   for (let i = 0; i < matchResult.matchedKeywords.length; i++) {
     const kw = matchResult.matchedKeywords[i];
-    const ctx = (matchResult.snippets[i] || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const ctx = (matchResult.snippets[i] || '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
     lines.push(`| \`${kw}\` | ${ctx} |`);
   }
 
