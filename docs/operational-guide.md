@@ -23,6 +23,7 @@
 13. [Governance mechanics](#13-governance-mechanics)
 14. [Conventions and non-negotiables](#14-conventions-and-non-negotiables)
 15. [Maintaining the scaffold](#15-maintaining-the-scaffold)
+15b. [Anthropic drift tracking](#15b-anthropic-drift-tracking)
 16. [Frequently asked questions](#16-frequently-asked-questions)
 
 ---
@@ -1082,6 +1083,22 @@ Do not edit scaffolded rule files directly if you want upgrade compatibility. In
 | Architectural decisions + rationale + AI constraints | `docs/adr/NNNN-title.md` |
 | Non-obvious patterns stable enough to be permanent | `CLAUDE.md` Known Patterns section |
 | Block-specific state for session recovery | `.claude/session/block-name.md` |
+
+---
+
+## 15b. Anthropic drift tracking
+
+CDK features risk being absorbed as Anthropic ships native Claude Code capabilities. The drift tracker monitors this automatically.
+
+**How it works**: Every Monday at 9 AM UTC, a GitHub Action fetches the Anthropic Claude Code changelog, matches content against a feature manifest (`.github/drift-tracker/features.json`), and opens issues for any overlap detected.
+
+**Feature manifest**: Each entry in `features.json` defines a CDK feature with keywords, risk level (high/medium/low), and affected CDK files. To add a new feature to track, add a JSON object to the `features` array.
+
+**Manual scan**: Go to Actions > "Anthropic drift tracker" > Run workflow. Enable "Dry run" to see results without creating issues. Adjust the lookback window with the "days" input.
+
+**Issue management**: Issues are labeled `anthropic-drift` and include the feature ID in the title as `[drift:feature-id]`. The tracker deduplicates by checking for existing open issues with the same feature ID. Stale issues (>30 days) are auto-closed.
+
+**Local dry-run**: `node .github/drift-tracker/check-drift.mjs --dry-run --days=30`
 
 ---
 

@@ -72,6 +72,18 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit --prefix packages/cli
 
+  drift-tracker-tests:
+    name: Drift tracker tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Run drift tracker tests
+        run: node --test .github/drift-tracker/test/check-drift.test.mjs
+
   integration-tests:
     name: Integration tests
     runs-on: ubuntu-latest

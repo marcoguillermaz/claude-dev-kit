@@ -12,6 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - `new skill` command - interactive wizard to scaffold custom skills with valid frontmatter, test fixture, and CLAUDE.md registration (#55)
 - `claudemd-update.js` shared utility - extracted CLAUDE.md Active Skills registration for reuse across commands
+- `.github/drift-tracker/` - weekly GitHub Action that scrapes Anthropic docs for native features overlapping with CDK, opens `anthropic-drift` issues when overlap detected (#56)
 - `add skill <name>` command - install a single skill without full scaffold (12 skills available)
 - `add rule <name>` command - install a single rule with stack-specific security variants (`--stack swift|kotlin|rust|dotnet|java|go`)
 - `custom-*` skill convention - user-created skills preserved across `upgrade` and `init` operations

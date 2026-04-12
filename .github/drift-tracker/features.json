@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "sourceUrls": {
+    "changelog": "https://docs.anthropic.com/en/docs/claude-code/changelog"
+  },
+  "features": [
+    {
+      "id": "claude-md-templates",
+      "name": "CLAUDE.md templates and scaffolding",
+      "risk": "high",
+      "keywords": [
+        "CLAUDE_CODE_NEW_INIT",
+        "scaffold.*CLAUDE",
+        "generate.*CLAUDE\\.md",
+        "CLAUDE\\.md.*template",
+        "project.*initialization.*template"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/src/generators/claude-md.js",
+        "packages/cli/templates/"
+      ],
+      "notes": "Anthropic's /init already generates CLAUDE.md. Watch for richer templates that overlap with CDK's tiered scaffolding."
+    },
+    {
+      "id": "settings-json-config",
+      "name": "settings.json managed configuration",
+      "risk": "high",
+      "keywords": [
+        "server-managed settings",
+        "managed.*settings",
+        "admin.*console.*settings",
+        "remote.*settings.*configuration",
+        "settings.*wizard"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/tier-s/.claude/settings.json",
+        "packages/cli/templates/tier-m/.claude/settings.json",
+        "packages/cli/templates/tier-l/.claude/settings.json"
+      ],
+      "notes": "Anthropic has a managed settings scope. If they ship a configuration wizard or admin console, CDK's scaffolded settings.json loses unique value."
+    },
+    {
+      "id": "generic-hooks",
+      "name": "Hook templates and pre-built hooks",
+      "risk": "high",
+      "keywords": [
+        "hook.*template",
+        "pre-built.*hook",
+        "hook.*library",
+        "hook.*marketplace",
+        "default.*hook.*configuration"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/tier-s/.claude/settings.json",
+        "packages/cli/templates/tier-m/.claude/settings.json",
+        "packages/cli/src/commands/doctor.js"
+      ],
+      "notes": "CDK wires Stop, SessionStart, PostToolUse hooks. If Anthropic ships pre-configured hook templates, this becomes redundant."
+    },
+    {
+      "id": "shallow-skills",
+      "name": "Built-in or bundled skills",
+      "risk": "high",
+      "keywords": [
+        "bundled.*skill",
+        "built-in.*skill",
+        "native.*skill",
+        "default.*skill.*library",
+        "skill.*included.*by.*default"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/common/skills/commit/",
+        "packages/cli/templates/common/skills/simplify/"
+      ],
+      "notes": "CDK ships /commit and /simplify as shallow skills. If Anthropic bundles equivalent skills natively, these lose value."
+    },
+    {
+      "id": "stack-detection",
+      "name": "Automatic stack or framework detection",
+      "risk": "medium",
+      "keywords": [
+        "stack.*detect",
+        "language.*detect",
+        "auto.*detect.*framework",
+        "project.*type.*detect",
+        "framework.*recognition"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/src/utils/detect-stack.js",
+        "packages/cli/src/scaffold/skill-registry.js"
+      ],
+      "notes": "CDK detects 11 tech stacks to adapt security rules, skills, and permissions. Native stack detection would reduce this advantage."
+    },
+    {
+      "id": "multi-tier-scaffolding",
+      "name": "Tiered or graduated project setup",
+      "risk": "medium",
+      "keywords": [
+        "tier.*scaffold",
+        "governance.*tier",
+        "graduated.*setup",
+        "project.*complexity.*level",
+        "scaffold.*level"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/tier-0/",
+        "packages/cli/templates/tier-s/",
+        "packages/cli/templates/tier-m/",
+        "packages/cli/templates/tier-l/"
+      ],
+      "notes": "CDK's four tiers (Discovery/Fast Lane/Standard/Full) are its primary structural differentiator."
+    },
+    {
+      "id": "rules-markdown",
+      "name": "Rule file scaffolding or templates",
+      "risk": "medium",
+      "keywords": [
+        "rule.*template",
+        "rule.*scaffold",
+        "pre-built.*rule",
+        "rule.*library",
+        "default.*rule.*file"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/common/rules/"
+      ],
+      "notes": "CDK scaffolds pipeline.md, security.md, git.md as rules. If Anthropic ships starter rule templates, this overlap grows."
+    },
+    {
+      "id": "pipeline-stop-gates",
+      "name": "Pipeline gates or workflow enforcement",
+      "risk": "low",
+      "keywords": [
+        "pipeline.*gate",
+        "stop.*gate",
+        "mandatory.*review.*gate",
+        "workflow.*enforcement",
+        "phase.*gate"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/tier-m/rules/pipeline.md",
+        "packages/cli/templates/tier-l/rules/pipeline.md"
+      ],
+      "notes": "CDK's multi-phase pipeline with STOP gates is deep and opinionated. Low absorption risk but monitor for native workflow features."
+    },
+    {
+      "id": "team-settings",
+      "name": "Team or org-wide settings enforcement",
+      "risk": "low",
+      "keywords": [
+        "team.*settings",
+        "org.*enforcement",
+        "centralized.*governance",
+        "org-wide.*restriction",
+        "team.*configuration.*policy"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [],
+      "notes": "CDK plans team-settings.json for org enforcement. Anthropic has server-managed settings via admin console - watch for expansion."
+    },
+    {
+      "id": "cross-project-analytics",
+      "name": "Cross-project compliance or analytics",
+      "risk": "low",
+      "keywords": [
+        "cross.*project.*analytics",
+        "compliance.*dashboard",
+        "project.*compliance.*report",
+        "multi-project.*overview"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [],
+      "notes": "CDK's SaaS layer (Q2) aggregates doctor reports across projects. No current Anthropic equivalent."
+    },
+    {
+      "id": "deep-audit-skills",
+      "name": "Multi-step audit or analysis skills",
+      "risk": "low",
+      "keywords": [
+        "audit.*skill",
+        "multi.*step.*audit",
+        "security.*audit.*skill",
+        "architecture.*audit.*skill",
+        "built-in.*audit"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/templates/common/skills/"
+      ],
+      "notes": "CDK ships 12 deep audit skills with model routing. Single-skill native equivalents are possible but full suite is unlikely."
+    },
+    {
+      "id": "skill-marketplace",
+      "name": "Skill registry or marketplace",
+      "risk": "medium",
+      "keywords": [
+        "skill.*registry",
+        "skill.*marketplace",
+        "community.*skill",
+        "skill.*sharing",
+        "public.*skill.*catalog"
+      ],
+      "keywordMode": "any",
+      "cdkFiles": [
+        "packages/cli/src/scaffold/skill-registry.js"
+      ],
+      "notes": "CDK plans a public skill registry (Q4). If Anthropic ships a native skill marketplace, this becomes redundant."
+    }
+  ]
+}
