@@ -6,13 +6,7 @@
   },
   "includeGitInstructions": false,
   "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(node:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(curl:*)"
-    ],
+    "allow": ["Bash(git:*)", "Bash(node:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(curl:*)"],
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push origin main*)",
@@ -28,7 +22,7 @@
           {
             "type": "command",
             "command": "[ \"$stop_hook_active\" = \"1\" ] && exit 0; cd $CLAUDE_PROJECT_DIR && [TEST_COMMAND] 2>&1 | tail -5; [[ ${PIPESTATUS[0]} -ne 0 ]] && echo '{\"decision\": \"block\", \"reason\": \"Tests must pass before completing the task. Fix failing tests first.\"}'",
-            "timeout": 300000
+            "timeout": 300
           }
         ]
       }
