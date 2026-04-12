@@ -166,7 +166,7 @@ describe('validateSkillMd', () => {
       model: 'sonnet',
       stepCount: 2,
     });
-    const { errors, warnings } = validateSkillMd(md, 'custom-test');
+    const { errors } = validateSkillMd(md, 'custom-test');
     assert.equal(errors.length, 0);
   });
 
