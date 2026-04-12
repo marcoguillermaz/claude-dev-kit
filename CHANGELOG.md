@@ -42,6 +42,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - (CodeQL Medium) `add.test.js` shell injection risk - `execSync` template literal replaced with `execFileSync` + args array
 - (CodeQL Medium) `review-wizard-output.js` no-op `.replace('─', '─')` removed
 - (CodeQL Medium) `ci.yml` and `claude-dev-kit-verify.yml` missing `permissions:` blocks - added `contents: read` (least privilege)
+- `security-audit` skill was gated on `hasApi: true` in skill registry - native apps (Swift, Kotlin, Rust) never received it despite having NS1-NS6 native security checks
+- `arch-audit` SKILL.md description exceeded 250-char limit (255 chars) - trimmed to 211
+- `doctor` now checks Stop hook timeout presence (check #18) and deny list duplicates (check #19)
 
 ### Evaluated (decisions documented, no code change)
 - P5 Tier L: frozen - maintain functional, no new investment until real adoption signal

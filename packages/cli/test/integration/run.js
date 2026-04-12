@@ -666,9 +666,9 @@ async function scenarioSkillPruning() {
   assertNotExists(dir, 'docs/sitemap.md');
   assertNotExists(dir, 'docs/db-map.md');
 
-  // Skills that must be absent (hasApi=false → api-design + security-audit pruned)
+  // Skills that must be absent (hasApi=false → api-design pruned; hasDatabase=false → skill-db pruned)
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
-  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
@@ -683,7 +683,7 @@ async function scenarioSkillPruning() {
 }
 
 async function scenarioTierSSkillPruning() {
-  section('Tier S skill pruning — hasApi=false → security-audit pruned');
+  section('Tier S skill pruning — hasApi=false keeps security-audit (stack-agnostic)');
   const config = {
     ...BASE,
     tier: 's',
@@ -694,8 +694,8 @@ async function scenarioTierSSkillPruning() {
   };
   const dir = await scaffold('tier-s-pruned', 's', config);
 
-  // security-audit must be pruned when hasApi=false
-  assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
+  // security-audit must be present regardless of hasApi (has native security path)
+  assertExists(dir, '.claude/skills/security-audit/SKILL.md');
 
   // Universal skills must remain
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
@@ -704,12 +704,12 @@ async function scenarioTierSSkillPruning() {
   assertExists(dir, '.claude/skills/simplify/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
 
-  // Active Skills must not list security-audit
+  // Active Skills must list security-audit
   const claude = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
-  if (!claude.includes('/security-audit')) {
-    pass('Tier S pruned: Active Skills does not list security-audit');
+  if (claude.includes('/security-audit')) {
+    pass('Tier S pruned: Active Skills lists security-audit (stack-agnostic)');
   } else {
-    fail('Tier S pruned: Active Skills should not list security-audit when hasApi=false');
+    fail('Tier S pruned: Active Skills should list security-audit even when hasApi=false');
   }
 
   // Active Skills must list universal skills
@@ -1066,10 +1066,8 @@ async function scenarioSecurityVariants() {
       }
     }
 
-    // Verify security-audit skill pruned when hasApi=false
-    if (!hasApi) {
-      assertNotExists(dir, '.claude/skills/security-audit/SKILL.md');
-    }
+    // security-audit is always present (stack-agnostic, has native security path)
+    assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   }
 }
 
@@ -1287,10 +1285,10 @@ async function scenarioCheatsheetPruning() {
     fail('cheatsheet: /skill-db row should be removed when hasDatabase=false');
   }
 
-  if (!cheat.includes('/security-audit')) {
-    pass('cheatsheet: /security-audit row removed (hasApi=false)');
+  if (cheat.includes('/security-audit')) {
+    pass('cheatsheet: /security-audit row present (stack-agnostic, not API-gated)');
   } else {
-    fail('cheatsheet: /security-audit row should be removed when hasApi=false');
+    fail('cheatsheet: /security-audit row should be present regardless of hasApi');
   }
 
   // Doc reference must be correct
@@ -1337,7 +1335,7 @@ async function scenarioNativeSkillAdaptation() {
   ];
 
   for (const { stack, perfTool, lintCmd, secChecklist } of stacks) {
-    // hasApi=true so security-audit is not pruned
+    // security-audit is always present (stack-agnostic)
     const config = {
       ...BASE,
       tier: 'm',
@@ -1588,9 +1586,9 @@ async function scenarioRubricScore() {
       }
     }
 
-    // No pruned skill should be listed
+    // No pruned skill should be listed (security-audit is always present — not API-gated)
     if (!hasApi) {
-      if (!activeBlock.includes('/api-design') && !activeBlock.includes('/security-audit')) {
+      if (!activeBlock.includes('/api-design')) {
         rubricPass('D5', `[${name}] no API-only skills listed when hasApi=false`);
       } else {
         rubricFail('D5', `[${name}] API-only skill listed when hasApi=false`);
@@ -1603,7 +1601,6 @@ async function scenarioRubricScore() {
       const cheat = fs.readFileSync(cheatPath, 'utf8');
       let cheatClean = true;
       if (!hasApi && cheat.includes('/api-design')) cheatClean = false;
-      if (!hasApi && cheat.includes('/security-audit')) cheatClean = false;
       if (config.hasDatabase === false && cheat.includes('/skill-db')) cheatClean = false;
       if (cheatClean) {
         rubricPass('D5', `[${name}] cheatsheet has no phantom skill rows`);
