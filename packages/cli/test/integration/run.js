@@ -1731,6 +1731,127 @@ async function scenarioRubricScore() {
   }
 }
 
+// ── new skill scaffolder ────────────────────────────────────────────────────
+
+async function scenarioNewSkillScaffolder() {
+  section('new skill scaffolder — end-to-end');
+
+  const dir = path.join(OUTPUT_DIR, 'new-skill');
+  await fs.ensureDir(path.join(dir, '.claude'));
+  await fs.writeFile(
+    path.join(dir, 'CLAUDE.md'),
+    '# Test\n\n## Active Skills\n- `/arch-audit`\n\n## Environment\nNode 22\n',
+  );
+
+  const CLI = path.resolve(__dirname, '../../src/index.js');
+  const answers = JSON.stringify({
+    name: 'deploy',
+    description: 'Deploy the application to staging and run smoke tests.',
+    model: 'haiku',
+    userInvocable: true,
+    effort: 'medium',
+    usesPlaywright: false,
+    stepCount: 3,
+  });
+
+  try {
+    execFileSync('node', [CLI, 'new', 'skill', '--answers', answers], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+  } catch (e) {
+    fail('new skill command', e.stderr || e.message);
+    return;
+  }
+
+  // Verify SKILL.md created
+  const skillPath = path.join(dir, '.claude', 'skills', 'custom-deploy', 'SKILL.md');
+  if (fs.existsSync(skillPath)) {
+    pass('new skill: SKILL.md created');
+  } else {
+    fail('new skill: SKILL.md not created');
+    return;
+  }
+
+  // Verify test-skill.js created
+  const testPath = path.join(dir, '.claude', 'skills', 'custom-deploy', 'test-skill.js');
+  if (fs.existsSync(testPath)) {
+    pass('new skill: test-skill.js created');
+  } else {
+    fail('new skill: test-skill.js not created');
+  }
+
+  // Verify frontmatter
+  const content = fs.readFileSync(skillPath, 'utf8');
+  const hasFrontmatter = content.startsWith('---\n') && content.includes('\n---\n');
+  if (hasFrontmatter) pass('new skill: valid frontmatter delimiters');
+  else fail('new skill: missing frontmatter');
+
+  if (content.includes('name: custom-deploy')) pass('new skill: name field correct');
+  else fail('new skill: name field incorrect');
+
+  if (content.includes('context: fork')) pass('new skill: context is fork');
+  else fail('new skill: context not fork');
+
+  if (content.includes('model: haiku')) pass('new skill: model field correct');
+  else fail('new skill: model field incorrect');
+
+  // Verify description under 250 chars
+  const descMatch = content.match(/^description:\s*(.+)/m);
+  if (descMatch && descMatch[1].length <= 250) pass('new skill: description under 250 chars');
+  else fail('new skill: description over 250 chars or missing');
+
+  // Verify step structure
+  if (content.includes('## Step 1') && content.includes('## Step 3 - Produce report'))
+    pass('new skill: step structure correct');
+  else fail('new skill: step structure incorrect');
+
+  // Verify CLAUDE.md registration
+  const claudeMd = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  if (claudeMd.includes('/custom-deploy')) pass('new skill: registered in CLAUDE.md');
+  else fail('new skill: not registered in CLAUDE.md');
+
+  // Verify custom- prefix was auto-applied (input was "deploy", output is "custom-deploy")
+  if (fs.existsSync(path.join(dir, '.claude', 'skills', 'custom-deploy')))
+    pass('new skill: custom- prefix auto-applied');
+  else fail('new skill: custom- prefix not applied');
+
+  // Test with Playwright answers
+  const playwrightAnswers = JSON.stringify({
+    name: 'visual-check',
+    description: 'Run visual regression checks with Playwright screenshots.',
+    model: 'opus',
+    userInvocable: true,
+    effort: 'high',
+    usesPlaywright: true,
+    allowedTools: 'mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot',
+    stepCount: 2,
+  });
+
+  try {
+    execFileSync('node', [CLI, 'new', 'skill', '--answers', playwrightAnswers], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+  } catch (e) {
+    fail('new skill (playwright)', e.stderr || e.message);
+    return;
+  }
+
+  const pwContent = fs.readFileSync(
+    path.join(dir, '.claude', 'skills', 'custom-visual-check', 'SKILL.md'),
+    'utf8',
+  );
+  if (pwContent.includes('allowed-tools:')) pass('new skill: Playwright allowed-tools present');
+  else fail('new skill: Playwright allowed-tools missing');
+
+  if (pwContent.includes('mcp__playwright__browser_navigate'))
+    pass('new skill: Playwright tools listed');
+  else fail('new skill: Playwright tools not listed');
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1768,6 +1889,7 @@ async function main() {
   await scenarioNativeSkillAdaptation();
   await scenarioWizardCoverage();
   await scenarioRubricScore();
+  await scenarioNewSkillScaffolder();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

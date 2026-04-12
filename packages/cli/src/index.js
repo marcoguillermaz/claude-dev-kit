@@ -5,6 +5,7 @@ import { init } from './commands/init.js';
 import { doctor } from './commands/doctor.js';
 import { upgrade } from './commands/upgrade.js';
 import { addSkill, addRule } from './commands/add.js';
+import { newSkill } from './commands/new-skill.js';
 import chalk from 'chalk';
 
 program
@@ -55,6 +56,16 @@ add
   .option('--force', 'Overwrite if the rule already exists')
   .option('--dry-run', 'Show what would be created without writing files')
   .action(addRule);
+
+const newCmd = program.command('new').description('Create a new custom resource from scratch');
+
+newCmd
+  .command('skill')
+  .description('Create a custom skill with an interactive wizard')
+  .option('--name <name>', 'Skill name (auto-prepends custom- if missing)')
+  .option('--dry-run', 'Show what would be created without writing files')
+  .option('--answers <json>', 'Bypass prompts with JSON answers (for testing)')
+  .action(newSkill);
 
 program.on('command:*', () => {
   console.error(chalk.red(`Unknown command: ${program.args.join(' ')}`));
