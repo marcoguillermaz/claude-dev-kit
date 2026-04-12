@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SKILL_REGISTRY } from '../scaffold/skill-registry.js';
+import { registerSkillInClaudeMd } from '../utils/claudemd-update.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -82,14 +83,9 @@ export async function addSkill(name, options) {
   console.log(`${chalk.green('✓')} Installed .claude/skills/${name}/SKILL.md`);
 
   // Append to CLAUDE.md Active Skills section if it exists
-  const claudePath = path.join(cwd, 'CLAUDE.md');
-  if (fs.existsSync(claudePath)) {
-    const content = fs.readFileSync(claudePath, 'utf8');
-    if (content.includes('## Active Skills') && !content.includes(`/${name}`)) {
-      const updated = content.replace(/## Active Skills\n/, `## Active Skills\n- \`/${name}\`\n`);
-      fs.writeFileSync(claudePath, updated);
-      console.log(`${chalk.green('✓')} Added /${name} to CLAUDE.md Active Skills`);
-    }
+  const reg = registerSkillInClaudeMd(cwd, name);
+  if (reg.updated) {
+    console.log(`${chalk.green('✓')} Added /${name} to CLAUDE.md Active Skills`);
   }
 }
 
