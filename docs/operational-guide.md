@@ -427,6 +427,25 @@ The security rule supports stack-specific variants via `--stack`:
 
 Options: `--force`, `--dry-run` (same as `add skill`).
 
+### 7c. Creating custom skills
+
+```bash
+npx mg-claude-dev-kit new skill
+```
+
+Interactive wizard that generates a complete custom skill:
+
+1. **SKILL.md** with valid frontmatter (name, description, model, context, effort, allowed-tools) and a step-by-step body template
+2. **test-skill.js** alongside SKILL.md - validates frontmatter structure, description length, and allowed-tools compliance
+3. **CLAUDE.md registration** - adds the skill to the Active Skills section automatically
+
+The generated skill uses the `custom-` naming convention, which protects it from being overwritten during `upgrade` or `init` operations.
+
+Options:
+- `--name <name>` - skip the name prompt (auto-prepends `custom-` if missing)
+- `--dry-run` - preview what would be created
+- `--answers <json>` - bypass all prompts with JSON (for automation)
+
 ### Minimum viable CDK
 
 The smallest useful CDK setup - no full scaffold required:

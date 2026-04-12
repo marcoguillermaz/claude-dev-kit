@@ -121,6 +121,7 @@ npx mg-claude-dev-kit upgrade                 # update template files
 npx mg-claude-dev-kit upgrade --tier=m        # promote to higher tier
 npx mg-claude-dev-kit add skill <name>        # install one skill
 npx mg-claude-dev-kit add rule <name>         # install one rule
+npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ```
 
 ---
