@@ -52,9 +52,9 @@ export async function fetchPage(url) {
 export function stripHtml(html) {
   if (!html) return '';
   let text = html;
-  // Remove script/style blocks (allow optional whitespace before closing >)
-  text = text.replace(/<script[^>]*>[\s\S]*?<\/script\s*>/gi, ' ');
-  text = text.replace(/<style[^>]*>[\s\S]*?<\/style\s*>/gi, ' ');
+  // Remove script/style blocks (closing tag may contain whitespace or attributes)
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script[^>]*>/gi, ' ');
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style[^>]*>/gi, ' ');
   // Strip remaining tags
   text = text.replace(/<[^>]+>/g, ' ');
   // Decode entities — &amp; must be decoded LAST to avoid double-unescaping
