@@ -12,8 +12,8 @@ Your development scaffold is ready. This guide walks through setup and your firs
 | `MEMORY.md` | Active plan + lessons (updated by Claude, not by hand) |
 | `.claude/rules/pipeline.md` | 11-phase development pipeline + R1–R4 |
 | `.claude/rules/context-review.md` | End-of-block compliance checklist (C1–C12) |
-| `.claude/agents/dependency-scanner.md` | Phase 1: parallel dependency scan agent |
-| `.claude/agents/context-reviewer.md` | Phase 8.5: C1–C3 grep checks agent |
+| `.claude/skills/dependency-scan/SKILL.md` | Phase 1: dependency scan skill (`/dependency-scan`) |
+| `.claude/skills/context-review/SKILL.md` | Phase 8.5: C1–C3 grep checks skill (`/context-review`) |
 | `.claude/settings.json` | Hooks: test gate, weekly arch-audit reminder, PostCompact |
 | `docs/requirements.md` | Product specification |
 | `docs/implementation-checklist.md` | Block-by-block progress tracker |
@@ -65,7 +65,7 @@ Claude will:
 1. Create `.claude/session/block-[name].md` — recovery file for interrupted sessions
 2. Read `docs/requirements.md` and `docs/implementation-checklist.md`
 3. Run a scope review (Phase 1, Tier 1 or Tier 2 sweep)
-4. Delegate to the `dependency-scanner` agent for a parallel 6-check dependency analysis
+4. Run `/dependency-scan` for a 6-check dependency analysis
 5. Wait for your explicit confirmation before writing any code
 
 **Execution keywords** — the only phrases that authorize autonomous action after a STOP gate:
@@ -94,7 +94,7 @@ Read-only operations (Read, Grep, git status/log) always run without confirmatio
 | 5d — Block-scoped quality audit | /ui-audit → /visual-audit → /ux-audit → /responsive-audit | — |
 | 6 — Outcome checklist | Full verification report + design system compliance | ⏸ STOP |
 | 8 — Block closure | Session file deleted, docs updated, ADR if needed, 3-commit sequence | — |
-| 8.5 — Context review | C1–C3 via context-reviewer agent, C4–C11 in main + /compact | — |
+| 8.5 — Context review | C1–C3 via /context-review, C4–C11 in main + /compact | — |
 
 **STOP gates** are hard stops — Claude waits for your explicit confirmation before proceeding.
 

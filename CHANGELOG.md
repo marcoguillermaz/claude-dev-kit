@@ -31,6 +31,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Doctor check #18 fix message now suggests correct value (`"timeout": 300`)
 
 ### Changed
+- Agents converted to on-demand skills: `dependency-scanner` → `/dependency-scan`, `context-reviewer` → `/context-review` — eliminates `.claude/agents/` directory from all templates (#62)
 - `pruneSkills()` rewritten from 37 to 5 lines (delegates to skill registry)
 - `pruneCheatsheet()` rewritten from 15 to 9 lines (delegates to skill registry)
 - `injectActiveSkills()` rewritten from 28 to 10 lines (delegates to skill registry)

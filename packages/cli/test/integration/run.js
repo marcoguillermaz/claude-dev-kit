@@ -401,9 +401,9 @@ async function scenarioTierM() {
   assertExists(dir, 'docs/sitemap.md');
   assertExists(dir, 'docs/db-map.md');
 
-  // Agents (M has dependency-scanner, not context-reviewer)
-  assertExists(dir, '.claude/agents/dependency-scanner.md');
-  assertNotExists(dir, '.claude/agents/context-reviewer.md');
+  // Pipeline skills (M has dependency-scan, not context-review)
+  assertExists(dir, '.claude/skills/dependency-scan/SKILL.md');
+  assertNotExists(dir, '.claude/skills/context-review/SKILL.md');
 
   // Skills (M has full set — all flags enabled in BASE)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
@@ -448,9 +448,9 @@ async function scenarioTierL() {
   assertExists(dir, 'docs/sitemap.md');
   assertExists(dir, 'docs/db-map.md');
 
-  // Both agents
-  assertExists(dir, '.claude/agents/dependency-scanner.md');
-  assertExists(dir, '.claude/agents/context-reviewer.md');
+  // Both pipeline skills
+  assertExists(dir, '.claude/skills/dependency-scan/SKILL.md');
+  assertExists(dir, '.claude/skills/context-review/SKILL.md');
 
   // Full skill set (all flags enabled in BASE)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');

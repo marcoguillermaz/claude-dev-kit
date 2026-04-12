@@ -49,7 +49,7 @@ Read these files in parallel while the Step 1 agent runs:
 - `.claude/settings.json`
 - `.claude/files-guide.md`
 - `.claude/cheatsheet.md`
-- `.claude/agents/dependency-scanner.md`
+- `.claude/skills/dependency-scan/SKILL.md`
 
 ## Step 3 — Anthropic compliance gap analysis
 
