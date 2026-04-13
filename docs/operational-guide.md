@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 13 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 14 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -400,7 +400,7 @@ npx mg-claude-dev-kit add skill commit
 
 This copies the SKILL.md file into `.claude/skills/<name>/` and appends it to the `## Active Skills` section in CLAUDE.md (if that section exists). No other files are modified.
 
-Available skills (13): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`.
+Available skills (14): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`.
 
 Options:
 - `--force` - overwrite if the skill already exists
@@ -693,7 +693,7 @@ Defined in the `CLAUDE.md` template for Tier M/L. Governs how Claude handles non
 
 ## 10. Audit skills
 
-Thirteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Fourteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 All skill applicability rules are managed by a central skill registry (`packages/cli/src/scaffold/skill-registry.js`). Each skill declares which tiers and project conditions it requires.
 
@@ -713,12 +713,13 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/responsive-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/ux-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/visual-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/ui-audit` | - | x | x | `hasFrontend=true` AND `hasDesignSystem=true` | Dev server + Playwright MCP |
+| `/ui-audit` | - | x | x | `hasFrontend=true` AND `hasDesignSystem=true` | - (static) |
+| `/accessibility-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
 
 ### General rules
 
-- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `SEC-`, `UX-`).
-- Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
+- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `SEC-`, `UX-`, `A11Y-`).
+- Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/accessibility-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running. `/ui-audit` is static and does not require Playwright.
 - Each skill runs in an isolated context fork (`context: fork`) - it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
 - Before first run: fill in the `## Configuration` placeholders at the top of each `SKILL.md`.
@@ -729,7 +730,7 @@ All skill applicability rules are managed by a central skill registry (`packages
 After the smoke test and before the outcome checklist, two tracks run in parallel:
 
 **Track A - UI** (if the block touches UI routes):
-`/ui-audit` (static, concurrent with first Playwright skill) -> `/visual-audit` -> `/ux-audit` -> `/responsive-audit` (sequential, shared Playwright session).
+`/ui-audit` (static, concurrent with first Playwright skill) -> `/accessibility-audit` -> `/visual-audit` -> `/ux-audit` -> `/responsive-audit` (sequential, shared Playwright session).
 
 **Track B - API/DB** (if the block touches API routes or applies migrations):
 `/security-audit` and `/api-design` (concurrent, static); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables).
@@ -809,7 +810,7 @@ Audits the governance layer itself - not your product code. Fetches Anthropic do
 
 **File**: `.claude/skills/visual-audit/SKILL.md` | **Tier**: M, L
 
-11-dimension visual evaluation (V1-V11): typographic hierarchy, spatial rhythm, visual focal point, colour discipline, information density, dark-mode polish, micro-polish, APCA contrast, Gestalt compliance, typographic quality, interaction state design. Per-page scoring out of 55.
+10-dimension aesthetic evaluation: typographic hierarchy, spatial rhythm, visual focal point, colour discipline, information density, dark-mode polish, micro-polish, Gestalt compliance, typographic quality, interaction state design. Per-page scoring out of 50. Accessibility contrast is covered by `/accessibility-audit`.
 
 #### /ux-audit
 
@@ -827,7 +828,13 @@ Static pre-checks (S1-S3: viewport-unit fonts, overflow hidden, non-responsive i
 
 **File**: `.claude/skills/ui-audit/SKILL.md` | **Tier**: M, L
 
-Design token compliance, component adoption rate, accessibility patterns, empty state coverage. Requires `hasDesignSystem=true`.
+Design token compliance, component adoption rate, empty state coverage. Static analysis only - no browser. Requires `hasDesignSystem=true`. Accessibility patterns are covered by `/accessibility-audit`.
+
+#### /accessibility-audit
+
+**File**: `.claude/skills/accessibility-audit/SKILL.md` | **Tier**: M, L
+
+Unified accessibility surface. Three modes: `static` (A1-A8 grep-based patterns: aria-label on icon buttons, positive tabindex, outline-none regression, img alt, form labels, focus ring size, onClick on non-interactive, nav keyboard access); `full` (adds APCA contrast probes C1-C3 via Playwright); `wcag` (adds axe-core 4.9.1 scan with wcag2a/aa + wcag21aa + wcag22aa tags). Backlog prefix: `A11Y-`. Requires `hasFrontend=true`.
 
 #### /simplify
 
