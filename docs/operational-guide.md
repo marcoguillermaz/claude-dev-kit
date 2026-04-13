@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 14 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 15 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -400,7 +400,7 @@ npx mg-claude-dev-kit add skill commit
 
 This copies the SKILL.md file into `.claude/skills/<name>/` and appends it to the `## Active Skills` section in CLAUDE.md (if that section exists). No other files are modified.
 
-Available skills (14): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`.
+Available skills (15): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`, `test-audit`.
 
 Options:
 - `--force` - overwrite if the skill already exists
@@ -715,10 +715,11 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/visual-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/ui-audit` | - | x | x | `hasFrontend=true` AND `hasDesignSystem=true` | - (static) |
 | `/accessibility-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
+| `/test-audit` | - | x | x | always (no `requires`) | - (static analysis) |
 
 ### General rules
 
-- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `SEC-`, `UX-`, `A11Y-`).
+- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `SEC-`, `UX-`, `A11Y-`, `TEST-`).
 - Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/accessibility-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running. `/ui-audit` is static and does not require Playwright.
 - Each skill runs in an isolated context fork (`context: fork`) - it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
@@ -727,13 +728,16 @@ All skill applicability rules are managed by a central skill registry (`packages
 
 ### Block-scoped audit in Phase 5d (Tier M/L)
 
-After the smoke test and before the outcome checklist, two tracks run in parallel:
+After the smoke test and before the outcome checklist, three tracks can run:
 
 **Track A - UI** (if the block touches UI routes):
 `/ui-audit` (static, concurrent with first Playwright skill) -> `/accessibility-audit` -> `/visual-audit` -> `/ux-audit` -> `/responsive-audit` (sequential, shared Playwright session).
 
 **Track B - API/DB** (if the block touches API routes or applies migrations):
 `/security-audit` and `/api-design` (concurrent, static); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables).
+
+**Track C - Test suite** (runs for every block after Phase 3 is green):
+`/test-audit` - static analysis of coverage reports (lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), and anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps). Critical findings (`.only` committed, 0% coverage on a changed file) block Phase 6.
 
 ### Severity handling
 
@@ -835,6 +839,19 @@ Design token compliance, component adoption rate, empty state coverage. Static a
 **File**: `.claude/skills/accessibility-audit/SKILL.md` | **Tier**: M, L
 
 Unified accessibility surface. Three modes: `static` (A1-A8 grep-based patterns: aria-label on icon buttons, positive tabindex, outline-none regression, img alt, form labels, focus ring size, onClick on non-interactive, nav keyboard access); `full` (adds APCA contrast probes C1-C3 via Playwright); `wcag` (adds axe-core 4.9.1 scan with wcag2a/aa + wcag21aa + wcag22aa tags). Backlog prefix: `A11Y-`. Requires `hasFrontend=true`.
+
+#### /test-audit
+
+**File**: `.claude/skills/test-audit/SKILL.md` | **Tier**: M, L
+
+Static test-suite quality audit. No live re-runs, no CI-history parsing - parses coverage reports already produced by the project's test runner. Stack-aware across all 11 supported stacks.
+
+Checks:
+- **Coverage (C1-C3)**: auto-detects and parses lcov.info (node-ts/node-js/rust), Istanbul JSON (coverage-summary.json/coverage-final.json), Cobertura XML (python/java/dotnet), go coverage.out, tarpaulin JSON, xcresult (swift, optional). Severity: `< 50%` = High, `< 80%` = Medium, `0% on a file changed in this block` = Critical.
+- **Pyramid (P1-P3)**: categorizes discovered tests as unit / integration / e2e by path convention and framework imports (`@playwright/test`, `cypress`, `detox`, `selenium`). Target ~70/20/10. Flags inverted (e2e > 30%), middle-heavy (integration > 50%), and single-layer suites.
+- **Anti-patterns (T1-T8, all stack-adapted)**: T1 `.only`/`fit`/`fdescribe` committed (Critical), T2 skipped tests (Medium; High if > 10% of suite), T3 `.todo` placeholders (Low), T4 empty test bodies (High), T5 tests without assertions (High), T6 hardcoded sleeps ≥ 500ms (Medium), T7 debug output left in tests (Low), T8 multi-file `.only` pattern (Critical).
+
+Universal gating: installed on every Tier M/L project regardless of feature flags (no `requires`). Backlog prefix: `TEST-`. Flaky-test detection and live re-run analysis are deferred - v1 is static-only.
 
 #### /simplify
 
