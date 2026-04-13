@@ -226,9 +226,12 @@ function getSkillsSummary(config) {
   }
 
   if (config.hasDatabase !== false) {
-    included.push('skill-db');
+    included.push('skill-db', 'migration-audit');
   } else {
-    skipped.push({ name: 'skill-db', reason: 'no database' });
+    skipped.push(
+      { name: 'skill-db', reason: 'no database' },
+      { name: 'migration-audit', reason: 'no database' },
+    );
   }
 
   const isNative = NATIVE_STACKS.includes(config.techStack);
@@ -236,7 +239,7 @@ function getSkillsSummary(config) {
   if (config.hasFrontend !== false) {
     if (!isNative) included.push('responsive-audit');
     else skipped.push({ name: 'responsive-audit', reason: 'native UI' });
-    included.push('visual-audit', 'ux-audit');
+    included.push('visual-audit', 'ux-audit', 'accessibility-audit');
     if (config.hasDesignSystem !== false) {
       included.push('ui-audit');
     } else {
@@ -248,6 +251,7 @@ function getSkillsSummary(config) {
       { name: 'visual-audit', reason: 'no UI' },
       { name: 'ux-audit', reason: 'no UI' },
       { name: 'ui-audit', reason: 'no UI' },
+      { name: 'accessibility-audit', reason: 'no UI' },
     );
   }
 

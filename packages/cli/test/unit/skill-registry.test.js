@@ -23,8 +23,8 @@ describe('NATIVE_STACKS', () => {
 // ---------------------------------------------------------------------------
 
 describe('SKILL_REGISTRY', () => {
-  it('has 15 entries', () => {
-    assert.equal(SKILL_REGISTRY.length, 15);
+  it('has 16 entries', () => {
+    assert.equal(SKILL_REGISTRY.length, 16);
   });
 
   it('every entry has required fields', () => {
@@ -72,12 +72,13 @@ describe('getSkillsToRemove', () => {
     assert.equal(result.length, 2);
   });
 
-  it('hasFrontend=false removes all 4 frontend skills', () => {
+  it('hasFrontend=false removes all 5 frontend skills', () => {
     const result = getSkillsToRemove({ techStack: 'node-ts', hasFrontend: false });
     assert.ok(result.includes('responsive-audit'));
     assert.ok(result.includes('visual-audit'));
     assert.ok(result.includes('ux-audit'));
     assert.ok(result.includes('ui-audit'));
+    assert.ok(result.includes('accessibility-audit'));
   });
 
   it('native stack removes responsive-audit but keeps visual and ux', () => {
@@ -101,6 +102,7 @@ describe('getSkillsToRemove', () => {
     assert.ok(result.includes('visual-audit'));
     assert.ok(result.includes('ux-audit'));
     assert.ok(result.includes('ui-audit'));
+    assert.ok(result.includes('accessibility-audit'));
     assert.ok(!result.includes('perf-audit'));
     assert.ok(!result.includes('skill-dev'));
   });
@@ -164,6 +166,7 @@ describe('getActiveSkills', () => {
     assert.ok(result.includes('visual-audit'));
     assert.ok(result.includes('ux-audit'));
     assert.ok(result.includes('ui-audit'));
+    assert.ok(result.includes('accessibility-audit'));
   });
 
   it('tier M hasDatabase=false excludes migration-audit', () => {
@@ -189,6 +192,22 @@ describe('getActiveSkills', () => {
     assert.ok(!result.includes('visual-audit'));
     assert.ok(!result.includes('ux-audit'));
     assert.ok(!result.includes('ui-audit'));
+    assert.ok(!result.includes('accessibility-audit'));
+  });
+
+  it('tier M hasFrontend=true includes accessibility-audit', () => {
+    const result = getActiveSkills({ tier: 'm', hasFrontend: true });
+    assert.ok(result.includes('accessibility-audit'));
+  });
+
+  it('tier S excludes accessibility-audit (minTier m)', () => {
+    const result = getActiveSkills({ tier: 's', hasFrontend: true });
+    assert.ok(!result.includes('accessibility-audit'));
+  });
+
+  it('tier L hasFrontend=true includes accessibility-audit', () => {
+    const result = getActiveSkills({ tier: 'l', hasFrontend: true });
+    assert.ok(result.includes('accessibility-audit'));
   });
 
   it('tier M hasDesignSystem=false excludes ui-audit but keeps other frontend', () => {
@@ -239,9 +258,10 @@ describe('getCheatsheetSkillsToRemove', () => {
     assert.equal(result.length, 2);
   });
 
-  it('only returns skills that have cheatsheet=true', () => {
+  it('hasFrontend=false removes accessibility-audit from cheatsheet (only frontend skill with cheatsheet=true)', () => {
     const result = getCheatsheetSkillsToRemove({ techStack: 'node-ts', hasFrontend: false });
-    // frontend skills have cheatsheet: false, so none returned
-    assert.equal(result.length, 0);
+    // Frontend skills with cheatsheet=false (responsive/visual/ux/ui-audit) are not returned;
+    // accessibility-audit has cheatsheet=true and requires hasFrontend → returned.
+    assert.deepEqual(result, ['accessibility-audit']);
   });
 });

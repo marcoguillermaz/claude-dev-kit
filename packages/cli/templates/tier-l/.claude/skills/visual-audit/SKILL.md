@@ -1,12 +1,14 @@
 ---
 name: visual-audit
-description: Visual audit: typography, spacing, colour discipline, dark-mode polish, contrast, info density. Scores pages on 11 dimensions via Playwright screenshots.
+description: Visual audit - typography, spacing, colour discipline, dark-mode polish, info density. Scores pages on 10 aesthetic dimensions via Playwright screenshots.
 user-invocable: true
 model: opus
 context: fork
 argument-hint: [quick|full] [target:page:<route>|target:role:<role>|target:section:<section>]
 allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_evaluate
 ---
+
+**Scope boundary**: this skill covers aesthetic quality only. Accessibility contrast (APCA measurement, WCAG contrast thresholds, axe-core scan) lives in `/accessibility-audit` — run it for any contrast or accessibility concern. Design-token compliance → `/ui-audit`. Viewport fit → `/responsive-audit`.
 
 ## Step 0 — Mode + target detection
 
@@ -70,10 +72,9 @@ Apply these 11 dimensions to every screenshot captured.
 | **V1** | Typographic hierarchy | H1 vs body weight contrast; label vs value distinction; font size spread; muted-foreground on secondary text. **Quantitative anchor**: ≤ 5 distinct font sizes in use (from computed check); 2 font weights (semibold for headings, regular for body). Flag if computed check reveals > 5 sizes. | ≥ 4 |
 | **V2** | Spatial rhythm | Consistent padding inside similar components; visual breathing room; margin harmony between sections; card internal padding uniformity. **Quantitative anchor**: padding values should be multiples of 4px (8px preferred). Flag non-grid values (14px, 6px, 10px) from the 3-element spot check in computed checks. | ≥ 4 |
 | **V3** | Visual focal point | Primary CTA is the most prominent element; user's eye is guided to the most important content; no competing elements of equal weight | ≥ 4 |
-| **V4** | Colour discipline | Brand colour used sparingly and intentionally; status colours follow semantic convention (green=done, amber=pending, red=destructive); no arbitrary colour decoration; `bg-brand` reserved for primary CTAs not row-level buttons. **APCA anchors** (source: APCA/WCAG 3 working draft): body text on card background should achieve APCA Lc ≥ 60 equivalent; label/muted text ≥ Lc 45 for large font sizes; non-text contrast (borders, icons) ≥ Lc 15. Evaluate in both themes. | ≥ 4 |
+| **V4** | Colour discipline | Brand colour used sparingly and intentionally; status colours follow semantic convention (green=done, amber=pending, red=destructive); no arbitrary colour decoration; `bg-brand` reserved for primary CTAs not row-level buttons. Evaluate in both themes. *(Contrast thresholds moved to `/accessibility-audit` C1-C3.)* | ≥ 4 |
 | **V5** | Information density | Appropriate density for the page type (list = dense, form = airy); tables scannable at a glance; no cognitive overload; no empty visual regions | ≥ 3 |
 | **V7** | Micro-polish | Hover/focus states visible; transitions not jarring; empty states and skeletons look professional; icon–text alignment clean; status badges correct size relative to surrounding text. **Timing anchor**: transitions < 100ms are imperceptible (no feedback value); > 400ms feels sluggish. Flag when computed check reveals out-of-range transition durations on interactive elements. | ≥ 3 |
-| **V8** | Contrast & legibility | Computed contrast ratios for key text elements against their backgrounds in both light and dark themes. References APCA thresholds: Lc 75 preferred for body text, Lc 60 minimum, Lc 45 for large/label text, Lc 15 for non-text (borders, icons). Specifically checks `text-muted-foreground` on `bg-card` — a common silent failure in dark mode. Uses computed style values from browser_evaluate. | ≥ 4 |
 | **V9** | Gestalt compliance | Evaluate 4 Gestalt principles: (1) **Proximity** — related elements grouped with tighter spacing than unrelated ones; flag if label↔value gap ≥ gap between distinct sections; (2) **Figure/ground** — content distinguishable from chrome without effort; flag dark mode text indistinguishable from bg; (3) **Similarity** — components with same function look the same cross-section; flag Badge same state with different colour/size on different pages; (4) **Continuity** — lists, columns, card grids guide the eye linearly; flag variable card sizes or inconsistent column widths. **Score anchors**: 5 = all 4 respected; 3 = 1-2 localised violations; 1 = disorienting layout. | ≥ 4 |
 | **V10** | Typographic quality | From code inspection + computed check: flag `lineHeight/fontSize` ratio < 1.4 or > 1.8 on body/label text; flag negative `letterSpacing` on font < 14px; flag paragraph or td width > 680px (≈75 chars). **Score anchors**: 5 = all in range; 3 = 1 value out of range; 1 = text in conditions that impair legibility. | ≥ 4 |
 | **V11** | Interaction state design | From code inspection (Step 5a) + screenshots: for every interactive element, verify: (1) hover — bg change ≥ 10 lightness points or border appearance; (2) focus-visible — ring visible on all backgrounds including bg-brand contexts; (3) active/pressed — visually distinct from hover; (4) disabled — desaturated colour + opacity, not just opacity; (5) loading skeleton — shape matches expected content layout. **Score anchors**: 5 = all 5 states designed; 3 = 2-3 states absent or indistinguishable; 1 = no interaction feedback. | ≥ 3 |
@@ -82,7 +83,7 @@ Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** =
 
 **Scoring rules:**
 - Score 1–2 on any dimension → Critical finding
-- Score 3 on V1, V3, V4, V8, V9, V10 → Major finding (highest visual and accessibility impact)
+- Score 3 on V1, V3, V4, V9, V10 → Major finding (highest visual impact)
 - Score 3 on V2, V5, V6, V7, V11 → Minor finding
 - Write one concrete, actionable observation per dimension per page (not just a number)
 - **Never write a vague observation like "good overall"** — every line must name what specifically works or what specifically is wrong
@@ -198,40 +199,22 @@ For each page in roster:
      .filter(d => d && d !== '0s')
      .map(d => parseFloat(d) * 1000); // convert to ms
 
-   // Contrast spot check — text-muted-foreground on bg-card (light mode)
-   const mutedEl = document.querySelector('[class*="muted-foreground"]');
-   const mutedColor = mutedEl ? getComputedStyle(mutedEl).color : null;
-   const cardBg = card ? getComputedStyle(card).backgroundColor : null;
-
    return {
      fontSizeCount: fontSizes.length,
      fontSizes,
      paddingSpotCheck: paddings,
      paddingMisaligned: misaligned,
      transitionCount: transitions.length,
-     transitionsOutOfRange: transitions.filter(ms => ms > 0 && (ms < 100 || ms > 400)),
-     mutedForegroundColor: mutedColor,
-     cardBackgroundColor: cardBg
+     transitionsOutOfRange: transitions.filter(ms => ms > 0 && (ms < 100 || ms > 400))
    };
    ```
-   Record results. Use to inform V1 (font scale), V2 (padding spot-check + misaligned), V7 (transition timing), V8 (contrast).
+   Record results. Use to inform V1 (font scale), V2 (padding spot-check + misaligned), V7 (transition timing). *(Contrast measurement moved to `/accessibility-audit` Step 3.)*
 
 7. **Light mode screenshot**: ensure sidebar theme toggle shows "Light mode" (click to switch if needed)
 
-8. **Dark mode**: click sidebar theme toggle → `browser_wait_for` 500ms
-   - Run the contrast portion of computed checks again in dark mode:
-     ```js
-     const mutedEl = document.querySelector('[class*="muted-foreground"]');
-     const card = document.querySelector('[data-slot="card"], [class*="rounded"][class*="border"], main > div');
-     return {
-       mutedForegroundColor: mutedEl ? getComputedStyle(mutedEl).color : null,
-       cardBackgroundColor: card ? getComputedStyle(card).backgroundColor : null,
-       bodyColor: getComputedStyle(document.body).color,
-       bodyBg: getComputedStyle(document.body).backgroundColor
-     };
-     ```
+8. **Dark mode**: click sidebar theme toggle → `browser_wait_for` 500ms → capture screenshot. *(Dark-mode contrast measurement moved to `/accessibility-audit`.)*
 
-9. **Immediately analyse** both screenshots + computed data against V1–V8 using the code context from Step 5a
+9. **Immediately analyse** both screenshots + computed data against V1-V7, V9-V11 using the code context from Step 5a
 
 > Do not batch all screenshots then analyse. Analyse immediately after each pair — avoids context overload and produces sharper observations.
 
@@ -256,26 +239,21 @@ For each page, produce:
 - Font sizes: [N distinct values — list]
 - Padding spot-check: [{tag: tagName, pad: Npx}] · Misaligned: [list or "none"]
 - Transitions out of range: [list ms values, or "none"]
-- Muted foreground (light): [rgb value]
-- Card background (light): [rgb value]
-- Muted foreground (dark): [rgb value]
-- Card background (dark): [rgb value]
 
 | Dim | Score | Observation | Action needed |
 |---|---|---|---|
 | V1 Typographic hierarchy | N/5 | [specific observation — reference fontSizeCount from computed data] | [fix or "none"] |
 | V2 Spatial rhythm | N/5 | [specific observation — reference paddingMisaligned from computed data] | [fix or "none"] |
 | V3 Visual focal point | N/5 | [specific observation] | [fix or "none"] |
-| V4 Colour discipline | N/5 | [specific observation — note if bg-brand on row buttons; note APCA-level concern if muted text appears low-contrast] | [fix or "none"] |
+| V4 Colour discipline | N/5 | [specific observation — note if bg-brand on row buttons] | [fix or "none"] |
 | V5 Information density | N/5 | [specific observation] | [fix or "none"] |
 | V6 Dark-mode polish | N/5 | [specific observation from dark screenshot — reference score anchors; note OKLCH hue shifts, washed-out tones, badge legibility] | [fix or "none"] |
 | V7 Micro-polish | N/5 | [specific observation — reference transitionsOutOfRange; note empty state CTA quality from Step 5a] | [fix or "none"] |
-| V8 Contrast & legibility | N/5 | [specific observation — reference computed muted/card color pairs for both themes; flag if muted text appears to fall below Lc 45 anchor] | [fix or "none"] |
 | V9 Gestalt compliance | N/5 | [proximity grouping, figure/ground distinction, similarity across sections, continuity of lists/grids — specific observation] | [fix or "none"] |
 | V10 Typographic quality | N/5 | [line-height ratio, letter-spacing on small fonts, line length on text/td — reference computed data if available] | [fix or "none"] |
 | V11 Interaction state design | N/5 | [hover/focus/active/disabled/loading states — reference code inspection from Step 5a] | [fix or "none"] |
 
-**Page score**: [sum]/55 — [label: Excellent ≥44 | Good 33–43 | Needs work 22–32 | Poor <22]
+**Page score**: [sum]/50 — [label: Excellent ≥40 | Good 30-39 | Needs work 20-29 | Poor <20]
 **Critical findings on this page**: [list or "none"]
 ```
 
@@ -289,11 +267,10 @@ After all pages, identify:
 2. **Best-in-class pages**: the 2 pages with highest scores → what patterns make them work?
 3. **Worst offenders**: the 2 pages with lowest scores → highest ROI for improvement
 4. **Theme gap**: average V6 score vs average of V1–V5 → if V6 is ≥ 1 point lower, dark mode needs dedicated attention
-5. **Contrast gap**: average V8 score vs V6 → if V8 is lower in dark mode, OKLCH conversion or token values need review
-6. **Typography discipline**: pages where fontSizeCount > 5 → systemic type scale violation; pages where V10 scores ≤ 3 → line-height or line-length issues
-7. **Gestalt patterns**: pages where V9 scores ≤ 3 → proximity or similarity violations across sections
-8. **Interaction debt**: pages where V11 scores ≤ 3 → missing hover/focus/loading states (cross-reference with V7)
-9. **Code pattern violations**: list any systematic code patterns observed across pages that cause visual problems (e.g., "bg-brand on row buttons appears on 4 pages: [list]")
+5. **Typography discipline**: pages where fontSizeCount > 5 → systemic type scale violation; pages where V10 scores ≤ 3 → line-height or line-length issues
+6. **Gestalt patterns**: pages where V9 scores ≤ 3 → proximity or similarity violations across sections
+7. **Interaction debt**: pages where V11 scores ≤ 3 → missing hover/focus/loading states (cross-reference with V7)
+8. **Code pattern violations**: list any systematic code patterns observed across pages that cause visual problems (e.g., "bg-brand on row buttons appears on 4 pages: [list]")
 
 ---
 
@@ -302,8 +279,8 @@ After all pages, identify:
 ```
 ## Visual Audit — [DATE] — [MODE] — [TARGET]
 ### Reference: docs/sitemap.md · app/globals.css · app/themes.css
-### Scope: aesthetic quality · typography · spacing · visual hierarchy · colour · dark mode · polish · contrast
-### Out of scope: token compliance → /ui-audit | UX flows → /ux-audit | Responsiveness → /responsive-audit
+### Scope: aesthetic quality · typography · spacing · visual hierarchy · colour · dark mode · polish
+### Out of scope: token compliance → /ui-audit | Accessibility + contrast → /accessibility-audit | UX flows → /ux-audit | Responsiveness → /responsive-audit
 
 ---
 
@@ -318,7 +295,6 @@ After all pages, identify:
 | V5 Information density | N.N/5 | ↑/→/↓ |
 | V6 Dark-mode polish | N.N/5 | ↑/→/↓ |
 | V7 Micro-polish | N.N/5 | ↑/→/↓ |
-| V8 Contrast & legibility | N.N/5 | ↑/→/↓ |
 | V9 Gestalt compliance | N.N/5 | ↑/→/↓ |
 | V10 Typographic quality | N.N/5 | ↑/→/↓ |
 | V11 Interaction state design | N.N/5 | ↑/→/↓ |
@@ -330,7 +306,7 @@ After all pages, identify:
 
 | Page | Route | Score | Weakest dim | Critical? |
 |---|---|---|---|---|
-| P01 Login | /login | N/55 | V[N] | yes/no |
+| P01 Login | /login | N/50 | V[N] | yes/no |
 ...
 
 ---
@@ -379,8 +355,8 @@ Critical first, then by impact (pages affected × dimension weight):
 
 ### Worst offenders (highest ROI)
 
-1. [Page]: score N/55 — [top 3 fixes that would most improve it]
-2. [Page]: score N/55 — [top 3 fixes]
+1. [Page]: score N/50 — [top 3 fixes that would most improve it]
+2. [Page]: score N/50 — [top 3 fixes]
 ```
 
 ---
@@ -395,8 +371,9 @@ After the report:
 > - **Mockup standalone**: invocare `/frontend-design` per generare un'alternativa migliorata (HTML standalone, fedele ai token del progetto)
 > - **Fix mirato**: applicare direttamente i miglioramenti che non richiedono decisioni di design (es. spaziatura padding, pesi tipografici, token mancanti)
 > - **Dark mode pass**: concentrarmi esclusivamente sul miglioramento del tema scuro su tutte le pagine
-> - **Contrast pass**: verificare e correggere i valori token per `text-muted-foreground` e `border-border` su entrambi i temi alla luce dei risultati V8
-> - **Gestalt pass**: analisi approfondita V9 su tutte le pagine con fix concreti per proximity e similarity violations"
+> - **Gestalt pass**: analisi approfondita V9 su tutte le pagine con fix concreti per proximity e similarity violations
+
+For contrast verification and axe-core WCAG coverage, run `/accessibility-audit` separately — it owns both APCA measurement and the full WCAG 2.2 scan."
 
 **Do NOT apply visual changes without confirmation.** Many of the fixes touch spacing and typography — they affect multiple components and require design decision, not just code.
 
@@ -415,8 +392,7 @@ Run this unconditionally at session end — screenshots are only needed during a
 ## Notes for interpretation
 
 - **V4 brand colour overuse**: if `bg-brand` appears on row-level buttons (not just primary CTAs), flag it even if each individual use seems minor. This is a PERMANENT RULE violation.
-- **V8 computed contrast is indicative, not definitive**: `getComputedStyle` returns resolved CSS values but does not compute APCA Lc scores directly. Use the colour values as evidence to support or flag concerns — the final contrast verdict is qualitative based on what's visible in the screenshot combined with the computed colours.
 - **V7 micro-polish on mobile**: not in scope for this skill — use `/responsive-audit` for that.
 - **Screenshots must be analysed fresh** — do not rely on memory from previous sessions. If a screenshot shows unexpected content (wrong role, empty state when data expected), note it and analyse what's visible.
 - **Preflight failures**: if more than 2 pages fail preflight, stop and report the issue before continuing — likely a dev server or auth problem, not a page-specific issue.
-- **Score denominator is /55** (11 dimensions × 5) — update any stored baselines accordingly.
+- **Score denominator is /50** (10 dimensions × 5). Bucket labels: Excellent ≥40 | Good 30-39 | Needs work 20-29 | Poor <20. Previous /55 baseline is no longer comparable — contrast is now scored by `/accessibility-audit`.

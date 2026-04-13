@@ -177,11 +177,12 @@ If either condition is false: **skip this phase and state so explicitly** — do
 ## Phase 5d — Block-scoped quality audit *(blocks with UI or API changes)*
 
 **Track A — UI audit** *(if block adds/modifies UI routes or components)*
-- Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, accessibility, empty states).
+- Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, empty states).
+- Run `/accessibility-audit` scoped to the block's new/modified routes (axe-core WCAG 2.2, APCA contrast, static a11y patterns).
 - Run `/visual-audit` scoped to the block's new/modified pages (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish).
 - Run `/ux-audit` scoped to the block's user flows (task completion, feedback clarity, cognitive load).
 - Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
-- **Execution order**: `/ui-audit` is static — launch it concurrently with the first Playwright-based skill. Then: `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the Playwright session).
+- **Execution order**: `/ui-audit` is static — launch it concurrently with the first Playwright-based skill. Then: `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the Playwright session).
 
 **Track B — API/DB audit** *(if block creates/modifies API routes or applies migrations — static analysis, no dev server needed)*
 - Run `/security-audit` if the block creates or modifies any API route.
@@ -192,7 +193,7 @@ If either condition is false: **skip this phase and state so explicitly** — do
 **Severity handling — both tracks**:
 - **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
 - **Major**: flag in Phase 6 checklist with planned resolution sprint.
-- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `UX-`).
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `MIG-`, `A11Y-`, `DEV-`, `UX-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP

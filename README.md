@@ -46,7 +46,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 13 audit skills
+### 14 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -61,10 +61,11 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/api-design` | M L | URL naming, HTTP verbs, response envelope, pagination. |
 | `/skill-db` | M L | Schema normalization, indexes, N+1 queries, RLS. |
 | `/migration-audit` | M L | Stack-aware migration safety: data loss, rollback, lock-heavy DDL. Prisma/Drizzle/Supabase/SQL. |
-| `/visual-audit` | M L | Typography, APCA contrast, spacing, dark-mode. |
+| `/visual-audit` | M L | Typography, spacing, hierarchy, dark-mode, micro-polish. |
 | `/ux-audit` | M L | ISO 9241-11, Nielsen heuristics, user confidence. |
 | `/responsive-audit` | M L | Layout at 320-1024px, tap targets, WCAG. |
-| `/ui-audit` | M L | Design token compliance, component adoption, accessibility. |
+| `/ui-audit` | M L | Design token compliance, component adoption, empty states. |
+| `/accessibility-audit` | M L | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels). |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
 

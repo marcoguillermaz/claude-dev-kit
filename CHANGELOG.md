@@ -10,6 +10,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased] — v1.9.1
 
 ### Added
+- `/accessibility-audit` skill (Tier M/L, `hasFrontend=true`) - unified accessibility surface. Three modes: `static` (A1-A8 grep patterns: aria-label on icon buttons, positive tabindex, outline-none regression, img alt, form labels, focus ring size, onClick on non-interactive, nav keyboard access); `full` (adds APCA contrast probes C1-C3 via Playwright, both themes); `wcag` (adds axe-core 4.9.1 scan with `wcag2a + wcag2aa + wcag21aa + wcag22aa` tags, plus `best-practice`). Backlog prefix `A11Y-`. Pipeline Phase 5d Track A execution order: `/ui-audit` (static, concurrent) → `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` (#60)
 - `/migration-audit` skill (Tier M/L, `hasDatabase=true`) - stack-aware static analysis of migration files. Detects Prisma, Drizzle, Supabase CLI, raw SQL; Rails/Django/Alembic/Flyway detected but pending support. 8 check families (M1-M8): lock-heavy DDL, missing rollback, unsafe backfills, constraint sequencing, data loss, unsafe type changes, unindexed FKs, ordering integrity. Backlog prefix `MIG-`. Pipeline Phase 5d Track B now runs `/migration-audit` when migrations are applied (#59)
 - `new skill` command - interactive wizard to scaffold custom skills with valid frontmatter, test fixture, and CLAUDE.md registration (#55)
 - `claudemd-update.js` shared utility - extracted CLAUDE.md Active Skills registration for reuse across commands
@@ -32,6 +33,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Doctor check #18 fix message now suggests correct value (`"timeout": 300`)
 
 ### Changed
+- `/ui-audit` scope narrowed to design-system compliance only. Extracted to `/accessibility-audit`: CHECK 11 (icon-only aria-label), CHECK 13 (positive tabindex), CHECK 14 (outline-none), CHECK 16 (img alt), CHECK 17 (form labels), S4 (nav keyboard), S6 (focus ring), S7 (onClick non-interactive), and Step 4 (axe-core WCAG scan). `/ui-audit` is now static-only (no Playwright). Check numbering preserves gaps to avoid breaking external references (#60)
+- `/visual-audit` narrowed from 11 to 10 dimensions. V8 (Contrast & legibility) and APCA Lc anchors in V4 extracted to `/accessibility-audit` (C1-C3). Page score denominator changed from `/55` to `/50`; bucket thresholds recalibrated proportionally (Excellent ≥40 / Good 30-39 / Needs work 20-29 / Poor <20). Scoring rules updated: `Score 3 on V1/V3/V4/V9/V10 → Major` (V8 removed) (#60)
 - `/skill-db` scope narrowed to live SQL verification (schema quality S1-S6 + N+1 query patterns Q1-Q3). Migration file analysis extracted to `/migration-audit` - single source of truth for migration safety across all database stacks. Pipeline Phase 5d Track B splits migration audit (`/migration-audit`) from schema audit (`/skill-db`). Affects projects invoking `/skill-db` for migration checks (#59)
 - Agents converted to on-demand skills: `dependency-scanner` → `/dependency-scan`, `context-reviewer` → `/context-review` — eliminates `.claude/agents/` directory from all templates (#62)
 - `pruneSkills()` rewritten from 37 to 5 lines (delegates to skill registry)
