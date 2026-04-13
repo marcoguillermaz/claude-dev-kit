@@ -1,18 +1,18 @@
 ---
 name: ui-audit
-description: Audit UI for design token compliance, component adoption, and accessibility via axe-core. Static mode analyzes code without a server; full mode runs browser checks on live pages.
+description: Audit UI for design token compliance and component adoption. Static grep-based analysis against the sitemap's page and component files.
 user-invocable: true
 model: sonnet
 context: fork
 argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: mcp__playwright__browser_navigate, mcp__playwright__browser_evaluate
+allowed-tools: Read, Glob, Grep
 ---
 
 **Critical constraint**: `docs/sitemap.md` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form `grep -r` across all of `app/` or `components/` — scope every check to the files listed in the sitemap.
 
-**Two execution modes**:
-- **Static mode** (dev server not running): Steps 1–3 only. Can run concurrently with Playwright-based skills per pipeline.md.
-- **Full mode** (dev server running): Steps 1–4 including axe-core browser scan. Must run sequentially (Playwright MCP session shared).
+**Scope boundary**: this skill covers design-token compliance and component adoption only. Accessibility (aria, tabindex, focus, labels, axe-core WCAG scan, APCA contrast) lives in `/accessibility-audit` — run it alongside `/ui-audit` for any UI change.
+
+Static-only skill — no dev server required. Can run concurrently with Playwright-based skills per pipeline.md.
 
 ---
 
@@ -52,7 +52,7 @@ Launch a **single Explore subagent** (model: haiku) with the following instructi
 
 ### Instructions for the Explore agent:
 
-"Run all 17 checks below. For each check: report the total match count, list every match as `file:line — excerpt`, and state PASS (0 matches) or FAIL (N matches). If a check returns 0 matches, explicitly state '0 matches — PASS'. Do not skip any check.
+"Run all 12 checks below (numbering preserves gaps — checks 11, 13, 14, 16, 17 moved to `/accessibility-audit`). For each check: report the total match count, list every match as `file:line — excerpt`, and state PASS (0 matches) or FAIL (N matches). If a check returns 0 matches, explicitly state '0 matches — PASS'. Do not skip any check.
 
 File scope: use ONLY the page files and component files provided. Do not search outside this list.
 
@@ -110,42 +110,25 @@ Additionally: find any `<Table` element lines that contain neither `w-auto` nor 
 Flag: any `<Table` with `w-full`, and any `<Table` with no explicit width class.
 Expected: 0 matches. `<Table>` must always have `w-auto`.
 
-**CHECK 11 — Icon-only buttons missing aria-label** [Severity: Critical]
-Pattern: lines containing `size="icon"` or `size={'icon'}` that do NOT also contain `aria-label`
-Method: grep for `size="icon"|size=\{'icon'\}`, then filter to keep only lines that do NOT contain `aria-label`.
-Also check: `IconButton` and `Button` with only an icon child (no visible text) — grep for `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*{[^}]*Icon` without `aria-label` on the same or preceding line.
-Expected: 0 matches. Icon-only buttons must always have aria-label.
+**CHECK 11** — moved to `/accessibility-audit` as A1 (icon-only buttons missing aria-label).
 
 **CHECK 12 — overflow-x-auto on table wrappers (PERMANENT RULE violation)** [Severity: Critical]
 Pattern: `overflow-x-auto`
 Exclude: lines containing `<pre`, `<code`, `// `, `{/*`
 Expected: 0 matches in non-pre containers. Table wrappers must use `overflow-hidden`, not `overflow-x-auto`.
 
-**CHECK 13 — Positive tabindex (WCAG 2.4.3 violation)** [Severity: Critical]
-Pattern: `tabIndex=[1-9]|tabindex="[1-9]`
-Exclude: lines with `//`, `{/*`
-Expected: 0 matches. Positive tabindex breaks natural tab order. Only `tabIndex={0}` or `tabIndex={-1}` are valid.
+**CHECK 13** — moved to `/accessibility-audit` as A2 (positive tabindex, WCAG 2.4.3).
 
-**CHECK 14 — outline-none without focus ring (Tailwind v4 forced-color regression)** [Severity: High]
-Pattern: lines containing `outline-none` that do NOT also contain at least one of: `focus-visible:ring`, `focus:ring`, `focus-visible:outline`, `focus:outline`
-Method: grep for `outline-none`, then filter out lines that also contain any of the above focus restoration patterns.
-Expected: 0 matches. In Tailwind v4, `outline-none` strips the focus indicator in forced-color / high-contrast mode. Replace with `outline-hidden` for decorative suppression, or add explicit `focus-visible:ring-*` compensation.
+**CHECK 14** — moved to `/accessibility-audit` as A3 (outline-none without focus-ring compensation).
 
 **CHECK 15 — Deprecated opacity utility syntax (Tailwind v4 breaking change)** [Severity: High]
 Pattern: `bg-opacity-|text-opacity-|border-opacity-|divide-opacity-|placeholder-opacity-|ring-opacity-`
 Exclude: lines with `//`, `{/*`
 Expected: 0 matches. Tailwind v4 removed these utilities. Use slash syntax: `bg-black/50`, `text-foreground/80`, etc.
 
-**CHECK 16 — Native <img> tag (use Next.js <Image>)** [Severity: Medium]
-Pattern: `<img\s`
-Exclude: lines containing `//`, `{/*`, `alt=`, `.svg`, `data:`, `role="presentation"`
-Flag: any `<img` that does not appear to be a decorative/SVG use.
-Expected: 0 matches. All raster images must use `<Image>` from `next/image` for optimization and LCP.
+**CHECK 16** — moved to `/accessibility-audit` as A4 (native `<img>` without alt).
 
-**CHECK 17 — Form inputs without accessible labels** [Severity: Critical]
-Method: for each match, check within ±5 lines for a `<Label` containing `htmlFor` matching the input's `id`. If no `<Label htmlFor` and no `aria-label`/`aria-labelledby` on the component line: flag it.
-Note: inputs inside `<FormField>` (react-hook-form pattern) with a sibling `<FormLabel>` are valid — exclude lines inside a `<FormField>` wrapper.
-Expected: 0 matches. Every form control must have an accessible name."
+**CHECK 17** — moved to `/accessibility-audit` as A5 (form inputs without accessible labels)."
 
 ---
 
@@ -165,27 +148,15 @@ Read `components/Sidebar.tsx` lines containing "Esci" or "sign" or "red".
 Verify: uses `bg-destructive` (semantic) not `bg-red-600` (hardcoded).
 Expected: `bg-destructive hover:bg-destructive/90`.
 
-**S4 — Responsive sidebar trigger accessibility**
-Read `app/(app)/layout.tsx`.
-Verify: SidebarTrigger is reachable on BOTH mobile (in mobile header) and desktop (always accessible, not hidden when sidebar is open).
-Flag if trigger is inside an `md:hidden` wrapper with no desktop alternative.
+**S4** — moved to `/accessibility-audit` as A8 (sidebar/nav trigger keyboard accessibility).
 
 **S5 — w-fit on table container wrappers**
 For each file in scope that contains `<Table`, check whether its immediate parent container (Card, div) uses `w-fit`. Files that contain `<Table` but no `w-fit` anywhere → flag.
 Expected: all table wrappers use `w-fit` or `w-auto`.
 
-**S6 — Tailwind v4 bare `ring` on focus styles**
-Grep the scoped files for `focus:ring[^-]|focus-visible:ring[^-]` (bare `ring` without an explicit size modifier like `ring-2`).
-In Tailwind v4, the default `ring` changed from 3px to 1px. A bare `focus-visible:ring` that was relying on the 3px default is now too thin to meet WCAG 1.4.11 (3:1 non-text contrast for focus indicators).
-Flag any bare `ring` usage on interactive elements. Recommend `ring-2` or `ring-[3px]` explicitly.
-Severity: Medium.
+**S6** — moved to `/accessibility-audit` as A6 (bare focus ring without explicit size, WCAG 1.4.11).
 
-**S7 — onClick on non-interactive elements**
-Grep the scoped files for `<div.*onClick|<span.*onClick|<li.*onClick`.
-For each match, verify the element also has `role="button"` (or equivalent) AND `onKeyDown` (or `onKeyPress`).
-Missing either = keyboard users cannot activate the element (WCAG 2.1.1).
-Exclude: lines inside `{/* ... */}` comments, or where the element is a Radix `asChild` wrapper.
-Severity: Critical if the element is a primary action, High otherwise.
+**S7** — moved to `/accessibility-audit` as A7 (onClick on non-interactive elements, WCAG 2.1.1).
 
 **S8 — 'use client' placement depth**
 Read `app/(app)/layout.tsx`.
@@ -194,66 +165,7 @@ Severity: Medium (performance — prevents RSC streaming).
 
 ---
 
-## Step 4 — Browser accessibility scan (conditional — Playwright MCP)
-
-**First: check if dev server is reachable.**
-Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
-- If response is NOT 200 or 302: output `⚠️ Browser scan skipped — dev server not running on localhost:3000. Re-run after starting npm run dev for full axe-core coverage.` Then skip to Step 5.
-- If response is 200 or 302: proceed.
-
-**Select 3 representative pages** from the target scope (resolved from sitemap.md):
-1. The dashboard or root route (`/`)
-2. One data-list page (first `full-list` route in scope)
-3. One form/write page (first `form` or `wizard` route in scope, or a detail page with edit capability)
-
-**For each page, execute the following sequence:**
-
-```
-1. mcp__playwright__browser_navigate to http://localhost:3000/<route>
-   (If redirected to /login: read test account credentials from the "Test accounts" section
-
-2. mcp__playwright__browser_evaluate:
-   // Inject axe-core from CDN
-   await new Promise((resolve, reject) => {
-     const s = document.createElement('script');
-     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js';
-     s.onload = resolve;
-     s.onerror = reject;
-     document.head.appendChild(s);
-   });
-   // Run WCAG 2a / 2aa / 2.1aa / 2.2aa tags
-   const results = await axe.run(document, {
-     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] },
-     reporter: 'v2'
-   });
-   return {
-     violations: results.violations.map(v => ({
-       id: v.id,
-       impact: v.impact,
-       description: v.description,
-       nodes: v.nodes.length,
-       example: v.nodes[0]?.html?.slice(0, 120)
-     })),
-     passes: results.passes.length,
-     incomplete: results.incomplete.length
-   };
-```
-
-3. Record violations grouped by impact: critical → serious → moderate → minor.
-```
-
-**Severity mapping for pipeline.md**:
-- `critical` / `serious` axe violations → **Critical** (fix before Phase 6)
-- `moderate` axe violations → **High** (flag in Phase 6 checklist)
-- `minor` axe violations → **Medium** (append to `docs/refactoring-backlog.md` with `UI-[n]` prefix)
-
-**Known false-positives to suppress** (document, not fix):
-- `color-contrast` on `text-muted-foreground` within Radix Portal overlay — axe measures the portal layer, not the semantic background. Verify manually.
-- `aria-hidden-focus` inside closed Dialog/Sheet — Radix manages this via `inert` attribute in v1.1+. Verify version before flagging.
-
----
-
-## Step 5 — Produce audit report
+## Step 4 — Produce audit report
 
 Output in this exact format:
 
@@ -261,7 +173,8 @@ Output in this exact format:
 ## UI Audit — [DATE]
 ### Scope: [N] page files from sitemap.md + [N] component files
 ### Target: [FULL | target:<value>]
-### Mode: [Static | Full (axe-core scan included)]
+
+> For accessibility checks (axe-core WCAG scan, APCA contrast, aria/tabindex/label patterns), run `/accessibility-audit`.
 
 ### Grep Checks
 | # | Check | Matches | Severity | Verdict |
@@ -276,35 +189,20 @@ Output in this exact format:
 | 8 | Content status badges hardcoded | N | Medium | ✅/❌ |
 | 9 | Tab bars missing whitespace-nowrap | N | Medium | ✅/❌ |
 | 10 | Table w-full violation | N | Critical | ✅/❌ |
-| 11 | Icon buttons missing aria-label | N | Critical | ✅/❌ |
 | 12 | overflow-x-auto on table wrappers | N | Critical | ✅/❌ |
-| 13 | Positive tabindex | N | Critical | ✅/❌ |
-| 14 | outline-none without focus ring | N | High | ✅/❌ |
 | 15 | Deprecated opacity syntax | N | High | ✅/❌ |
-| 16 | Native <img> tag | N | Medium | ✅/❌ |
-| 17 | Form inputs without labels | N | Critical | ✅/❌ |
+
+*(Gaps 11, 13, 14, 16, 17 moved to `/accessibility-audit`.)*
 
 ### Supplemental Checks
 | # | Check | Verdict | Notes |
 |---|---|---|---|
 | S2 | NotificationBell placement | ✅/❌ | |
 | S3 | Sign-out semantic color | ✅/❌ | |
-| S4 | Sidebar trigger accessibility | ✅/❌ | |
 | S5 | Table container w-fit | ✅/❌ | |
-| S6 | Bare ring on focus styles | ✅/❌ | |
-| S7 | onClick on non-interactive elements | ✅/❌ | |
 | S8 | 'use client' placement depth | ✅/❌ | |
 
-### Browser Accessibility Scan (axe-core)
-[Only if Step 4 ran — otherwise: "Skipped — dev server not running"]
-| Page | Critical | Serious | Moderate | Minor | Passes |
-|---|---|---|---|---|---|
-| / | N | N | N | N | N |
-| /[list-page] | N | N | N | N | N |
-| /[form-page] | N | N | N | N | N |
-
-Top violations:
-[id — description — N nodes — example HTML]
+*(Gaps S4, S6, S7 moved to `/accessibility-audit`.)*
 
 ### ❌ Failures requiring action ([N] total — by severity)
 
@@ -323,7 +221,6 @@ Top violations:
 ### Coverage
 Page files checked: N/N from sitemap.md
 Component files checked: N
-Axe-core pages scanned: N (or: skipped)
 ```
 
 If all checks pass: output `UI Audit CLEAN — [DATE]. No violations found.`
@@ -336,5 +233,5 @@ If all checks pass: output `UI Audit CLEAN — [DATE]. No violations found.`
 - Do NOT re-read files already in context from Step 1.
 - The Explore agent in Step 2 handles all grep work. Do not duplicate searches in the main context.
 - **Pipeline integration**: for Critical findings, ask the user: "Vuoi che implementi i fix identificati?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
-- **Concurrent execution**: when invoked from pipeline.md Phase 5d, this skill runs concurrently with the first Playwright-based skill ONLY in Static mode (Step 4 skipped). If the dev server is running and Step 4 executes, the Playwright MCP session is in use — do not overlap.
-- **axe-core false positives**: document suppressed false positives explicitly in the report. Do not flag known Radix-managed patterns (inert Dialog children, Portal color-contrast measurements) as violations without manual verification.
+- **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill launches concurrently with the first Playwright-based skill. It is fully static — no dev server required.
+- **Complementary skill**: run `/accessibility-audit` alongside `/ui-audit` for any UI change. It owns axe-core WCAG 2.2 scan, APCA contrast, and the static a11y patterns formerly numbered here as CHECK 11/13/14/16/17 and S4/S6/S7.

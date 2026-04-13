@@ -40,6 +40,7 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/migration-audit` | Migration file safety: lock-heavy DDL, missing rollback, data loss, unsafe ALTER TYPE | After writing a migration, before applying to staging |
 | `/api-design` | HTTP verb correctness, URL structure, response shape, error codes, pagination | After adding 3+ new routes; quarterly |
 | `/perf-audit` | Server/client boundaries, heavy imports, serial awaits, image optimization, N+1 | Before production releases; after major UI changes |
+| `/accessibility-audit` | axe-core WCAG 2.2 scan, APCA contrast, static a11y patterns (aria, tabindex, focus, labels) | After UI changes; before compliance milestones |
 | `/simplify` | Early returns, nesting depth, local duplication, dead code, magic values | After writing code (Phase 2); on demand |
 
 > **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
