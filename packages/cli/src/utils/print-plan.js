@@ -216,7 +216,7 @@ function getSkillsSummary(config) {
   }
 
   // Tier M / L: full set with conditional pruning
-  const included = ['arch-audit', 'skill-dev', 'perf-audit', 'commit', 'security-audit'];
+  const included = ['arch-audit', 'skill-dev', 'perf-audit', 'commit', 'security-audit', 'test-audit'];
   const skipped = [];
 
   if (config.hasApi !== false) {

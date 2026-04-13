@@ -47,6 +47,7 @@ export const SKILL_REGISTRY = [
     cheatsheet: false,
   },
   { name: 'accessibility-audit', minTier: 'm', requires: { hasFrontend: true }, cheatsheet: true },
+  { name: 'test-audit', minTier: 'm', requires: {}, cheatsheet: true },
   { name: 'dependency-scan', minTier: 'm', requires: {}, cheatsheet: false },
   { name: 'context-review', minTier: 'l', requires: {}, cheatsheet: false },
 ];

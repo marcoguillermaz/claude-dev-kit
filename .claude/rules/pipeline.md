@@ -190,10 +190,14 @@ If either condition is false: **skip this phase and state so explicitly** — do
 - Run `/migration-audit` if the block applies migrations — static analysis of migration files.
 - Run `/skill-db` if the block changes the schema or adds new tables — live SQL verification of schema state, RLS policies, and query patterns.
 
-**Severity handling — both tracks**:
+**Track C — Test suite audit** *(runs for every block after Phase 3 is green — static analysis, no dev server needed)*
+- Run `/test-audit` — static analysis of coverage (auto-detects lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).
+- Output: one-paragraph summary. Critical findings (`.only` committed, 0% coverage on a file changed in this block) block Phase 6.
+
+**Severity handling — all tracks**:
 - **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
 - **Major**: flag in Phase 6 checklist with planned resolution sprint.
-- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `MIG-`, `A11Y-`, `DEV-`, `UX-`).
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `MIG-`, `A11Y-`, `DEV-`, `UX-`, `TEST-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP
