@@ -186,12 +186,13 @@ If either condition is false: **skip this phase and state so explicitly** — do
 **Track B — API/DB audit** *(if block creates/modifies API routes or applies migrations — static analysis, no dev server needed)*
 - Run `/security-audit` if the block creates or modifies any API route.
 - Run `/api-design` if the block adds new API routes. Both are static — run them concurrently.
-- Run `/skill-db` only if the block applies migrations.
+- Run `/migration-audit` if the block applies migrations — static analysis of migration files.
+- Run `/skill-db` if the block changes the schema or adds new tables — live SQL verification of schema state, RLS policies, and query patterns.
 
 **Severity handling — both tracks**:
 - **Critical**: fix before Phase 6. Do not proceed with open Critical issues.
 - **Major**: flag in Phase 6 checklist with planned resolution sprint.
-- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `DEV-`, `UX-`).
+- **Minor**: append to `docs/refactoring-backlog.md` — assign ID prefix (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `UX-`).
 - Output per skill: one-paragraph summary only.
 
 ## Phase 6 — Outcome checklist ⏸ STOP

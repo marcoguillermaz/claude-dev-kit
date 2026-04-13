@@ -300,6 +300,7 @@ async function scenarioTierS_full() {
   // Tier S must NOT have M/L-only skills
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
   assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertNotExists(dir, '.claude/skills/migration-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
 
   // Active Skills section in CLAUDE.md
@@ -410,6 +411,7 @@ async function scenarioTierM() {
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertExists(dir, '.claude/skills/migration-audit/SKILL.md');
   assertExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/simplify/SKILL.md');
@@ -457,6 +459,7 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertExists(dir, '.claude/skills/migration-audit/SKILL.md');
   assertExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/simplify/SKILL.md');
@@ -666,10 +669,11 @@ async function scenarioSkillPruning() {
   assertNotExists(dir, 'docs/sitemap.md');
   assertNotExists(dir, 'docs/db-map.md');
 
-  // Skills that must be absent (hasApi=false → api-design pruned; hasDatabase=false → skill-db pruned)
+  // Skills that must be absent (hasApi=false → api-design pruned; hasDatabase=false → skill-db + migration-audit pruned)
   assertNotExists(dir, '.claude/skills/api-design/SKILL.md');
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/skill-db/SKILL.md');
+  assertNotExists(dir, '.claude/skills/migration-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/ux-audit/SKILL.md');
@@ -1285,6 +1289,12 @@ async function scenarioCheatsheetPruning() {
     fail('cheatsheet: /skill-db row should be removed when hasDatabase=false');
   }
 
+  if (!cheat.includes('/migration-audit')) {
+    pass('cheatsheet: /migration-audit row removed (hasDatabase=false)');
+  } else {
+    fail('cheatsheet: /migration-audit row should be removed when hasDatabase=false');
+  }
+
   if (cheat.includes('/security-audit')) {
     pass('cheatsheet: /security-audit row present (stack-agnostic, not API-gated)');
   } else {
@@ -1602,6 +1612,7 @@ async function scenarioRubricScore() {
       let cheatClean = true;
       if (!hasApi && cheat.includes('/api-design')) cheatClean = false;
       if (config.hasDatabase === false && cheat.includes('/skill-db')) cheatClean = false;
+      if (config.hasDatabase === false && cheat.includes('/migration-audit')) cheatClean = false;
       if (cheatClean) {
         rubricPass('D5', `[${name}] cheatsheet has no phantom skill rows`);
       } else {

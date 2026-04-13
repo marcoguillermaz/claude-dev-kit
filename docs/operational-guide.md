@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 12 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 13 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -400,7 +400,7 @@ npx mg-claude-dev-kit add skill commit
 
 This copies the SKILL.md file into `.claude/skills/<name>/` and appends it to the `## Active Skills` section in CLAUDE.md (if that section exists). No other files are modified.
 
-Available skills (12): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`.
+Available skills (13): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`.
 
 Options:
 - `--force` - overwrite if the skill already exists
@@ -693,7 +693,7 @@ Defined in the `CLAUDE.md` template for Tier M/L. Governs how Claude handles non
 
 ## 10. Audit skills
 
-Twelve audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Thirteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 All skill applicability rules are managed by a central skill registry (`packages/cli/src/scaffold/skill-registry.js`). Each skill declares which tiers and project conditions it requires.
 
@@ -709,6 +709,7 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/simplify` | x | x | x | always | - |
 | `/api-design` | - | x | x | `hasApi=true` | - |
 | `/skill-db` | - | x | x | `hasDatabase=true` | - |
+| `/migration-audit` | - | x | x | `hasDatabase=true` | - |
 | `/responsive-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/ux-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
 | `/visual-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
@@ -716,7 +717,7 @@ All skill applicability rules are managed by a central skill registry (`packages
 
 ### General rules
 
-- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `DEV-`, `SEC-`, `UX-`).
+- Code-audit skills are **audit-only** - no code is modified (except `/simplify`, which applies changes directly). Findings go to `docs/refactoring-backlog.md` with severity-ranked IDs (`PERF-`, `API-`, `DB-`, `MIG-`, `DEV-`, `SEC-`, `UX-`).
 - Live-browser skills (`/responsive-audit`, `/ux-audit`, `/visual-audit`, `/ui-audit`) require the Playwright MCP server configured in `.claude/settings.json` and the dev server running.
 - Each skill runs in an isolated context fork (`context: fork`) - it does not pollute the main session window.
 - Each skill delegates grep-heavy scanning to a Haiku Explore subagent to protect the main context window.
@@ -731,7 +732,7 @@ After the smoke test and before the outcome checklist, two tracks run in paralle
 `/ui-audit` (static, concurrent with first Playwright skill) -> `/visual-audit` -> `/ux-audit` -> `/responsive-audit` (sequential, shared Playwright session).
 
 **Track B - API/DB** (if the block touches API routes or applies migrations):
-`/security-audit` and `/api-design` (concurrent, static); `/skill-db` (if migration applied).
+`/security-audit` and `/api-design` (concurrent, static); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables).
 
 ### Severity handling
 
@@ -782,7 +783,15 @@ Checks: cross-feature coupling (D1), duplicated lookups (D2), dead exports (D3),
 
 **File**: `.claude/skills/skill-db/SKILL.md` | **Backlog prefix**: `DB-n`
 
-Checks: schema quality (S1-S6: missing FK indexes, overly permissive access control, missing NOT NULL, wrong data types, missing ON DELETE, missing UNIQUE), N+1 query patterns (Q1-Q3), migration quality (M1-M2: destructive ops without rollback, NOT NULL without default).
+Checks: schema quality (S1-S6: missing FK indexes, overly permissive access control, missing NOT NULL, wrong data types, missing ON DELETE, missing UNIQUE), N+1 query patterns (Q1-Q3). Migration file analysis is delegated to `/migration-audit`.
+
+#### /migration-audit
+
+**File**: `.claude/skills/migration-audit/SKILL.md` | **Backlog prefix**: `MIG-n`
+
+Stack-aware static analysis of migration files - no live DB required. Detects stack automatically (Prisma, Drizzle, Supabase CLI, raw SQL; Rails/Django/Alembic/Flyway detected but pending support).
+
+Checks: M1 lock-heavy DDL (CREATE INDEX without CONCURRENTLY, ADD COLUMN NOT NULL without DEFAULT, ALTER COLUMN TYPE rewrites), M2 non-reversible ops without rollback comment, M3 unsafe backfills without batching, M4 constraint sequencing for status/enum renames, M5 data loss risk (DROP on column still referenced), M6 unsafe type changes, M7 FK without indexed child column, M8 migration ordering integrity. Optional live DB cross-reference escalates destructive migrations already applied.
 
 #### /api-design
 

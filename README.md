@@ -46,7 +46,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 12 audit skills
+### 13 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -60,6 +60,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/commit` | S M L | Conventional Commits - auto-detects type, scope, description. |
 | `/api-design` | M L | URL naming, HTTP verbs, response envelope, pagination. |
 | `/skill-db` | M L | Schema normalization, indexes, N+1 queries, RLS. |
+| `/migration-audit` | M L | Stack-aware migration safety: data loss, rollback, lock-heavy DDL. Prisma/Drizzle/Supabase/SQL. |
 | `/visual-audit` | M L | Typography, APCA contrast, spacing, dark-mode. |
 | `/ux-audit` | M L | ISO 9241-11, Nielsen heuristics, user confidence. |
 | `/responsive-audit` | M L | Layout at 320-1024px, tap targets, WCAG. |
@@ -183,7 +184,7 @@ See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milest
 
 **Current**: v1.9.1 - skill registry, incremental adoption (`add skill`/`add rule`), custom skill scaffolder (`new skill`), Anthropic drift tracker, 481 integration checks.
 
-**Next**: agent-to-skill conversion, 4 new skills (`/test-audit`, `/migration-audit`, `/accessibility-audit`, `/doc-audit`).
+**Next**: 3 more skills (`/test-audit`, `/accessibility-audit`, `/doc-audit`).
 
 ---
 

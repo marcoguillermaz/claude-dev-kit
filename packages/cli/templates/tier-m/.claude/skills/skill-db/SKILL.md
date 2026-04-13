@@ -1,6 +1,6 @@
 ---
 name: skill-db
-description: Database audit: schema quality, index coverage, RLS completeness, FK cascades, migration safety, query patterns. Runs live SQL verification against the database.
+description: Database audit: schema quality, index coverage, RLS completeness, FK cascades, query patterns. Runs live SQL verification. Migration file safety → /migration-audit.
 user-invocable: true
 model: sonnet
 context: fork
@@ -14,7 +14,6 @@ argument-hint: [target:section:<section>|target:table:<table>]
 > - `[ORM_OR_CLIENT]` — e.g. `Prisma`, `Drizzle`, `Supabase JS client`, `SQLAlchemy`, `raw SQL`
 > - `[API_ROUTES_PATH]` — path to API route files for N+1 check
 > - `[ACCESS_CONTROL]` — e.g. `row-level security policies`, `middleware guards`, `model-level scopes`
-> - `[MIGRATIONS_PATH]` — e.g. `prisma/migrations/`, `db/migrations/`, `drizzle/`
 
 
 
@@ -28,14 +27,14 @@ Parse `$ARGUMENTS` for a `target:` token.
 | Pattern | Meaning |
 |---|---|
 | `target:section:<other>` | Resolve to matching tables in db-map.md whose name contains `<other>` |
-| `target:table:<tablename>` | Focus on a specific table and its direct FKs. **Migration safety (Step 2.5) is skipped for this target type.** |
-| No argument | **Full audit — ALL tables in docs/db-map.md. Maximum depth across every check (S1–S7, Step 2.5).** |
+| `target:table:<tablename>` | Focus on a specific table and its direct FKs. |
+| No argument | **Full audit — ALL tables in docs/db-map.md. Maximum depth across every schema, RLS, and query check (S1–S7).** |
 
 **STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full audit of the entire schema in db-map.md at maximum depth. When a target IS provided → act with maximum depth and completeness on that specific scope only.
 
 Announce: `Running skill-db — scope: [FULL | target: <resolved>]`
 
-**Target filter semantics**: apply the filter in Steps 2–4 as follows — S1 (only indexes on targeted tables and their FK children), S2/S3/S2b (only columns of targeted tables), S4 (only policies on targeted tables), S5/S6/S7 (only targeted tables). Step 2.5 (migration safety) scans only migration files that touch the targeted section; for `target:table:` it is skipped entirely.
+**Target filter semantics**: apply the filter in Steps 2–4 as follows — S1 (only indexes on targeted tables and their FK children), S2/S3/S2b (only columns of targeted tables), S4 (only policies on targeted tables), S5/S6/S7 (only targeted tables).
 
 **Critical constraints**:
 - `docs/db-map.md` is the authoritative schema reference. Read it first — do NOT query the live DB to discover schema unless verifying a specific detail.
@@ -298,40 +297,9 @@ ORDER BY pg_relation_size(indexrelid) DESC;
 
 ## Step 2.5 — Migration safety review
 
-**Scope**:
-- `target:section:*`: scan only migration files that touch the targeted tables (filter by filename convention or by grepping table names).
-- No argument (full audit): scan all migration files. If count > 30, prioritize: (1) all files containing `DROP`, `TRUNCATE`, `ALTER TYPE`, `RENAME`; (2) the 15 most recent files (highest-numbered); (3) any remaining files only if time permits.
-- `target:table:*`: **skip this step entirely** — announced at Step 0.
+Migration file safety checks (lock-heavy DDL, missing rollback comments, unsafe backfills, constraint sequencing, data loss risks, FK indexing, ordering integrity) are owned by the **`/migration-audit` skill** — a stack-aware static analyzer for Prisma, Drizzle, Supabase CLI, and raw SQL migrations.
 
-For each file in scope, evaluate these four risks:
-
-**M1 — Lock-heavy DDL**
-Operations that take an `ACCESS EXCLUSIVE` lock, blocking all reads and writes:
-- `CREATE INDEX` without `CONCURRENTLY` — locks the table for the full index build. Flag as High for any table with expected rows > 1000.
-- `CREATE INDEX CONCURRENTLY` inside a `BEGIN`/`COMMIT` block — **this fails in PostgreSQL**. CONCURRENTLY cannot run inside a transaction. Grep for files containing both `BEGIN` (or `START TRANSACTION`) and `CREATE INDEX CONCURRENTLY` in the same file. Flag as Critical.
-- `ADD COLUMN col type NOT NULL` without a DEFAULT — fails immediately on tables with existing rows. Flag as High.
-- `ADD COLUMN col type NOT NULL DEFAULT <volatile_expr>` — triggers a full table rewrite (e.g. `DEFAULT now()` is volatile). Flag as High; suggest: add as nullable first, backfill, then add NOT NULL constraint.
-- `ALTER COLUMN ... TYPE` that requires a cast and full rewrite — flag as High.
-- `RENAME COLUMN` / `RENAME TABLE` — takes ACCESS EXCLUSIVE but completes instantly; flag as Medium only if the renamed object has active API consumers (verify in sitemap.md).
-- `ALTER TYPE ... RENAME VALUE` — takes ACCESS EXCLUSIVE lock on all tables using that type; flag as Medium with the note that it is safe but blocking.
-
-**M2 — Non-reversible operations without rollback comment**
-Check each file for: `DROP COLUMN`, `DROP TABLE`, `TRUNCATE`, `ALTER TYPE ... RENAME VALUE`, or irreversible `UPDATE` statements.
-
-Per CLAUDE.md Known Patterns: destructive migrations MUST have a rollback SQL comment at the top: `-- ROLLBACK: ...`.
-Flag as High: any destructive migration lacking a rollback comment block.
-Flag as Critical: a destructive migration that has already been applied to staging (verify: `SELECT * FROM supabase_migrations.schema_migrations WHERE version = 'NNN'` — if found, it's applied).
-
-**M3 — Unsafe backfills**
-`UPDATE table SET col = value` without batching on a high-traffic table holds a lock for the full duration, generating excessive WAL and causing replication lag.
-
-**M4 — Constraint sequencing**
-Per CLAUDE.md Known Patterns: if a migration changes a status/enum value, it must follow the sequence: (1) DROP CONSTRAINT, (2) UPDATE data, (3) ADD CONSTRAINT — all in one migration for atomicity.
-
-Check: any migration with `UPDATE ... SET stato = ...` or similar value rename. Verify the DROP CONSTRAINT → UPDATE → ADD CONSTRAINT sequence is present. If a migration has only the UPDATE without constraint handling, flag as High (would fail on tables with existing CHECK constraints).
-
-**Migration safety output**:
-Report only files with at least one ⚠️. For clean files, report count only (e.g. "12 files reviewed, 10 clean"). For each flagged file: filename, issue code (M1/M2/M3/M4), severity, and the specific SQL line that raised the concern.
+When a block applies migrations, run `/migration-audit` alongside `/skill-db` in Phase 5d Track B. `/skill-db` keeps live SQL verification of schema state (RLS, indexes, FK cascades, query patterns); `/migration-audit` handles the files themselves.
 
 ---
 
@@ -411,7 +379,7 @@ Sources: Supabase RLS docs, PostgreSQL docs (indexes, constraints), wiki.postgre
 [2-5 bullets — Critical and High findings only. Write concrete facts: table names, column names, line counts.
 If nothing Critical/High: state that explicitly ("No Critical or High findings — schema is production-ready for this scope").
 Example bullets:
-- "2 migrations lack rollback comments for irreversible DROP COLUMN (M2): 045_..., 051_..."
+- "3 tables with UPDATE policy but no SELECT policy (S4D High)"
 
 ### DB maturity assessment
 | Dimension | Rating | Notes |
@@ -420,7 +388,6 @@ Example bullets:
 | Index quality | strong / adequate / weak | [unindexed FKs, missing filter indexes, unused indexes] |
 | RLS / security posture | strong / adequate / weak | [policy gaps, unsafe views, function caching] |
 | Query quality | strong / adequate / weak | [N+1, unbounded, missing error handling] |
-| Migration safety | strong / adequate / weak | [lock-heavy DDL, missing rollbacks, unsafe backfills] |
 | Release readiness | ready / conditional / blocked | [blocked = any Critical finding; conditional = High findings present but workarounded] |
 
 Rating guide: strong = no significant issues; adequate = issues exist but low production risk; weak = issues that should be resolved before next production release.
@@ -443,12 +410,6 @@ Rating guide: strong = no significant issues; adequate = issues exist but low pr
 | S5 | Data type choices | ✅/⚠️ | [timestamp/varchar/serial hits] |
 | S6 | FK cascade behavior | ✅/⚠️ | |
 | S7 | Unused indexes | ✅/⚠️ | [N with 0 scans and qualifying criteria] |
-
-### Migration Safety Checks
-[Only list files with at least one ⚠️. For clean files report summary count.]
-| File | M1 Lock | M2 Rollback | M3 Backfill | M4 Constraint seq | Notes |
-|---|---|---|---|---|---|
-| [migration filename] | ✅/⚠️ | ✅/⚠️ | ✅/⚠️ | ✅/⚠️ | [specific SQL line] |
 
 ### Query Pattern Checks (API routes)
 | # | Check | Matches | Verdict |
@@ -494,9 +455,9 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ### Severity guide
 
-- **Critical**: RLS gap that allows unauthorized data access (S4A); UPDATE policy without SELECT (S4D); view bypassing RLS on sensitive table (S4E); `CASCADE` that would destroy financial records (S6); `CREATE INDEX CONCURRENTLY` inside a BEGIN block (M1); destructive migration applied to staging without rollback comment (M2)
-- **High**: N+1 on a list endpoint (Q1); missing await on a DB write call (Q2); unbounded query on a high-volume table (Q5); unindexed FK on a write-heavy table (S1B); bare `auth.uid()` on a table with thousands of rows (S4B); `CREATE INDEX` without CONCURRENTLY on a production-size table (M1); missing constraint DROP before status-value UPDATE (M4); `ADD COLUMN NOT NULL` without safe staging pattern (M1)
-- **Medium**: Missing CHECK constraint on financial column (S2b); missing composite UNIQUE where business rules require it (S2b); nullable column used in financial calculations (S3); `timestamp` without timezone (S5); `varchar(n)` with arbitrary limit (S5); `serial` instead of IDENTITY (S5); unsafe backfill on high-traffic table (M3); `stato` as unconstrained text (S2b/S5); `SET NULL` on a NOT NULL FK column (S6)
+- **Critical**: RLS gap that allows unauthorized data access (S4A); UPDATE policy without SELECT (S4D); view bypassing RLS on sensitive table (S4E); `CASCADE` that would destroy financial records (S6)
+- **High**: N+1 on a list endpoint (Q1); missing await on a DB write call (Q2); unbounded query on a high-volume table (Q5); unindexed FK on a write-heavy table (S1B); bare `auth.uid()` on a table with thousands of rows (S4B)
+- **Medium**: Missing CHECK constraint on financial column (S2b); missing composite UNIQUE where business rules require it (S2b); nullable column used in financial calculations (S3); `timestamp` without timezone (S5); `varchar(n)` with arbitrary limit (S5); `serial` instead of IDENTITY (S5); `stato` as unconstrained text (S2b/S5); `SET NULL` on a NOT NULL FK column (S6)
 - **Low**: Unused indexes with 0 scans meeting all qualifying criteria (S7); normalization observation with documented trade-off (S2); missing GIN for UUID[] (S1D); partial index opportunity where distribution warrants it (S1C); policies with `{public}` scope where a narrower role would be more precise (S4C)
 
 ---
