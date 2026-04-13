@@ -30,6 +30,7 @@ export const SKILL_REGISTRY = [
   { name: 'security-audit', minTier: 's', requires: {}, cheatsheet: true },
   { name: 'api-design', minTier: 'm', requires: { hasApi: true }, cheatsheet: true },
   { name: 'skill-db', minTier: 'm', requires: { hasDatabase: true }, cheatsheet: true },
+  { name: 'migration-audit', minTier: 'm', requires: { hasDatabase: true }, cheatsheet: true },
   {
     name: 'responsive-audit',
     minTier: 'm',

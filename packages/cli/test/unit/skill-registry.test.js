@@ -23,8 +23,8 @@ describe('NATIVE_STACKS', () => {
 // ---------------------------------------------------------------------------
 
 describe('SKILL_REGISTRY', () => {
-  it('has 14 entries', () => {
-    assert.equal(SKILL_REGISTRY.length, 14);
+  it('has 15 entries', () => {
+    assert.equal(SKILL_REGISTRY.length, 15);
   });
 
   it('every entry has required fields', () => {
@@ -65,10 +65,11 @@ describe('getSkillsToRemove', () => {
     assert.ok(!result.includes('perf-audit'));
   });
 
-  it('hasDatabase=false removes skill-db', () => {
+  it('hasDatabase=false removes skill-db and migration-audit', () => {
     const result = getSkillsToRemove({ techStack: 'node-ts', hasDatabase: false });
     assert.ok(result.includes('skill-db'));
-    assert.equal(result.length, 1);
+    assert.ok(result.includes('migration-audit'));
+    assert.equal(result.length, 2);
   });
 
   it('hasFrontend=false removes all 4 frontend skills', () => {
@@ -158,10 +159,22 @@ describe('getActiveSkills', () => {
     assert.ok(result.includes('api-design'));
     assert.ok(result.includes('security-audit'));
     assert.ok(result.includes('skill-db'));
+    assert.ok(result.includes('migration-audit'));
     assert.ok(result.includes('responsive-audit'));
     assert.ok(result.includes('visual-audit'));
     assert.ok(result.includes('ux-audit'));
     assert.ok(result.includes('ui-audit'));
+  });
+
+  it('tier M hasDatabase=false excludes migration-audit', () => {
+    const result = getActiveSkills({ tier: 'm', hasDatabase: false });
+    assert.ok(!result.includes('migration-audit'));
+    assert.ok(!result.includes('skill-db'));
+  });
+
+  it('tier L hasDatabase=true includes migration-audit', () => {
+    const result = getActiveSkills({ tier: 'l', hasDatabase: true });
+    assert.ok(result.includes('migration-audit'));
   });
 
   it('tier M hasApi=false excludes api-design but keeps security-audit', () => {
@@ -219,10 +232,11 @@ describe('getCheatsheetSkillsToRemove', () => {
     assert.ok(result.includes('api-design'));
   });
 
-  it('hasDatabase=false removes skill-db from cheatsheet', () => {
+  it('hasDatabase=false removes skill-db and migration-audit from cheatsheet', () => {
     const result = getCheatsheetSkillsToRemove({ techStack: 'node-ts', hasDatabase: false });
     assert.ok(result.includes('skill-db'));
-    assert.equal(result.length, 1);
+    assert.ok(result.includes('migration-audit'));
+    assert.equal(result.length, 2);
   });
 
   it('only returns skills that have cheatsheet=true', () => {
