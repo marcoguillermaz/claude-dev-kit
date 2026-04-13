@@ -23,8 +23,8 @@ describe('NATIVE_STACKS', () => {
 // ---------------------------------------------------------------------------
 
 describe('SKILL_REGISTRY', () => {
-  it('has 16 entries', () => {
-    assert.equal(SKILL_REGISTRY.length, 16);
+  it('has 17 entries', () => {
+    assert.equal(SKILL_REGISTRY.length, 17);
   });
 
   it('every entry has required fields', () => {
@@ -208,6 +208,27 @@ describe('getActiveSkills', () => {
   it('tier L hasFrontend=true includes accessibility-audit', () => {
     const result = getActiveSkills({ tier: 'l', hasFrontend: true });
     assert.ok(result.includes('accessibility-audit'));
+  });
+
+  it('tier S excludes test-audit (minTier m)', () => {
+    const result = getActiveSkills({ tier: 's' });
+    assert.ok(!result.includes('test-audit'));
+  });
+
+  it('tier M includes test-audit regardless of feature flags', () => {
+    const result = getActiveSkills({
+      tier: 'm',
+      hasApi: false,
+      hasDatabase: false,
+      hasFrontend: false,
+      hasDesignSystem: false,
+    });
+    assert.ok(result.includes('test-audit'));
+  });
+
+  it('tier L includes test-audit on native stacks (no excludeNative)', () => {
+    const result = getActiveSkills({ tier: 'l', techStack: 'swift' });
+    assert.ok(result.includes('test-audit'));
   });
 
   it('tier M hasDesignSystem=false excludes ui-audit but keeps other frontend', () => {

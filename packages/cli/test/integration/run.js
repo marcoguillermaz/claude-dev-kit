@@ -303,6 +303,7 @@ async function scenarioTierS_full() {
   assertNotExists(dir, '.claude/skills/migration-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
   assertNotExists(dir, '.claude/skills/accessibility-audit/SKILL.md');
+  assertNotExists(dir, '.claude/skills/test-audit/SKILL.md');
 
   // Active Skills section in CLAUDE.md
   const claudeS = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
@@ -419,6 +420,7 @@ async function scenarioTierM() {
   assertExists(dir, '.claude/skills/commit/SKILL.md');
   assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
   assertExists(dir, '.claude/skills/accessibility-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/test-audit/SKILL.md');
 
   assertStopHookPresent(dir);
   assertStopHookResolved(dir);
@@ -471,6 +473,7 @@ async function scenarioTierL() {
   assertExists(dir, '.claude/skills/commit/SKILL.md');
   assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
   assertExists(dir, '.claude/skills/accessibility-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/test-audit/SKILL.md');
 
   assertStopHookPresent(dir);
   assertStopHookResolved(dir);
@@ -688,6 +691,8 @@ async function scenarioSkillPruning() {
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
+  // test-audit has no `requires` flags — universally present in Tier M/L
+  assertExists(dir, '.claude/skills/test-audit/SKILL.md');
 }
 
 async function scenarioTierSSkillPruning() {
@@ -751,6 +756,7 @@ async function scenarioUiAuditPruning() {
   assertExists(dir, '.claude/skills/visual-audit/SKILL.md');
   assertExists(dir, '.claude/skills/ux-audit/SKILL.md');
   assertExists(dir, '.claude/skills/accessibility-audit/SKILL.md');
+  assertExists(dir, '.claude/skills/test-audit/SKILL.md');
 }
 
 async function scenarioCommitSkillAllTiers() {
