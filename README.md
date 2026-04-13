@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![484 integration checks](https://img.shields.io/badge/integration-484%20checks-blue.svg)](#testing)
+[![498 integration checks](https://img.shields.io/badge/integration-498%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -152,8 +152,8 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 484 integration checks
-node --test packages/cli/test/unit/*.test.js   # 273 unit tests
+node packages/cli/test/integration/run.js    # 498 integration checks
+node --test packages/cli/test/unit/*.test.js   # 278 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, full CLI execution via `--answers` fixtures.
