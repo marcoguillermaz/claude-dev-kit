@@ -92,4 +92,4 @@ These updates are part of the commit sequence (docs commit), not a post-merge af
 - All updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.9.0` — alignment block (Phases 1-3). CI consolidation, ESLint+Prettier, 273 unit tests, CLAUDE.md single-authority generation, security-audit 3-path selector (NS1-NS6), perf-audit native resource checks (NR1-NR4), Node.js >=22. 484 integration checks.
+`v1.9.1` — skill registry, incremental adoption, /test-audit. excludeNative pruning (4 browser-only skills), agnosticity remediation (15 SKILL.md files), 281 unit tests, 533 integration checks.
