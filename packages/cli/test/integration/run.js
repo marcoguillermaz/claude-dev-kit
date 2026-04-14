@@ -651,8 +651,8 @@ async function scenarioSkillDevApplicabilityCheck() {
       fail(`Tier ${tier}: skill-dev Applicability check missing`);
     }
 
-    if (raw.includes('CHECK D9') && raw.includes('React only')) {
-      pass(`Tier ${tier}: skill-dev skip list includes D9 (useEffect — React only)`);
+    if (raw.includes('CHECK D9') && raw.includes('UI frameworks only')) {
+      pass(`Tier ${tier}: skill-dev skip list includes D9 (lifecycle — UI frameworks only)`);
     } else {
       fail(`Tier ${tier}: skill-dev skip list missing D9 annotation`);
     }

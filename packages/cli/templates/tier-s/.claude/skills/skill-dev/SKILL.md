@@ -31,12 +31,12 @@ Before Step 0: check `CLAUDE.md` for the Framework and Language fields.
 **Native or backend-only stacks** (Swift, Kotlin, Rust, Go, .NET/C#, Java, Python without a web frontend): several checks target TypeScript/React patterns that do not exist in your codebase. Proceed to Step 0 with these adjustments:
 
 Skip entirely:
-- CHECK D1 — Next.js `@/components/` cross-module import patterns (TypeScript/Next.js only)
-- CHECK D2 — `ContentStatusBadge` and inline CSS class maps (React/TypeScript only)
-- CHECK D3 — Supabase `from().select()` N+1 patterns (ORM-specific)
-- CHECK D8 — TypeScript type safety suppressions and `any` usage (language-specific)
-- CHECK D9 — useEffect antipatterns (React only — entire check)
-- CHECK J3 — Client/Server component boundary placement (Next.js only)
+- CHECK D1 — Cross-module import patterns (web component frameworks only)
+- CHECK D2 — Duplicated inline color/status maps (component framework only)
+- CHECK D3 — ORM/client N+1 fetch patterns (ORM-specific)
+- CHECK D8 — Type safety suppressions (run DL1 language-specific checks instead)
+- CHECK D9 — Lifecycle/side-effect antipatterns (UI frameworks only)
+- CHECK J3 — Client/server boundary placement (SSR frameworks only)
 
 Run as-is (stack-agnostic):
 - CHECK D4 (dead exports), D5 (duplicated validation logic), D6 (magic strings/numbers), D7 (TODO/FIXME/HACK)
@@ -65,11 +65,7 @@ Parse `$ARGUMENTS` for a `target:` token.
 
 | Pattern | Meaning |
 |---|---|
-| `target:section:notifications` | Focus on notification system (lib/notification-utils.ts, NotificationBell, NotificationPageClient) (example — any section name is valid) |
-| `target:section:tickets` | Focus on ticket components and API routes (example) |
-| `target:section:documents` | Focus on document upload, signing, and generation components (example) |
-| `target:section:profile` | Focus on collaborator profile and onboarding components (example) |
-| `target:section:content` | Focus on content tables (communications, events, opportunities, discounts) (example) |
+| `target:section:<name>` | Focus on a specific feature area — e.g. `target:section:auth`, `target:section:billing`, `target:section:dashboard`. Any section name matching a module/directory in the project is valid. |
 | No argument | **Full audit — the ENTIRE codebase: all page files, all components, all lib/ files, all API routes, all types. Build from sitemap.md + filesystem scan of components/ and lib/. Maximum depth.** |
 
 **STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full codebase audit at maximum depth. When a target IS provided → act with maximum depth and completeness on that specific scope only.
@@ -101,20 +97,20 @@ Pass the full file list from Step 1 to a Haiku Explore agent, along with the exa
 "Run all 10 checks below on ONLY the files provided. For each check: state total match count, list every match as `file:line — excerpt`, and state PASS or FAIL.
 
 **CHECK D1 — Cross-module direct imports (coupling)**
-Pattern: components importing directly from other feature components (e.g. `components/admin/` importing from `components/compensation/`).
-Grep in all provided `.tsx`/`.ts` files: `'@/components/(?!ui/)([a-z-]+)/` — any import referencing a non-ui component subfolder. This produces the full list of inter-component imports. Then, for each match, flag it if the importing file's feature folder differs from the imported file's feature folder AND the import does not go through `@/lib/`.
+Pattern: modules importing directly from other feature modules instead of going through a shared layer (e.g. `features/admin/` importing from `features/billing/`).
+Grep across source files for imports that cross feature boundaries — any import referencing a different feature subfolder. For each match, flag it if the importing module's feature area differs from the imported module's feature area AND the import does not go through a shared `lib/`, `utils/`, or `common/` layer.
 Expected: flag each cross-feature import as an explicit coupling.
 
-**CHECK D2 — Duplicated inline color maps**
-Pattern: object literals mapping status strings to CSS classes (e.g. `{ IN_ATTESA: 'bg-yellow-', APPROVATO: 'bg-green-' }`).
-Flag: any file with this pattern NOT already using `ContentStatusBadge` or importing from a shared badge-maps utility.
-Expected: all status color maps centralised.
+**CHECK D2 — Duplicated inline status/color maps**
+Pattern: object literals mapping status strings to CSS classes or style tokens (e.g. `{ PENDING: 'warning-class', APPROVED: 'success-class' }`).
+Flag: any file with this pattern NOT already importing from a shared status-badge or style-maps utility.
+Expected: all status-to-style maps centralised in a single utility.
 
 **CHECK D3 — N+1 fetch patterns in components and API routes**
-Pattern A: any `.from('<tablename>').select(` call inside a `.map(`, `for (`, `forEach(`, or `for...of` loop.
-Grep: `\.from\(.*\)\.select` — then check if it appears inside an iteration block.
-Flag ALL tables — any Supabase query inside a loop is a potential N+1.
-Pattern B: `for...of` with `await svc.from(` or `await supabase.from(` inside the loop body (sequential awaits).
+Pattern A: any database query call (e.g. `.find(`, `.select(`, `.query(`, `.execute(`, `.from(`) inside a `.map(`, `for (`, `forEach(`, or `for...of` loop.
+Grep for your project's DB client method pattern — then check if it appears inside an iteration block.
+Flag ALL matches — any database query inside a loop is a potential N+1.
+Pattern B: sequential `await` calls to the DB client inside a loop body.
 Flag: each match with file:line.
 
 **CHECK D4 — Dead exports (sampled: 5 largest files)**
@@ -124,50 +120,48 @@ For the 5 largest component files by line count: grep each exported name across 
 Flag: exports with 0 consumers outside their own file.
 
 **CHECK D5 — Duplicated validation logic**
-Pattern: the same field validation appearing in more than one API route handler.
-Flag: identical guard patterns in 3+ routes that are not using a shared Zod schema.
+Pattern: the same field validation appearing in more than one API route handler or controller.
+Flag: identical guard patterns in 3+ routes that are not using a shared validation schema or utility.
 
 **CHECK D6 — Magic strings and magic numbers**
-*Magic strings* — state machine values hardcoded as string literals in component files:
-Grep in `.tsx` files (not API routes, not type definitions):
+*Magic strings* — state machine values hardcoded as string literals in source files:
+Grep across source files (not test files, not type definitions):
 Flag: any string literal that should reference a shared enum/constant.
-Grep: `(?<![a-zA-Z_])(0\.20|0\.60|50000|86400)(?![a-zA-Z_])` — withholding rates, fiscal limits, TTL durations.
-Exclude lines matching: `PORT=|timeout|delay|setTimeout|setInterval|HTTP_STATUS|ms\b|px\b`.
+Grep for numeric literals that look like business constants (rates, limits, TTL durations) — exclude lines matching: `PORT=|timeout|delay|setTimeout|setInterval|HTTP_STATUS|ms\b|px\b`.
 Expected: 0 unextracted magic numbers in business logic paths.
 
 **CHECK D7 — TODO/FIXME/HACK comments**
 Grep: `\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b` across all files in scope.
 Flag: each match with context.
 
-**CHECK D8 — TypeScript type safety suppressions and `any` usage**
-Pattern A — Directive suppressions:
+**CHECK D8 — Type safety suppressions** *(typed languages only — skip for dynamically typed languages)*
+Pattern A — Directive suppressions (TypeScript):
 Grep: `@ts-ignore|@ts-expect-error|@ts-nocheck` across all files.
-`@ts-ignore` is highest severity. `@ts-expect-error` is acceptable only with a description comment. Flag both.
-Pattern B — Explicit `any`:
-Grep: `:\s*any\b|as\s+any\b|<any>|Promise<any>` in non-test `.ts` and `.tsx` files.
-Exclude: `lib/supabase.ts`, `lib/supabase-server.ts`, `*.d.ts`, and any `SupabaseClient` type usage exempted in CLAUDE.md Known Patterns.
-Flag: each remaining `any` usage.
-Pattern C — Floating promises (unhandled async in component event handlers):
-Grep in `.tsx` component files (not API routes): `^\s*(fetch\(|router\.(push|replace|refresh)\(|supabase\.|svc\.)`.
-For each match, inspect the 2 surrounding lines. Flag lines where the call is a bare statement — not preceded by `await`, `void`, `return`, or an assignment (`const .* =`, `let .* =`), and not chained to `.then(` or `.catch(`. These are silent fire-and-forget calls with no error handling.
+`@ts-ignore` is highest severity. `@ts-expect-error` is acceptable only with a description comment.
+For other typed languages: grep for equivalent escape hatches (e.g. `# type: ignore` in Python, `@SuppressWarnings` in Java/Kotlin, `unsafe` blocks in Rust, `// nolint` in Go).
+Pattern B — Explicit `any` / untyped (TypeScript):
+Grep: `:\s*any\b|as\s+any\b|<any>|Promise<any>` in non-test source files.
+Exclude: generated type files, vendor types, and any explicit exemptions in CLAUDE.md Known Patterns.
+Flag: each remaining usage.
+Pattern C — Floating promises (unhandled async in event handlers or UI code):
+Grep for async calls (DB queries, route navigation, API calls) that appear as bare statements without `await`, `void`, `return`, or error handling. These are silent fire-and-forget calls.
 
-**CHECK D9 — useEffect antipatterns**
-Pattern A — Derived state stored in state + updated via useEffect:
-Grep: `useState` followed within 10 lines by `useEffect(() => { set`. Flag components where a `useEffect`'s only purpose is to call `setState` based on props — the value is derivable during render.
-Pattern B — Event handler logic inside useEffect:
-In each file containing `useEffect(`: read the full body of each useEffect. Flag any useEffect whose body contains `toast`, `router.push`, `router.replace`, `router.refresh`, `showNotification`, `sendEmail`, or `console.log` — regardless of position in the body. These belong in event handlers, not effects.
-Pattern C — Missing dependency array:
-In each file containing `useEffect(`: verify that every `useEffect(` call has a second argument (dependency array `[...]`). A `useEffect` with only one argument runs on every render and is almost always a bug.
-Flag each useEffect call missing the second argument.
+**CHECK D9 — Lifecycle/side-effect antipatterns** *(React: useEffect, Vue: onMounted/watch, Svelte: onMount/$, Angular: ngOnInit — skip for non-UI projects)*
+Pattern A — Derived state stored in state + updated via lifecycle hook:
+Flag components where a side-effect hook's only purpose is to sync derived state — the value is computable during render/init.
+Pattern B — Event handler logic inside lifecycle hooks:
+Flag any lifecycle hook whose body contains navigation, toasts, or notifications — these belong in event handlers, not effects.
+Pattern C — Missing cleanup or dependency tracking:
+Flag side-effect hooks with no dependency specification (runs on every render) or missing cleanup for subscriptions/timers.
 Expected: 0 matches for A and C. B requires judgment.
 
 **CHECK D10 — Empty catch blocks and console.log in production**
 Pattern A — Empty or near-empty catch blocks:
 Grep: `catch\s*\([^)]*\)\s*\{\s*\}|catch\s*\([^)]*\)\s*\{\s*\/\/|catch\s*\([^)]*\)\s*\{\s*console\.log`
 Flag: catch blocks that swallow errors silently or log them without recovery or user feedback.
-Pattern B — console.log in production:
-Grep: `console\.log\(|console\.warn\(|console\.error\(` in `app/` and `lib/` (excluding `__tests__/`, `e2e/`, `.test.ts`).
-`console.error` in catch blocks is acceptable only if also returning an error response."
+Pattern B — Debug output in production:
+Grep for debug/logging statements (`console.log`, `print()`, `println!`, `fmt.Println`, `puts`, `System.out.println` — adapt to your language) in source directories (excluding test files).
+Debug-level logging in catch blocks is acceptable only if also returning an error response."
 
 ---
 
@@ -183,33 +177,29 @@ Flag components that are:
 
 **J2 — Prop drilling depth**
 
-**J3 — Client/server component boundary placement**
+**J3 — Client/server boundary placement** *(frameworks with client/server split only — e.g. Next.js, Nuxt, SvelteKit. Skip for SPAs, backends, and native apps.)*
 
-Read `app/(app)/layout.tsx` and the 5 most-visited page files from sitemap.md.
+Read the main layout and the 5 most-visited page files from `[SITEMAP_OR_ROUTE_LIST]`.
 
-Check 1 — `'use client'` at page/layout level when only a subcomponent needs it:
+Check 1 — Client-side directive at page/layout level when only a subcomponent needs it.
 
-Check 2 — Context providers placed too high:
-If a context Provider wraps `<html>` or `<body>`, check if it can be moved lower — high placement prevents Next.js from optimising static Server Component subtrees.
+Check 2 — Context/state providers placed too high in the component tree, preventing server-side optimization of child subtrees.
 
-Check 3 — Server secrets imported into `'use client'` files:
-Grep: any `'use client'` file importing from a `lib/` file that accesses `process.env` for non-`NEXT_PUBLIC_` variables. These utilities need an `import 'server-only'` guard or must be split.
+Check 3 — Server secrets imported into client-side files. Grep for client-marked files importing modules that access server-only environment variables.
 
-Check 4 — Missing `'use server'` on Server Actions:
-Flag: each exported async function in a non-API file without `'use server'`.
+Check 4 — Missing server-side directive on server actions or mutations.
 
 Flag each issue with: file path, current placement, recommended refactor.
 
-**J4 — lib/ utility consolidation**
-Read the `lib/` directory listing. Flag any utilities with overlapping purposes (e.g. two date formatting helpers, two notification builder functions, any type constant or badge-map object defined independently in 2+ component files without being extracted to `lib/`).
-Specifically verify: `lib/notification-utils.ts` vs `lib/notification-helpers.ts` — confirm if both exist and flag any responsibility overlap.
+**J4 — Shared utility consolidation**
+Read the shared utilities directory listing (`lib/`, `utils/`, `helpers/`, or equivalent). Flag any utilities with overlapping purposes (e.g. two date formatting helpers, two notification builder functions, any constant or mapping object defined independently in 2+ files without being extracted to a shared location).
 Do not re-report overlaps already in `docs/refactoring-backlog.md`.
 
-**J5 — Type definition consolidation**
-Read `lib/types.ts` (or equivalent). Flag:
-- Types defined inline in component files that are used in 3+ places (should live in `lib/types.ts`)
-- Response types that duplicate Supabase-generated types (should extend the generated types instead)
-- `interface X extends Y` where Y is never used independently (prefer composition or a union type)
+**J5 — Type definition consolidation** *(typed languages only)*
+Read the shared types file (e.g. `lib/types.ts`, `types/`, or equivalent). Flag:
+- Types defined inline in source files that are used in 3+ places (should live in a shared types file)
+- Response types that duplicate auto-generated types (should extend the generated types instead)
+- Inheritance chains where the parent type is never used independently (prefer composition or a union type)
 
 ---
 
@@ -229,7 +219,7 @@ For remaining findings, apply severity modifiers in this exact order:
 ```
 ## Skill-Dev Audit — [today's date in YYYY-MM-DD format]
 ### Scope: [N] files from sitemap.md
-### Sources: Refactoring.Guru smells taxonomy, typescript-eslint rules, Next.js composition patterns, React "You Might Not Need an Effect"
+### Sources: Refactoring.Guru smells taxonomy, language-specific lint rules, framework composition patterns
 
 ### Pattern Checks (Explore agent)
 | # | Check | Matches | Severity | Verdict |

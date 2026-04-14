@@ -68,11 +68,11 @@ Apply the target filter to the file list in Step 1.
 
 ## Step 1 — Build file inventory
 
-- All page files in scope
-- All heavy components (those with chart, calendar, data table, Tiptap editor — high rendering cost)
-- All `app/**/layout.tsx` files (always include regardless of target — critical for B1 Flag B and B8)
-- All lib service files directly called from page/component files (`lib/svc.ts`, `lib/queries.ts`, etc.) — exclude pure utility files with no DB calls
-- `next.config.ts` (or `next.config.js`)
+- All page/view files in scope
+- All heavy components (those with chart, calendar, data table, rich text editor — high rendering cost)
+- All layout/shell files (always include regardless of target — critical for B1 Flag B and B8)
+- All service/data-access files directly called from page/component files — exclude pure utility files with no DB calls
+- Framework configuration file (e.g. `next.config.ts`, `vite.config.ts`, `nuxt.config.ts`, `webpack.config.js`)
 
 Read `docs/refactoring-backlog.md` — note existing `PERF-` entries to avoid duplicates.
 
@@ -82,121 +82,97 @@ Read `docs/refactoring-backlog.md` — note existing `PERF-` entries to avoid du
 
 Launch a **single Explore subagent** (model: haiku) with all page, component, and lib files from Step 1:
 
-"Run all 9 checks below. For each: state total match count, list every match as `file:line — excerpt`, and state PASS or FAIL.
+"Run all 9 checks below. For each: state total match count, list every match as `file:line — excerpt`, and state PASS or FAIL. Adapt grep patterns to the project's framework — the concepts are universal, the specific APIs vary.
 
-**CHECK B1 — Unnecessary or over-broad 'use client' directives**
-Grep: `'use client'` across all `app/**/*.tsx` files.
-For each match: check if the file uses ANY of: `useState`, `useEffect`, `useRef`, `useCallback`, `useMemo`, `onClick`, `onChange`, `useRouter`, `usePathname`, `useSearchParams`.
-Flag A: any `'use client'` file that uses NONE of these patterns. It may be a Server Component incorrectly marked as client.
-Flag B: any `'use client'` in a `layout.tsx` or `*Provider*.tsx` file that also imports 5 or more child components (count `import` statements targeting `./` or `../` paths). These files wrap large subtrees — if only a small interactive portion (theme toggle, session sync) requires browser APIs, extracting it into an island would allow the layout to become a Server Component.
-Exclude `app/(app)/layout.tsx` from Flag B — it intentionally uses `'use client'` for session and theme synchronization (known pattern).
+**CHECK B1 — Unnecessary client-side rendering scope**
+Find components or pages marked for client-side rendering that do not actually use browser APIs (event handlers, state, refs, browser-only hooks).
+- For SSR frameworks (Next.js, Nuxt, SvelteKit): grep for client-side directives (`'use client'`, `<script>` with `client:only`, etc.) and check if the file uses any browser-specific API.
+- Flag A: any client-marked file that uses NONE of: state management, event handlers, refs, or browser APIs. It may be renderable on the server.
+- Flag B: any client-marked layout or provider file that imports 5+ child components — if only a small interactive portion requires client rendering, extracting it into an island would let the layout render on the server.
 
 **CHECK B2 — Heavy libraries in client bundle**
-Grep: `import.*from` in `'use client'` files. Flag any imports of these known-heavy libraries that do NOT need browser APIs and should be moved to Server Components:
-- `xlsx`, `pdf-lib`, `pdfjs-dist` — document processing (server-only)
-- `@tiptap/*` — rich text editor (client is acceptable IF interactive; flag if read-only render only)
-- Chart libraries (e.g. `recharts`, `chart.js`) — acceptable in client if interactive; flag if data-display only
-- Any library > ~50KB that could run server-side
-Flag: each import with the library name and whether a server-side equivalent pattern exists.
+Grep for imports of known-heavy libraries in client-rendered files. Flag any imports of libraries that do NOT need browser APIs and could run server-side:
+- Document processing libraries (PDF, XLSX, etc.) — typically server-only
+- Rich text editors — acceptable in client IF interactive; flag if read-only render
+- Chart libraries — acceptable in client if interactive; flag if static data-display only
+- Any library > ~50KB that has a server-side equivalent
+Flag: each import with the library name and whether a server-side pattern exists.
 
-**CHECK B3 — useEffect for data fetching in client components**
-Two-pass approach:
-Pass 1 — grep `useEffect` in all `'use client'` files to find files with useEffect usage.
-Pass 2 — for each file found, read up to 10 lines after each `useEffect(` call. Flag any useEffect whose callback body contains `fetch(`, `.from(`, `svc.`, or `supabase.` within those 10 lines.
-The single-line regex `useEffect.*fetch\(` misses multi-line patterns where the fetch call is on the line after the opening brace.
-Flag: `useEffect` calls that fetch data — these defeat server rendering. Consider Server Components with `Suspense`, or SWR/React Query for client-side caching with proper revalidation.
+**CHECK B3 — Client-side data fetching that defeats server rendering**
+Find client-rendered components that fetch data in lifecycle hooks (e.g. `useEffect`, `onMounted`, `onMount`) instead of using server-side data loading.
+Flag: data fetching in client lifecycle hooks — these defeat server rendering and add a loading waterfall. Use server-side data loading with streaming/suspense, or a client-side cache library with proper revalidation.
 
-**CHECK B4 — Memo/callback missing on stable callbacks passed to child components**
-Grep: inline `() =>` arrow functions passed as props to components that are known to be memoized (check if child is wrapped in `memo()`). Pattern: `onX={()=>` where the prop is passed to a component declared with `memo(`.
-Flag: each case. Inline arrow function props create new references on every parent render, defeating `memo`.
-Note: do NOT flag `onClick` on native HTML elements — React batches these internally.
+**CHECK B4 — Unstable callback references defeating memoization**
+Find inline arrow functions passed as props to memoized child components. Inline functions create new references on every parent render, defeating memoization.
+Flag: each case. Skip native HTML element event handlers — frameworks batch these internally.
 
-**CHECK B5 — Sequential await waterfall in Server Components**
+**CHECK B5 — Sequential await waterfall**
 Pattern: two or more consecutive `await` calls for independent data sources in the same async function.
-Grep in server component files (files WITHOUT `'use client'`): lines matching `const .* = await (fetch|svc\.|supabase\.)` that appear consecutively (i.e., within 5 lines of each other) without the first result being an input to the second call.
-Flag: each pair of sequential awaits that could be parallelised with `Promise.all`. A sequential waterfall adds full latency of each call one after the other; `Promise.all` runs them concurrently.
+Grep in server-rendered files or API routes: lines matching `const .* = await` that appear consecutively (within 5 lines of each other) without the first result being an input to the second call.
+Flag: each pair of sequential awaits that could be parallelised with `Promise.all` (or equivalent).
 Example of violation: `const a = await getA(); const b = await getB();` where b doesn't depend on a.
-Example of correct: `const [a, b] = await Promise.all([getA(), getB()]);`
 
-**CHECK B6 — Missing caching on repeated Server Component queries**
-Pattern: data fetches that run on every request without caching in Server Components.
-Grep in server component files: `await svc.from(|await supabase.from(` — check if ANY of these are wrapped in `React.cache(` or called inside a function decorated with `use cache` directive.
-Flag: server-side Supabase queries that are not cached and are called in layout-level or frequently-visited components (e.g. navigation data, user profile, community list). These execute on every page visit.
-Note: `fetch` calls have automatic deduplication within a request, but Supabase client calls do NOT — they always hit the DB.
+**CHECK B6 — Missing caching on repeated server-side queries**
+Find data fetches that run on every request without caching in server-rendered components.
+Grep in server-rendered files for database query calls — check if they use any caching mechanism (framework cache, memoization, or explicit cache headers).
+Flag: uncached queries in layout-level or frequently-visited components (e.g. navigation data, user profile). These execute on every page visit.
 
 **CHECK B7 — Images without explicit dimensions (CLS risk)**
-Two-pass approach:
-Pass 1 — grep `<Image` across all `.tsx` files to collect all Next.js Image usages.
-Pass 2 — for each match, read up to 5 lines after the opening `<Image` tag. Flag if NEITHER of these conditions is met: (a) `width=` appears within those 5 lines, OR (b) `fill` prop appears within those 5 lines.
-Do NOT use a single-line regex with negative lookbehind — it fails when props are on separate lines.
-Also grep: `<img` (raw img tags — covered by /ui-audit but also a CLS risk here).
-Flag: each unsized image. Without dimensions, the browser cannot reserve layout space → content below the image shifts when it loads = CLS violation.
+Find image elements (framework image component or native `<img>`) without width/height or fill/cover constraints.
+Flag: each unsized image. Without dimensions, the browser cannot reserve layout space — content shifts when the image loads, causing CLS violations.
 
-**CHECK B8 — Dynamic rendering triggers (accidental force-dynamic)**
-Pattern A: `cookies()` or `headers()` called inside `app/**/layout.tsx` — opts the ENTIRE route subtree into dynamic rendering.
-Grep (two separate greps to avoid shell OR issues): `cookies()` in `app/**/layout.tsx`, then `headers()` in `app/**/layout.tsx`.
-Exclude `app/(app)/layout.tsx` — it intentionally calls `cookies()` for session and theme synchronization.
-For any other layout match: check whether the call could move to a child Server Component or Server Action.
-Pattern B: `export const dynamic = 'force-dynamic'` in page or layout files.
-Grep: `force-dynamic` across `app/**/*.tsx` and `app/**/*.ts`.
-Flag: each occurrence. Verify from context whether intentional (auth-dependent, real-time data) or avoidable with proper `React.cache` or component restructuring.
-Pattern C: `no-store` cache directive in fetch calls inside layout files — opts the route subtree out of static generation.
-Grep: `'no-store'` or `"no-store"` in `app/**/layout.tsx` files (use exact string match — avoid broad `cache.*no-store` which matches comments and variable names).
-Flag: each match with impact explanation.
+**CHECK B8 — Accidental dynamic rendering triggers**
+Find patterns that force dynamic rendering at the layout level, opting entire route subtrees out of static generation:
+- Request-scoped APIs (cookies, headers, session) called in layout files
+- Explicit force-dynamic configuration in page/layout files
+- No-cache directives in layout-level data fetches
+Flag: each occurrence. Verify from context whether intentional (auth-dependent, real-time data) or avoidable with proper caching or component restructuring.
 
 **CHECK B9 — Missing lazy loading for heavy client components**
-Two-pass approach (run each grep separately — do not combine with `|`):
-Pass 1 — run four separate greps in `app/**/*.tsx`:
-  - `from '@tiptap`
-  - `import.*recharts`
-  - `import.*chart\.js`
-Collect all matching files.
-Pass 2 — for each file from Pass 1: check if `next/dynamic` is also imported in the same file (grep `from 'next/dynamic'`).
-Flag: any file where a heavy component is statically imported AND `next/dynamic` is NOT present — the component loads eagerly in the initial bundle.
-If both a static import and `next/dynamic` are present in the same file, read the file to confirm the heavy component itself is the one wrapped in `dynamic()` (not a different component).
-Note: `ssr: false` is acceptable for browser-only components (calendar, charts). `ssr: true` (default) is preferable when the component can pre-render."
+Find imports of heavy libraries (rich text editors, chart libraries, complex UI components) that are statically imported without lazy loading.
+Flag: any file where a heavy component is eagerly imported without using the framework's dynamic/lazy import mechanism (e.g. `React.lazy`, `next/dynamic`, `defineAsyncComponent`, dynamic `import()`)."
 
 ---
 
 ## Step 3 — Bundle composition check (main context)
 
-Read `next.config.ts` (or `next.config.js`).
+Read the framework configuration file (e.g. `next.config.ts`, `vite.config.ts`, `webpack.config.js`, `nuxt.config.ts`).
 
 **P1 — Bundle analyzer availability**
-Check if `@next/bundle-analyzer` is configured or `npx next experimental-analyze` is available:
-- Turbopack native analyzer (Next.js v16.1+): `npx next experimental-analyze` — no config needed, interactive module graph with import chain tracing
+Check if a bundle analyzer is configured or available for the project's build tool:
+- Webpack: `webpack-bundle-analyzer` or `@next/bundle-analyzer`
+- Vite: `rollup-plugin-visualizer`
+- Next.js 16+: `npx next experimental-analyze` (built-in)
+- Other: check for any bundle analysis tooling in devDependencies
+If no analyzer is configured or documented, flag as Medium — developers cannot easily audit bundle composition.
 
-Since this project uses Next.js 16, both options are available. If neither is configured/documented, flag as Medium — developers cannot easily audit bundle composition.
+**P2 — Server-only package exclusion**
+Check if the framework configuration excludes heavy server-only packages from the client bundle.
+Identify packages in the project that should never be client-bundled (e.g. PDF processors, XLSX generators, database drivers, file system utilities).
+Flag: any heavy server-only package not explicitly excluded from client bundling.
 
-**P2 — `serverExternalPackages` coverage**
-Check if `serverExternalPackages` in `next.config.ts` includes all heavy server-only packages.
-Known mandatory entries for this project: `['pdfjs-dist', 'pdf-lib']` (documented in CLAUDE.md).
-Also check for: `xlsx`, `docxtemplater`, `pizzip` — large packages that should never be client-bundled.
-Flag: any heavy server-only package that is NOT in `serverExternalPackages` (risk: it gets bundled into the client JS if accidentally imported from a `'use client'` path).
-
-**P3 — `optimizePackageImports` for icon/utility libraries**
-Check if `optimizePackageImports` in `next.config.ts` includes large packages with many exports that are partially used.
-For this project, check: `lucide-react` (hundreds of icons — tree-shaking is critical).
-Note: Next.js automatically optimizes some packages (check the official list). If `lucide-react` is already auto-optimized, note as PASS.
-Flag: any package with 100+ exports where only a subset is used, not in `optimizePackageImports`.
+**P3 — Tree-shaking optimization for large libraries**
+Check if the build configuration optimizes imports for large libraries with many exports where only a subset is used (e.g. icon libraries with hundreds of icons, utility libraries like lodash).
+Note: some frameworks automatically optimize certain packages (check the framework docs). If a library is already auto-optimized by the build tool, note as PASS.
+Flag: any package with 100+ exports where only a subset is used, not covered by the build tool's tree-shaking or import optimization.
 
 ---
 
 ## Step 4 — API query efficiency (Explore agent — separate pass)
 
-"Run these 3 checks:
+"Run these 3 checks. Adapt grep patterns to the project's database client or ORM:
 
 **CHECK Q1 — Unbounded queries (no limit on large-growth tables)**
 Flag: each collection query without pagination bounds. Exception: export routes that intentionally fetch all for CSV/XLSX — verify from context.
 
 **CHECK Q2 — Select * (over-fetching columns)**
-Grep: `\.select\('\*'\)` in route handlers.
+Grep for select-all patterns in route handlers (e.g. `.select('*')`, `SELECT *`, `.findAll()` without field projection, `.all()` without `only()`).
 Flag: each match. Fetching all columns is a performance and security risk — columns with large values (e.g. `body`, `content`, blob URLs) are sent over the wire unnecessarily.
 
 **CHECK Q3 — N+1 patterns**
-Pattern A: `.from(table).select` inside `.map(` or `for` loop.
-Pattern B: `for...of` with `await svc.from(` inside the loop body.
-Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list — use `.in([ids])` batch query or an embedded select instead."
+Pattern A: database query calls inside `.map(`, `for`, or `forEach` loops.
+Pattern B: sequential `await` with a DB client call inside a loop body.
+Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list — use batch queries or embedded/eager loading instead."
 
 ---
 
@@ -206,14 +182,14 @@ Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list �
 
 ```
 ## Perf Audit — [DATE] — [SCOPE] — mode: [audit | apply]
-### Sources: Next.js bundle docs (v16), web.dev/vitals, React docs
+### Sources: framework docs, web.dev/vitals, build tool docs
 
 ### Executive summary
 - [2-8 bullets: one per Critical/High finding or notable PASS. Lead with the most impactful issue.]
 
 ### Scope reviewed
 - Routes/components scanned: [N files]
-- Config files: next.config.ts [present/absent]
+- Config files: framework config [present/absent]
 - Bundle evidence: bundle analyzer [configured / not configured]
 - Assumptions: [any scope limitations, e.g. "layout files excluded from B8 — none found"]
 
@@ -227,9 +203,9 @@ Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list �
 ### Server/Client Boundary
 | # | Check | Matches | Severity | Verdict |
 |---|---|---|---|---|
-| B1 | Unnecessary / over-broad 'use client' | N | Medium | ✅/⚠️ |
+| B1 | Unnecessary client-side rendering scope | N | Medium | ✅/⚠️ |
 | B2 | Heavy libraries in client bundle | N | High | ✅/⚠️ |
-| B3 | useEffect data fetching | N | High | ✅/⚠️ |
+| B3 | Client-side data fetching | N | High | ✅/⚠️ |
 | B4 | Unstable callbacks on memo'd children | N | Low | ✅/⚠️ |
 | B5 | Sequential await waterfall | N | High | ✅/⚠️ |
 | B6 | Uncached server queries | N | Medium | ✅/⚠️ |
@@ -241,8 +217,8 @@ Flag: each match. N+1 on a list endpoint means N DB queries for an N-item list �
 | # | Check | Verdict | Notes |
 |---|---|---|---|
 | P1 | Bundle analyzer availability | ✅/⚠️ | [which tool] |
-| P2 | serverExternalPackages | ✅/⚠️ | [missing packages if any] |
-| P3 | optimizePackageImports | ✅/⚠️ | [lucide-react status] |
+| P2 | Server-only package exclusion | ✅/⚠️ | [missing packages if any] |
+| P3 | Tree-shaking optimization | ✅/⚠️ | [large library status] |
 
 ### API Query Efficiency
 | # | Check | Matches | Verdict |
@@ -267,10 +243,10 @@ Scoring: 🟢 = 0 High/Critical findings · 🟡 = 1-2 Medium findings · 🔴 =
 Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
 
 ### Quick wins (implement in < 1 hour each)
-[findings that are isolated, low-risk, and self-contained — e.g. add Promise.all, add next/dynamic wrapper]
+[findings that are isolated, low-risk, and self-contained — e.g. add Promise.all, add lazy/dynamic wrapper]
 
 ### Strategic refactors (require planning)
-[findings that affect multiple files or need architectural decisions — e.g. move data fetch to Server Component, extract client island from layout]
+[findings that affect multiple files or need architectural decisions — e.g. move data fetch to server-rendered path, extract client island from layout]
 
 ### Validation checklist
 After applying fixes, verify:
@@ -301,9 +277,9 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ### Severity guide
 
-- **Critical**: N+1 in dashboard/list endpoints under heavy load (Q3); heavy server-only library (pdfjs, xlsx) discovered in client bundle (B2)
-- **High**: Sequential await waterfall with >500ms combined latency risk (B5); useEffect data fetching on a primary route (B3); unbounded query on large-growth table (Q1); `cookies()`/`headers()` in a layout causing route tree force-dynamic (B8)
-- **Medium**: Uncached layout-level server queries called on every page load (B6); `select *` on tables with blob/large-text columns (Q2); unsized images (B7 — CLS risk); `optimizePackageImports` missing for lucide-react (P3); unnecessary or over-broad `'use client'` on a heavy page or layout (B1); missing `next/dynamic` on Tiptap/calendar/chart components (B9)
+- **Critical**: N+1 in dashboard/list endpoints under heavy load (Q3); heavy server-only library discovered in client bundle (B2)
+- **High**: Sequential await waterfall with >500ms combined latency risk (B5); client-side data fetching on a primary route (B3); unbounded query on large-growth table (Q1); request-scoped API in a layout causing route tree force-dynamic (B8)
+- **Medium**: Uncached layout-level server queries called on every page load (B6); select-all on tables with large-text columns (Q2); unsized images (B7 - CLS risk); tree-shaking not configured for large libraries (P3); unnecessary client-side rendering scope (B1); missing lazy loading on heavy components (B9)
 - **Low**: Unstable callbacks on memoized children (B4); minor code-splitting opportunities; bundle analyzer not configured (P1)
 
 ---
