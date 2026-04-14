@@ -269,14 +269,14 @@ For remaining findings, apply severity modifiers in this exact order:
 Present all findings with final severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
 
 ```
-Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+Found N findings at Medium or above. Which to add to backlog?
 
 [1] [CRITICAL] DEV-? — file:line — one-line description
 [2] [HIGH]     DEV-? — file:line — one-line description
 [3] [MEDIUM]   DEV-? — file:line — one-line description
 ...
 
-Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
 ```
 
 **Wait for explicit user response before writing anything.**
@@ -315,4 +315,4 @@ Each entry **must** include a `Regression risk` field:
 ## Execution notes
 
 - Do NOT make any code changes.
-- After producing the report, ask: "Vuoi che implementi i fix di priorità High/Critical identificati?"
+- After producing the report, ask: "Should I implement the High/Critical priority fixes identified?"

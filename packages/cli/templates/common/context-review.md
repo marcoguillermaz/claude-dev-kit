@@ -15,25 +15,26 @@ Each check has a specific, verifiable pass/fail condition.
 
 ---
 
-## C2 — Language: no Italian in internal explanatory text
+## C2 — Language: no non-English prose in internal explanatory text
 
 **Scope**: every non-code-block line in CLAUDE.md and auto-memory MEMORY.md.
-**Flag** Italian words that are clearly explanatory prose, not quoted values. Key indicators:
+**Flag** non-English words that are clearly explanatory prose, not quoted values or domain terms.
+Configure the keyword list for your project's primary non-English language risk. Default (Italian):
 `obbligatori`, `opzional`, `rimozione`, `rimosso`, `aggiunto`, `aggiornato`, `necessario`, `corretto`, `utilizza`, `gestisce`, `nota bene`, `attenzione`, `verificare`
 
-**Run on CLAUDE.md**: `grep -n "obbligatori\|opzional\|rimozione\|rimosso\|aggiornato\|necessario\|utilizza\|gestisce" CLAUDE.md`
+**Run on CLAUDE.md**: `grep -n "[NON_ENGLISH_KEYWORDS]" CLAUDE.md` — replace `[NON_ENGLISH_KEYWORDS]` with a pipe-separated list of indicator words for your language.
 **Run on auto-memory**: same grep on `~/.claude/projects/<project-path-hash>/memory/MEMORY.md` (run `ls ~/.claude/projects/` to find your project hash)
-**Pass**: 0 matches, or all matches are inside quoted Italian UI strings or DB values.
+**Pass**: 0 matches, or all matches are inside quoted UI strings or domain values.
 **Fail**: translate flagged text to English.
 
 ---
 
 ## C3 — Field name staleness (CLAUDE.md)
 
-**What**: every DB field name mentioned in CLAUDE.md must exist in the current schema.
-**Specific risk pattern**: field renames across blocks. After each block that renames a DB column: immediately update every mention in CLAUDE.md.
+**What**: every data field name mentioned in CLAUDE.md must exist in the current schema or data model.
+**Specific risk pattern**: field renames across blocks. After each block that renames a column or field: immediately update every mention in CLAUDE.md.
 
-**Pass**: all field names in CLAUDE.md match the current schema.
+**Pass**: all field names in CLAUDE.md match the current schema or data model.
 **Fail**: update the field name and add the rename to Known Patterns if non-obvious.
 
 ---
@@ -117,22 +118,22 @@ For each path found, verify it exists: `ls [path]`.
 
 ---
 
-## C12 — Canonical docs currency (sitemap.md + db-map.md)
+## C12 — Canonical docs currency (sitemap + data map)
 
-**What**: verify that `docs/sitemap.md` and `docs/db-map.md` are up to date with the current codebase state.
+**What**: verify that the project's route documentation and data model documentation are up to date with the current codebase state. Skip checks for doc files that do not exist in the project.
 
-**Run on sitemap.md**:
+**Run on route documentation** (e.g., `docs/sitemap.md`):
 ```
 ```
-Compare the resulting route list against routes listed in `docs/sitemap.md`. Flag any route present in the filesystem but absent from the sitemap.
+Compare the resulting route list against routes listed in the route documentation file. Flag any route present in the filesystem but absent from the docs.
 
-**Run on db-map.md**:
+**Run on data model documentation** (e.g., `docs/db-map.md`):
 ```
 ```
-Compare the filename with the "Last synced: migration `NNN_*.sql`" line at the top of `docs/db-map.md`.
-**Fail**: `docs/db-map.md` is behind — update the Tables section, FK Graph, Indexes, and RLS Summary for any migration applied since the last sync, then run `node scripts/refresh-db-map.mjs` to regenerate Column specs.
+Compare against the latest migration or schema change. If the documentation references a "Last synced" marker, verify it matches the most recent migration.
+**Fail**: update the data model documentation to reflect the current schema, then run the project's refresh script if one exists.
 
-**Note**: this check is a backstop — steps 2c and 2d in Phase 8 are the primary enforcement point. C12 catches drift that slipped through.
+**Note**: this check is a backstop — the Phase 8 doc update steps are the primary enforcement point. C12 catches drift that slipped through.
 
 ---
 

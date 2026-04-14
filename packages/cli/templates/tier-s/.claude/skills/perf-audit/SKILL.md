@@ -282,14 +282,14 @@ After applying fixes, verify:
 Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
 
 ```
-Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+Found N findings at Medium or above. Which to add to backlog?
 
 [1] [CRITICAL] PERF-? — file:line — one-line description
 [2] [HIGH]     PERF-? — file:line — one-line description
 [3] [MEDIUM]   PERF-? — file:line — one-line description
 ...
 
-Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
 ```
 
 **Wait for explicit user response before writing anything.**
@@ -310,11 +310,9 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ## Execution notes
 
-- In `mode:audit` (default): do NOT make any code changes — report only. After producing the report, ask: "Vuoi che implementi le ottimizzazioni di priorità High/Critical?"
+- In `mode:audit` (default): do NOT make any code changes — report only. After producing the report, ask: "Should I implement the High/Critical priority optimisations?"
 - In `mode:apply`: apply only the fixes listed in Quick wins (isolated, non-breaking). Describe each change before writing it. Do not apply Strategic refactors without explicit user confirmation. Do NOT ask the closing question — the user already expressed intent via `mode:apply`.
-- `pdfjs-dist` and `pdf-lib` in `serverExternalPackages` are intentional and documented — note as correctly configured.
-- Tiptap in `'use client'` files is acceptable — it requires browser APIs. Only flag if used in a read-only display context.
-- `app/(app)/layout.tsx` with `'use client'` and `cookies()` is intentional — session and theme synchronization. Do NOT flag under B1 Flag B or B8 Pattern A.
+- Check CLAUDE.md "Known Patterns" for intentionally configured server-external packages, client-side component exclusions, or layout-level client directives before flagging them.
 
 ---
 
@@ -501,12 +499,12 @@ Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
 Present all findings with severity Medium or above:
 
 ```
-Trovati N finding Medium o superiori. Quali aggiungere al backlog?
+Found N findings at Medium or above. Which to add to backlog?
 
 [1] [HIGH]     PERF-? — file:line — one-line description
 [2] [MEDIUM]   PERF-? — file:line — one-line description
 
-Rispondi con i numeri da includere (es. "1 2 4"), "tutti", o "nessuno".
+Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
 ```
 
 **Wait for explicit user response before writing anything.**
@@ -524,5 +522,5 @@ Then write approved entries to `docs/refactoring-backlog.md` using the same ID f
 
 ### Native audit — execution notes
 
-- In `mode:audit` (default): report only. After report, ask: "Vuoi che implementi le ottimizzazioni di priorità High/Critical?"
+- In `mode:audit` (default): report only. After report, ask: "Should I implement the High/Critical priority optimisations?"
 - In `mode:apply`: apply only Quick wins. Describe each change before writing.

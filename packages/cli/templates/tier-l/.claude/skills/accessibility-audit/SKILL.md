@@ -8,6 +8,16 @@ argument-hint: [static|full|wcag] [target:route:<path>|target:file:<glob>|target
 allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for
 ---
 
+## Configuration (fill in before first run)
+
+> Replace these placeholders:
+> - `[DEV_URL]` — e.g. `http://localhost:3000`
+> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`
+> - `[APP_SOURCE_GLOB]` — e.g. `app/**/page.tsx` + `components/**/*.tsx`, `src/**/*.vue`
+> - `[DEV_COMMAND]` — e.g. `npm run dev`, `python manage.py runserver`
+>
+> Then fill in the APCA probe selectors in Step 3 (see Stack adaptation section at end).
+
 Single source of truth for accessibility checks across the project. Combines static grep-based checks (run in all modes) with live browser checks (axe-core WCAG scan + APCA contrast measurement) when a dev server is available.
 
 **Scope boundary**:
@@ -15,8 +25,8 @@ Single source of truth for accessibility checks across the project. Combines sta
 - Not here: design token compliance and component adoption → `/ui-audit`. Typography and aesthetic polish → `/visual-audit`. Viewport-specific a11y (WCAG 1.4.4 resize, 1.4.10 reflow, tap targets) → `/responsive-audit`.
 
 **Two execution modes**:
-- **Static mode** (dev server not running): Steps 0-2, 5 only. Can run concurrently with Playwright-based skills per pipeline.md.
-- **Full mode** (dev server running): all steps including APCA contrast + axe-core scan. Sequential — shares the Playwright MCP session with other live audits.
+- **Static mode** (dev server not running): Steps 0-2, 5 only. Can run concurrently with browser-based skills per pipeline.md.
+- **Full mode** (dev server running): all steps including APCA contrast + axe-core scan. Sequential — shares the browser MCP session with other live audits.
 - **WCAG mode** (`wcag`): same as full, plus axe-core `best-practice` tag.
 
 ---
@@ -32,9 +42,9 @@ Parse `$ARGUMENTS` for an optional mode keyword and a `target:` token.
 | `wcag` | Full mode + axe-core `best-practice` tag (more stringent) |
 | No mode keyword | **Auto** — full if dev server responds, else static with a warning |
 | `target:route:<path>` | Restrict live scan to a single route (e.g. `target:route:/dashboard`) |
-| `target:file:<glob>` | Restrict static checks to matching files (e.g. `target:file:app/**/page.tsx`) |
-| `target:role:<role>` | Restrict to routes accessible by that role (from `docs/sitemap.md`) |
-| No target argument | Full audit — all page/component files from sitemap.md |
+| `target:file:<glob>` | Restrict static checks to matching files (e.g. `target:file:src/**/page.tsx`) |
+| `target:role:<role>` | Restrict to routes accessible by that role (from `[SITEMAP_OR_ROUTE_LIST]`) |
+| No target argument | Full audit — all page/component files from `[SITEMAP_OR_ROUTE_LIST]` |
 
 **STRICT PARSING — mandatory**: derive mode and target ONLY from explicit text in `$ARGUMENTS`. Do NOT infer from conversation context, recent blocks, or memory. Unknown tokens → treat as absent and announce ignored args in the banner.
 
@@ -46,11 +56,11 @@ Announce: `Running accessibility-audit in [STATIC | FULL | WCAG] mode — scope:
 
 Run:
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+curl -s -o /dev/null -w "%{http_code}" [DEV_URL]
 ```
 
 - Response 200 or 302 → proceed in **full** mode.
-- Anything else → degrade to **static** mode and record in the report: `⚠️ Dev server not reachable on localhost:3000 — APCA + axe-core checks skipped. Re-run after starting [DEV_COMMAND] for full coverage.`
+- Anything else → degrade to **static** mode and record in the report: `⚠️ Dev server not reachable at [DEV_URL] — APCA + axe-core checks skipped. Re-run after starting [DEV_COMMAND] for full coverage.`
 
 If mode was forced (`static`/`full`/`wcag`), skip this step — but if `full`/`wcag` was forced and the server is unreachable, fail explicitly: `❌ Mode [full|wcag] requested but dev server not running. Start [DEV_COMMAND] or re-run with "static".`
 
@@ -58,7 +68,7 @@ If mode was forced (`static`/`full`/`wcag`), skip this step — but if `full`/`w
 
 ## Step 2 — Static a11y checks (A1-A8)
 
-Read `docs/sitemap.md` (if present) to build the target file list — page files + component files. If no sitemap, fall back to `app/**/page.tsx` + `components/**/*.tsx` filtered by `target:` scope.
+Read `[SITEMAP_OR_ROUTE_LIST]` (if present) to build the target file list — page files + component files. If no sitemap, fall back to `[APP_SOURCE_GLOB]` filtered by `target:` scope.
 
 Launch a **single Explore subagent** (model: haiku) with the full file list and the check definitions below. Pass file paths explicitly — do not ask the agent to discover them.
 
@@ -82,10 +92,10 @@ Pattern: `tabIndex=[1-9]|tabindex="[1-9]`
 Exclude: lines with `//`, `{/*`.
 Expected: 0 matches. Positive tabindex breaks natural tab order. Only `tabIndex={0}` or `tabIndex={-1}` are valid.
 
-**A3 — outline-none without focus-ring compensation** [Severity: High — WCAG 2.4.7, Tailwind v4 regression]
-Pattern: lines containing `outline-none` that do NOT also contain any of: `focus-visible:ring`, `focus:ring`, `focus-visible:outline`, `focus:outline`.
-Method: grep `outline-none`, then filter out lines that also contain any of the focus restoration patterns.
-Expected: 0 matches. In Tailwind v4, `outline-none` strips the focus indicator in forced-color / high-contrast mode. Replace with `outline-hidden` for decorative suppression, or add explicit `focus-visible:ring-*` compensation.
+**A3 — Focus outline suppression without compensation** [Severity: High — WCAG 2.4.7]
+Pattern: lines containing `outline-none` or `outline: none` that do NOT also contain a focus-visible ring or outline restoration.
+Method: grep for outline suppression, then filter out lines that also contain focus restoration patterns (e.g. `focus-visible:ring`, `focus:ring`, `:focus-visible { outline`).
+Expected: 0 matches. Suppressing the focus outline without providing an alternative indicator breaks keyboard navigation in high-contrast mode.
 
 **A4 — Native `<img>` without alt** [Severity: Medium — WCAG 1.1.1]
 Pattern: `<img\s`
@@ -94,13 +104,12 @@ Expected: 0 matches. Every raster image must have an `alt` attribute (empty stri
 
 **A5 — Form inputs without accessible labels** [Severity: Critical — WCAG 1.3.1, 3.3.2, 4.1.2]
 Method: grep `<input`, `<Input`, `<textarea`, `<Textarea`, `<Select`. For each match, check within ±5 lines for a `<Label` containing `htmlFor` matching the input's `id`, OR an `aria-label`/`aria-labelledby` on the element.
-Exclude: inputs inside `<FormField>` (react-hook-form pattern) with a sibling `<FormLabel>` — these are valid.
+Exclude: inputs inside form field wrapper components with a sibling label component — these are valid (e.g. react-hook-form `<FormField>` + `<FormLabel>`).
 Expected: 0 matches. Every form control must have an accessible name.
 
-**A6 — Bare focus ring without explicit size** [Severity: High — WCAG 1.4.11]
-Pattern: `focus:ring[^-]|focus-visible:ring[^-]` (bare `ring` without a size modifier like `ring-2`).
-In Tailwind v4, the default `ring` changed from 3px to 1px. A bare `focus-visible:ring` relying on the 3px default is now too thin to meet WCAG 1.4.11 (3:1 non-text contrast for focus indicators).
-Expected: 0 matches on interactive elements. Recommend `ring-2` or `ring-[3px]` explicitly.
+**A6 — Focus indicator too thin** [Severity: High — WCAG 1.4.11]
+Pattern: focus ring/outline declarations that rely on a default width without explicit sizing (e.g. bare `focus-visible:ring` without a size like `ring-2`, or `outline-width` under 2px).
+Expected: 0 matches on interactive elements. Focus indicators must meet WCAG 1.4.11 (3:1 non-text contrast) — a 1px ring is typically insufficient.
 
 **A7 — onClick on non-interactive elements** [Severity: Critical — WCAG 2.1.1]
 Pattern: `<div.*onClick|<span.*onClick|<li.*onClick|<p.*onClick`.
@@ -109,7 +118,7 @@ Exclude: lines inside `{/* ... */}` comments; Radix `asChild` wrappers.
 Expected: 0 matches missing keyboard support.
 
 **A8 — Sidebar/nav trigger keyboard accessibility** [Severity: High — WCAG 2.1.1]
-Scope: `app/(app)/layout.tsx`, `components/Sidebar*.tsx`, or equivalent layout entry points.
+Scope: main layout entry point and sidebar/navigation components (e.g. `layout.tsx`, `Sidebar.tsx`).
 Verify: the primary sidebar / navigation trigger is reachable on BOTH mobile and desktop — not hidden inside an `md:hidden` wrapper with no desktop alternative.
 Flag: `SidebarTrigger` or equivalent wrapped only in `md:hidden` without a matching non-mobile trigger.
 Expected: every layout exposes a keyboard-reachable nav trigger at every breakpoint."
@@ -126,7 +135,7 @@ Pick 3 representative pages from the target scope:
 For each page:
 
 ```
-1. mcp__playwright__browser_navigate → http://localhost:3000/<route>
+1. mcp__playwright__browser_navigate → [DEV_URL]/<route>
 2. Ensure logged in with the role from the route's sitemap entry (if auth required).
 3. browser_wait_for network idle (2000ms max).
 4. For each theme (light, dark):
@@ -137,16 +146,20 @@ For each page:
 
 ### APCA probe
 
+> **Adapt selectors below** to match your project's design system tokens. The defaults target
+> common patterns (muted text, card surface, primary CTA, border). See Stack adaptation section.
+
 ```js
 // Returns computed color + background for the three C-checks.
 // APCA Lc is NOT computed here — we capture the raw rgb pairs and flag qualitatively.
 // The skill's report narrates the pair against Lc thresholds documented below.
 const byClass = (sel) => document.querySelector(sel);
 
-const muted = byClass('[class*="muted-foreground"]');
-const card = byClass('[data-slot="card"], [class*="rounded"][class*="border"], main > div');
-const cta = byClass('button[class*="bg-brand"], button[class*="bg-primary"], [data-slot="button"][class*="primary"]');
-const border = byClass('[class*="border-border"], [class*="rounded"][class*="border"]');
+// Adapt these selectors to your design system (see Stack adaptation section)
+const muted = byClass('[MUTED_TEXT_SELECTOR]');
+const card = byClass('[CARD_SURFACE_SELECTOR]');
+const cta = byClass('[PRIMARY_CTA_SELECTOR]');
+const border = byClass('[BORDER_SELECTOR]');
 
 const style = (el) => el ? getComputedStyle(el) : null;
 return {
@@ -179,7 +192,7 @@ Record each pair. The report narrates against thresholds qualitatively (getCompu
 
 | ID | Severity | Target |
 |---|---|---|
-| **C1** | High if body text appears below Lc 45; Critical if below Lc 30 | `text-muted-foreground` on `bg-card`, both themes. Silent dark-mode failure point. |
+| **C1** | High if body text appears below Lc 45; Critical if below Lc 30 | Muted text on card/surface background, both themes. Silent dark-mode failure point. |
 | **C2** | High | Primary CTA text on brand background — frequent regression after token tweaks. |
 | **C3** | Medium | Border / icon contrast vs card background — must reach Lc 15. |
 
@@ -231,8 +244,8 @@ return {
 
 ### Known false positives to suppress (document, not fix)
 
-- `color-contrast` on `text-muted-foreground` inside a Radix Portal overlay — axe measures the portal layer, not the semantic background. Verify manually against Step 3 C1 data.
-- `aria-hidden-focus` inside a closed Dialog/Sheet — Radix manages this via the `inert` attribute in v1.1+. Verify the installed Radix version before flagging.
+- `color-contrast` on muted text inside a portal overlay — axe measures the portal layer, not the semantic background. Verify manually against Step 3 C1 data.
+- `aria-hidden-focus` inside a closed Dialog/Sheet — headless UI libraries (Radix, Headless UI, etc.) manage this via `inert`. Verify library version before flagging.
 
 ---
 
@@ -335,7 +348,23 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 - Do NOT apply a11y fixes during this skill. Audit only.
 - The Explore agent in Step 2 handles all static grep work. Do not duplicate searches in the main context.
-- **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill runs sequentially with `/visual-audit` → `/ux-audit` → `/responsive-audit` — they share the Playwright MCP session. `/ui-audit` still launches concurrently first.
+- **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill runs sequentially with `/visual-audit` → `/ux-audit` → `/responsive-audit` — they share the browser MCP session. `/ui-audit` still launches concurrently first.
 - **Static mode degradation**: if the dev server is unreachable and mode was auto, the report must state explicitly which steps were skipped. Never silently omit checks.
-- **axe-core false positives**: document suppressed false positives explicitly in the report. Do not flag known Radix-managed patterns (inert Dialog children, Portal color-contrast measurements) as violations without manual verification.
+- **axe-core false positives**: document suppressed false positives explicitly in the report. Do not flag patterns managed by headless UI libraries (inert Dialog children, Portal color-contrast measurements) as violations without manual verification.
 - **Complementary skills**: `/accessibility-audit` is the single source of truth for accessibility. For design-token compliance and component adoption see `/ui-audit`; for aesthetic contrast and polish see `/visual-audit`; for viewport-specific WCAG checks (1.4.4 resize, 1.4.10 reflow, tap targets) see `/responsive-audit`.
+
+---
+
+## Stack adaptation (fill after scaffold)
+
+| Key | Your value | Examples |
+|---|---|---|
+| `[DEV_URL]` | | `http://localhost:3000`, `http://127.0.0.1:8080` |
+| `[SITEMAP_OR_ROUTE_LIST]` | | `docs/sitemap.md`, `docs/routes.md` |
+| `[APP_SOURCE_GLOB]` | | `app/**/page.tsx` + `components/**/*.tsx`, `src/**/*.vue` |
+| `[DEV_COMMAND]` | | `npm run dev`, `python manage.py runserver` |
+| APCA selectors | | Adapt Step 3 probe to your design system tokens |
+| `[MUTED_TEXT_SELECTOR]` | | `[class*="muted-foreground"]`, `.text-secondary` |
+| `[CARD_SURFACE_SELECTOR]` | | `[data-slot="card"]`, `.card`, `main > div` |
+| `[PRIMARY_CTA_SELECTOR]` | | `button[class*="bg-primary"]`, `.btn-primary` |
+| `[BORDER_SELECTOR]` | | `[class*="border-border"]`, `.border` |

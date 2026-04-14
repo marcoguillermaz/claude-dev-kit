@@ -201,18 +201,18 @@ If either condition is false: **skip this phase and state so explicitly** — do
 
 ## Phase 5d — Block-scoped quality audit *(blocks with UI or API changes)*
 
-**Track A — UI audit** *(if block adds/modifies UI routes or components — runs on localhost)*
+**Track A — UI audit** *(if block adds/modifies UI routes or components — web applications only; skip for CLI, backend-only, or native projects)*
 - Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, empty states).
-- Run `/accessibility-audit` scoped to the block's new/modified routes (axe-core WCAG 2.2, APCA contrast, static a11y patterns).
+- Run `/accessibility-audit` scoped to the block's new/modified routes (WCAG 2.2, contrast, static a11y patterns).
 - Run `/visual-audit` scoped to the block's new/modified pages (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish).
 - Run `/ux-audit` scoped to the block's user flows (task completion, feedback clarity, cognitive load).
 - Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
-- **Execution order**: `/ui-audit` is static — launch it concurrently with the first Playwright-based skill. Then: `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the Playwright session).
+- **Execution order**: `/ui-audit` is static — launch it concurrently with the first browser-based skill. Then: `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the browser session).
 
 **Track B — API/DB audit** *(if block creates/modifies API routes or applies migrations — static analysis, no dev server needed)*
 - Run `/security-audit` if the block creates or modifies any API route. Run `/api-design` if the block adds new API routes. Both are static — run them concurrently.
 - Run `/migration-audit` if the block applies migrations — static analysis of migration files.
-- Run `/skill-db` if the block changes the schema or adds new tables — live SQL verification of schema state, RLS policies, and query patterns.
+- Run `/skill-db` if the block changes the schema or adds new tables — live verification of schema state, access control policies, and query patterns.
 
 **Track C — Test suite audit** *(runs for every block after Phase 3 is green — static analysis, no dev server needed)*
 - Run `/test-audit` — static analysis of coverage (auto-detects lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).

@@ -8,11 +8,11 @@ argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 allowed-tools: Read, Glob, Grep
 ---
 
-**Critical constraint**: `docs/sitemap.md` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form `grep -r` across all of `app/` or `components/` — scope every check to the files listed in the sitemap.
+**Critical constraint**: `[SITEMAP_OR_ROUTE_LIST]` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form `grep -r` across source directories — scope every check to the files listed in the sitemap.
 
 **Scope boundary**: this skill covers design-token compliance and component adoption only. Accessibility (aria, tabindex, focus, labels, axe-core WCAG scan, APCA contrast) lives in `/accessibility-audit` — run it alongside `/ui-audit` for any UI change.
 
-Static-only skill — no dev server required. Can run concurrently with Playwright-based skills per pipeline.md.
+Static-only skill — no dev server required. Can run concurrently with browser-based skills per pipeline.md.
 
 ---
 
@@ -23,9 +23,9 @@ Parse `$ARGUMENTS` for a `target:` token.
 | Pattern | Meaning |
 |---|---|
 | `target:section:<name>` | Restrict to routes whose path contains `<name>` |
-| No target argument | Full audit — ALL routes in sitemap.md |
+| No target argument | Full audit — ALL routes in `[SITEMAP_OR_ROUTE_LIST]` |
 
-**STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full audit, all routes in sitemap.
+**STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full audit, all routes.
 
 Announce at start: `Running ui-audit — scope: [FULL | target resolved to: N pages]`
 
@@ -35,7 +35,7 @@ Apply the resolved target to Steps 1–3 below — include only the matching pag
 
 ## Step 1 — Read sitemap and build target lists
 
-Read `docs/sitemap.md`. Extract (filtered by target scope from Step 0):
+Read `[SITEMAP_OR_ROUTE_LIST]`. Extract (filtered by target scope from Step 0):
 
 - `detail` pages: routes with `/[id]` in the path
 - `form / wizard` pages: routes with Form, wizard, or onboarding components
@@ -84,13 +84,13 @@ Flag lines where the same utility class appears twice.
 Expected: 0 matches.
 
 **CHECK 6 — Bare empty states (no EmptyState component)** [Severity: High]
-Pattern: lines containing `<p` AND (`Nessun` OR `Nessuna`) with a className including `text-center` or `text-muted-foreground`
+Pattern: lines containing `<p` AND an empty-state message (e.g. "No records", "Nothing found", "No results") with a className including `text-center` or `text-muted`
 Exclude: lines containing `EmptyState`, `toast`, `aria-`, `placeholder=`, `title=`
-Expected: 0 matches. All empty states must use the EmptyState component.
+Expected: 0 matches. All empty states must use a dedicated EmptyState component.
 
 **CHECK 7 — Back links in detail pages missing block display** [Severity: Low]
 Scope: only the 'detail' layout pages from the sitemap.
-Pattern: `← Torna` — check that the containing Link has `block` in its className.
+Pattern: back navigation links (e.g. `← Back`, `← Return`) — check that the containing Link has `block` in its className.
 Expected: every back link has `block` in className.
 
 **CHECK 8 — Content status badges with hardcoded colors** [Severity: Medium]
@@ -139,14 +139,14 @@ These require judgment, not just pattern matching:
 Severity: High for routes with DB queries, Medium for static/client-only routes.
 
 **S2 — NotificationBell placement**
-Read `components/Sidebar.tsx` and `app/(app)/layout.tsx`.
-Verify: NotificationBell appears exactly once in the rendered DOM per viewport (no duplication).
-Known issue: `collapsible="offcanvas"` sidebar + `md:hidden` header can cause double rendering.
+Read sidebar/navigation and layout components.
+Verify: notification indicator appears exactly once in the rendered DOM per viewport (no duplication).
+Known issue: collapsible sidebar + responsive header can cause double rendering.
 
 **S3 — Sign-out button semantic color**
-Read `components/Sidebar.tsx` lines containing "Esci" or "sign" or "red".
-Verify: uses `bg-destructive` (semantic) not `bg-red-600` (hardcoded).
-Expected: `bg-destructive hover:bg-destructive/90`.
+Read sidebar/navigation component lines containing "sign out" or "logout" or "red".
+Verify: uses semantic destructive token (e.g. `bg-destructive`) not hardcoded color (e.g. `bg-red-600`).
+Expected: semantic destructive token with hover variant.
 
 **S4** — moved to `/accessibility-audit` as A8 (sidebar/nav trigger keyboard accessibility).
 
@@ -158,9 +158,9 @@ Expected: all table wrappers use `w-fit` or `w-auto`.
 
 **S7** — moved to `/accessibility-audit` as A7 (onClick on non-interactive elements, WCAG 2.1.1).
 
-**S8 — 'use client' placement depth**
-Read `app/(app)/layout.tsx`.
-Verify: `'use client'` is NOT present at the top of layout.tsx (it is a Server Component by design).
+**S8 — Client-side boundary placement depth** *(React/Next.js only — skip for other frameworks)*
+Read the main layout file.
+Verify: `'use client'` is NOT present at the top of the root layout (it should be a Server Component by design).
 Severity: Medium (performance — prevents RSC streaming).
 
 ---
@@ -171,7 +171,7 @@ Output in this exact format:
 
 ```
 ## UI Audit — [DATE]
-### Scope: [N] page files from sitemap.md + [N] component files
+### Scope: [N] page files from [SITEMAP_OR_ROUTE_LIST] + [N] component files
 ### Target: [FULL | target:<value>]
 
 > For accessibility checks (axe-core WCAG scan, APCA contrast, aria/tabindex/label patterns), run `/accessibility-audit`.
@@ -219,7 +219,7 @@ Output in this exact format:
 [check numbers with 0 matches confirmed]
 
 ### Coverage
-Page files checked: N/N from sitemap.md
+Page files checked: N/N from [SITEMAP_OR_ROUTE_LIST]
 Component files checked: N
 ```
 
@@ -232,6 +232,6 @@ If all checks pass: output `UI Audit CLEAN — [DATE]. No violations found.`
 - Do NOT make any code changes during this skill. Audit only.
 - Do NOT re-read files already in context from Step 1.
 - The Explore agent in Step 2 handles all grep work. Do not duplicate searches in the main context.
-- **Pipeline integration**: for Critical findings, ask the user: "Vuoi che implementi i fix identificati?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
-- **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill launches concurrently with the first Playwright-based skill. It is fully static — no dev server required.
+- **Pipeline integration**: for Critical findings, ask the user: "Should I implement the identified fixes?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
+- **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill launches concurrently with the first browser-based skill. It is fully static — no dev server required.
 - **Complementary skill**: run `/accessibility-audit` alongside `/ui-audit` for any UI change. It owns axe-core WCAG 2.2 scan, APCA contrast, and the static a11y patterns formerly numbered here as CHECK 11/13/14/16/17 and S4/S6/S7.

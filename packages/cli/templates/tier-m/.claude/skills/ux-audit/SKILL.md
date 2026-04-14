@@ -29,13 +29,13 @@ allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__p
 Parse `$ARGUMENTS`:
 
 **Mode** (which flows to run):
-- `role:<role>` → run all flows for a specific role (e.g. `role:collab`)
+- `role:<role>` → run all flows for a specific role (e.g. `role:viewer`)
 - `full` → run all flows including Priority 2
 - No mode keyword → **standard** — run all Priority 1 flows (P1) for all roles
 
 **Target** (filters to a specific area — applied on top of mode):
-- `target:role:collab` → only collab flows
-- No target → no filter — run ALL flows in the selected mode across ALL routes in sitemap.md
+- `target:role:<role_name>` → only that role's flows
+- No target → no filter — run ALL flows in the selected mode across ALL routes in `[SITEMAP_OR_ROUTE_LIST]`
 
 **STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (run all flows in the selected mode). If `$ARGUMENTS` is empty → STANDARD mode, full scope (all P1 flows, no filter).
 
@@ -47,7 +47,7 @@ Announce at start:
 ## Step 1 — Load architecture context
 
 Read in parallel:
-1. `docs/sitemap.md` — full route inventory, sub-hierarchies, role mapping, test accounts
+1. `[SITEMAP_OR_ROUTE_LIST]` — full route inventory, sub-hierarchies, role mapping, test accounts
 
 From sitemap sub-hierarchies, build a mental model of:
 - What tabs exist per page
@@ -59,7 +59,7 @@ From sitemap sub-hierarchies, build a mental model of:
 
 ## Step 2 — Pre-flight check
 
-Navigate to `http://localhost:3000`. If not reachable:
+Navigate to `[DEV_URL]`. If not reachable:
 > ❌ Dev server not running. Start with `[DEV_COMMAND]` then re-run `/ux-audit`.
 
 Record the base URL. If redirected to `/login`, record that a session must be established first.
@@ -101,7 +101,7 @@ Record per flow: `C1:[✅/❌/N/A] C2:[✅/❌/N/A] C3:[✅/❌/N/A] C4:[✅/❌
 
 Before simulating each flow, read the primary page file and key components involved in that flow. Specifically look for:
 - Form field count and labels — are they clear and unambiguous?
-- CTA button labels — are they action-oriented (verb + noun) or vague ("Invia")?
+- CTA button labels — are they action-oriented (verb + noun) or vague (e.g., "Submit")?
 - Post-submit behavior — does the code show a redirect, modal close, or toast?
 - Empty state handling — is there a meaningful empty state or just a blank area?
 - Error state handling — are validation errors per-field or only at submit?
@@ -114,7 +114,7 @@ For each form in the flow, during code inspection verify:
 
 | # | Check | Good practice | Baymard finding |
 |---|---|---|---|
-| BF1 | Error message content | Field-specific: "Importo deve essere positivo" | 98% of sites use generic messages — users cannot recover |
+| BF1 | Error message content | Field-specific: "Amount must be positive" | 98% of sites use generic messages — users cannot recover |
 | BF2 | Inline validation timing | Fires on `onBlur` or post-submit — NOT `onChange` | Premature validation disrupts typing and increases errors |
 | BF3 | Positive inline validation | Shows ✓ or green border after correction | Reduces user anxiety; confirms correction was accepted |
 | BF4 | Required/optional labeling | Required = `*`; Optional fields explicitly labeled | Unlabeled optional fields cause over-completion |
@@ -129,90 +129,44 @@ This code context MUST be referenced in the D1–D7 analysis. Don't rely purely 
 
 ## Step 5 — Flow catalog
 
+> **Customise before first run.** Replace the example flows below with your project's actual user journeys.
+> Define 3-5 Priority 1 flows covering the most critical task per role. Add Priority 2 flows for full-mode coverage.
+
 ### Priority 1 flows (always run in standard mode)
 
-**Steps**:
-1. Login → `/`
-4. Fill form: importo, descrizione, data, tipo
-5. Attach file (if field present — verify field is visible, skip actual upload)
-6. Submit
-7. Verify: redirect or modal close + success toast + record appears in list
+<!-- Copy this template for each P1 flow. Number sequentially: F1, F2, F3... -->
 
-**Evaluate**: D1 (can user find the CTA?), D3 (success toast + BF1 message quality), D5 (field count vs BF6), D6 (validation messages specific per BF1?), D7 (cancel path present? Reassurance copy?)
-
+#### F1 — [Flow name] (e.g. Create record, Submit form, Complete onboarding)
+**Role**: [role from RBAC table] · **Priority**: 1
+**Read before simulating**: [primary page/component path]
 **Steps**:
-2. Click first communication card
-4. Navigate back using back affordance
-
-**Steps**:
-1. Navigate to `/ticket`
-2. Click "Nuovo ticket"
-3. Fill: oggetto, categoria, descrizione
+1. Login with [role] credentials → navigate to [route]
+2. [Trigger action — click CTA, open form, etc.]
+3. [Fill required fields]
 4. Submit
-5. Verify: redirect to ticket detail + status APERTO visible
+5. Verify: [expected outcome — redirect, toast, record in list, status change]
 
+**Evaluate**: D1 (can user find the CTA?), D3 (success feedback + BF1 message quality), D5 (field count vs BF6), D6 (validation messages specific per BF1?), D7 (cancel path present?)
+
+#### F2 — [Flow name]
+**Role**: [role] · **Priority**: 1
 **Steps**:
-1. Login → `/`
-2. Navigate to `/approvazioni`
+1. [step]
 
-**Evaluate**: D2 (read-only constraint clearly communicated?), D4 (active tab visually clear? — H6 recognition), D5 (info density per row appropriate?), D7 (user feels informed, not confused by missing actions)
+**Evaluate**: [relevant dimensions]
 
-**Steps**:
-1. Login → `/`
-2. Observe dashboard: what is shown first? What draws the eye?
-3. Interact with the dashboard updates/tabs section (read component structure from the page file loaded above)
-4. Check if any CTA on dashboard leads to the correct section
-
-**Evaluate**: D1 (can user understand what to do from the dashboard?), D4 (current section clear from sidebar?), D5 (info density — too much / too little?), D7 (does the dashboard inspire confidence or overwhelm?)
-
-**Steps**:
-6. Navigate back
-
-**Prerequisite**: if this account doesn't exist, skip this flow and log: "F7 SKIPPED — no resp_citt test account. Create one before running this flow."
-**Steps**:
-1. Login → `/`
-4. Find a lezione → assign a CoCoD'à via dropdown
-5. Verify: toast success + assignment visible in the row
-6. Try to remove the assignment (rimuovi button if present)
-
-**Role**: collab · **Priority**: 1
-**Read before simulating**: `app/(app)/onboarding/` — all steps
-**Steps**:
-2. Step 1: fill personal data fields
-3. Step 2: fill fiscal data fields
-4. Step 3: community + città selection
-5. Step 4: verify document upload field present (skip actual upload)
-6. Submit final step → verify redirect to `/` + `onboarding_completed=true` in DB
-7. **D7**: C1:[back between steps possible without losing data?] C2:[final submit guarded by confirmation?] C3:[onboarding completion explicitly confirmed — welcoming dashboard state?] C4:[N/A] C5:[explicit success state on completion, not just redirect?]
-
-**Evaluate**: D1 (BF5 — "Passo N di M" visible per step?), D3 (feedback on each step + BF3 positive validation), D5 (BF6 — ≤8 fields per step?), D6 (if a step fails, can user continue or go back?), D7 (C1-C5)
+<!-- Add F3, F4, F5 as needed. Aim for 3-5 P1 flows covering each primary role. -->
 
 ---
 
 ### Priority 2 flows (full mode only)
 
-**Role**: resp
+<!-- Add P2 flows for secondary tasks, edge-case roles, or less critical journeys. -->
 
-**Role**: collab
-**Evaluate**: D1 (signing CTA prominent enough?), D3 (progress during multi-step sign flow?), D5 (BF5 step progress?), D6 (what if signature invalid?), D7 (confirmation before irreversible sign action?)
-
-#### F10 — Multi-role: gestione ticket (resp view)
-**Role**: resp
-**Steps**: `/ticket` → open an existing ticket → reply → change status
-**Evaluate**: D2 (resp chat view consistent with admin's?), D3 (reply confirmation?), D4 (clear indicator of role capability), D7 (can resp close a ticket? If not, is limitation communicated?)
-
-**Role**: collab
-**Steps**: Click bell icon → see notification list → click notification → verify redirect to correct entity
-**Evaluate**: D1 (notification item actionable — clear link?), D3 (unread vs read visual distinction?), D4 (landing page after click — correct context?), D7 (does dismissing a notification feel intentional, not accidental?)
-
-**Role**: resp_citt
-**Prerequisite**: same as F7 — skip if no account.
-**Steps**:
-2. Find a lezione with a completed docenza
-4. Submit and verify toast + state update
-5. **D7 check**: if valutazione is already submitted, is the locked state communicated clearly?
-
-**Evaluate**: D1, D3 (BF1 error message quality), D5 (form fields per BF6), D6 (what if already submitted — is UI clear?), D7 (user certain their valutazione was saved?)
+#### F[N] — [Flow name]
+**Role**: [role] · **Priority**: 2
+**Steps**: [route] → [action sequence]
+**Evaluate**: [relevant dimensions]
 
 ---
 
@@ -247,13 +201,13 @@ For each flow in scope:
 ### Session management
 ```
 Login helper:
-1. browser_navigate http://localhost:3000/login
-2. If at /: check sidebar for correct role indicator
-   - If wrong role: find "Esci" in sidebar → click → confirm → wait for /login
+1. browser_navigate [DEV_URL]/[LOGIN_ROUTE]
+2. If at /: check for correct role indicator
+   - If wrong role: sign out → wait for login page
 3. browser_type email field
 4. browser_type password field
 5. browser_click submit
-6. browser_wait_for url contains localhost:3000/
+6. browser_wait_for url contains [DEV_URL]/
 ```
 
 ---
@@ -271,7 +225,7 @@ After simulation, for each flow apply a structured analysis:
 - What is the concrete fix?
 
 **Cross-flow consistency check**:
-- Admin CRUD across different entities (from sitemap.md): same action placement and pattern?
+- CRUD across different entities (from `[SITEMAP_OR_ROUTE_LIST]`): same action placement and pattern?
 
 ### Heuristic sweep (after all flows — 5 checks)
 
@@ -281,10 +235,10 @@ Source: Nielsen Norman Group — 10 Usability Heuristics for User Interface Desi
 
 | H# | Heuristic | What to check | Flag if |
 |---|---|---|---|
-| H5 | Error prevention | Destructive or irreversible actions (delete record, mark LIQUIDATO, revoke user, cancel application) trigger a confirmation dialog BEFORE execution — not after. | Any destructive action that executes on single click without confirmation |
+| H5 | Error prevention | Destructive or irreversible actions (delete record, change status irreversibly, revoke access, cancel application) trigger a confirmation dialog BEFORE execution — not after. | Any destructive action that executes on single click without confirmation |
 | H6 | Recognition vs recall | Form fields have persistent visible labels — not just placeholder text that disappears on focus/fill. User should not need to remember what a field asked. | Any input relying solely on placeholder for its label |
 | H8 | Minimalist design | Each screen shows only information needed for the current task. Identify any UI element with low information value that adds visual noise or competes with primary content. | Any page where the eye has nowhere obvious to start |
-| H9 | Error diagnosis | Validation error messages name the specific field AND tell the user what correction is needed (not just that one is needed). | Any generic "Questo campo è obbligatorio" without the specific constraint |
+| H9 | Error diagnosis | Validation error messages name the specific field AND tell the user what correction is needed (not just that one is needed). | Any generic "This field is required" without the specific constraint |
 
 Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Violation. Include in report.
 
@@ -294,7 +248,7 @@ Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Viola
 
 ```
 ## UX Audit — [DATE] — [MODE] — [TARGET]
-### Reference: docs/sitemap.md · flows F[N]–F[N]
+### Reference: [SITEMAP_OR_ROUTE_LIST] · flows F[N]–F[N]
 ### Framework: ISO 9241-11 (Effectiveness/Efficiency/Satisfaction) · Nielsen's 10 Heuristics · Baymard Form Research
 ### Scope: task completion · consistency · feedback · navigation · cognitive load · error recovery · user confidence
 ### Out of scope: token compliance → /ui-audit | Responsiveness → /responsive-audit
@@ -378,11 +332,11 @@ Order by severity, then by impact (flows affected):
 
 After the report:
 
-> "Vuoi approfondire qualche finding specifico? Posso:
-> - **Wireframe ASCII**: proporre il design dettagliato per un fix via `/frontend-design`
-> - **Heuristic deep-dive**: analizzare in dettaglio un'euristica specifica su tutte le pagine (es. H5 su tutti i flussi con azioni distruttive)
-> - Comparare due sezioni specifiche per consistenza
-> - Generare una checklist di fix da integrare nel backlog (`docs/refactoring-backlog.md`)"
+> "Want to dig into a specific finding? I can:
+> - **Wireframe ASCII**: propose a detailed design for a fix via `/frontend-design`
+> - **Heuristic deep-dive**: analyse a specific heuristic across all pages (e.g. H5 on all flows with destructive actions)
+> - Compare two specific sections for consistency
+> - Generate a fix checklist to integrate into the backlog (`docs/refactoring-backlog.md`)"
 
 **Do NOT apply code changes directly.** UX findings must be validated with the user before implementation — they often require design decisions, not just code fixes.
 
@@ -395,3 +349,15 @@ After the report is delivered and the improvement offer is presented, clean up t
 ```
 
 Run this unconditionally at session end — screenshots are only needed during analysis.
+
+---
+
+## Stack adaptation (fill after scaffold)
+
+| Key | Your value | Examples |
+|---|---|---|
+| `[DEV_URL]` | | `http://localhost:3000`, `http://127.0.0.1:8080` |
+| `[LOGIN_ROUTE]` | | `login`, `signin`, `auth/login` |
+| `[SITEMAP_OR_ROUTE_LIST]` | | `docs/sitemap.md`, `docs/routes.md` |
+| `[TEST_ACCOUNTS]` | | email/password pairs per role |
+| `[DEV_COMMAND]` | | `npm run dev`, `python manage.py runserver` |

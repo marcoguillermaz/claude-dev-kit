@@ -18,7 +18,7 @@ These rules apply when working on API routes, auth, and database code.
 ## Database
 
 - Never interpolate user input directly into SQL strings. Use parameterized queries / ORM methods.
-- Confirm that new tables have row-level security or equivalent access control enabled.
+- Confirm that new tables have row-level access control enabled (e.g., PostgreSQL RLS, application-level guards).
 - Never expose raw DB errors to clients — log internally, return generic message.
 - Before using a column name from user input in a query, validate it against an allowlist.
 
@@ -41,4 +41,4 @@ These rules apply when working on API routes, auth, and database code.
 - [ ] No sensitive data in responses
 - [ ] No raw DB errors exposed to client
 - [ ] No secrets in code or logs
-- [ ] RLS / ACL not implicitly bypassed
+- [ ] Row-level access control not implicitly bypassed

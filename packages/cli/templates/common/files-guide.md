@@ -21,15 +21,15 @@ CLAUDE.md                        ← project context (official, committed)
 .claude/settings.local.json      ← personal config overrides (official, gitignored)
 ~/.claude/projects/.../MEMORY.md ← auto-memory (Claude Code system, NOT committed)
 
-Loaded on demand
+Loaded on demand (adapt paths to your project)
 ─────────────────────────────────────
 MEMORY.md (project root)         ← shared lessons (project convention — read in Phase 0)
 docs/requirements.md             ← product spec (read in Phase 1)
 docs/implementation-checklist.md ← progress tracker (read in Phase 1)
 docs/refactoring-backlog.md      ← tech debt (read in Phase 1)
-docs/prd/prd.md                  ← PRD source of truth (read in Phase 1 for new feature areas; updated in Phase 8 step 2f — mandatory)
-docs/contracts/*.md              ← per-entity field×role×surface contracts (read in Phase 1)
-docs/migrations-log.md           ← migration history (read/written in Phase 2)
+docs/prd/prd.md                  ← PRD source of truth (read in Phase 1; updated in Phase 8 — mandatory if exists)
+docs/contracts/*.md              ← per-entity field×role×surface contracts (read in Phase 1, if applicable)
+docs/migrations-log.md           ← migration history (read/written in Phase 2, if applicable)
 ```
 
 ---
@@ -165,7 +165,7 @@ variables, model selection, sandbox mode, and more.
 **Precedence** (highest to lowest): managed (org-wide) → command-line → local → project → user.
 
 **This project's `.claude/settings.json`** (committed): all Bash commands + MCP tools pre-authorised,
-so Claude does not ask for permission at every pipeline command (tsc, vitest, playwright, git, node scripts).
+so Claude does not ask for permission at every pipeline command (build tools, test runners, git, scripts).
 No `settings.local.json` is currently active — personal overrides are in `~/.claude/settings.json` (Bash(*) global).
 
 Key settings configured:

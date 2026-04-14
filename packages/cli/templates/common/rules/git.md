@@ -19,7 +19,7 @@ feat(auth): add email invite flow
 fix(api): return 403 instead of 404 for unauthorized access
 docs(adr): record decision to use Zod for validation
 chore(deps): upgrade TypeScript to 5.4
-refactor(db): extract query helpers to lib/db.ts
+refactor(data): extract query helpers to data layer
 test(auth): add integration tests for invite flow
 ```
 
