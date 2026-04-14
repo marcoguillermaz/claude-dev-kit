@@ -569,13 +569,14 @@ describe('pruneSkills', () => {
     assert.ok(!left.includes('ui-audit'));
   });
 
-  it('native stack removes responsive-audit but keeps visual and ux', async () => {
+  it('native stack removes browser-only skills (responsive, visual, ux, accessibility)', async () => {
     await setupSkills(tmpDir);
     await pruneSkills(tmpDir, { techStack: 'swift' });
     const left = remaining(tmpDir);
     assert.ok(!left.includes('responsive-audit'));
-    assert.ok(left.includes('visual-audit'));
-    assert.ok(left.includes('ux-audit'));
+    assert.ok(!left.includes('visual-audit'));
+    assert.ok(!left.includes('ux-audit'));
+    assert.ok(!left.includes('accessibility-audit'));
   });
 
   it('hasDesignSystem=false removes ui-audit even with frontend', async () => {
