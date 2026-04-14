@@ -17,19 +17,17 @@ Parse `$ARGUMENTS`:
 **Mode** (controls page roster breadth):
 - `quick` → 5 key pages only
 - `full` → all routes from sitemap, both themes
-- No mode keyword → **standard** — all routes from `docs/sitemap.md` (light + dark)
+- No mode keyword → **standard** — all routes from `[SITEMAP_OR_ROUTE_LIST]` (light + dark)
 - `critique` → deep-dive on a single `target:page:` (required). Skips scoring table; produces Gestalt + hierarchy diagnosis + concrete redesign proposals per Critical/Major finding, invoking `/frontend-design` for before/after. Must be paired with `target:page:<route>`.
 
 **Target** (filters the page roster):
-- `target:role:collab` → collab-accessible routes only
-- `target:role:resp` → resp-accessible routes only
-- `target:role:admin` → admin-accessible routes only
+- `target:role:<role_name>` → routes accessible to that role only
 - `target:section:<name>` → routes whose path contains `<name>`
-- No target → NO filter — use ALL pages from the mode roster per sitemap.md
+- No target → NO filter — use ALL pages from the mode roster per `[SITEMAP_OR_ROUTE_LIST]`
 
-Mode and target are **independent** — `quick target:role:collab` means "run quick mode but limit to collab routes".
+Mode and target are **independent** — `quick target:role:<role_name>` means "run quick mode but limit to that role's routes".
 
-**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (use all pages from the mode roster per sitemap.md).
+**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (use all pages from the mode roster per `[SITEMAP_OR_ROUTE_LIST]`).
 
 Announce at start:
 `Running visual-audit in [STANDARD | QUICK | FULL] mode — scope: [FULL | target: <resolved description>]`
@@ -39,14 +37,14 @@ Announce at start:
 ## Step 1 — Load context (parallel)
 
 Read in parallel:
-1. `docs/sitemap.md` — route inventory, role mapping, key components per page
-2. `app/globals.css` — token definitions (`--brand`, `--base-*`, semantic tokens)
-3. `app/themes.css` — color scale for light/dark
+1. `[SITEMAP_OR_ROUTE_LIST]` — route inventory, role mapping, key components per page
+2. Global styles file (e.g., `[GLOBAL_STYLES_FILE]`) — token definitions (brand colour, base scale, semantic tokens)
+3. Theme styles file (e.g., `[THEME_STYLES_FILE]`) — color scale for light/dark
 
 Hold in working memory:
 - Brand color token and its approximate hue (for V4 colour discipline checks)
-- Base scale: from base-50 (lightest) to base-950 (darkest)
-- Semantic token map: `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-brand`
+- Base scale: from lightest to darkest
+- Semantic token map: card background, muted background, foreground text, muted foreground text, border, brand accent
 - List of all routes with their roles and key component files
 
 Apply target filter from Step 0 to the route list from sitemap. The filtered list is the **working roster** for all subsequent steps.
@@ -55,9 +53,8 @@ Apply target filter from Step 0 to the route list from sitemap. The filtered lis
 
 ## Step 2 — Pre-flight check
 
-Navigate to `http://localhost:3001`. If not reachable, try `http://localhost:3000`.
-If neither reachable:
-> ❌ Dev server not running. Start with `npm run dev -- -p 3001` from the worktree, or `[DEV_COMMAND]` from the main directory, then re-run `/visual-audit`.
+Navigate to `[DEV_URL]`. If not reachable:
+> ❌ Dev server not running. Start with `[DEV_COMMAND]`, then re-run `/visual-audit`.
 
 Record the base URL that responded — use it for all subsequent navigations.
 
@@ -72,7 +69,7 @@ Apply these 11 dimensions to every screenshot captured.
 | **V1** | Typographic hierarchy | H1 vs body weight contrast; label vs value distinction; font size spread; muted-foreground on secondary text. **Quantitative anchor**: ≤ 5 distinct font sizes in use (from computed check); 2 font weights (semibold for headings, regular for body). Flag if computed check reveals > 5 sizes. | ≥ 4 |
 | **V2** | Spatial rhythm | Consistent padding inside similar components; visual breathing room; margin harmony between sections; card internal padding uniformity. **Quantitative anchor**: padding values should be multiples of 4px (8px preferred). Flag non-grid values (14px, 6px, 10px) from the 3-element spot check in computed checks. | ≥ 4 |
 | **V3** | Visual focal point | Primary CTA is the most prominent element; user's eye is guided to the most important content; no competing elements of equal weight | ≥ 4 |
-| **V4** | Colour discipline | Brand colour used sparingly and intentionally; status colours follow semantic convention (green=done, amber=pending, red=destructive); no arbitrary colour decoration; `bg-brand` reserved for primary CTAs not row-level buttons. Evaluate in both themes. *(Contrast thresholds moved to `/accessibility-audit` C1-C3.)* | ≥ 4 |
+| **V4** | Colour discipline | Brand colour used sparingly and intentionally; status colours follow semantic convention (green=done, amber=pending, red=destructive); no arbitrary colour decoration; brand accent token reserved for primary CTAs not row-level buttons. Evaluate in both themes. *(Contrast thresholds moved to `/accessibility-audit` C1-C3.)* | ≥ 4 |
 | **V5** | Information density | Appropriate density for the page type (list = dense, form = airy); tables scannable at a glance; no cognitive overload; no empty visual regions | ≥ 3 |
 | **V7** | Micro-polish | Hover/focus states visible; transitions not jarring; empty states and skeletons look professional; icon–text alignment clean; status badges correct size relative to surrounding text. **Timing anchor**: transitions < 100ms are imperceptible (no feedback value); > 400ms feels sluggish. Flag when computed check reveals out-of-range transition durations on interactive elements. | ≥ 3 |
 | **V9** | Gestalt compliance | Evaluate 4 Gestalt principles: (1) **Proximity** — related elements grouped with tighter spacing than unrelated ones; flag if label↔value gap ≥ gap between distinct sections; (2) **Figure/ground** — content distinguishable from chrome without effort; flag dark mode text indistinguishable from bg; (3) **Similarity** — components with same function look the same cross-section; flag Badge same state with different colour/size on different pages; (4) **Continuity** — lists, columns, card grids guide the eye linearly; flag variable card sizes or inconsistent column widths. **Score anchors**: 5 = all 4 respected; 3 = 1-2 localised violations; 1 = disorienting layout. | ≥ 4 |
@@ -88,7 +85,7 @@ Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** =
 - Write one concrete, actionable observation per dimension per page (not just a number)
 - **Never write a vague observation like "good overall"** — every line must name what specifically works or what specifically is wrong
 
-**Code-grounded scoring**: after reading a page's component files (Step 5a), if you see a class like `text-muted-foreground` on a subtitle in the code but the screenshot shows it rendered too light, flag it. Conversely, if `bg-brand` appears on a row-level button in the code, flag it even if the screenshot looks acceptable — it's a systematic violation.
+**Code-grounded scoring**: after reading a page's component files (Step 5a), if a muted foreground token is used on a subtitle in the code but the screenshot shows it rendered too light, flag it. Conversely, if the brand accent token appears on a row-level button in the code, flag it even if the screenshot looks acceptable — it's a systematic violation.
 
 ---
 
@@ -96,27 +93,22 @@ Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** =
 
 ### Standard mode (default) and Full mode
 
-Both derive the working roster from `docs/sitemap.md` already loaded in Step 1. Use **all routes with a page file** (exclude `/auth/callback` — it is a route handler with no renderable UI). Group by sitemap section:
+Both derive the working roster from `[SITEMAP_OR_ROUTE_LIST]` already loaded in Step 1. Use **all routes with a page file** (exclude auth callback routes — they are route handlers with no renderable UI). Group by section:
 
 - Pre-auth (login, pending, change-password, onboarding)
 - Common routes (all roles)
 - Multi-role routes
-- Admin-only routes
+- Restricted routes
 
-**How to pick the role/credential for each route**: use the "Roles" column from sitemap.md. For routes accessible by multiple roles, default to the role that sees the most UI (usually `collab` for shared routes, `admin` for admin routes). For routes with explicit role variants (e.g. `/` has collab / resp / resp_citt / admin dashboards), screenshot each variant separately under its own label.
+**How to pick the role/credential for each route**: use the "Roles" column from the route inventory. For routes accessible by multiple roles, default to the role that sees the most UI. For routes with explicit role variants, screenshot each variant separately under its own label.
 
-Announce total route count at start: "Standard mode — N routes from sitemap.md."
+Announce total route count at start: "Standard mode — N routes from route inventory."
 
 `full` keyword is retained as an explicit synonym for scripting/pipeline use — behaviour is identical to standard.
 
-### Quick mode (5 representative pages — use when speed matters)
+### Quick mode (4-5 representative pages — use when speed matters)
 
-| Route | Role | What to focus on |
-|---|---|---|
-| `/login` | — | First impression, brand presence, form clarity |
-| `/` | collab | Dashboard hierarchy, widget balance, CTA prominence |
-| `/approvazioni` | resp | KPI cards, table density, tab clarity |
-| `/coda` | admin | Table density, bulk action bar, status strip |
+Pick 4-5 routes that cover: (1) first impression / auth page, (2) primary dashboard, (3) key data table or list, (4) admin or restricted area. Use `[SITEMAP_OR_ROUTE_LIST]` to select.
 
 ### Critique mode
 
@@ -129,11 +121,11 @@ Single route only — requires `target:page:<route>`. See Step 0.
 ### 5a — Per-page code inspection (MANDATORY before each screenshot)
 
 Specifically note:
-- Which Tailwind classes are used on the main container, headings, primary CTA buttons
-- Whether `bg-brand` appears on any row-level or inline button (→ V4 flag)
-- Whether semantic tokens (`text-foreground`, `text-muted-foreground`, `bg-card`) are used consistently
+- Which design tokens / CSS classes are used on the main container, headings, primary CTA buttons
+- Whether the brand accent token appears on any row-level or inline button (→ V4 flag)
+- Whether semantic tokens (foreground, muted foreground, card background) are used consistently
 - Whether empty state, loading, and error states are handled in the component
-- **Empty state quality** (→ V7/V11): does the empty state have a CTA guiding to the next action (not just "Nessun record trovato")? Is the empty state text role-aware (collab vs admin see different CTAs)? Does the error state name the specific problem and suggest a recovery action?
+- **Empty state quality** (→ V7/V11): does the empty state have a CTA guiding to the next action (not just a generic "no records" message)? Is the empty state text role-aware? Does the error state name the specific problem and suggest a recovery action?
 - **Interaction states** (→ V11): for every custom interactive element, verify hover/focus/active/disabled/loading states are explicitly defined in the component code
 
 This code context MUST inform the scoring in Step 6 — reference it explicitly when writing observations.
@@ -143,7 +135,7 @@ This code context MUST inform the scoring in Step 6 — reference it explicitly 
 1. browser_navigate [base_url]/login
 2. browser_wait_for: input[type=email] visible
 3. browser_type email field → [credential]
-4. browser_type password field → Testbusters123
+4. browser_type password field → [test password from TEST_ACCOUNTS]
 5. browser_click submit button
 6. browser_wait_for: url contains /  (not /login)
 7. Confirm sidebar role matches expected role
@@ -156,7 +148,7 @@ Credentials:
 For each page in roster:
 
 1. Read page + component files (Step 5a) BEFORE navigating
-2. Switch role if needed (navigate to /login, sign out via sidebar "Esci", re-login)
+2. Switch role if needed (navigate to login page, sign out, re-login with the appropriate credential)
 3. `browser_navigate` to route
 4. `browser_wait_for` network idle or main content visible (2000ms max)
 5. **DOM preflight validation** — run this evaluate before any screenshot:
@@ -245,7 +237,7 @@ For each page, produce:
 | V1 Typographic hierarchy | N/5 | [specific observation — reference fontSizeCount from computed data] | [fix or "none"] |
 | V2 Spatial rhythm | N/5 | [specific observation — reference paddingMisaligned from computed data] | [fix or "none"] |
 | V3 Visual focal point | N/5 | [specific observation] | [fix or "none"] |
-| V4 Colour discipline | N/5 | [specific observation — note if bg-brand on row buttons] | [fix or "none"] |
+| V4 Colour discipline | N/5 | [specific observation — note if brand accent on row buttons] | [fix or "none"] |
 | V5 Information density | N/5 | [specific observation] | [fix or "none"] |
 | V6 Dark-mode polish | N/5 | [specific observation from dark screenshot — reference score anchors; note OKLCH hue shifts, washed-out tones, badge legibility] | [fix or "none"] |
 | V7 Micro-polish | N/5 | [specific observation — reference transitionsOutOfRange; note empty state CTA quality from Step 5a] | [fix or "none"] |
@@ -270,7 +262,7 @@ After all pages, identify:
 5. **Typography discipline**: pages where fontSizeCount > 5 → systemic type scale violation; pages where V10 scores ≤ 3 → line-height or line-length issues
 6. **Gestalt patterns**: pages where V9 scores ≤ 3 → proximity or similarity violations across sections
 7. **Interaction debt**: pages where V11 scores ≤ 3 → missing hover/focus/loading states (cross-reference with V7)
-8. **Code pattern violations**: list any systematic code patterns observed across pages that cause visual problems (e.g., "bg-brand on row buttons appears on 4 pages: [list]")
+8. **Code pattern violations**: list any systematic code patterns observed across pages that cause visual problems (e.g., "brand accent on row buttons appears on 4 pages: [list]")
 
 ---
 
@@ -278,7 +270,7 @@ After all pages, identify:
 
 ```
 ## Visual Audit — [DATE] — [MODE] — [TARGET]
-### Reference: docs/sitemap.md · app/globals.css · app/themes.css
+### Reference: [SITEMAP_OR_ROUTE_LIST] · [GLOBAL_STYLES_FILE] · [THEME_STYLES_FILE]
 ### Scope: aesthetic quality · typography · spacing · visual hierarchy · colour · dark mode · polish
 ### Out of scope: token compliance → /ui-audit | Accessibility + contrast → /accessibility-audit | UX flows → /ux-audit | Responsiveness → /responsive-audit
 
@@ -327,7 +319,7 @@ After all pages, identify:
 
 | Violation | Pages | PERMANENT RULE | Fix |
 |---|---|---|---|
-| [e.g. bg-brand on row buttons] | [list] | Row-level buttons use variant="outline" | Replace with variant="outline" |
+| [e.g. brand accent on row buttons] | [list] | Row-level buttons use variant="outline" | Replace with variant="outline" |
 
 ---
 
@@ -365,15 +357,15 @@ Critical first, then by impact (pages affected × dimension weight):
 
 After the report:
 
-> "Vuoi che approfondisca o che generi proposte visive concrete? Posso:
+> "Do you want me to go deeper or generate concrete visual proposals? I can:
 >
-> - **Critique mode**: `/visual-audit critique target:page:<route>` — deep-dive su singola pagina: diagnosi Gestalt + gerarchia + proposte di redesign concrete con before/after via `/frontend-design`
-> - **Mockup standalone**: invocare `/frontend-design` per generare un'alternativa migliorata (HTML standalone, fedele ai token del progetto)
-> - **Fix mirato**: applicare direttamente i miglioramenti che non richiedono decisioni di design (es. spaziatura padding, pesi tipografici, token mancanti)
-> - **Dark mode pass**: concentrarmi esclusivamente sul miglioramento del tema scuro su tutte le pagine
-> - **Gestalt pass**: analisi approfondita V9 su tutte le pagine con fix concreti per proximity e similarity violations
+> - **Critique mode**: `/visual-audit critique target:page:<route>` — deep-dive on a single page: Gestalt + hierarchy diagnosis + concrete redesign proposals with before/after via `/frontend-design`
+> - **Standalone mockup**: invoke `/frontend-design` to generate an improved alternative (standalone HTML, faithful to the project's tokens)
+> - **Targeted fix**: apply improvements that don't require design decisions (e.g., padding spacing, font weights, missing tokens)
+> - **Dark mode pass**: focus exclusively on improving the dark theme across all pages
+> - **Gestalt pass**: in-depth V9 analysis on all pages with concrete fixes for proximity and similarity violations
 
-For contrast verification and axe-core WCAG coverage, run `/accessibility-audit` separately — it owns both APCA measurement and the full WCAG 2.2 scan."
+For contrast verification and WCAG coverage, run `/accessibility-audit` separately — it owns both APCA measurement and the full WCAG 2.2 scan."
 
 **Do NOT apply visual changes without confirmation.** Many of the fixes touch spacing and typography — they affect multiple components and require design decision, not just code.
 
@@ -391,8 +383,22 @@ Run this unconditionally at session end — screenshots are only needed during a
 
 ## Notes for interpretation
 
-- **V4 brand colour overuse**: if `bg-brand` appears on row-level buttons (not just primary CTAs), flag it even if each individual use seems minor. This is a PERMANENT RULE violation.
+- **V4 brand colour overuse**: if the brand accent token appears on row-level buttons (not just primary CTAs), flag it even if each individual use seems minor. This is a PERMANENT RULE violation.
 - **V7 micro-polish on mobile**: not in scope for this skill — use `/responsive-audit` for that.
 - **Screenshots must be analysed fresh** — do not rely on memory from previous sessions. If a screenshot shows unexpected content (wrong role, empty state when data expected), note it and analyse what's visible.
 - **Preflight failures**: if more than 2 pages fail preflight, stop and report the issue before continuing — likely a dev server or auth problem, not a page-specific issue.
 - **Score denominator is /50** (10 dimensions × 5). Bucket labels: Excellent ≥40 | Good 30-39 | Needs work 20-29 | Poor <20. Previous /55 baseline is no longer comparable — contrast is now scored by `/accessibility-audit`.
+
+---
+
+## Stack adaptation (fill after scaffold)
+
+<!-- Fill these values for your stack, then remove this comment block. -->
+<!-- Values left as placeholders will trigger warnings in `cdk doctor`. -->
+
+| Key | Your value | Examples |
+|---|---|---|
+| Global styles file | `[GLOBAL_STYLES_FILE]` | `app/globals.css`, `src/styles/global.css`, `assets/main.scss` |
+| Theme styles file | `[THEME_STYLES_FILE]` | `app/themes.css`, `src/styles/themes.css`, `tailwind.config.ts` |
+| Brand accent token | *(document your design system's brand token name)* | `bg-brand`, `bg-primary`, `--color-accent` |
+| Semantic token names | *(document your card/muted/foreground tokens)* | `bg-card` / `bg-muted` / `text-foreground` / `text-muted-foreground` |

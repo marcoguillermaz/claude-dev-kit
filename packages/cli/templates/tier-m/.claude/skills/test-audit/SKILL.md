@@ -423,4 +423,4 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - `target:coverage:<path>` bypasses auto-detection; accept absolute or project-relative path.
 - If git history is available, cross-reference C Critical findings against `git diff HEAD~1` (files changed in the most recent commit) to distinguish "0% on pre-existing file" (High) from "0% on file changed in this block" (Critical). If git is not available, downgrade all 0% findings to High.
 - This skill complements the Phase 3 test execution (which runs `[TEST_COMMAND]` but never inspects the suite itself). Run in Phase 5d Track C after Phase 3 passes.
-- After the report, ask: `Vuoi che prepari le correzioni per i fix identificati?` Reply with `yes` only after the user has signed off on the specific findings.
+- After the report, ask: "Do you want me to prepare the corrections for the identified findings?" Reply with `yes` only after the user has signed off on the specific findings.

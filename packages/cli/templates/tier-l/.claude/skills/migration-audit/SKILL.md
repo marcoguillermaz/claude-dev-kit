@@ -248,5 +248,5 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - Do NOT apply, modify, or write any migration file. Audit only.
 - Do NOT connect to production DB. Staging DB is acceptable for Step 4 with explicit `[STAGING_DB_URL]` config.
 - `docs/db-map.md` (if present) is authoritative for "high-traffic" table classification used by M3.
-- After the report, ask: `Vuoi che prepari migration SQL corrette per i fix identificati?` Reply with `yes` only after the user has signed off on the specific findings.
+- After the report, ask: "Should I prepare corrected SQL migrations for the identified fixes?" Reply with `yes` only after the user has signed off on the specific findings.
 - This skill complements `/skill-db`: `/migration-audit` handles static analysis of migration files; `/skill-db` handles live SQL verification of schema state, RLS policies, index coverage, and query patterns. Run both during Phase 5d Track B when a block applies migrations.

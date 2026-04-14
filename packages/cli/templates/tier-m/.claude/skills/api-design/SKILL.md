@@ -7,7 +7,7 @@ context: fork
 argument-hint: [target:section:<section>|target:role:<role>|mode:audit|mode:remediation|mode:apply]
 ---
 
-**Scope**: endpoint naming, HTTP verbs, resource modeling, response shapes, error codes, field naming, filtering/sorting conventions, pagination, validation, auth/authz boundary clarity, Next.js 15+ compliance.
+**Scope**: endpoint naming, HTTP verbs, resource modeling, response shapes, error codes, field naming, filtering/sorting conventions, pagination, validation, auth/authz boundary clarity.
 **Out of scope**: auth implementation → `/security-audit` | performance → `/perf-audit` | DB schema → `/skill-db`.
 **Default mode**: audit (no code changes). Modes: `audit` | `remediation` (propose plan, no changes) | `apply` (make focused fixes).
 **All audit findings go to `docs/refactoring-backlog.md`.**
@@ -17,7 +17,7 @@ argument-hint: [target:section:<section>|target:role:<role>|mode:audit|mode:reme
 - **401** — not authenticated (no valid session)
 - **403** — authenticated but lacks permission
 - **404** — resource not found
-- **409** — valid request conflicts with current server state (e.g., approving an already-APPROVATO record, duplicate unique value)
+- **409** — valid request conflicts with current server state (e.g., approving an already-approved record, duplicate unique value)
 - **422** — semantically invalid data that passes Zod schema but violates a business rule
 - **500** — unexpected server error (no internal details in response)
 
@@ -33,7 +33,7 @@ Parse `$ARGUMENTS` for `target:` and `mode:` tokens.
 | Pattern | Meaning |
 |---|---|
 | `target:section:export` | Only export/bulk routes (example) |
-| `target:section:<other>` | Resolve by reading `docs/sitemap.md` API routes section, filtering for routes whose path or group label contains `<other>`. Announce the resolved route list before proceeding. |
+| `target:section:<other>` | Resolve by reading `[SITEMAP_OR_ROUTE_LIST]` API routes section, filtering for routes whose path or group label contains `<other>`. Announce the resolved route list before proceeding. |
 | No argument | **Full audit — ALL API routes across the entire codebase. Maximum depth.** |
 
 **STRICT PARSING — mandatory**: derive target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → full audit across ALL API routes at maximum depth. When a target IS provided → act with maximum depth and completeness on that specific scope only.
@@ -52,12 +52,12 @@ Apply the target filter to the route inventory in Step 1.
 
 ## Step 1 — Build API inventory
 
-Read `docs/sitemap.md` API routes section. Build a complete list of all routes (filtered by target scope). For each route: read the actual route file to determine HTTP methods, request body shape, and response shape — do not infer from sitemap entries alone, as sitemap descriptions may be incomplete.
+Read `[SITEMAP_OR_ROUTE_LIST]` API routes section. Build a complete list of all routes (filtered by target scope). For each route: read the actual route file to determine HTTP methods, request body shape, and response shape — do not infer from sitemap entries alone, as sitemap descriptions may be incomplete.
 
-Group routes by functional area (derived from `docs/sitemap.md` API routes section):
-- Core entities (compensation, expense, ticket, document, collaborator routes)
-- Role-specific domain routes (read from sitemap — include all non-admin, non-cron routes per role)
-- Jobs/cron: `/api/jobs/`
+Group routes by functional area (derived from `[SITEMAP_OR_ROUTE_LIST]`):
+- Core entity routes (CRUD for primary domain objects)
+- Role-specific domain routes (include all non-admin, non-cron routes per role)
+- Jobs/cron routes
 - Export: routes returning CSV/XLSX
 
 Also read current `docs/refactoring-backlog.md` to avoid duplicates.
@@ -81,13 +81,13 @@ From route file paths, flag:
 - Nested routes that skip a level: e.g. `/api/documents/sign` but also `/api/documents/[id]/sign`
 
 **CHECK N3 — Response shape consistency (success)**
-Grep: `return NextResponse.json\(` across all route files.
+Grep for the framework's JSON response pattern (e.g. `return NextResponse.json(`, `res.json(`, `Response.json(`, `jsonify(`) across all route files.
 For each route returning a single entity (GET /[id]): check if the top-level key is consistent — e.g. `{ compensation }` vs `{ data }` vs `{ result }` vs naked object. The same entity must use the same wrapper key across all routes.
 For each route returning a list: check if the shape is `{ items, total, page }` or a naked array.
 Flag: any inconsistency in the key name for the same entity type across different routes.
 
 **CHECK N4 — Error response shape consistency**
-Two-pass approach to handle multi-line NextResponse.json() calls:
+Two-pass approach to handle multi-line JSON response calls:
 Pass 1: Grep for non-standard error keys in route files: `\"message\":|\{ message:|'message':|\{ msg:|\{ errors:`
 Flag every match — these are clear violations of the `{ error: string }` project standard.
 Pass 2: Grep for `\"error\":` to confirm the standard key is present in the majority of files.
@@ -96,21 +96,22 @@ Do NOT rely on same-line status code matching — status may be on a separate li
 
 **CHECK N5 — Status code correctness**
 Grep for common misuses:
-- `status: 200` on a successful POST — look for route files exporting `POST` that return `status: 200` (check within 30 lines of the `return NextResponse.json` at the end of success paths)
+- `status: 200` on a successful POST — look for route files exporting `POST` that return `status: 200` (check within 30 lines of the JSON response return at the end of success paths)
 - `status: 400` for authorization errors (should be 403)
 - `status: 500` for validation errors (should be 400)
 - `status: 200` anywhere in a file that also has `error:` in the same return statement
-- `status: 400` in files that also contain state machine values (`APPROVATO`, `LIQUIDATO`, `RIFIUTATO`, `IN_ATTESA`) — state conflicts should return 409, not 400. Flag as 'review needed', not definitive violation.
+- `status: 400` in files that also contain state machine transitions or status checks — state conflicts should return 409, not 400. Flag as 'review needed', not definitive violation.
 Flag each match with the correct status code.
 
-**CHECK N6 — ZodError .issues vs .errors convention**
-Project rule: when handling ZodError, always access `.issues` (not `.errors`). Using `.errors` returns `undefined` silently.
+**CHECK N6 — Validation error access convention**
+If using Zod: when handling ZodError, always access `.issues` (not `.errors`). Using `.errors` returns `undefined` silently.
 Grep: `zodResult\.error\.errors|err\.errors|parseResult\.error\.errors|\.error\.errors`
 Expected: 0 matches. All ZodError access must use `.issues`.
+If using a different validation library: check that error details are accessed via the documented API - not a similar-but-wrong property name.
 
-Grep: `const \{[^}]+\} = params[^.]|const \{[^}]+\} = context\.params[^.]|const \{[^}]+\} = props\.params[^.]`
-Also grep: `params\.[a-zA-Z_]` (direct property access) — exclude `params.then` and `params.toString` from results.
-Flag: any access to `params` without `await`. Since Next.js 15, `params` is a Promise.
+**CHECK N6b — Async params access (framework-specific)**
+If the project uses a framework where route params are async (e.g. Next.js 15+):
+Grep for direct destructuring of `params` without `await`. Flag any access to `params` without the required async handling.
 
 ---
 
@@ -135,7 +136,7 @@ A malformed JSON body throws `SyntaxError` which becomes an unhandled 500 text r
 Expected: 0 definite violations.
 
 **CHECK N10 — Top-level array response**
-Pattern: `NextResponse\.json\(\s*\[|Response\.json\(\s*\[`
+Pattern: grep for JSON response calls returning an array literal, e.g. `\.json\(\s*\[|jsonify\(\s*\[`
 Flag: any route returning a bare array at the top level of the JSON response.
 Expected: 0 matches. All responses must be wrapped in an object: `{ items: [...] }` not `[...]`. This allows adding `meta`, `pagination`, or `error` fields later without a breaking change.
 
@@ -152,11 +153,11 @@ Step 4 — Case style: if the majority of params are camelCase, flag any snake_c
 Report the derived convention and list all deviations from it.
 
 **CHECK N12 — Field naming consistency in request/response bodies**
-For each route file: read the Zod schema declarations (POST/PATCH body schemas) to extract request field names. For response keys, grep `return NextResponse.json\(` and read up to 40 lines after the opening brace to capture the full response object (stop at the matching closing parenthesis line).
+For each route file: read the validation schema declarations (POST/PATCH body schemas) to extract request field names. For response keys, grep for the framework's JSON response pattern and read up to 40 lines after the opening brace to capture the full response object (stop at the matching closing parenthesis line).
 Extract field names from both sources.
 Flag:
 - Boolean field naming: consistent prefix (`is_`, `has_`) or lack thereof — flag mixed usage only if inconsistent within the same entity type
-Note: DB column names (snake_case) appear in raw Supabase queries — these are NOT violations. Only flag fields in the JSON request/response contract layer.
+Note: DB column names (snake_case) may appear in raw database queries — these are NOT violations. Only flag fields in the JSON request/response contract layer.
 
 **CHECK N13 — Resource modeling: action endpoint overuse and nesting depth**
 From route file paths (no code read needed), analyze the URL structure:
@@ -171,9 +172,9 @@ Count total action-style path segments (non-resource, non-ID segments) vs total 
 
 ## Step 2b — Route coverage verification (main context, after both subagents complete)
 
-Cross-check: confirm the route inventory from Step 1 (derived from sitemap.md) matches the actual filesystem.
+Cross-check: confirm the route inventory from Step 1 (derived from `[SITEMAP_OR_ROUTE_LIST]`) matches the actual filesystem.
 
-Flag any route file present on filesystem but absent from sitemap.md inventory — these routes were excluded from all N1-N13 checks. Add them to the findings as "undocumented routes" requiring manual audit.
+Flag any route file present on filesystem but absent from the route inventory — these routes were excluded from all N1-N13 checks. Add them to the findings as "undocumented routes" requiring manual audit.
 
 This step takes < 1 minute. Do not skip it even on targeted runs.
 
@@ -182,7 +183,7 @@ This step takes < 1 minute. Do not skip it even on targeted runs.
 ## Step 3 — Pagination consistency check (main context)
 
 Derive the list of paginated endpoints dynamically:
-Read `docs/sitemap.md` API routes section. Select all `GET` routes whose path does NOT contain `[id]` (i.e., collection endpoints, not single-resource endpoints). These are the candidates for pagination audit.
+Read `[SITEMAP_OR_ROUTE_LIST]`. Select all `GET` routes whose path does NOT contain `[id]` (i.e., collection endpoints, not single-resource endpoints). These are the candidates for pagination audit.
 
 For each collection endpoint, read the GET handler. Verify:
 
@@ -200,8 +201,8 @@ Flag inconsistencies.
 Check if a missing `pageSize` param falls back to a safe default (e.g. 50). Flag any endpoint with no default that could return unbounded results.
 
 **P4 — Total count as number (not string)**
-Supabase `count()` returns a string in some configurations. Verify that paginated endpoints convert count to `Number()` or `parseInt()` before including it in the response.
-Flag: any endpoint returning `total` without an explicit numeric conversion where the source is a Supabase count query.
+Some database clients return count as a string. Verify that paginated endpoints convert count to the appropriate numeric type before including it in the response.
+Flag: any endpoint returning `total` without an explicit numeric conversion where the source is a database count query.
 
 ---
 
@@ -231,7 +232,7 @@ Preferred response shape: `{ error: 'Validation failed', issues: result.error.is
 ```
 ## API Design Audit — [DATE] — [TARGET] — mode: [audit|remediation|apply]
 ### Scope: [N] API routes
-### Sources: Next.js 15+ route handler docs, RFC 9457, Zod docs, MDN HTTP status codes
+### Sources: framework route handler docs, RFC 9457, validation library docs, MDN HTTP status codes
 
 ### API Design Maturity Assessment
 - HTTP semantics: low / medium / high
@@ -329,8 +330,8 @@ For each **Medium** finding, append:
 ## Execution notes
 
 - **Mode: audit / remediation**: Do NOT make any route changes.
-- **Mode: apply**: make only non-breaking, focused fixes (e.g. 200→201, `{ error: issues }` → `{ error: 'Dati non validi', issues }`). Flag every breaking change explicitly before touching it. Do not rewrite handler logic.
+- **Mode: apply**: make only non-breaking, focused fixes (e.g. 200→201, `{ error: issues }` → `{ error: 'Invalid data', issues }`). Flag every breaking change explicitly before touching it. Do not rewrite handler logic.
 - Do NOT audit auth implementation (covered by `/security-audit`).
 - If a pattern is used consistently project-wide (even if non-standard), note it as "consistent but non-standard" — don't flag as a violation unless it causes actual client-side issues.
 - Evidence standard: every non-trivial finding must cite `file:line — excerpt`. Do not draw broad conclusions from a single isolated endpoint.
-- After the report, ask: "Vuoi che allineo gli endpoint che presentano inconsistenze?" (only in audit/remediation mode) or summarize changes made (apply mode).
+- After the report, ask: "Do you want me to align the endpoints that show inconsistencies?" (only in audit/remediation mode) or summarize changes made (apply mode).

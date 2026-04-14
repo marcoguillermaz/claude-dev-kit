@@ -651,8 +651,8 @@ async function scenarioSkillDevApplicabilityCheck() {
       fail(`Tier ${tier}: skill-dev Applicability check missing`);
     }
 
-    if (raw.includes('CHECK D9') && raw.includes('React only')) {
-      pass(`Tier ${tier}: skill-dev skip list includes D9 (useEffect — React only)`);
+    if (raw.includes('CHECK D9') && raw.includes('UI frameworks only')) {
+      pass(`Tier ${tier}: skill-dev skip list includes D9 (lifecycle — UI frameworks only)`);
     } else {
       fail(`Tier ${tier}: skill-dev skip list missing D9 annotation`);
     }
@@ -1473,6 +1473,42 @@ async function scenarioNativeSkillAdaptation() {
   }
 }
 
+// ── excludeNative edge case ─────────────────────────────────────────────────
+
+async function scenarioExcludeNativeWithFrontend() {
+  section('excludeNative — native stack with hasFrontend:true still excludes browser-only skills');
+
+  const nativeStacks = ['swift', 'kotlin', 'rust'];
+  for (const stack of nativeStacks) {
+    const config = {
+      ...BASE,
+      tier: 'm',
+      techStack: stack,
+      hasApi: true,
+      hasDatabase: true,
+      hasFrontend: true,
+      hasDesignSystem: true,
+      isDiscovery: false,
+    };
+    const dir = await scaffold(`excludeNative-${stack}`, 'm', config);
+
+    // Browser-dependent audit skills must be absent despite hasFrontend: true
+    assertNotExists(dir, '.claude/skills/responsive-audit/SKILL.md');
+    assertNotExists(dir, '.claude/skills/visual-audit/SKILL.md');
+    assertNotExists(dir, '.claude/skills/ux-audit/SKILL.md');
+    assertNotExists(dir, '.claude/skills/accessibility-audit/SKILL.md');
+
+    // Non-browser skills must remain present
+    assertExists(dir, '.claude/skills/security-audit/SKILL.md');
+    assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
+    assertExists(dir, '.claude/skills/test-audit/SKILL.md');
+    assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
+
+    // ui-audit uses hasDesignSystem gating, not excludeNative — present when design system = true
+    assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
+  }
+}
+
 // ── Rubric scoring ──────────────────────────────────────────────────────────
 
 const rubricDims = {};
@@ -1909,6 +1945,7 @@ async function main() {
   await scenarioInPlaceClaudeMdGeneration();
   await scenarioCheatsheetPruning();
   await scenarioNativeSkillAdaptation();
+  await scenarioExcludeNativeWithFrontend();
   await scenarioWizardCoverage();
   await scenarioRubricScore();
   await scenarioNewSkillScaffolder();

@@ -81,11 +81,12 @@ describe('getSkillsToRemove', () => {
     assert.ok(result.includes('accessibility-audit'));
   });
 
-  it('native stack removes responsive-audit but keeps visual and ux', () => {
+  it('native stack removes browser-only skills (responsive, visual, ux, accessibility)', () => {
     const result = getSkillsToRemove({ techStack: 'swift' });
     assert.ok(result.includes('responsive-audit'));
-    assert.ok(!result.includes('visual-audit'));
-    assert.ok(!result.includes('ux-audit'));
+    assert.ok(result.includes('visual-audit'));
+    assert.ok(result.includes('ux-audit'));
+    assert.ok(result.includes('accessibility-audit'));
   });
 
   it('hasDesignSystem=false removes ui-audit', () => {
@@ -238,11 +239,12 @@ describe('getActiveSkills', () => {
     assert.ok(result.includes('ux-audit'));
   });
 
-  it('tier M native stack excludes responsive-audit (bugfix)', () => {
+  it('tier M native stack excludes browser-only skills (responsive, visual, ux, accessibility)', () => {
     const result = getActiveSkills({ tier: 'm', techStack: 'swift', hasFrontend: true });
     assert.ok(!result.includes('responsive-audit'));
-    assert.ok(result.includes('visual-audit'));
-    assert.ok(result.includes('ux-audit'));
+    assert.ok(!result.includes('visual-audit'));
+    assert.ok(!result.includes('ux-audit'));
+    assert.ok(!result.includes('accessibility-audit'));
   });
 
   it('tier defaults to S when missing', () => {

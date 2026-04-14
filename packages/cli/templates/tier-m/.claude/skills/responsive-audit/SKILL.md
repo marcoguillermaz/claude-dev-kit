@@ -33,11 +33,11 @@ Parse `$ARGUMENTS`:
 - `wcag` → adds BP0 (320px) to the active breakpoint set + WCAG 1.4.4 resize text step (Step 5b). Stackable: `full wcag` = all breakpoints + WCAG compliance checks.
 
 **Target** (filters the route list — applied on top of mode):
-- `target:role:collab` → collab-accessible routes only
+- `target:role:<role_name>` → routes accessible by that role only
 - `target:section:<name>` → routes whose path contains `<name>`
-- No target → NO filter — ALL R-flagged routes from sitemap.md per the selected mode
+- No target → NO filter — ALL R-flagged routes from `[SITEMAP_OR_ROUTE_LIST]` per the selected mode
 
-**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (all R-flagged routes from sitemap.md per the selected mode).
+**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (all R-flagged routes per the selected mode).
 
 Announce at start:
 `Running responsive-audit in [QUICK | FULL | WCAG] mode — scope: [FULL | target: <resolved description>]`
@@ -46,15 +46,15 @@ Announce at start:
 
 ## Step 1 — Load reference
 
-Read `docs/sitemap.md`. Extract:
-- All routes with `R` in the Audit column (collab + resp + multi-role + common routes)
-- Test accounts from the "Test accounts" section
-- Sub-hierarchy notes from "Page sub-hierarchies" section (tabs, states, responsive notes)
+Read `[SITEMAP_OR_ROUTE_LIST]`. Extract:
+- All routes with `R` in the Audit column (group by role)
+- Test accounts from the test accounts section
+- Sub-hierarchy notes (tabs, states, responsive notes)
 
 Apply target filter from Step 0 to produce the **working route list**.
 
 Hold in working memory:
-- Working route list grouped by role session needed (collab routes, resp routes, resp_citt routes, shared routes)
+- Working route list grouped by role session needed
 - Responsive notes per page (from sitemap sub-hierarchies)
 
 ---
@@ -66,7 +66,7 @@ Run **before** launching the browser. These are zero-cost static checks that cat
 **S1 — Viewport unit font trap**
 ```
 Pattern: text-\[[0-9.]+vw\]|font-size.*[0-9]vw|fontSize.*vw
-Scope: app/**/*.tsx app/**/*.ts app/**/*.css
+Scope: [APP_SOURCE_GLOB]
 ```
 Flag any element with a `vw`-based font size without a `calc()` fallback.
 `font-size: Xvw` alone disables user zoom — WCAG 1.4.4 violation.
@@ -75,7 +75,7 @@ Expected: 0 matches. Any match is Medium severity.
 **S2 — overflow:hidden on html/body**
 ```
 Pattern: (html|body).*overflow.*hidden|overflow.*hidden.*(html|body)
-Scope: app/globals.css app/layout.tsx app/**/*.css
+Scope: global stylesheet + root layout file + [APP_SOURCE_GLOB] CSS files
 ```
 Flag any `overflow: hidden` applied directly to `<html>` or `<body>`.
 This masks horizontal scroll symptoms instead of fixing them and breaks `position: sticky`.
@@ -84,9 +84,9 @@ Expected: 0 matches. Any match is Medium severity.
 **S3 — Images without max-width constraint**
 ```
 Pattern: <img(?![^>]*className[^>]*(w-full|max-w|object-))
-Scope: app/**/*.tsx
+Scope: [APP_SOURCE_GLOB]
 ```
-Flag raw `<img>` tags without responsive width classes. All images should use Next.js `<Image>` (enforced by /ui-audit) or have `max-w-full` / `w-full`.
+Flag raw `<img>` tags without responsive width classes. All images should use a framework image component or have `max-w-full` / `w-full`.
 Expected: 0 matches. Any match is Low severity.
 
 Log results as "Static pre-checks: S1 [PASS/FAIL N] · S2 [PASS/FAIL N] · S3 [PASS/FAIL N]" before proceeding.
@@ -95,7 +95,7 @@ Log results as "Static pre-checks: S1 [PASS/FAIL N] · S2 [PASS/FAIL N] · S3 [P
 
 ## Step 2 — Pre-flight check
 
-Navigate to `http://localhost:3000`. If not reachable:
+Navigate to `[DEV_URL]`. If not reachable:
 > ❌ Dev server not running. Start with `[DEV_COMMAND]` then re-run `/responsive-audit`.
 
 Record the base URL.
@@ -125,25 +125,19 @@ WCAG mode (any): prepends BP0 to the active set.
 
 Apply the working route list from Step 1 (already filtered by target).
 
-**The definitive route list and per-route notes come from `docs/sitemap.md`** (Step 1). The examples below show the annotation format — do not treat them as an exhaustive or fixed list.
+**The definitive route list and per-route notes come from `[SITEMAP_OR_ROUTE_LIST]`** (Step 1). The examples below show the annotation format — do not treat them as an exhaustive or fixed list.
 
-For each route: check `docs/sitemap.md` 'Tabs/states' and 'Page sub-hierarchies' sections for tabs, sections, and components to verify at each breakpoint.
+For each route: check the sitemap's tabs/states and sub-hierarchy sections for tabs, sections, and components to verify at each breakpoint.
 
-### Collab session routes
+### Per-role session routes
 
-Include all routes from sitemap.md with role `collab` or `multi-role` and `R` in the Audit column.
-For each route: note tabs and multi-section layouts from sitemap sub-hierarchies.
+Group routes by the role session needed. For each role defined in the project:
+- Include all routes with that role and `R` in the Audit column
+- Note tabs and multi-section layouts from sitemap sub-hierarchies
+- **Prerequisite**: if a test account for a role does not exist, skip that session block and log: "[Role] routes SKIPPED — test account not found. Create it before running this section."
 
-Include all routes from sitemap.md with role `resp` or `multi-role` and `R` in the Audit column.
-
-### Resp cittadino session routes
-**Prerequisite**: if this account does not exist in sitemap.md, skip this session block entirely and log:
-"Resp cittadino routes SKIPPED — test account not found. Create it before running this section."
-
-Include all routes from sitemap.md with role `resp.cittadino` or `multi-role` and `R` in the Audit column.
-
-### Shared routes (test with collab session — already logged in)
-Routes accessible to multiple roles — verify once with the collab session.
+### Shared routes (test with first role session — already logged in)
+Routes accessible to multiple roles — verify once with the first role session.
 
 ---
 
@@ -390,18 +384,18 @@ Log results in the WCAG compliance section of the report.
 
 ### Login helper (reuse across steps)
 ```
-1. browser_navigate http://localhost:3000/login
+1. browser_navigate [DEV_URL]/[LOGIN_ROUTE]
 2. If already at / (session active): check current role matches needed role
-   - If wrong role: click "Esci" → confirm AlertDialog → wait for /login
-3. browser_type [email field] [email from sitemap.md "Test accounts"]
-4. browser_type [password field] [password from sitemap.md "Test accounts"]
+   - If wrong role: sign out → wait for login page
+3. browser_type [email field] [email from [TEST_ACCOUNTS]]
+4. browser_type [password field] [password from [TEST_ACCOUNTS]]
 5. browser_click [submit button]
-6. browser_wait_for url = http://localhost:3000/
+6. browser_wait_for url = [DEV_URL]/
 ```
 
 ### Role switch
-1. `browser_navigate http://localhost:3000/login`
-2. If redirected to `/`: look for "Esci" in sidebar → click → confirm → wait for `/login`
+1. `browser_navigate [DEV_URL]/[LOGIN_ROUTE]`
+2. If redirected to `/`: sign out → wait for login page
 3. Login with target credentials
 
 ---
@@ -410,7 +404,7 @@ Log results in the WCAG compliance section of the report.
 
 ```
 ## Responsive Audit — [DATE] — [MODE] — [TARGET]
-### Reference: docs/sitemap.md (R-flagged routes)
+### Reference: [SITEMAP_OR_ROUTE_LIST] (R-flagged routes)
 ### Breakpoints tested: [BP0 320px (WCAG) · ] BP1 375px [· BP2 768px · BP3 1024px]
 
 ### Static pre-checks
@@ -424,7 +418,7 @@ Log results in the WCAG compliance section of the report.
 
 | Route | Role | BP0 320px | BP1 375px | BP2 768px | BP3 1024px | Issues |
 |---|---|---|---|---|---|---|
-| [route from sitemap.md] | [role] | WCAG✅/❌ | PASS/WARN/FAIL | PASS/WARN/FAIL | PASS/WARN/FAIL | [description] |
+| [route] | [role] | WCAG✅/❌ | PASS/WARN/FAIL | PASS/WARN/FAIL | PASS/WARN/FAIL | [description] |
 | ... | | | | | | |
 
 Legend: PASS = no issues · WARN = minor (scroll container present, 44-47px targets, preflight skipped) · FAIL = broken (overflow, truncation, unusable layout) · WCAG✅ = passes 1.4.10 reflow · WCAG❌ = fails 1.4.10
@@ -464,12 +458,12 @@ For each WARN or FAIL:
 
 After the report:
 
-> "Vuoi che sistemi le violazioni responsive trovate? Posso intervenire su:
-> - Tutto in una volta
-> - Per breakpoint: mobile (BP0+BP1) · tablet (BP2) · laptop (BP3)
-> - Per check: overflow (R1+R2) · tap target (R4+R8) · layout stacking (R5) · sidebar collapse (R9) · modal (R6) · calendar/grid (R7)
-> - Per sezione funzionale: usa `target:section:<name>` al prossimo run
-> - WCAG compliance pass: correggo le violazioni 1.4.10 e 1.4.4 trovate in modalità `wcag`"
+> "Want me to fix the responsive violations found? I can work on:
+> - Everything at once
+> - By breakpoint: mobile (BP0+BP1) · tablet (BP2) · laptop (BP3)
+> - By check: overflow (R1+R2) · tap target (R4+R8) · layout stacking (R5) · sidebar collapse (R9) · modal (R6) · calendar/grid (R7)
+> - By section: use `target:section:<name>` on the next run
+> - WCAG compliance pass: fix the 1.4.10 and 1.4.4 violations found in `wcag` mode"
 
 **Do NOT apply any changes until confirmed.**
 
