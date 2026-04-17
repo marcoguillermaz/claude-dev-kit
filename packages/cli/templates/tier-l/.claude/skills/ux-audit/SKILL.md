@@ -5,7 +5,7 @@ user-invocable: true
 model: opus
 context: fork
 argument-hint: [flow:<flow-id>|role:<role>|full] [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_type, mcp__playwright__browser_click, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate, mcp__playwright__browser_fill_form, mcp__playwright__browser_press_key
+allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwright__browser_take_screenshot mcp__playwright__browser_snapshot mcp__playwright__browser_type mcp__playwright__browser_click mcp__playwright__browser_wait_for mcp__playwright__browser_evaluate mcp__playwright__browser_fill_form mcp__playwright__browser_press_key
 ---
 
 ## Configuration (fill in before first run)
@@ -15,12 +15,12 @@ allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__p
 > - `[LOGIN_ROUTE]` — your login page path, e.g. `login`, `signin`, `auth/login`
 > - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`
 > - `[TEST_ACCOUNTS]` — email/password pairs per role
+> - `[DEV_COMMAND]` — e.g. `npm run dev`, `pnpm dev`
 >
 > Then fill in the **Flow catalog** (Step 5) with your project's key user journeys.
-> Start with 3–5 Priority 1 flows covering the most critical tasks per role.
-
-
-
+> Start with 3-5 Priority 1 flows covering the most critical tasks per role.
+>
+> If `[DEV_URL]` or `[SITEMAP_OR_ROUTE_LIST]` is not filled, the skill reports an error and exits.
 
 
 
@@ -83,7 +83,7 @@ Apply these 7 dimensions to every flow simulated. Dimensions are anchored to ISO
 
 | Check | What to verify | PASS | FAIL |
 |---|---|---|---|
-| C2 — Destructive guard | Irreversible actions trigger confirmation BEFORE execution | Confirmation dialog with action name + consequence | Single-click delete/revoke/mark-liquidato |
+| C2 — Destructive guard | Irreversible actions trigger confirmation BEFORE execution | Confirmation dialog with action name + consequence | Single-click destructive action without confirmation |
 | C3 — Silent success prevention | Every state-changing action has visible confirmation | Toast + page reflects new state (status badge changes) | Toast absent OR page unchanged after action |
 | C4 — Constraint visibility | Read-only constraints explicitly communicated | Label, tooltip, or disabled button with explanation | Functionality silently absent |
 | C5 — Positive feedback | Multi-step flows confirm outcome explicitly | Explicit success state, not just redirect | Redirect to list with no success indication |
@@ -118,7 +118,7 @@ For each form in the flow, during code inspection verify:
 | BF2 | Inline validation timing | Fires on `onBlur` or post-submit — NOT `onChange` | Premature validation disrupts typing and increases errors |
 | BF3 | Positive inline validation | Shows ✓ or green border after correction | Reduces user anxiety; confirms correction was accepted |
 | BF4 | Required/optional labeling | Required = `*`; Optional fields explicitly labeled | Unlabeled optional fields cause over-completion |
-| BF5 | Multi-step progress | "Passo N di M" — exact count, not vague percentage | Accurate progress reduces abandonment in multi-step flows |
+| BF5 | Multi-step progress | "Step N of M" — exact count, not vague percentage | Accurate progress reduces abandonment in multi-step flows |
 | BF6 | Field count per step | ≤ 8 fields without stepper; flag if exceeded | Optimal: 6–8 fields. Average: 11.3 (Baymard e-commerce data) |
 
 Record BF1–BF6 verdict for each form. Include in D3/D5/D6 analysis as evidence.
@@ -176,16 +176,7 @@ For each flow in scope:
 
 1. **Code context load** (Step 4): read primary page file + key components. Apply Baymard form checklist (BF1–BF6) to any form in the flow.
 2. **Setup**: Login with correct credentials (reuse session if same role as previous flow)
-3. **DOM preflight** after each navigate:
-   ```js
-   ({
-     loaded: document.readyState === 'complete',
-     hasMain: (document.querySelector('main')?.innerText?.length ?? 0) > 30,
-     noError: !document.title.toLowerCase().includes('error') &&
-               !document.body.innerText.includes('Application error')
-   })
-   ```
-   If `hasMain === false` → flag and report, do not simulate the flow.
+3. **DOM preflight** after each navigate: evaluate `readyState`, main content presence (>30 chars), and absence of error indicators. If main content missing → flag and report, do not simulate the flow.
    - Initial page load
    - After each interaction (form open, field filled, submitted, redirected)
    - Error state (if triggerable without data setup)
@@ -333,7 +324,6 @@ Order by severity, then by impact (flows affected):
 After the report:
 
 > "Want to dig into a specific finding? I can:
-> - **Wireframe ASCII**: propose a detailed design for a fix via `/frontend-design`
 > - **Heuristic deep-dive**: analyse a specific heuristic across all pages (e.g. H5 on all flows with destructive actions)
 > - Compare two specific sections for consistency
 > - Generate a fix checklist to integrate into the backlog (`docs/refactoring-backlog.md`)"
@@ -344,11 +334,7 @@ After the report:
 
 ## Step 10 — Screenshot cleanup
 
-After the report is delivered and the improvement offer is presented, clean up the temp directory:
-```bash
-```
-
-Run this unconditionally at session end — screenshots are only needed during analysis.
+After the report is delivered, delete any screenshots taken during analysis. Run unconditionally at session end.
 
 ---
 

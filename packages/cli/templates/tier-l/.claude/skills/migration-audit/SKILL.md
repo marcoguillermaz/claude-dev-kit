@@ -11,9 +11,10 @@ argument-hint: [target:file:<filename>|target:range:<from>-<to>|mode:all]
 
 > Replace these placeholders:
 > - `[MIGRATIONS_PATH]` — e.g. `prisma/migrations/`, `drizzle/`, `supabase/migrations/`, `db/migrations/`
-> - `[DB_SYSTEM]` — e.g. `PostgreSQL`, `MySQL`, `SQLite`
 > - `[APP_SOURCE_PATH]` — path to application source for column-reference cross-checks (e.g. `src/`, `app/`)
 > - `[STAGING_DB_URL]` — optional, for Step 4 applied-migration verification
+>
+> **Database scope**: checks target PostgreSQL DDL patterns. MySQL and SQLite migrations may trigger false negatives on lock-heavy DDL checks (M1, M6) that use PostgreSQL-specific syntax.
 
 ---
 
@@ -50,7 +51,7 @@ Detect the migration framework in this priority order. First matching marker win
 
 **Supported at launch**: Prisma, Drizzle, Supabase CLI, Raw SQL.
 
-For Rails / Django / Alembic / Flyway: announce `Framework detected: <name> — support pending. See https://github.com/marcoguillermaz/claude-dev-kit/issues/59 to contribute an adapter.` and exit 0.
+For Rails / Django / Alembic / Flyway: announce `Framework detected: <name> — not yet supported. The audit checks assume SQL-based migrations (PostgreSQL DDL). If your framework generates raw SQL, pass target:file: with the migration file path.` and exit 0.
 
 If no marker is found: announce `No migration framework detected. Checked: Prisma, Drizzle, Supabase CLI, Raw SQL. If migrations live elsewhere, pass target:file: with the absolute path.` and exit 0.
 
@@ -79,7 +80,7 @@ Run all eight checks per file. Record findings with SEVERITY / CHECK / FILE:LINE
 
 Flag the following patterns (grep per file body):
 
-- `CREATE INDEX` (not `CONCURRENTLY`) on a table with likely > 1000 rows. Severity: **High**. Suggest `CREATE INDEX CONCURRENTLY ...`.
+- `CREATE INDEX` (not `CONCURRENTLY`) on a table with likely > 1000 rows (check `docs/db-map.md` if available, or flag unconditionally for tables without known row count). Severity: **High**. Suggest `CREATE INDEX CONCURRENTLY ...`.
 - `CREATE INDEX CONCURRENTLY` appearing **inside** a `BEGIN` / `COMMIT` block (or any transaction marker). Severity: **Critical** — this fails at runtime in PostgreSQL. CONCURRENTLY cannot run inside a transaction.
 - `ADD COLUMN <col> <type> NOT NULL` **without** `DEFAULT` in the same statement. Severity: **High** — fails immediately on tables with existing rows.
 - `ADD COLUMN <col> <type> NOT NULL DEFAULT <expr>` where `<expr>` is volatile (`now()`, `random()`, `gen_random_uuid()`). Severity: **High** — triggers full table rewrite under ACCESS EXCLUSIVE lock. Suggest: add nullable, backfill, then `ALTER COLUMN ... SET NOT NULL`.

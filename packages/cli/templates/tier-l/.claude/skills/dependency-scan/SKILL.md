@@ -20,14 +20,21 @@ The caller provides:
 
 ### Check 1 — Route consumers
 For each affected route path:
-- **Web projects** (Next.js, React Router, Express): grep for `href="[route]"`, `href={`, `router.push`, `redirect(`, `Link href` matching the route; glob for pages/layouts that define the route segment
-- **Native projects** (Swift/iOS/macOS): grep for `NavigationLink`, `navigationDestination`, `.sheet(`, `fullScreenCover(`, deep link URL patterns matching the route
+- **Web projects with component UI** (Next.js, React Router, Vue Router): grep for `href="[route]"`, `href={`, `router.push`, `redirect(`, `Link href` matching the route; glob for pages/layouts that define the route segment
+- **Server-rendered web** (Django, Rails, Laravel, Flask): grep for URL references — Django: `reverse(`, `{% url`, `path(` in urls.py; Rails: `_path`, `_url` helpers; Laravel: `route(`, `redirect(`; Flask: `url_for(`
+- **Native projects — Swift/iOS/macOS**: grep for `NavigationLink`, `navigationDestination`, `.sheet(`, `fullScreenCover(`, deep link URL patterns matching the route
+- **Native projects — Kotlin/Android**: grep for `Intent(`, `NavController.navigate(`, `findNavController().navigate(`, deep link URI patterns matching the route
 - **No frontend** (`[HAS_FRONTEND]` is `false`): mark Check 1 as N/A
 - Report: file path + line number + usage type
 
-### Check 2 — Component import consumers
-For each affected component file:
-- Grep for `import.*from.*[component-name]` across all `.ts`, `.tsx`, `.js`, `.jsx` files
+### Check 2 — Import consumers
+For each affected component or module file, grep for imports using the language-appropriate pattern:
+- **JS/TS**: `import.*from.*[name]` across `.ts`, `.tsx`, `.js`, `.jsx` files
+- **Python**: `from [module] import` or `import [module]` across `.py` files
+- **Swift**: grep for the type/function name across `.swift` files (Swift uses module-level imports, so grep the symbol name directly)
+- **Kotlin/Java**: `import.*[package].[name]` across `.kt`, `.java` files
+- **Go**: grep for the symbol name in files that import the package (`import.*"[package]"`)
+- **Other languages**: grep for the symbol name across all source files in the project
 - Report: file path + line number + import statement
 
 ### Check 3 — Shared type/utility consumers
@@ -37,9 +44,14 @@ For each affected type or utility:
 - Report: consumer count + file list
 
 ### Check 4 — Test file references
-For each affected route or component:
-- Glob `e2e/**`, `__tests__/**`, `*.test.ts`, `*.spec.ts`
-- Grep for the route path, component name, or selector patterns
+For each affected route or component, search test files using the language-appropriate glob patterns:
+- **JS/TS**: `e2e/**`, `__tests__/**`, `*.test.{ts,tsx,js,jsx}`, `*.spec.{ts,tsx,js,jsx}`
+- **Python**: `tests/**`, `test_*.py`, `*_test.py`, `conftest.py`
+- **Swift**: `*Tests.swift`, `*Spec.swift`, test target directories
+- **Go**: `*_test.go`
+- **Kotlin/Java**: `*Test.kt`, `*Test.java`, `src/test/**`
+- **Other languages**: glob for files containing `test` or `spec` in the path or filename
+- Grep for the route path, component/module name, or selector patterns
 - Report: test file path + matching line
 
 ### Check 5 — FK references (DB tables only)

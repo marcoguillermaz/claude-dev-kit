@@ -5,7 +5,7 @@ user-invocable: true
 model: opus
 context: fork
 argument-hint: [quick|full|wcag] [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_type, mcp__playwright__browser_click, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate
+allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_take_screenshot mcp__playwright__browser_snapshot mcp__playwright__browser_type mcp__playwright__browser_click mcp__playwright__browser_wait_for mcp__playwright__browser_evaluate
 ---
 
 ## Configuration (fill in before first run)
@@ -16,12 +16,11 @@ allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__p
 > - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md` or `docs/routes.md`
 > - `[MOBILE_ROUTES]` — comma-separated routes to test in quick mode (pick 4–6 most-used)
 > - `[TEST_ACCOUNTS]` — one or more `email / password` pairs per role (from your project's test accounts)
+> - `[DEV_COMMAND]` — e.g. `npm run dev`, `pnpm dev`
+> - `[APP_SOURCE_GLOB]` — e.g. `src/**/*.{tsx,jsx}`, `app/**/*.{vue,svelte}`, `templates/**/*.html`
 > - `[SCOPE_NOTE]` — which roles/pages are in scope vs excluded
-
-
-
-
-
+>
+> If `[DEV_URL]` or `[SITEMAP_OR_ROUTE_LIST]` is not filled, the skill reports an error and exits.
 
 ## Step 0 — Mode + target detection
 
@@ -64,29 +63,15 @@ Hold in working memory:
 Run **before** launching the browser. These are zero-cost static checks that catch common patterns:
 
 **S1 — Viewport unit font trap**
-```
-Pattern: text-\[[0-9.]+vw\]|font-size.*[0-9]vw|fontSize.*vw
-Scope: [APP_SOURCE_GLOB]
-```
-Flag any element with a `vw`-based font size without a `calc()` fallback.
-`font-size: Xvw` alone disables user zoom — WCAG 1.4.4 violation.
+Scope: `[APP_SOURCE_GLOB]`. Flag any `vw`-based font size without a `calc()` fallback - disables user zoom (WCAG 1.4.4 violation). Pattern: see CHECKS.md S1.
 Expected: 0 matches. Any match is Medium severity.
 
 **S2 — overflow:hidden on html/body**
-```
-Pattern: (html|body).*overflow.*hidden|overflow.*hidden.*(html|body)
-Scope: global stylesheet + root layout file + [APP_SOURCE_GLOB] CSS files
-```
-Flag any `overflow: hidden` applied directly to `<html>` or `<body>`.
-This masks horizontal scroll symptoms instead of fixing them and breaks `position: sticky`.
+Scope: global stylesheet + root layout + `[APP_SOURCE_GLOB]` CSS files. Flag `overflow: hidden` on `<html>` or `<body>` - masks scroll symptoms and breaks `position: sticky`. Pattern: see CHECKS.md S2.
 Expected: 0 matches. Any match is Medium severity.
 
-**S3 — Images without max-width constraint**
-```
-Pattern: <img(?![^>]*className[^>]*(w-full|max-w|object-))
-Scope: [APP_SOURCE_GLOB]
-```
-Flag raw `<img>` tags without responsive width classes. All images should use a framework image component or have `max-w-full` / `w-full`.
+**S3 — Images without responsive width constraint**
+Scope: `[APP_SOURCE_GLOB]`. All images must have a responsive width constraint (`max-width`, `width: 100%`, or framework equivalent). Flag `<img>` tags missing such a constraint. Pattern: see CHECKS.md S3 - adapt to your stack.
 Expected: 0 matches. Any match is Low severity.
 
 Log results as "Static pre-checks: S1 [PASS/FAIL N] · S2 [PASS/FAIL N] · S3 [PASS/FAIL N]" before proceeding.
@@ -148,107 +133,13 @@ For each session × route × breakpoint:
 1. `browser_resize(width, height)` — set viewport
 2. `browser_navigate(url)`
 3. Wait 1500ms or until main content visible
-4. **DOM preflight validation** — run before any screenshot:
-   ```js
-   ({
-     loaded: document.readyState === 'complete',
-     hasMain: (document.querySelector('main')?.innerText?.length ?? 0) > 30,
-     noError: !document.title.toLowerCase().includes('error') &&
-               !document.body.innerText.includes('Application error') &&
-               !document.body.innerText.includes('500'),
-     vpWidth: window.innerWidth
-   })
-   ```
+4. **DOM preflight validation** — run the preflight script from CHECKS.md § Preflight.
    If `hasMain === false` OR `noError === false`:
    > ⚠️ Route [route] @ BP[N] failed preflight. Skipping — record as WARN in report.
    If `vpWidth` does not match the requested width: log the discrepancy and proceed anyway.
-6. **Overflow check** (run immediately after screenshot):
-   ```js
-   (() => {
-     const htmlW = document.documentElement.scrollWidth;
-     const vpW = window.innerWidth;
-     const tables = Array.from(document.querySelectorAll('table'));
-     const tableOverflows = tables.map(t => ({
-       el: t.className.split(' ').slice(0,3).join('.'),
-       hasScrollWrapper: !!t.closest('[class*="overflow-x"]'),
-       overflowPx: Math.max(0, t.scrollWidth - vpW)
-     })).filter(t => t.overflowPx > 0);
-     return {
-       hasHorizontalScroll: htmlW > vpW,
-       overflowPx: Math.max(0, htmlW - vpW),
-       offendingElements: Array.from(document.querySelectorAll('*'))
-         .filter(el => el.scrollWidth > vpW)
-         .slice(0, 5)
-         .map(el => el.tagName + (el.className ? '.' + el.className.split(' ').slice(0,3).join('.') : '')),
-       tableOverflows
-     };
-   })()
-   ```
-7. **Tap target check** (BP0 + BP1 only — mobile breakpoints):
-   ```js
-   (() => {
-     const interactives = Array.from(document.querySelectorAll('button, a[href], [role="button"], input, select'));
-     const tooSmall = interactives
-       .map(el => {
-         const r = el.getBoundingClientRect();
-         return {
-           text: (el.textContent ?? el.getAttribute('aria-label') ?? '').slice(0,30).trim(),
-           tag: el.tagName,
-           w: Math.round(r.width),
-           h: Math.round(r.height),
-           ok: r.width >= 44 && r.height >= 44,
-           recommended: r.width >= 48 && r.height >= 48
-         };
-       })
-       .filter(x => !x.ok && x.w > 0 && x.h > 0);
-
-     // Spacing check — find pairs of adjacent interactives with gap < 8px
-     const rects = interactives.map(el => el.getBoundingClientRect());
-     const spacingViolations = [];
-     for (let i = 0; i < rects.length; i++) {
-       for (let j = i + 1; j < rects.length; j++) {
-         const a = rects[i], b = rects[j];
-         const hGap = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
-         const vGap = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
-         const gap = Math.min(hGap === 0 ? Infinity : hGap, vGap === 0 ? Infinity : vGap);
-         if (gap < 8 && gap >= 0 && gap !== Infinity) {
-           spacingViolations.push({
-             a: (interactives[i].textContent ?? '').slice(0,20).trim(),
-             b: (interactives[j].textContent ?? '').slice(0,20).trim(),
-             gapPx: Math.round(gap)
-           });
-           if (spacingViolations.length >= 5) break;
-         }
-       }
-       if (spacingViolations.length >= 5) break;
-     }
-
-     return { tooSmall, spacingViolations };
-   })()
-   ```
-8. **Sidebar/nav collapse check** (BP0 + BP1 only):
-   ```js
-   (() => {
-     // Look for sidebar/nav that should be hidden at mobile
-     const sidebar = document.querySelector('aside, nav[class*="sidebar"], [data-sidebar], [class*="sidebar"]');
-     const sidebarVisible = sidebar
-       ? (getComputedStyle(sidebar).display !== 'none' &&
-          getComputedStyle(sidebar).visibility !== 'hidden' &&
-          getComputedStyle(sidebar).opacity !== '0' &&
-          sidebar.getBoundingClientRect().width > 100)
-       : null;
-     // Look for mobile menu trigger (hamburger)
-     const hamburger = document.querySelector(
-       '[aria-label*="menu" i], [aria-label*="nav" i], [aria-controls*="sidebar" i], button[class*="hamburger"], button[class*="mobile-menu"]'
-     );
-     return {
-       sidebarFound: !!sidebar,
-       sidebarVisibleAtMobile: sidebarVisible,
-       hamburgerFound: !!hamburger,
-       hamburgerText: hamburger ? (hamburger.getAttribute('aria-label') ?? hamburger.textContent?.slice(0,20)) : null
-     };
-   })()
-   ```
+6. **Overflow check** — run the overflow script from CHECKS.md § Overflow. Returns `hasHorizontalScroll`, `overflowPx`, `offendingElements`, `tableOverflows`.
+7. **Tap target check** (BP0 + BP1 only) — run the tap-target script from CHECKS.md § Tap target. Returns `tooSmall` (elements under 44px) and `spacingViolations` (pairs with gap < 8px).
+8. **Sidebar/nav collapse check** (BP0 + BP1 only) — run the sidebar script from CHECKS.md § Sidebar. Returns `sidebarFound`, `sidebarVisibleAtMobile`, `hamburgerFound`.
 9. `browser_snapshot` — ARIA snapshot for structural check
 
 ### Checks per screenshot
@@ -277,8 +168,8 @@ Focus on: sidebar nav items, form submit buttons, tab bar items, action buttons 
 Note: 44px is the minimum threshold (Apple HIG). Elements between 44-47px pass but do not meet the 48px Material Design recommendation — log as WARN if widespread.
 
 **R5 — Stacked layout**
-At BP1: grid/flex containers with `sm:grid-cols-2` or `md:grid-cols-3` should stack to single column. Check from screenshot — if columns don't stack, flag.
-Additionally: verify that stacked cells have sufficient height and padding — stacking without spacing adjustments produces visually compressed rows.
+At BP1: multi-column grid/flex containers should collapse to single column at mobile width. Check from screenshot - if columns do not stack, flag.
+Verify that stacked cells have sufficient height and padding - stacking without spacing adjustments produces visually compressed rows.
 
 **R6 — Modal/dialog usability**
 If a Dialog is triggered: verify it does not overflow the viewport, has visible close affordance, and the confirm button is reachable without scrolling.
@@ -363,18 +254,14 @@ Select 3 representative routes (one per role, all from the working route list): 
 For each:
 1. `browser_resize(1280, 800)` — desktop viewport
 2. `browser_navigate(url)`
-3. Apply 200% font size via:
-   ```js
-   document.documentElement.style.fontSize = '200%';
-   return { applied: true, rootFontSize: getComputedStyle(document.documentElement).fontSize };
-   ```
+3. Apply 200% font size via the resize script from CHECKS.md § WCAG 1.4.4 resize text.
 4. Wait 500ms for reflow
-5. Run overflow check (same query as Step 5 item 6)
-7. Check:
+5. Run overflow check (same script as Step 5 item 6)
+6. Check:
    - `hasHorizontalScroll === true` → FAIL — WCAG 1.4.4 violation. Content lost or broken at 200% text size.
    - Any interactive element no longer reachable (visually clipped) → FAIL
    - Minor reflow/wrap changes → PASS (expected and acceptable)
-8. Reset: `document.documentElement.style.fontSize = ''`
+7. Reset font size (see CHECKS.md)
 
 Log results in the WCAG compliance section of the report.
 
@@ -471,8 +358,4 @@ After the report:
 
 ## Step 9 — Screenshot cleanup
 
-After the report is delivered and the improvement offer is presented, clean up the temp directory:
-```bash
-```
-
-Run this unconditionally at session end — screenshots are only needed during analysis.
+After the report is delivered, delete any screenshots taken during analysis. Run unconditionally at session end.

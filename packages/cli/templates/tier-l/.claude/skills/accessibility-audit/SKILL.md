@@ -5,7 +5,7 @@ user-invocable: true
 model: sonnet
 context: fork
 argument-hint: [static|full|wcag] [target:route:<path>|target:file:<glob>|target:role:<role>]
-allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for
+allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwright__browser_evaluate mcp__playwright__browser_wait_for
 ---
 
 ## Configuration (fill in before first run)
@@ -13,8 +13,8 @@ allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__p
 > Replace these placeholders:
 > - `[DEV_URL]` — e.g. `http://localhost:3000`
 > - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`
-> - `[APP_SOURCE_GLOB]` — e.g. `app/**/page.tsx` + `components/**/*.tsx`, `src/**/*.vue`
-> - `[DEV_COMMAND]` — e.g. `npm run dev`, `python manage.py runserver`
+> - `[APP_SOURCE_GLOB]` — e.g. `app/**/page.tsx` + `components/**/*.tsx`, `src/**/*.vue`, `templates/**/*.html`
+> - `[DEV_COMMAND]` — e.g. `npm run dev`, `python manage.py runserver`, `swift run`
 >
 > Then fill in the APCA probe selectors in Step 3 (see Stack adaptation section at end).
 
@@ -70,6 +70,8 @@ If mode was forced (`static`/`full`/`wcag`), skip this step — but if `full`/`w
 
 Read `[SITEMAP_OR_ROUTE_LIST]` (if present) to build the target file list — page files + component files. If no sitemap, fall back to `[APP_SOURCE_GLOB]` filtered by `target:` scope.
 
+Read `${CLAUDE_SKILL_DIR}/CHECKS.md` for severity classification and WCAG references.
+
 Launch a **single Explore subagent** (model: haiku) with the full file list and the check definitions below. Pass file paths explicitly — do not ask the agent to discover them.
 
 > **Ripgrep note**: patterns are written for ripgrep (`rg`). Use `|` for alternation. Character classes work as-is.
@@ -83,8 +85,8 @@ File scope: use ONLY the files provided.
 ---
 
 **A1 — Icon-only buttons missing aria-label** [Severity: Critical — WCAG 4.1.2]
-Pattern: `size="icon"|size=\{'icon'\}` then filter to lines NOT containing `aria-label`.
-Also: `<Button[^>]*>\s*<[A-Z][a-zA-Z]+Icon` or `<Button[^>]*>\s*\{[^}]*Icon` without `aria-label` on the same or preceding line.
+Find interactive elements that render only an icon (no visible text content) and lack `aria-label` or `aria-labelledby`.
+Use the grep pattern from `[A1_ICON_BUTTON_PATTERN]` in Stack adaptation. Filter out lines already containing `aria-label`.
 Expected: 0 matches. Icon-only interactive elements must have an accessible name.
 
 **A2 — Positive tabindex** [Severity: Critical — WCAG 2.4.3]
@@ -103,8 +105,9 @@ Exclude: lines containing `//`, `{/*`, `alt=`, `.svg`, `data:`, `role="presentat
 Expected: 0 matches. Every raster image must have an `alt` attribute (empty string allowed for decorative use with `role="presentation"`).
 
 **A5 — Form inputs without accessible labels** [Severity: Critical — WCAG 1.3.1, 3.3.2, 4.1.2]
-Method: grep `<input`, `<Input`, `<textarea`, `<Textarea`, `<Select`. For each match, check within ±5 lines for a `<Label` containing `htmlFor` matching the input's `id`, OR an `aria-label`/`aria-labelledby` on the element.
-Exclude: inputs inside form field wrapper components with a sibling label component — these are valid (e.g. react-hook-form `<FormField>` + `<FormLabel>`).
+Find form controls (input, textarea, select — including framework-specific component names) without an associated label. Association methods: `for`/`htmlFor` matching input `id`, `aria-label`, or `aria-labelledby`.
+Use `[A5_FORM_CONTROL_PATTERN]` from Stack adaptation for framework-specific selectors. Check within ±5 lines for label association.
+Exclude: inputs inside form field wrapper components with a sibling label component (framework form libraries handle labeling internally).
 Expected: 0 matches. Every form control must have an accessible name.
 
 **A6 — Focus indicator too thin** [Severity: High — WCAG 1.4.11]
@@ -112,15 +115,17 @@ Pattern: focus ring/outline declarations that rely on a default width without ex
 Expected: 0 matches on interactive elements. Focus indicators must meet WCAG 1.4.11 (3:1 non-text contrast) — a 1px ring is typically insufficient.
 
 **A7 — onClick on non-interactive elements** [Severity: Critical — WCAG 2.1.1]
-Pattern: `<div.*onClick|<span.*onClick|<li.*onClick|<p.*onClick`.
-For each match, the element must also have `role="button"` (or equivalent interactive role) AND `onKeyDown` (or `onKeyPress`). Missing either = keyboard users cannot activate it.
-Exclude: lines inside `{/* ... */}` comments; Radix `asChild` wrappers.
+Find non-interactive elements (`div`, `span`, `li`, `p`) with click/tap event handlers that lack keyboard accessibility.
+Use `[A7_CLICK_HANDLER_PATTERN]` from Stack adaptation for framework-specific event binding syntax.
+For each match, verify: (1) `role="button"` or equivalent interactive role present, AND (2) keyboard handler (`onKeyDown`, `@keydown`, `on:keydown`, etc.) present. Missing either = keyboard users cannot activate it.
+Exclude: comment lines; headless UI composition wrappers that delegate to child interactive elements.
 Expected: 0 matches missing keyboard support.
 
-**A8 — Sidebar/nav trigger keyboard accessibility** [Severity: High — WCAG 2.1.1]
-Scope: main layout entry point and sidebar/navigation components (e.g. `layout.tsx`, `Sidebar.tsx`).
-Verify: the primary sidebar / navigation trigger is reachable on BOTH mobile and desktop — not hidden inside an `md:hidden` wrapper with no desktop alternative.
-Flag: `SidebarTrigger` or equivalent wrapped only in `md:hidden` without a matching non-mobile trigger.
+**A8 — Navigation trigger keyboard accessibility** [Severity: High — WCAG 2.1.1]
+Scope: main layout entry point and navigation components.
+Verify: the primary navigation trigger is keyboard-reachable at ALL breakpoints — not hidden at certain screen sizes without an alternative.
+Use `[A8_NAV_TRIGGER_PATTERN]` and `[A8_RESPONSIVE_HIDE_PATTERN]` from Stack adaptation.
+Flag: nav trigger wrapped only in a responsive-hide class with no matching trigger at other breakpoints.
 Expected: every layout exposes a keyboard-reachable nav trigger at every breakpoint."
 
 ---
@@ -139,7 +144,7 @@ For each page:
 2. Ensure logged in with the role from the route's sitemap entry (if auth required).
 3. browser_wait_for network idle (2000ms max).
 4. For each theme (light, dark):
-   - Toggle theme via sidebar Switch (or apply class="dark" on <html>).
+   - Apply `[THEME_TOGGLE_ACTION]` from Stack adaptation (see Step 5d of `/visual-audit` for detection snippet).
    - browser_wait_for 500ms.
    - Run the APCA probe below via browser_evaluate.
 ```
@@ -179,22 +184,9 @@ return {
 };
 ```
 
-### APCA thresholds (source: APCA / WCAG 3 working draft)
+See `${CLAUDE_SKILL_DIR}/CHECKS.md` for APCA thresholds (Lc 75/60/45/15) and C1-C3 severity classification.
 
-- **Lc 75** — preferred body text
-- **Lc 60** — minimum body text
-- **Lc 45** — label / large text (≥ 24px or bold ≥ 18px)
-- **Lc 15** — non-text (borders, icons, dividers)
-
-Record each pair. The report narrates against thresholds qualitatively (getComputedStyle returns resolved rgb, not Lc — final verdict combines the rgb with visible contrast in the screenshot when available).
-
-### Check definitions
-
-| ID | Severity | Target |
-|---|---|---|
-| **C1** | High if body text appears below Lc 45; Critical if below Lc 30 | Muted text on card/surface background, both themes. Silent dark-mode failure point. |
-| **C2** | High | Primary CTA text on brand background — frequent regression after token tweaks. |
-| **C3** | Medium | Border / icon contrast vs card background — must reach Lc 15. |
+Record each rgb pair. The report narrates against thresholds qualitatively (getComputedStyle returns resolved rgb, not Lc — final verdict combines the rgb with visible contrast in the screenshot when available).
 
 ---
 
@@ -206,7 +198,7 @@ For each of the 3 pages from Step 3:
 // Inject axe-core from CDN
 await new Promise((resolve, reject) => {
   const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js';
+  s.src = '[AXE_CORE_CDN_URL]'; // default: https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js — update in Stack adaptation
   s.onload = resolve;
   s.onerror = reject;
   document.head.appendChild(s);
@@ -234,18 +226,7 @@ return {
 };
 ```
 
-### Severity mapping
-
-| ID | axe impact | Report severity |
-|---|---|---|
-| **X1** | `critical` or `serious` | Critical |
-| **X2** | `moderate` | High |
-| **X3** | `minor` | Medium |
-
-### Known false positives to suppress (document, not fix)
-
-- `color-contrast` on muted text inside a portal overlay — axe measures the portal layer, not the semantic background. Verify manually against Step 3 C1 data.
-- `aria-hidden-focus` inside a closed Dialog/Sheet — headless UI libraries (Radix, Headless UI, etc.) manage this via `inert`. Verify library version before flagging.
+See `${CLAUDE_SKILL_DIR}/CHECKS.md` for axe severity mapping (X1-X3) and known false positive suppression guidance.
 
 ---
 
@@ -260,8 +241,8 @@ return {
 [2-5 bullets — Critical and High findings only. Write concrete facts: file:line, check ID, impact.
 If nothing Critical/High: "No Critical or High findings — a11y posture is clean for the audited scope."
 Examples:
-- "A5 Critical: 3 form inputs in app/(app)/settings/page.tsx have no accessible label"
-- "C1 High: text-muted-foreground on bg-card rgb(…) on dark theme — likely below Lc 45"
+- "A5 Critical: 3 form inputs in [settings page file] have no accessible label"
+- "C1 High: secondary text on surface background rgb(…) on dark theme — likely below Lc 45"
 - "X1 Critical: 'button-name' axe violation on /dashboard — 2 nodes"]
 
 ### A11y maturity assessment
@@ -285,12 +266,12 @@ Static (all modes):
 | A5 | Form inputs without accessible labels | N | Critical | ✅/❌ |
 | A6 | Bare focus ring without explicit size | N | High | ✅/❌ |
 | A7 | onClick on non-interactive elements | N | Critical | ✅/❌ |
-| A8 | Sidebar/nav trigger accessibility | N | High | ✅/❌ |
+| A8 | Navigation trigger keyboard accessibility | N | High | ✅/❌ |
 
 Live (full/wcag mode only — else "Skipped — static mode"):
 | # | Check | Result | Severity | Verdict |
 |---|---|---|---|---|
-| C1 | muted-foreground on bg-card (both themes) | [rgb pair / Lc estimate] | High / Critical | ✅/⚠️/❌ |
+| C1 | Secondary text on surface background (both themes) | [rgb pair / Lc estimate] | High / Critical | ✅/⚠️/❌ |
 | C2 | CTA text on brand background | [rgb pair] | High | ✅/❌ |
 | C3 | Border / icon vs card bg | [rgb pair] | Medium | ✅/❌ |
 
@@ -338,9 +319,7 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ### Severity guide
 
-- **Critical**: keyboard trap or missing accessible name on an interactive element (A1, A2, A5, A7); axe `critical`/`serious` violations (X1); APCA indicates body text falls below Lc 30 (C1).
-- **High**: focus indicator degraded (A3, A6); sidebar/nav unreachable at a breakpoint (A8); axe `moderate` (X2); APCA muted text or CTA below Lc 45 (C1, C2).
-- **Medium**: decorative image missing alt (A4); axe `minor` (X3); non-text contrast below Lc 15 (C3).
+See `${CLAUDE_SKILL_DIR}/CHECKS.md` → Overall severity classification for the full mapping (A1-A8 static, C1-C3 live, X1-X3 axe-core).
 
 ---
 
@@ -361,10 +340,18 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 |---|---|---|
 | `[DEV_URL]` | | `http://localhost:3000`, `http://127.0.0.1:8080` |
 | `[SITEMAP_OR_ROUTE_LIST]` | | `docs/sitemap.md`, `docs/routes.md` |
-| `[APP_SOURCE_GLOB]` | | `app/**/page.tsx` + `components/**/*.tsx`, `src/**/*.vue` |
-| `[DEV_COMMAND]` | | `npm run dev`, `python manage.py runserver` |
-| APCA selectors | | Adapt Step 3 probe to your design system tokens |
-| `[MUTED_TEXT_SELECTOR]` | | `[class*="muted-foreground"]`, `.text-secondary` |
-| `[CARD_SURFACE_SELECTOR]` | | `[data-slot="card"]`, `.card`, `main > div` |
-| `[PRIMARY_CTA_SELECTOR]` | | `button[class*="bg-primary"]`, `.btn-primary` |
-| `[BORDER_SELECTOR]` | | `[class*="border-border"]`, `.border` |
+| `[APP_SOURCE_GLOB]` | | `app/**/page.tsx`, `src/**/*.vue`, `templates/**/*.html` |
+| `[DEV_COMMAND]` | | `npm run dev`, `python manage.py runserver`, `swift run` |
+| **APCA selectors** | | Adapt Step 3 probe to your design system tokens |
+| `[MUTED_TEXT_SELECTOR]` | | `.text-secondary`, `[class*="text-muted"]`, `[class*="muted-foreground"]` |
+| `[CARD_SURFACE_SELECTOR]` | | `.card`, `article`, `[role="article"]`, `main > div` |
+| `[PRIMARY_CTA_SELECTOR]` | | `.btn-primary`, `[data-variant="primary"]`, `button[class*="bg-primary"]` |
+| `[BORDER_SELECTOR]` | | `[class*="border"]`, `.border`, `hr` |
+| `[AXE_CORE_CDN_URL]` | | `https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js` |
+| `[THEME_TOGGLE_ACTION]` | | See `/visual-audit` Stack adaptation — shared key |
+| **Static check patterns** | | Adapt grep patterns to your UI framework |
+| `[A1_ICON_BUTTON_PATTERN]` | | React: `size="icon"\|size={'icon'}`, Vue: `:icon="true"`, generic: `<button[^>]*>\s*<(svg\|img\|i)\b` |
+| `[A5_FORM_CONTROL_PATTERN]` | | React: `<input\|<Input\|<textarea\|htmlFor`, Vue: `v-model\|<el-input`, generic: `<input\|<textarea\|<select` |
+| `[A7_CLICK_HANDLER_PATTERN]` | | React: `onClick`, Vue: `@click\|v-on:click`, Svelte: `on:click`, Angular: `(click)` |
+| `[A8_NAV_TRIGGER_PATTERN]` | | React/shadcn: `SidebarTrigger`, generic: nav trigger component name |
+| `[A8_RESPONSIVE_HIDE_PATTERN]` | | Tailwind: `md:hidden`, Bootstrap: `d-none d-md-block`, generic: `@media` hide |

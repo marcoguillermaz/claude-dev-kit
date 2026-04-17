@@ -5,8 +5,19 @@ user-invocable: true
 model: opus
 context: fork
 argument-hint: [quick|full] [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: Read, Glob, Grep, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_evaluate
+allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwright__browser_take_screenshot mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_type mcp__playwright__browser_wait_for mcp__playwright__browser_resize mcp__playwright__browser_evaluate
 ---
+
+## Configuration (fill in before first run)
+
+> Replace these placeholders:
+> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`, `docs/routes.md`, `src/router/index.ts`
+> - `[DEV_URL]` — e.g. `http://localhost:3000`, `http://localhost:5173`
+> - `[DEV_COMMAND]` — e.g. `npm run dev`, `pnpm dev`
+> - `[TEST_ACCOUNTS]` — reference to test credentials (e.g. "see CLAUDE.md Environment section")
+> - `[LOGIN_ROUTE]` — e.g. `/login`, `/sign-in`, `/auth`
+>
+> If `[SITEMAP_OR_ROUTE_LIST]` or `[DEV_URL]` is not filled, the skill reports an error and exits.
 
 **Scope boundary**: this skill covers aesthetic quality only. Accessibility contrast (APCA measurement, WCAG contrast thresholds, axe-core scan) lives in `/accessibility-audit` — run it for any contrast or accessibility concern. Design-token compliance → `/ui-audit`. Viewport fit → `/responsive-audit`.
 
@@ -18,7 +29,7 @@ Parse `$ARGUMENTS`:
 - `quick` → 5 key pages only
 - `full` → all routes from sitemap, both themes
 - No mode keyword → **standard** — all routes from `[SITEMAP_OR_ROUTE_LIST]` (light + dark)
-- `critique` → deep-dive on a single `target:page:` (required). Skips scoring table; produces Gestalt + hierarchy diagnosis + concrete redesign proposals per Critical/Major finding, invoking `/frontend-design` for before/after. Must be paired with `target:page:<route>`.
+- `critique` → deep-dive on a single `target:page:` (required). Skips scoring table; produces Gestalt + hierarchy diagnosis + concrete redesign proposals per Critical/Major finding. Must be paired with `target:page:<route>`.
 
 **Target** (filters the page roster):
 - `target:role:<role_name>` → routes accessible to that role only
@@ -44,7 +55,7 @@ Read in parallel:
 Hold in working memory:
 - Brand color token and its approximate hue (for V4 colour discipline checks)
 - Base scale: from lightest to darkest
-- Semantic token map: card background, muted background, foreground text, muted foreground text, border, brand accent
+- Semantic token map: surface, secondary surface, text, secondary text, border, brand accent — using the names from Stack adaptation
 - List of all routes with their roles and key component files
 
 Apply target filter from Step 0 to the route list from sitemap. The filtered list is the **working roster** for all subsequent steps.
@@ -62,30 +73,12 @@ Record the base URL that responded — use it for all subsequent navigations.
 
 ## Step 3 — Visual evaluation framework
 
-Apply these 11 dimensions to every screenshot captured.
+Read `${CLAUDE_SKILL_DIR}/DIMENSIONS.md` for the full scoring rubric: 10 dimensions (V1-V7, V9-V11), score anchors, scoring rules, and interpretation notes. Contrast is scored by `/accessibility-audit`, not here.
 
-| Dim | Name | What to look for | Target score |
-|---|---|---|---|
-| **V1** | Typographic hierarchy | H1 vs body weight contrast; label vs value distinction; font size spread; muted-foreground on secondary text. **Quantitative anchor**: ≤ 5 distinct font sizes in use (from computed check); 2 font weights (semibold for headings, regular for body). Flag if computed check reveals > 5 sizes. | ≥ 4 |
-| **V2** | Spatial rhythm | Consistent padding inside similar components; visual breathing room; margin harmony between sections; card internal padding uniformity. **Quantitative anchor**: padding values should be multiples of 4px (8px preferred). Flag non-grid values (14px, 6px, 10px) from the 3-element spot check in computed checks. | ≥ 4 |
-| **V3** | Visual focal point | Primary CTA is the most prominent element; user's eye is guided to the most important content; no competing elements of equal weight | ≥ 4 |
-| **V4** | Colour discipline | Brand colour used sparingly and intentionally; status colours follow semantic convention (green=done, amber=pending, red=destructive); no arbitrary colour decoration; brand accent token reserved for primary CTAs not row-level buttons. Evaluate in both themes. *(Contrast thresholds moved to `/accessibility-audit` C1-C3.)* | ≥ 4 |
-| **V5** | Information density | Appropriate density for the page type (list = dense, form = airy); tables scannable at a glance; no cognitive overload; no empty visual regions | ≥ 3 |
-| **V7** | Micro-polish | Hover/focus states visible; transitions not jarring; empty states and skeletons look professional; icon–text alignment clean; status badges correct size relative to surrounding text. **Timing anchor**: transitions < 100ms are imperceptible (no feedback value); > 400ms feels sluggish. Flag when computed check reveals out-of-range transition durations on interactive elements. | ≥ 3 |
-| **V9** | Gestalt compliance | Evaluate 4 Gestalt principles: (1) **Proximity** — related elements grouped with tighter spacing than unrelated ones; flag if label↔value gap ≥ gap between distinct sections; (2) **Figure/ground** — content distinguishable from chrome without effort; flag dark mode text indistinguishable from bg; (3) **Similarity** — components with same function look the same cross-section; flag Badge same state with different colour/size on different pages; (4) **Continuity** — lists, columns, card grids guide the eye linearly; flag variable card sizes or inconsistent column widths. **Score anchors**: 5 = all 4 respected; 3 = 1-2 localised violations; 1 = disorienting layout. | ≥ 4 |
-| **V10** | Typographic quality | From code inspection + computed check: flag `lineHeight/fontSize` ratio < 1.4 or > 1.8 on body/label text; flag negative `letterSpacing` on font < 14px; flag paragraph or td width > 680px (≈75 chars). **Score anchors**: 5 = all in range; 3 = 1 value out of range; 1 = text in conditions that impair legibility. | ≥ 4 |
-| **V11** | Interaction state design | From code inspection (Step 5a) + screenshots: for every interactive element, verify: (1) hover — bg change ≥ 10 lightness points or border appearance; (2) focus-visible — ring visible on all backgrounds including bg-brand contexts; (3) active/pressed — visually distinct from hover; (4) disabled — desaturated colour + opacity, not just opacity; (5) loading skeleton — shape matches expected content layout. **Score anchors**: 5 = all 5 states designed; 3 = 2-3 states absent or indistinguishable; 1 = no interaction feedback. | ≥ 3 |
-
-Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** = good · **5** = excellent
-
-**Scoring rules:**
-- Score 1–2 on any dimension → Critical finding
-- Score 3 on V1, V3, V4, V9, V10 → Major finding (highest visual impact)
-- Score 3 on V2, V5, V6, V7, V11 → Minor finding
-- Write one concrete, actionable observation per dimension per page (not just a number)
-- **Never write a vague observation like "good overall"** — every line must name what specifically works or what specifically is wrong
-
-**Code-grounded scoring**: after reading a page's component files (Step 5a), if a muted foreground token is used on a subtitle in the code but the screenshot shows it rendered too light, flag it. Conversely, if the brand accent token appears on a row-level button in the code, flag it even if the screenshot looks acceptable — it's a systematic violation.
+Apply all dimensions to every screenshot captured. Key scoring thresholds:
+- Score 1-2 → Critical · Score 3 → Minor · Score ≥ 4 → no finding
+- Every observation must be concrete and actionable — no "good overall"
+- Code-grounded: flag code-level violations even if the screenshot looks acceptable
 
 ---
 
@@ -93,12 +86,7 @@ Score scale: **1** = poor · **2** = needs work · **3** = acceptable · **4** =
 
 ### Standard mode (default) and Full mode
 
-Both derive the working roster from `[SITEMAP_OR_ROUTE_LIST]` already loaded in Step 1. Use **all routes with a page file** (exclude auth callback routes — they are route handlers with no renderable UI). Group by section:
-
-- Pre-auth (login, pending, change-password, onboarding)
-- Common routes (all roles)
-- Multi-role routes
-- Restricted routes
+Both derive the working roster from `[SITEMAP_OR_ROUTE_LIST]` already loaded in Step 1. Use **all routes with a page file** (exclude auth callback routes — they are route handlers with no renderable UI). Group routes by access level for organized reporting.
 
 **How to pick the role/credential for each route**: use the "Roles" column from the route inventory. For routes accessible by multiple roles, default to the role that sees the most UI. For routes with explicit role variants, screenshot each variant separately under its own label.
 
@@ -121,9 +109,9 @@ Single route only — requires `target:page:<route>`. See Step 0.
 ### 5a — Per-page code inspection (MANDATORY before each screenshot)
 
 Specifically note:
-- Which design tokens / CSS classes are used on the main container, headings, primary CTA buttons
-- Whether the brand accent token appears on any row-level or inline button (→ V4 flag)
-- Whether semantic tokens (foreground, muted foreground, card background) are used consistently
+- Which design tokens or style declarations are used on the main container, headings, primary CTA buttons
+- Whether the brand accent token appears on any row-level or repetitive button (→ V4 flag)
+- Whether the project's semantic tokens (as defined in Stack adaptation) are used consistently
 - Whether empty state, loading, and error states are handled in the component
 - **Empty state quality** (→ V7/V11): does the empty state have a CTA guiding to the next action (not just a generic "no records" message)? Is the empty state text role-aware? Does the error state name the specific problem and suggest a recovery action?
 - **Interaction states** (→ V11): for every custom interactive element, verify hover/focus/active/disabled/loading states are explicitly defined in the component code
@@ -132,16 +120,16 @@ This code context MUST inform the scoring in Step 6 — reference it explicitly 
 
 ### 5b — Login helper
 ```
-1. browser_navigate [base_url]/login
-2. browser_wait_for: input[type=email] visible
-3. browser_type email field → [credential]
+1. browser_navigate [base_url]/[LOGIN_ROUTE]
+2. browser_wait_for: login form visible
+3. browser_type email/username field → [credential]
 4. browser_type password field → [test password from TEST_ACCOUNTS]
 5. browser_click submit button
-6. browser_wait_for: url contains /  (not /login)
-7. Confirm sidebar role matches expected role
+6. browser_wait_for: url no longer contains [LOGIN_ROUTE]
+7. Confirm the authenticated role is visible in the app UI (navigation, header, or profile indicator)
 ```
 
-Credentials:
+Credentials: use test accounts from `[TEST_ACCOUNTS]` in CLAUDE.md (Key Commands or Environment section).
 
 ### 5c — Per-page capture loop
 
@@ -175,11 +163,12 @@ For each page in roster:
    )].sort((a, b) => a - b);
 
    // Spacing grid — spot check 3 heterogeneous elements (V2 extended)
-   const checkEls = [
-     document.querySelector('[data-slot="card"]'),
-     document.querySelector('td'),
-     document.querySelector('[data-slot="dialog-content"]') || document.querySelector('form')
-   ].filter(Boolean);
+   // Selectors come from [SPACING_SAMPLE_SELECTORS] in Stack adaptation.
+   // Fallback: generic selectors that work across most frameworks.
+   const spacingSelectors = ['article, .card, [role="article"]', 'td', 'form, [role="dialog"]']; // override with Stack adaptation [SPACING_SAMPLE_SELECTORS]
+   const checkEls = spacingSelectors
+     .map(sel => document.querySelector(sel))
+     .filter(Boolean);
    const paddings = checkEls.map(el => ({
      tag: el.tagName, pad: parseInt(getComputedStyle(el).paddingTop)
    }));
@@ -202,19 +191,26 @@ For each page in roster:
    ```
    Record results. Use to inform V1 (font scale), V2 (padding spot-check + misaligned), V7 (transition timing). *(Contrast measurement moved to `/accessibility-audit` Step 3.)*
 
-7. **Light mode screenshot**: ensure sidebar theme toggle shows "Light mode" (click to switch if needed)
+7. **Light mode screenshot**: ensure current theme is light (detect with the snippet in Step 5d; apply `[THEME_TOGGLE_ACTION]` if the page loaded in dark mode)
 
-8. **Dark mode**: click sidebar theme toggle → `browser_wait_for` 500ms → capture screenshot. *(Dark-mode contrast measurement moved to `/accessibility-audit`.)*
+8. **Dark mode**: apply `[THEME_TOGGLE_ACTION]` → `browser_wait_for` 500ms → capture screenshot. *(Dark-mode contrast measurement moved to `/accessibility-audit`.)*
 
 9. **Immediately analyse** both screenshots + computed data against V1-V7, V9-V11 using the code context from Step 5a
 
 > Do not batch all screenshots then analyse. Analyse immediately after each pair — avoids context overload and produces sharper observations.
 
 ### 5d — Theme toggle interaction
-The sidebar theme toggle (Switch component at bottom of sidebar) controls light/dark.
-- In light mode: Switch is unchecked, label shows "Light mode"
-- In dark mode: Switch is checked, label shows "Dark mode"
-- Click the row containing the Switch to toggle (the full div is the click target)
+
+Theme switching is project-specific. Use `[THEME_TOGGLE_ACTION]` from **Stack adaptation** (see bottom of this skill). Detect the current theme with:
+
+```js
+// Robust theme detection across frameworks
+const isDark = document.documentElement.classList.contains('dark') ||
+               document.documentElement.getAttribute('data-theme') === 'dark' ||
+               window.matchMedia('(prefers-color-scheme: dark)').matches;
+```
+
+`[THEME_TOGGLE_ACTION]` must be a DOM action (preferred — click on the theme control) or a code snippet (fallback — direct class manipulation). If the project has no in-app theme toggle, flip OS-level dark mode or rely on `prefers-color-scheme` simulation via `browser_evaluate`.
 
 ---
 
@@ -317,9 +313,9 @@ After all pages, identify:
 
 ### Systematic code violations (patterns found in code across multiple pages)
 
-| Violation | Pages | PERMANENT RULE | Fix |
+| Violation | Pages | Design rule | Fix |
 |---|---|---|---|
-| [e.g. brand accent on row buttons] | [list] | Row-level buttons use variant="outline" | Replace with variant="outline" |
+| [e.g. brand accent on repetitive buttons] | [list] | Repetitive action buttons use neutral/secondary style per design system | Replace with design system's secondary button variant |
 
 ---
 
@@ -359,8 +355,8 @@ After the report:
 
 > "Do you want me to go deeper or generate concrete visual proposals? I can:
 >
-> - **Critique mode**: `/visual-audit critique target:page:<route>` — deep-dive on a single page: Gestalt + hierarchy diagnosis + concrete redesign proposals with before/after via `/frontend-design`
-> - **Standalone mockup**: invoke `/frontend-design` to generate an improved alternative (standalone HTML, faithful to the project's tokens)
+> - **Critique mode**: `/visual-audit critique target:page:<route>` — deep-dive on a single page: Gestalt + hierarchy diagnosis + concrete redesign proposals
+> - **Standalone mockup**: generate an improved standalone HTML alternative faithful to the project's design tokens
 > - **Targeted fix**: apply improvements that don't require design decisions (e.g., padding spacing, font weights, missing tokens)
 > - **Dark mode pass**: focus exclusively on improving the dark theme across all pages
 > - **Gestalt pass**: in-depth V9 analysis on all pages with concrete fixes for proximity and similarity violations
@@ -375,19 +371,16 @@ For contrast verification and WCAG coverage, run `/accessibility-audit` separate
 
 After the report is delivered and the improvement offer is presented, clean up the temp directory:
 ```bash
+rm -rf "${SCREENSHOT_TEMP_DIR:-/tmp/visual-audit-screenshots}"
 ```
 
-Run this unconditionally at session end — screenshots are only needed during analysis and must not persist.
+Run this unconditionally at session end — screenshots are only needed during analysis and must not persist. Override the default path via `[SCREENSHOT_TEMP_DIR]` in Stack adaptation.
 
 ---
 
 ## Notes for interpretation
 
-- **V4 brand colour overuse**: if the brand accent token appears on row-level buttons (not just primary CTAs), flag it even if each individual use seems minor. This is a PERMANENT RULE violation.
-- **V7 micro-polish on mobile**: not in scope for this skill — use `/responsive-audit` for that.
-- **Screenshots must be analysed fresh** — do not rely on memory from previous sessions. If a screenshot shows unexpected content (wrong role, empty state when data expected), note it and analyse what's visible.
-- **Preflight failures**: if more than 2 pages fail preflight, stop and report the issue before continuing — likely a dev server or auth problem, not a page-specific issue.
-- **Score denominator is /50** (10 dimensions × 5). Bucket labels: Excellent ≥40 | Good 30-39 | Needs work 20-29 | Poor <20. Previous /55 baseline is no longer comparable — contrast is now scored by `/accessibility-audit`.
+See `${CLAUDE_SKILL_DIR}/DIMENSIONS.md` → Interpretation notes for full guidance on V4 brand colour overuse, preflight failure thresholds, and score denominator (/50). Score bucket labels: Excellent ≥40 | Good 30-39 | Needs work 20-29 | Poor <20.
 
 ---
 
@@ -400,5 +393,8 @@ Run this unconditionally at session end — screenshots are only needed during a
 |---|---|---|
 | Global styles file | `[GLOBAL_STYLES_FILE]` | `app/globals.css`, `src/styles/global.css`, `assets/main.scss` |
 | Theme styles file | `[THEME_STYLES_FILE]` | `app/themes.css`, `src/styles/themes.css`, `tailwind.config.ts` |
-| Brand accent token | *(document your design system's brand token name)* | `bg-brand`, `bg-primary`, `--color-accent` |
-| Semantic token names | *(document your card/muted/foreground tokens)* | `bg-card` / `bg-muted` / `text-foreground` / `text-muted-foreground` |
+| Brand accent token | *(document your design system's brand token name)* | `--color-accent` (CSS vars), `bg-brand` (Tailwind), `$primary` (SCSS) |
+| Semantic token names | *(document your surface/text/muted tokens)* | `--color-surface` / `--color-muted` / `--color-text` (CSS vars) or `bg-card` / `bg-muted` / `text-foreground` (Tailwind) |
+| Theme toggle action | `[THEME_TOGGLE_ACTION]` | `browser_click [aria-label="Toggle theme"]`, `document.documentElement.classList.toggle('dark')` |
+| Spacing sample selectors | `[SPACING_SAMPLE_SELECTORS]` | `article, td, form` (generic) or `[data-slot="card"], td, [data-slot="dialog-content"]` (shadcn/ui) |
+| Screenshot temp dir | `[SCREENSHOT_TEMP_DIR]` | `/tmp/visual-audit-screenshots` |

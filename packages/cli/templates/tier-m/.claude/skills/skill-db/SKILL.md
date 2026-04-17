@@ -14,10 +14,9 @@ argument-hint: [target:section:<section>|target:table:<table>]
 > - `[ORM_OR_CLIENT]` — e.g. `Prisma`, `Drizzle`, `Supabase JS client`, `SQLAlchemy`, `raw SQL`
 > - `[API_ROUTES_PATH]` — path to API route files for N+1 check
 > - `[ACCESS_CONTROL]` — e.g. `row-level security policies`, `middleware guards`, `model-level scopes`
-
-
-
-
+> - `[SITEMAP_OR_ROUTE_LIST]` — file listing API routes with method, path, roles (e.g. `docs/sitemap.md`). Required for S1A cross-reference and Step 3 query pattern scope.
+>
+> **Database scope**: live SQL verification queries (Step 4) and checks S4-S5 target PostgreSQL system tables. Non-PostgreSQL databases will skip Step 4 and PostgreSQL-specific checks.
 
 
 ## Step 0 — Target resolution
@@ -37,7 +36,7 @@ Announce: `Running skill-db — scope: [FULL | target: <resolved>]`
 **Target filter semantics**: apply the filter in Steps 2–4 as follows — S1 (only indexes on targeted tables and their FK children), S2/S3/S2b (only columns of targeted tables), S4 (only policies on targeted tables), S5/S6/S7 (only targeted tables).
 
 **Critical constraints**:
-- `docs/db-map.md` is the authoritative schema reference. Read it first — do NOT query the live DB to discover schema unless verifying a specific detail.
+- `docs/db-map.md` is the authoritative schema reference. Read it first — do NOT query the live DB to discover schema unless verifying a specific detail. If `docs/db-map.md` does not exist, derive the schema from the ORM's schema definition file (e.g. `schema.prisma`, `models.py`, migration files) or from live DB introspection in Step 4. Announce: `No db-map.md found — deriving schema from [source].`
 - `[SITEMAP_OR_ROUTE_LIST]` provides the API route inventory for query pattern checks.
 - Do NOT make schema changes. Audit only.
 - All findings go to `docs/refactoring-backlog.md`.
@@ -314,9 +313,9 @@ Step 1 (fast): grep for DB query calls across all route files (e.g. `.from(`, `.
 Step 2 (contextual): for each match, read 15 lines of surrounding context. Flag if the DB call appears inside a for/forEach/.map( block. Multi-line patterns are common — a loop opener on line N and a DB call on line N+5 inside the same block counts as N+1.
 Severity: High on list endpoints, Medium on single-record endpoints.
 
-CHECK Q2 — Missing await on async DB calls
-Grep: lines containing DB client calls — check each match for the presence of "await" on the SAME line, OR that the call is part of a promise chain (.then(). Flag lines where neither condition is true.
-Severity: High (fire-and-forget DB calls cause silent failures).
+CHECK Q2 — Unhandled DB call results
+Verify all DB write/read calls have their results consumed (assigned to a variable, returned, or passed to error handling). In async languages (JS/TS): check for `await` or `.then()` on the same call. In synchronous languages: verify the return value is checked, not discarded. Fire-and-forget DB calls cause silent failures.
+Severity: High (silent data loss or stale reads).
 
 CHECK Q3 — Select * (unbounded column fetch)
 Grep: patterns selecting all columns (e.g. `SELECT *`, `.select("*")`, `.select('*')`, `.findAll()`)
@@ -341,7 +340,7 @@ Return ALL matches in the MATCH | check_code | file:line | matched_pattern | sev
 ## Step 4 — Live DB verification
 
 1. **S1B** — FK column index coverage
-2. **S1C** — stato column row distribution
+2. **S1C** — status column row distribution
 3. **S3** — nullable columns on key financial/ownership fields
 4. **S4B** — policies with bare `auth.uid()`
 5. **S4C** — policies without explicit TO clause
@@ -364,96 +363,7 @@ ORDER BY tbl, status;
 
 ## Step 5 — Produce report and update backlog
 
-### Output format
-
-```
-## Skill-DB Audit — [DATE] — [SCOPE]
-Sources: [DB_SYSTEM] docs (indexes, constraints, access control)
-
-### Executive summary
-[2-5 bullets — Critical and High findings only. Write concrete facts: table names, column names, line counts.
-If nothing Critical/High: state that explicitly ("No Critical or High findings — schema is production-ready for this scope").
-Example bullets:
-- "3 tables with UPDATE policy but no SELECT policy (S4D High)" — example format
-
-### DB maturity assessment
-| Dimension | Rating | Notes |
-|---|---|---|
-| Schema integrity | strong / adequate / weak | [nullable gaps, type antipatterns, constraint gaps] |
-| Index quality | strong / adequate / weak | [unindexed FKs, missing filter indexes, unused indexes] |
-| RLS / security posture | strong / adequate / weak | [policy gaps, unsafe views, function caching] |
-| Query quality | strong / adequate / weak | [N+1, unbounded, missing error handling] |
-| Release readiness | ready / conditional / blocked | [blocked = any Critical finding; conditional = High findings present but workarounded] |
-
-Rating guide: strong = no significant issues; adequate = issues exist but low production risk; weak = issues that should be resolved before next production release.
-
-### Schema Checks
-| # | Check | Verdict | Findings |
-|---|---|---|---|
-| S1A | Index — filter columns | ✅/⚠️ | [columns flagged] |
-| S1B | Index — FK column coverage | ✅/⚠️ | [N unindexed FK columns] |
-| S1C | Index — partial on stato columns | ✅/⚠️ | |
-| S1D | Index — GIN for UUID[] arrays | ✅/⚠️ | |
-| S2 | Normalization and modeling | ✅/⚠️ | |
-| S2b | Constraint completeness (CHECK + composite UNIQUE) | ✅/⚠️ | |
-| S3 | Missing NOT NULL | ✅/⚠️ | |
-| S4A | RLS — policy completeness | ✅/⚠️ | |
-| S4B | RLS — function call caching | ✅/⚠️ | [N policies with bare auth.uid()] |
-| S4C | RLS — explicit TO clause | ✅/⚠️ | |
-| S4D | RLS — SELECT before UPDATE | ✅/⚠️ | |
-| S4E | RLS — views security_invoker | ✅/⚠️ | |
-| S5 | Data type choices | ✅/⚠️ | [timestamp/varchar/serial hits] |
-| S6 | FK cascade behavior | ✅/⚠️ | |
-| S7 | Unused indexes | ✅/⚠️ | [N with 0 scans and qualifying criteria] |
-
-### Query Pattern Checks (API routes)
-| # | Check | Matches | Verdict |
-|---|---|---|---|
-| Q1 | N+1 queries | N | ✅/⚠️ |
-| Q2 | Missing await | N | ✅/⚠️ |
-| Q3 | Select * | N | ✅/⚠️ |
-| Q4 | Missing error handling on writes | N | ✅/⚠️ |
-| Q5 | Unbounded queries | N | ✅/⚠️ |
-
-### Prioritized findings
-For each finding with severity Medium or above:
-[SEVERITY] [ID] [check#] — [table/file:line] — [issue] — [business impact] — [fix] — [effort: S=<1h / M=half day / L=day+]
-Example:
-
-### Quick wins
-[List findings that meet ALL three criteria: (a) Medium or High severity AND (b) effort S (<1 hour) AND (c) only DB migration OR only code change, not both simultaneously]
-Format: "DB-[n]: [one-line description] — [migration or code change]"
-If no quick wins: state explicitly.
-```
-
-### Backlog decision gate
-
-Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
-
-```
-Found N findings at Medium or above. Which to add to backlog?
-
-[1] [CRITICAL] DB-? — table/check — one-line description
-[2] [HIGH]     DB-? — table/check — one-line description
-[3] [MEDIUM]   DB-? — table/check — one-line description
-...
-
-Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
-```
-
-**Wait for explicit user response before writing anything.**
-
-Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
-- Assign ID: `DB-[n]` (next available after existing DB entries)
-- Add row to priority index
-- Add full detail section with: issue, evidence, impacted tables/files, fix, effort, migration risk
-
-### Severity guide
-
-- **Critical**: RLS gap that allows unauthorized data access (S4A); UPDATE policy without SELECT (S4D); view bypassing RLS on sensitive table (S4E); `CASCADE` that would destroy financial records (S6)
-- **High**: N+1 on a list endpoint (Q1); missing await on a DB write call (Q2); unbounded query on a high-volume table (Q5); unindexed FK on a write-heavy table (S1B); uncached function calls in policies on a table with thousands of rows (S4B)
-- **Medium**: Missing CHECK constraint on financial column (S2b); missing composite UNIQUE where business rules require it (S2b); nullable column used in financial calculations (S3); `timestamp` without timezone (S5); `varchar(n)` with arbitrary limit (S5); `serial` instead of IDENTITY (S5); status as unconstrained text (S2b/S5); `SET NULL` on a NOT NULL FK column (S6)
-- **Low**: Unused indexes with 0 scans meeting all qualifying criteria (S7); normalization observation with documented trade-off (S2); missing GIN for UUID[] (S1D); partial index opportunity where distribution warrants it (S1C); policies with `{public}` scope where a narrower role would be more precise (S4C)
+Generate the report using the template in `${CLAUDE_SKILL_DIR}/REPORT.md`. Apply the severity guide and backlog writing rules from the same file.
 
 ---
 
