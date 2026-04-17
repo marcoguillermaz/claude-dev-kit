@@ -68,6 +68,7 @@ export const SKILL_REGISTRY = [
   { name: 'test-audit', minTier: 'm', requires: {}, cheatsheet: true },
   { name: 'dependency-scan', minTier: 'm', requires: {}, cheatsheet: false },
   { name: 'context-review', minTier: 'l', requires: {}, cheatsheet: false },
+  { name: 'skill-review', minTier: 'm', requires: {}, cheatsheet: false },
 ];
 
 const TIER_ORDER = { s: 0, m: 1, l: 2 };
