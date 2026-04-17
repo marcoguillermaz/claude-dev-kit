@@ -79,9 +79,8 @@ When work starts or completes on a roadmap item (any issue linked to a GitHub mi
 
 **On completion** (PR created, before merging):
 1. `.claude/initiatives/roadmap-status.md` — set status to `Done`, record end date and PR number
-2. `docs/reviews/roadmap-v1.9.1.md` — update the deliverable's Status column to **Done** with PR reference
-3. GitHub Project board — set status to Done, update start/target dates via `gh api graphql`
-4. Close the GitHub issue with implementation summary
+2. GitHub Project board — set status to Done, update start/target dates via `gh api graphql`
+3. Close the GitHub issue with implementation summary
 
 These updates are part of the commit sequence (docs commit), not a post-merge afterthought.
 
