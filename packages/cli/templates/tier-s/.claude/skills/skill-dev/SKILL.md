@@ -26,24 +26,47 @@ Do not optimize for theoretical purity. Optimize for pragmatic, production-grade
 
 Before Step 0: check `CLAUDE.md` for the Framework and Language fields.
 
-**Web stacks** (Next.js, React, Express, Django, Rails, or any stack with a web frontend): run all checks — proceed to Step 0.
+**Component UI frameworks** (Next.js, React, Vue, Svelte, Angular, or any stack with a client-side component architecture): run all checks D1-D10, J1-J5 — proceed to Step 0.
 
-**Native or backend-only stacks** (Swift, Kotlin, Rust, Go, .NET/C#, Java, Python without a web frontend): several checks target TypeScript/React patterns that do not exist in your codebase. Proceed to Step 0 with these adjustments:
+**Server-rendered web frameworks** (Django, Rails, Laravel, Flask, Express without a frontend component framework, Phoenix, or any web framework without client-side components): several checks target component-framework patterns. Proceed to Step 0 with these adjustments:
 
 Skip entirely:
-- CHECK D1 — Cross-module import patterns (web component frameworks only)
 - CHECK D2 — Duplicated inline color/status maps (component framework only)
-- CHECK D3 — ORM/client N+1 fetch patterns (ORM-specific)
+- CHECK D9 — Lifecycle/side-effect antipatterns (component UI frameworks only)
+- CHECK J3 — Client/server boundary placement (SSR component frameworks only — e.g. Next.js, Nuxt)
+
+Run with adaptation:
+- CHECK D1 — Adapt from component imports to module/app imports (e.g. Django apps importing across app boundaries, Rails engines importing across boundaries)
+- CHECK D4 — Adapt "dead exports" to the language's public API surface (see language note in D4)
+- CHECK D8 — Use the language-specific suppression patterns (e.g. `# type: ignore` for Python, `@SuppressWarnings` for Java)
+
+Run as-is (stack-agnostic):
+- CHECK D3 (N+1 — adapt to your ORM: Django ORM, ActiveRecord, Eloquent, SQLAlchemy), D5, D6, D7, D10
+- CHECK J1 (over-large modules), J2 (data clumps), J4 (utility consolidation — adapt directory name), J5 (typed languages only)
+
+Run additionally (language-specific — CHECK DL1).
+
+**Native or backend-only stacks** (Swift, Kotlin, Rust, Go, .NET/C#, Java, Python without a web frontend): Proceed to Step 0 with these adjustments:
+
+Skip entirely:
+- CHECK D1 — Cross-module import patterns (web frameworks only)
+- CHECK D2 — Duplicated inline color/status maps (component framework only)
+- CHECK D3 — ORM/client N+1 fetch patterns (ORM-specific — run if your project uses an ORM)
 - CHECK D8 — Type safety suppressions (run DL1 language-specific checks instead)
 - CHECK D9 — Lifecycle/side-effect antipatterns (UI frameworks only)
 - CHECK J3 — Client/server boundary placement (SSR frameworks only)
 
-Run as-is (stack-agnostic):
-- CHECK D4 (dead exports), D5 (duplicated validation logic), D6 (magic strings/numbers), D7 (TODO/FIXME/HACK)
-- CHECK D10 (empty catch blocks, console.log in production)
-- CHECK J1 (over-large modules), J2 (coupling depth), J4 (utility consolidation — adapt directory name from `lib/` to your project's equivalent)
+Run with adaptation:
+- CHECK D4 — Adapt "dead exports" to the language's public API surface (see language note in D4)
 
-Run additionally (language-specific — CHECK DL1):
+Run as-is (stack-agnostic):
+- CHECK D5 (duplicated validation logic), D6 (magic strings/numbers), D7 (TODO/FIXME/HACK)
+- CHECK D10 (empty catch blocks, debug output in production)
+- CHECK J1 (over-large modules), J2 (data clumps), J4 (utility consolidation — adapt directory name to your project's equivalent), J5 (typed languages only)
+
+Run additionally (language-specific — CHECK DL1).
+
+**Language-specific checks (DL1)** — run for server-rendered web and native/backend stacks:
 - **Swift**: force unwrap (`!`) audit — flag each `!` on optionals outside guard/if-let; SwiftLint patterns; retain cycle risk in closures (missing `[weak self]`)
 - **Kotlin**: null safety violations (`!!` operator); detekt patterns; coroutine scope leaks (GlobalScope usage)
 - **Rust**: clippy warnings (`cargo clippy -- -W clippy::all`); unnecessary `.clone()` calls; overly complex lifetime annotations; `unwrap()` in library/production code
@@ -73,14 +96,14 @@ Parse `$ARGUMENTS` for a `target:` token.
 Announce: `Running skill-dev — scope: [FULL | target: <resolved>]`
 Apply the target filter to the file list in Step 1.
 
-`docs/sitemap.md` is the authoritative inventory. Build the file list from it — do NOT scan the filesystem freely.
+`docs/sitemap.md` is the authoritative inventory when present. Build the file list from it — do NOT scan the filesystem freely. If `docs/sitemap.md` does not exist (e.g. native or CLI projects), build the file list from a filesystem scan of the project's source directories as identified in `CLAUDE.md` Tech Stack and Key Commands sections.
 
 ---
 
 ## Step 1 — Read structural guides
 
 Read in order:
-2. `docs/refactoring-backlog.md` — read in full. Use it for two purposes:
+1. `docs/refactoring-backlog.md` — read in full. Use it for two purposes:
    - **Deduplication**: do not re-report a finding already present (including resolved ✅ entries — resolved entries confirm a fix was applied, not that the pattern cannot recur elsewhere).
    - **Debt density context**: for each module/file in the target list, count how many existing open entries it has. A module with 3+ open entries is a **high-debt zone** — new findings there carry elevated priority regardless of check category, because accumulated debt signals systemic fragility, not isolated issues.
 
@@ -113,11 +136,16 @@ Flag ALL matches — any database query inside a loop is a potential N+1.
 Pattern B: sequential `await` calls to the DB client inside a loop body.
 Flag: each match with file:line.
 
-**CHECK D4 — Dead exports (sampled: 5 largest files)**
+**CHECK D4 — Dead public API surface (sampled: 5 largest files)**
 *This is a sampled check — not exhaustive. Mark all findings as `(sampled)`. A full dead-export audit requires a dedicated tool such as `knip`.*
-Pattern: `export (function|const|type|interface) ` that are never imported elsewhere.
-For the 5 largest component files by line count: grep each exported name across all other files.
-Flag: exports with 0 consumers outside their own file.
+Pattern: publicly accessible symbols that are never referenced elsewhere. Adapt to the language:
+- **TypeScript/JavaScript**: `export (function|const|type|interface)` that are never imported elsewhere.
+- **Python**: public functions/classes (no `_` prefix) in modules that are never imported by other modules.
+- **Swift**: `public` or `open` declarations that are never referenced outside their defining module.
+- **Go**: exported identifiers (capitalized names) that are never referenced outside their package.
+- **Other languages**: adapt to the language's public API mechanism.
+For the 5 largest source files by line count: grep each public symbol across all other files.
+Flag: symbols with 0 consumers outside their own file.
 
 **CHECK D5 — Duplicated validation logic**
 Pattern: the same field validation appearing in more than one API route handler or controller.
@@ -175,7 +203,15 @@ Flag components that are:
 - Exhibit "divergent change" — compensation logic AND display logic in the same file
 - Exhibit "feature envy" — a component that uses more data/methods from another domain than its own
 
-**J2 — Prop drilling depth**
+**J2 — Data clumps and parameter threading**
+
+Check A — Data clumps: flag any function, method, or component that receives 4+ parameters that always travel together across 3+ call sites. These grouped parameters should be extracted into a named struct, type, or configuration object.
+Grep for function/method signatures with 4+ parameters. Cross-reference: if the same group appears in 3+ locations, it is a data clump.
+
+Check B — Deep parameter threading (prop drilling in UI frameworks, parameter passing in backend/native): flag cases where a value is passed through 3+ intermediate layers without being used by the intermediaries. The value originates at layer N and is consumed at layer N+3 or deeper, with layers N+1 and N+2 only forwarding it.
+For UI frameworks: trace props from parent to grandchild components. For backend/native: trace constructor or method parameters through call chains.
+
+Flag each match with: file path, parameter group or threaded value, depth of threading, and suggested refactor (extract type, use context/DI, or restructure call chain).
 
 **J3 — Client/server boundary placement** *(frameworks with client/server split only — e.g. Next.js, Nuxt, SvelteKit. Skip for SPAs, backends, and native apps.)*
 
@@ -227,15 +263,15 @@ For remaining findings, apply severity modifiers in this exact order:
 | D1 | Cross-module coupling | N | Medium | ✅/⚠️ |
 | D2 | Duplicated color maps | N | Medium | ✅/⚠️ |
 | D3 | N+1 fetch patterns | N | High | ✅/⚠️ |
-| D4 | Dead exports (sampled — 5 largest files) | N | Low | ✅/⚠️ |
+| D4 | Dead public API surface (sampled — 5 largest files) | N | Low | ✅/⚠️ |
 | D5 | Duplicated validation | N | Medium | ✅/⚠️ |
 | D6 | Magic strings + numbers | N | Medium | ✅/⚠️ |
 | D7 | TODO/FIXME comments | N | Low | ✅/⚠️ |
-| D8 | @ts-ignore + any + floating promises | N | High | ✅/⚠️ |
-| D9 | useEffect antipatterns | N | Medium | ✅/⚠️ |
-| D10 | Empty catch + console.log | N | Medium | ✅/⚠️ |
+| D8 | Type safety suppressions + floating promises | N | High | ✅/⚠️ |
+| D9 | Lifecycle/side-effect antipatterns | N | Medium | ✅/⚠️ |
+| D10 | Empty catch + debug output | N | Medium | ✅/⚠️ |
 
-### Language-Specific Checks (native/backend stacks only)
+### Language-Specific Checks (server-rendered web and native/backend stacks)
 | # | Check | Matches | Severity | Verdict |
 |---|---|---|---|---|
 | DL1 | Language-specific lint + analysis | N | Medium | ✅/⚠️ |
@@ -295,10 +331,10 @@ Each entry **must** include a `Regression risk` field:
 
 ### Severity guide
 
-- **Critical**: `@ts-ignore` on a security/data path; N+1 in a hot path (list page or dashboard); floating promise on an auth or data-write event handler
-- **High**: `any` in shared lib utilities; dead export in shared lib; empty catch on DB write; unhandled error on async data-write path
-- **Medium**: over-large module >300 lines with 4+ responsibilities (J1); magic business-rule numbers (D6); console.log in production (D10); data clumps >3 always-grouped props (J2)
-- **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings already covered by type definitions; D4 sampled dead exports
+- **Critical**: type-safety suppression on a security/data path (TS: `@ts-ignore`, Python: `# type: ignore`, Go: `// nolint`); N+1 in a hot path (list page, dashboard, frequently-called API); floating promise or fire-and-forget async on an auth or data-write handler; force unwrap on external input (Swift: `!`, Kotlin: `!!`)
+- **High**: untyped escape hatch in shared utilities (TS: `any`, Python: bare `except:` on DB path, Kotlin: `GlobalScope.launch`); dead public symbol in shared lib; empty catch on DB write; unhandled error on async data-write path
+- **Medium**: over-large module >300 lines with 4+ responsibilities (J1); magic business-rule numbers (D6); debug output in production — `console.log` (JS), `print()` (Swift/Python), `fmt.Println` (Go) (D10); data clumps >3 always-grouped parameters (J2)
+- **Low**: TODO comments; minor coupling; consolidation opportunities; magic enum strings already covered by type definitions; D4 sampled dead public symbols
 
 ---
 

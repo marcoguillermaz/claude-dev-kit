@@ -12,16 +12,22 @@ argument-hint: [target:section:<section>|target:role:<role>|mode:audit|mode:reme
 **Default mode**: audit (no code changes). Modes: `audit` | `remediation` (propose plan, no changes) | `apply` (make focused fixes).
 **All audit findings go to `docs/refactoring-backlog.md`.**
 
+### Configuration
+
+| Placeholder | Description | Example |
+|---|---|---|
+| `[SITEMAP_OR_ROUTE_LIST]` | File listing all API routes with method, path, roles, and grouping | `docs/sitemap.md`, `docs/routes.md` |
+
+**Unfilled behavior**: if `[SITEMAP_OR_ROUTE_LIST]` is not filled, the skill discovers routes by scanning the project's route handler directories. Announce the discovered routes before proceeding.
+
 ### Status code reference (source: MDN + RFC 9457)
-- **400** — malformed request: bad JSON, Zod parse failure, missing required field
+- **400** — malformed request: bad JSON, schema validation failure, missing required field
 - **401** — not authenticated (no valid session)
 - **403** — authenticated but lacks permission
 - **404** — resource not found
 - **409** — valid request conflicts with current server state (e.g., approving an already-approved record, duplicate unique value)
-- **422** — semantically invalid data that passes Zod schema but violates a business rule
+- **422** — semantically invalid data that passes schema validation but violates a business rule
 - **500** — unexpected server error (no internal details in response)
-
-### Idempotency keys — explicit non-requirement
 
 ---
 
@@ -66,7 +72,7 @@ Also read current `docs/refactoring-backlog.md` to avoid duplicates.
 
 ## Step 2 — Pattern checks (two Explore subagents, run in parallel)
 
-Split into two parallel Explore subagents (model: haiku) to stay within context budget. Launch both at once.
+Split into two parallel Explore subagents (model: haiku) to stay within context budget. Launch both at once. Read `${CLAUDE_SKILL_DIR}/PATTERNS.md` for stack-specific grep patterns used across checks.
 
 **CHECK N1 — HTTP verb / action alignment**
 For each route file, identify the exported function names (GET, POST, PUT, PATCH, DELETE).
@@ -81,7 +87,7 @@ From route file paths, flag:
 - Nested routes that skip a level: e.g. `/api/documents/sign` but also `/api/documents/[id]/sign`
 
 **CHECK N3 — Response shape consistency (success)**
-Grep for the framework's JSON response pattern (e.g. `return NextResponse.json(`, `res.json(`, `Response.json(`, `jsonify(`) across all route files.
+Grep for the framework's JSON response pattern (see PATTERNS.md → N3) across all route files.
 For each route returning a single entity (GET /[id]): check if the top-level key is consistent — e.g. `{ compensation }` vs `{ data }` vs `{ result }` vs naked object. The same entity must use the same wrapper key across all routes.
 For each route returning a list: check if the shape is `{ items, total, page }` or a naked array.
 Flag: any inconsistency in the key name for the same entity type across different routes.
@@ -104,39 +110,35 @@ Grep for common misuses:
 Flag each match with the correct status code.
 
 **CHECK N6 — Validation error access convention**
-If using Zod: when handling ZodError, always access `.issues` (not `.errors`). Using `.errors` returns `undefined` silently.
-Grep: `zodResult\.error\.errors|err\.errors|parseResult\.error\.errors|\.error\.errors`
-Expected: 0 matches. All ZodError access must use `.issues`.
-If using a different validation library: check that error details are accessed via the documented API - not a similar-but-wrong property name.
+Validation error details must be accessed via the library's documented property - not a similar-but-wrong name that returns `undefined` or loses field-level detail.
+See PATTERNS.md → N6 for correct vs incorrect property per validation library.
 
 **CHECK N6b — Async params access (framework-specific)**
-If the project uses a framework where route params are async (e.g. Next.js 15+):
-Grep for direct destructuring of `params` without `await`. Flag any access to `params` without the required async handling.
+Some frameworks require async handling of route params. Check PATTERNS.md → N6b for whether this applies to the detected framework. Skip if not applicable.
 
 ---
 
-### Subagent B — checks N8-N13 (safeParse, json try/catch, top-level array, params, field naming, resource modeling)
+### Subagent B — checks N8-N13 (validation safety, json try/catch, top-level array, params, field naming, resource modeling)
 
-**CHECK N8 — .parse() instead of .safeParse() in route handlers**
-Pattern: `[A-Z][a-zA-Z]+Schema\.parse\(|Schema\.parse\(await`
+**CHECK N8 — Throwing validation in route handlers**
+Validation in route handlers must use the non-throwing API variant (see PATTERNS.md → N8 for correct vs throwing patterns per library). The throwing variant causes unhandled exceptions that become 500 responses.
 Two-pass:
-1. Grep for `\.parse(` to get candidate lines.
-2. For each candidate: check if the SAME FILE contains at least one `try {` that precedes it. If the file has zero `try {` blocks → definite violation. If the file has try blocks → mark as "review needed" (cannot determine nesting without AST).
-Correct pattern: use `.safeParse()` and check `result.success`.
-Expected: 0 matches in files with no try/catch at all.
+1. Grep for the throwing validation call pattern for the project's validation library.
+2. For each candidate: check if the SAME FILE contains error handling that wraps it. If the file has no error handling around the call → definite violation. If error handling exists → mark as "review needed".
+Expected: 0 matches in files with no error handling at all.
 
-**CHECK N9 — request.json() without try/catch**
+**CHECK N9 — Request body parsing without error handling**
 Two-pass approach (avoids the "±10 lines" false-positive problem):
-Pass 1: Grep all files containing `await request\.json\(\)|await req\.json\(\)` — collect file list.
-Pass 2: For each file in that list, check if the file also contains `try {`.
-- File has `request.json()` AND zero `try {` blocks → **definite violation** — flag.
-- File has `request.json()` AND has `try {` blocks → **mark as "review needed"** (try may wrap json or may not — human verification needed).
-Report separately: N definite violations (no try at all) + M files needing review.
-A malformed JSON body throws `SyntaxError` which becomes an unhandled 500 text response.
+Pass 1: Grep all route files for the framework's request body parsing call (see PATTERNS.md → N9). Collect file list.
+Pass 2: For each file in that list, check if the file also contains error handling wrapping the parse call.
+- File has body parsing AND no error handling → **definite violation** — flag.
+- File has body parsing AND has error handling → **mark as "review needed"** (error handling may or may not wrap the parse call — human verification needed).
+Report separately: N definite violations (no error handling at all) + M files needing review.
+A malformed request body that throws an unhandled exception becomes a 500 response with no useful error message.
 Expected: 0 definite violations.
 
 **CHECK N10 — Top-level array response**
-Pattern: grep for JSON response calls returning an array literal, e.g. `\.json\(\s*\[|jsonify\(\s*\[`
+Grep for JSON response calls returning an array literal (adapt pattern to the framework's response helper).
 Flag: any route returning a bare array at the top level of the JSON response.
 Expected: 0 matches. All responses must be wrapped in an object: `{ items: [...] }` not `[...]`. This allows adding `meta`, `pagination`, or `error` fields later without a breaking change.
 
@@ -212,118 +214,22 @@ Derive the list of write routes dynamically:
 
 For each write endpoint, read the handler. Verify:
 
-**V1 — Zod schema completeness**
-Check that the Zod schema for each POST/PATCH handler includes all NOT NULL, no-default columns as `.required()` fields. Flag any NOT NULL column missing from the Zod schema.
+**V1 — Validation schema completeness**
+Check that the validation schema for each POST/PATCH handler includes all NOT NULL, no-default columns as required fields. Flag any NOT NULL column missing from the validation schema.
 
 **V2 — Consistent validation placement**
 Check that validation always happens BEFORE any DB query (not after a partial DB read). Flag: any handler that reads from DB before validating input.
 
 **V3 — Validation error response**
 Check that validation failures return `status: 400` with field-level error detail — not just a generic "bad request".
-Verify `.issues` (not `.errors`) is used when accessing ZodError details.
-Preferred response shape: `{ error: 'Validation failed', issues: result.error.issues }` or `z.flattenError(result.error)` for form-facing endpoints.
+Verify error details are accessed via the validation library's documented property (see PATTERNS.md → V3).
+Preferred response shape: `{ error: 'Validation failed', issues: [...field-level details...] }` — include per-field error information for form-facing endpoints.
 
 ---
 
 ## Step 5 — Produce report and update backlog
 
-### Output format
-
-```
-## API Design Audit — [DATE] — [TARGET] — mode: [audit|remediation|apply]
-### Scope: [N] API routes
-### Sources: framework route handler docs, RFC 9457, validation library docs, MDN HTTP status codes
-
-### API Design Maturity Assessment
-- HTTP semantics: low / medium / high
-- Response contract quality: low / medium / high
-- Error model quality: low / medium / high
-- Pagination consistency: low / medium / high
-- Field naming consistency: low / medium / high
-- Resource modeling: low / medium / high
-
-### Detected API Conventions (current project state)
-- Routing style: [e.g. REST resource-oriented, /api/[resource]/[id]/[action]]
-- Naming style: [e.g. camelCase params, snake_case DB fields]
-- Error format: [e.g. { error: string } — consistent/inconsistent]
-- Pagination pattern: [e.g. { items, total, page, pageSize } — partial/full]
-- Validation strategy: [e.g. Zod safeParse before DB — X% of write routes]
-
-### Pattern Checks
-| # | Check | Issues | Severity | Verdict |
-|---|---|---|---|---|
-| N1 | HTTP verb alignment | N | Medium | ✅/⚠️ |
-| N2 | URL structure & resource modeling | N | Medium | ✅/⚠️ |
-| N3 | Response shape (success) | N | High | ✅/⚠️ |
-| N4 | Error shape consistency | N | High | ✅/⚠️ |
-| N5 | Status code correctness | N | High | ✅/⚠️ |
-| N6 | ZodError .issues convention | N | Critical | ✅/⚠️ |
-| N8 | .parse() without safeParse | N | Critical | ✅/⚠️ |
-| N9 | request.json() without try/catch | N | Critical | ✅/⚠️ |
-| N10 | Top-level array response | N | Medium | ✅/⚠️ |
-| N11 | Filtering/sorting param conventions | N | Low | ✅/⚠️ |
-| N12 | Field naming consistency | N | Medium | ✅/⚠️ |
-| N13 | Action endpoint overuse & nesting depth | N | Low | ✅/⚠️ |
-
-### Pagination
-| # | Check | Verdict | Notes |
-|---|---|---|---|
-| P1 | Pagination shape | ✅/⚠️ | |
-| P2 | Parameter names | ✅/⚠️ | |
-| P3 | Default page size | ✅/⚠️ | |
-| P4 | Total count as number | ✅/⚠️ | |
-
-### Validation
-| # | Check | Verdict | Notes |
-|---|---|---|---|
-| V1 | Zod completeness | ✅/⚠️ | |
-| V2 | Validation before DB | ✅/⚠️ | |
-| V3 | Validation error quality | ✅/⚠️ | |
-
-### Error Shape Consistency Note
-Current project standard: `{ error: string }`. RFC 9457 standard: `{ type, title, status, detail }`.
-Verdict: [Consistent / Inconsistent — N routes diverge with { message: } or { errors: [] }]
-Recommendation: [keep current if consistent | standardize to { error, status } minimum]
-
-### ⚠️ Inconsistencies requiring action ([N] total)
-[route — check# — issue — standard to apply — fix]
-
-### Strategic improvements
-[Include ONLY if 3+ routes show the same structural issue. Each entry: title · impacted routes count · effort estimate (S/M/L) · suggested block name. Skip entire section if no strategic issue found — do not invent one.]
-
-### Recommended platform standards
-Produce this section always. Format:
-```
-| Convention | Current state | Recommended standard |
-|---|---|---|
-| Error shape | { error: string } | keep — consistent |
-| Pagination params | page + pageSize | keep — or: adopt page + limit if majority uses limit |
-| Field naming in bodies | [detected: camelCase/snake_case/mixed] | [recommendation] |
-| Action endpoint policy | [state-machine transitions as /[id]/[verb]] | accept with max 1 action segment per route |
-| Max nesting depth | [detected max] | max 2 levels: /[resource]/[id]/[sub-resource] |
-| request.json() wrapping | [detected: N% wrapped] | all calls must be inside try/catch |
-```
-```
-
-### Write to backlog
-
-For each **High/Critical** finding, append to `docs/refactoring-backlog.md`:
-- Assign ID: `API-[n]`
-- Add to priority index table
-- Add full detail section: `### API-[n] — [title]` with description, impacted files, fix.
-
-For each **Medium** finding, append:
-- Add to priority index table (lower priority tier)
-- Add section: `### API-[n] — [title]` with description and impacted files. No fix required — mark as "planned."
-
-**Low** findings: add only to priority index as a single line. No detail section. Include only if actionable in < 30 min.
-
-### Severity guide
-
-- **Critical**: N6 (silent undefined on ZodError); N7 (runtime error on params access); N8 (unhandled ZodError throw); N9 (unhandled SyntaxError → 500 text response)
-- **High**: unbounded list endpoint (no pagination); inconsistent response shape for same entity; 200 returned with error body; divergent error shapes (`message` vs `error`); 400 used for state-conflict scenarios (should be 409)
-- **Medium**: N10 top-level array; POST not returning 201 on create; N12 field naming inconsistency that breaks form-to-API contract; mixed pagination param names
-- **Low**: N11 sort/filter param naming style; N13 action endpoint style; PUT vs PATCH mismatch; minor status code pedantry; `total` count not converted to number
+Generate the report using the template in `${CLAUDE_SKILL_DIR}/REPORT.md`. Apply the severity guide and backlog writing rules from the same file.
 
 ---
 

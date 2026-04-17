@@ -42,7 +42,7 @@ Grep both files for the pattern `[A-Z_]{3,}` wrapped in square brackets:
 
 ## C3 — Field name staleness
 
-Identify the most recent schema migration or schema definition file in this project (glob common migration patterns: `migrations/*.sql`, `prisma/schema.prisma`, `db/migrate/*.rb`, `drizzle/*.ts` — take the most recently modified).
+Identify the most recent schema migration or schema definition file in this project (glob common migration patterns: `migrations/*.sql`, `prisma/schema.prisma`, `db/migrate/*.rb`, `drizzle/*.ts`, `*/migrations/*.py`, `alembic/versions/*.py`, `Migrations/*.cs`, `*.xcdatamodeld` — take the most recently modified).
 
 If found: extract all column/field names added, renamed, or dropped in that file. Cross-reference against any mentions of those names in `CLAUDE.md`.
 

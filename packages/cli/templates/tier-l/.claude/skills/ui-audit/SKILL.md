@@ -1,12 +1,22 @@
 ---
 name: ui-audit
-description: Audit UI for design token compliance and component adoption. Static grep-based analysis against the sitemap's page and component files.
+description: Audit UI for design token compliance and component adoption. Static grep-based analysis against the sitemap's page and component files. Requires a design system with semantic tokens.
 user-invocable: true
 model: sonnet
 context: fork
-argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
-allowed-tools: Read, Glob, Grep
+argument-hint: [target:section:<section-name>]
+allowed-tools: Read Glob Grep
 ---
+
+## Configuration (fill in before first run)
+
+> Replace these placeholders:
+> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`, `docs/routes.md`, `src/router/index.ts`
+> - `[APP_SOURCE_GLOB]` — fallback if no sitemap: `app/**/page.tsx`, `src/**/*.vue`, `templates/**/*.html`
+> - `[DYNAMIC_ROUTE_PATTERN]` — pattern for dynamic route segments. Examples: Next.js `/[id]`, SvelteKit `/[id]`, Django `<int:pk>`, Rails `:id`, native: "detail view controllers"
+>
+> If `[SITEMAP_OR_ROUTE_LIST]` is not filled, the skill reports an explicit error and exits.
+> If filled but the file does not exist on disk, the skill falls back to `[APP_SOURCE_GLOB]`.
 
 **Critical constraint**: `[SITEMAP_OR_ROUTE_LIST]` is the authoritative inventory of every page file and key component. Read it first and derive the file target list from it. Do NOT run free-form `grep -r` across source directories — scope every check to the files listed in the sitemap.
 
@@ -35,12 +45,17 @@ Apply the resolved target to Steps 1–3 below — include only the matching pag
 
 ## Step 1 — Read sitemap and build target lists
 
-Read `[SITEMAP_OR_ROUTE_LIST]`. Extract (filtered by target scope from Step 0):
+Read `[SITEMAP_OR_ROUTE_LIST]`. Build a flat list of all page files and key component files in scope (filtered by target from Step 0). If the sitemap file is missing, fall back to `[APP_SOURCE_GLOB]`.
 
-- `detail` pages: routes with `/[id]` in the path
-- `form / wizard` pages: routes with Form, wizard, or onboarding components
+Output: numbered file list. Do not proceed to Step 2 until the list is complete.
 
-Output: structured lists A, B, C. Do not proceed to Step 2 until these are complete.
+Read `${CLAUDE_SKILL_DIR}/PATTERNS.md` for framework-specific grep patterns and verification methods for each check.
+
+**Platform detection**: determine whether the project uses a web UI framework (HTML/CSS-based) or a native UI framework (platform-native views). Check `PATTERNS.md` first — if a `Platform` value is filled, use it. Otherwise infer from project files (presence of `package.json` with a web framework → web; `Package.swift` / `build.gradle.kts` / `*.csproj` → native).
+
+Announce: `Platform: [web | native]`
+
+Checks marked **[web only]** are skipped on native stacks. All other checks run on both platforms using the patterns from Stack adaptation.
 
 ---
 
@@ -48,93 +63,72 @@ Output: structured lists A, B, C. Do not proceed to Step 2 until these are compl
 
 Launch a **single Explore subagent** (model: haiku) with the following instructions and the exact file lists from Step 1. Pass all file paths explicitly — do not ask the agent to discover them.
 
-> **Ripgrep note**: all patterns below are written for ripgrep (the `rg` command). Use `|` (not `\|`) for alternation. Character classes like `[2-9]` work as-is. Use `--multiline` / `-U` only when explicitly noted.
+**Before launching**:
+1. Read `${CLAUDE_SKILL_DIR}/PATTERNS.md` (already loaded in Step 1). For each CHECK, inline the user's grep patterns from the reference file into the instructions you pass to the Explore agent. If patterns are not yet filled, pass the checks as-is — the agent will use its own judgment to construct patterns.
+2. Pass the **Platform** value from Step 1. Instruct the Explore agent to skip checks marked `[web only]` if Platform is `native`.
 
 ### Instructions for the Explore agent:
 
-"Run all 12 checks below (numbering preserves gaps — checks 11, 13, 14, 16, 17 moved to `/accessibility-audit`). For each check: report the total match count, list every match as `file:line — excerpt`, and state PASS (0 matches) or FAIL (N matches). If a check returns 0 matches, explicitly state '0 matches — PASS'. Do not skip any check.
+"Run all 12 checks below. For each check: report the total match count, list every match as `file:line — excerpt`, and state PASS (0 matches) or FAIL (N matches). If a check returns 0 matches, explicitly state '0 matches — PASS'. Do not skip any check.
 
 File scope: use ONLY the page files and component files provided. Do not search outside this list.
+
+Use the grep patterns from the reference file (PATTERNS.md) for each check. If patterns are not filled, use your own judgment to construct patterns appropriate to the project's stack.
 
 ---
 
 **CHECK 1 — Multi-column layouts without responsive breakpoints** [Severity: High]
-Find elements using a multi-column grid or flexbox layout (2+ columns) that do NOT include a responsive breakpoint.
-Adapt the grep pattern to your styling approach:
-- Utility CSS (Tailwind): `grid-cols-[2-9]` without `sm:grid-cols`, `md:grid-cols`, etc.
-- CSS modules / styled-components: look for `grid-template-columns` with fixed column count and no `@media` query in the same rule
-- Inline styles: `gridTemplateColumns` with hardcoded value
+Multi-column layouts must include a responsive breakpoint or adaptive size class to prevent content from being cut off or unreadable on narrow viewports.
 Expected: 0 matches — all multi-column layouts should have responsive breakpoints.
 
 **CHECK 2 — Hardcoded color values instead of design tokens** [Severity: High]
-Find elements using hardcoded color values instead of the design system's semantic tokens.
-Adapt the grep pattern to your styling approach:
-- Utility CSS (Tailwind): `bg-blue-|text-blue-|border-blue-|bg-red-|text-red-` (raw color scale instead of semantic tokens like `bg-primary`, `text-destructive`)
-- CSS modules: `color: #[0-9a-f]|background: #[0-9a-f]` (hex literals instead of `var(--color-primary)`)
-- Styled-components: hardcoded hex/rgb values instead of theme tokens
-Exclude: focus/hover states, comments, gradient stops
-Expected: 0 matches. All color usage should go through design system tokens.
+All color usage must go through the design system's semantic tokens. Hardcoded color values (hex, rgb, named colors, raw constructors) bypass theming and break light/dark mode.
+Exclude: focus/hover states, comments, gradient stops.
+Expected: 0 matches.
 
 **CHECK 3 — Hardcoded dark colors on structural containers** [Severity: Medium]
-Find structural containers (cards, panels, sections) using hardcoded dark color values instead of semantic surface tokens.
-Adapt the pattern to your styling approach — the goal is to find containers with hardcoded dark backgrounds that will break in light/dark mode switching.
-Expected: 0 on structural elements.
+Structural containers (cards, panels, sections) must use semantic surface tokens that adapt to light/dark mode, not hardcoded dark color values.
+Expected: 0 matches on structural elements.
 
 **CHECK 4 — Error/required indicators using hardcoded color** [Severity: Medium]
-Find required-field asterisks or error indicators using hardcoded color values instead of the design system's semantic error/destructive token.
-Adapt the pattern to your styling approach (e.g. hardcoded red instead of semantic `destructive`/`error` token).
-Expected: 0 matches. All error indicators must use semantic tokens.
+Required-field indicators and error markers must use the design system's semantic error/destructive token, not hardcoded color values.
+Expected: 0 matches.
 
 **CHECK 5 — Duplicate style tokens** [Severity: Low]
-Find lines where the same style class, utility, or token appears twice in the same element declaration.
+The same style class, utility, or token must not appear twice in the same element declaration.
 Expected: 0 matches.
 
-**CHECK 6 — Bare empty states (no shared EmptyState component)** [Severity: High]
-Pattern: lines containing empty-state messages (e.g. "No records", "Nothing found", "No results") rendered as bare `<p>` or `<div>` elements with centered text styling.
-Exclude: lines using a dedicated EmptyState component, toast, or placeholder attributes.
-Expected: 0 matches. All empty states must use a dedicated shared component for visual consistency.
+**CHECK 6 — Bare empty states (no shared component)** [Severity: High]
+Empty-state messages (e.g. "No records", "Nothing found") must use a dedicated shared empty-state component, not bare text elements. This ensures visual consistency across all empty states.
+Exclude: dedicated empty-state components (see reference file for framework-specific names), toast notifications, placeholder attributes.
+Expected: 0 matches.
 
-**CHECK 7 — Back links in detail pages missing proper display** [Severity: Low]
-Scope: only the 'detail' layout pages from the sitemap.
-Pattern: back navigation links (e.g. `← Back`, `← Return`) — check that the link renders as a block element for proper touch target sizing.
-Expected: every back link is a block-level element.
+**CHECK 7 — Back navigation links missing proper display** [Severity: Low] [web only]
+Scope: pages containing back-navigation elements that return to a parent view.
+Back navigation links must render as block-level elements for adequate touch target sizing on mobile devices.
+Expected: every back navigation link is a block-level element.
 
 **CHECK 8 — Status badges with hardcoded colors** [Severity: Medium]
-Find status badge/tag/chip elements using hardcoded color values instead of semantic tokens or a shared StatusBadge component.
-Expected: 0 matches. All status indicators must use semantic tokens or a centralized badge component.
-
-**CHECK 9 — Tab bars missing text wrapping prevention** [Severity: Medium]
-Scope: only tab/navigation bar layouts from the sitemap.
-Pattern: check tab link elements for presence of no-wrap styling (e.g. `whitespace-nowrap`, `white-space: nowrap`).
-Expected: all tab links prevent text wrapping for mobile overflow behavior.
-
-**CHECK 10 — Table elements with full-width styling** [Severity: Critical]
-Find table component instances that use full-width styling (e.g. `w-full`, `width: 100%`).
-Also flag table instances with no explicit width constraint.
-Expected: 0 matches. Tables should use content-fit or auto width, not full-width — full-width tables cause horizontal overflow issues.
-
-**CHECK 11** — moved to `/accessibility-audit` as A1 (icon-only buttons missing aria-label).
-
-**CHECK 12 — Horizontal overflow on table wrappers** [Severity: Critical]
-Find table wrapper elements using `overflow-x-auto` or `overflow-x: auto`.
-Exclude: code blocks (`<pre`, `<code`), comments
-Expected: 0 matches in non-code containers. Table wrappers should use `overflow-hidden` to prevent layout shifts.
-
-**CHECK 13** — moved to `/accessibility-audit` as A2 (positive tabindex, WCAG 2.4.3).
-
-**CHECK 14** — moved to `/accessibility-audit` as A3 (outline-none without focus-ring compensation).
-
-**CHECK 15 — Deprecated or legacy styling syntax** [Severity: High]
-Find usage of deprecated styling APIs or syntax that will break in newer versions of the design system / CSS framework.
-Adapt the pattern to your styling approach:
-- Tailwind: `bg-opacity-|text-opacity-|border-opacity-` (removed in v4 — use slash syntax: `bg-black/50`)
-- CSS: `-webkit-` prefixed properties that have unprefixed equivalents
-- Styled-components: `attrs` patterns deprecated in v6
+Status badge, tag, or chip elements must use semantic tokens or a centralized badge component, not hardcoded color values.
 Expected: 0 matches.
 
-**CHECK 16** — moved to `/accessibility-audit` as A4 (native `<img>` without alt).
+**CHECK 9 — Tab bars missing text wrapping prevention** [Severity: Medium] [web only]
+Scope: tab and navigation bar layouts.
+Tab/navigation bar links must prevent text wrapping to avoid overflow on narrow viewports.
+Expected: all tab links apply no-wrap styling.
 
-**CHECK 17** — moved to `/accessibility-audit` as A5 (form inputs without accessible labels)."
+**CHECK 10 — Uncontained table full-width** [Severity: Medium] [web only]
+Table components using full-width styling must have a width-constrained parent container. Flag only tables whose full-width styling propagates to the viewport edge. Tables inside a constrained container are acceptable.
+Expected: 0 uncontained full-width tables.
+
+**CHECK 11 — Horizontal overflow on table wrappers** [Severity: Medium] [web only]
+Table wrapper elements with horizontal overflow scrolling must also have a max-width constraint to prevent unbounded scroll on wide viewports.
+Exclude: code blocks, comments.
+Expected: 0 unbounded horizontal overflow wrappers.
+
+**CHECK 12 — Deprecated or legacy styling syntax** [Severity: High]
+Deprecated styling APIs or syntax that will break in newer framework versions must be replaced with current equivalents.
+Expected: 0 matches."
 
 ---
 
@@ -144,29 +138,23 @@ These require judgment, not just pattern matching:
 
 Severity: High for routes with DB queries, Medium for static/client-only routes.
 
-**S2 — NotificationBell placement**
+**S1 — Singleton UI element duplication**
 Read sidebar/navigation and layout components.
-Verify: notification indicator appears exactly once in the rendered DOM per viewport (no duplication).
-Known issue: collapsible sidebar + responsive header can cause double rendering.
+Verify: singleton UI indicators (notification badges, user avatars, global action buttons) appear exactly once in the rendered DOM per viewport. Collapsible sidebar + responsive header can cause double rendering.
+Expected: each singleton element renders once regardless of viewport.
 
-**S3 — Sign-out button semantic color**
-Read sidebar/navigation component lines containing "sign out" or "logout".
-Verify: uses semantic destructive/danger token, not hardcoded color values.
-Expected: semantic destructive token with hover variant.
+**S2 — Destructive action semantic color**
+Read components containing destructive actions (sign out, delete, cancel, remove).
+Verify: destructive actions use the design system's semantic destructive/danger token, not hardcoded color values.
+Expected: semantic destructive token with interactive state variant (hover, pressed, focused).
 
-**S4** — moved to `/accessibility-audit` as A8 (sidebar/nav trigger keyboard accessibility).
+**S3 — Table container width constraint** [web only]
+For each file in scope that contains a table component, verify that its immediate parent container applies a width constraint (content-fit, auto, or max-width). Files with a table but no width constraint on the wrapper → flag.
+Expected: all table wrappers use a width constraint.
 
-**S5 — Content-fit width on table container wrappers**
-For each file in scope that contains a table component, check whether its immediate parent container uses content-fit width (e.g. `w-fit`, `width: fit-content`). Files with a table but no width constraint on the wrapper → flag.
-Expected: all table wrappers use content-fit or auto width.
-
-**S6** — moved to `/accessibility-audit` as A6 (bare focus ring without explicit size, WCAG 1.4.11).
-
-**S7** — moved to `/accessibility-audit` as A7 (onClick on non-interactive elements, WCAG 2.1.1).
-
-**S8 — Client-side boundary placement depth** *(frameworks with server/client split only — e.g. Next.js, Nuxt, SvelteKit. Skip for SPAs and non-SSR projects.)*
+**S4 — Rendering boundary placement** *(SSR frameworks only — skip for SPAs, CSR-only, and native projects. See reference file for applicable frameworks and directives.)*
 Read the main layout file.
-Verify: client-side directive is NOT present at the root layout level (it should remain a server component by design).
+Verify: directives that force client-side rendering are NOT placed at the root layout level. The root layout should preserve server-side rendering capability.
 Severity: Medium (performance — prevents server rendering optimization).
 
 ---
@@ -191,24 +179,22 @@ Output in this exact format:
 | 4 | Error indicators with hardcoded color | N | Medium | ✅/❌ |
 | 5 | Duplicate style tokens | N | Low | ✅/❌ |
 | 6 | Bare empty states | N | High | ✅/❌ |
-| 7 | Back links missing block display | N | Low | ✅/❌ |
+| 7 | Back navigation links display | N | Low | ✅/❌/⊘ |
 | 8 | Status badges with hardcoded colors | N | Medium | ✅/❌ |
-| 9 | Tab bars missing no-wrap | N | Medium | ✅/❌ |
-| 10 | Table full-width violation | N | Critical | ✅/❌ |
-| 12 | Horizontal overflow on table wrappers | N | Critical | ✅/❌ |
-| 15 | Deprecated/legacy styling syntax | N | High | ✅/❌ |
+| 9 | Tab bars missing no-wrap | N | Medium | ✅/❌/⊘ |
+| 10 | Uncontained table full-width | N | Medium | ✅/❌/⊘ |
+| 11 | Horizontal overflow on table wrappers | N | Medium | ✅/❌/⊘ |
+| 12 | Deprecated/legacy styling syntax | N | High | ✅/❌ |
 
-*(Gaps 11, 13, 14, 16, 17 moved to `/accessibility-audit`.)*
+*(⊘ = skipped, web only.)*
 
 ### Supplemental Checks
 | # | Check | Verdict | Notes |
 |---|---|---|---|
-| S2 | NotificationBell placement | ✅/❌ | |
-| S3 | Sign-out semantic color | ✅/❌ | |
-| S5 | Table container w-fit | ✅/❌ | |
-| S8 | 'use client' placement depth | ✅/❌ | |
-
-*(Gaps S4, S6, S7 moved to `/accessibility-audit`.)*
+| S1 | Singleton UI element duplication | ✅/❌ | |
+| S2 | Destructive action semantic color | ✅/❌ | |
+| S3 | Table container width constraint | ✅/❌/⊘ | |
+| S4 | Rendering boundary placement | ✅/❌/⊘ | |
 
 ### ❌ Failures requiring action ([N] total — by severity)
 
@@ -238,6 +224,12 @@ If all checks pass: output `UI Audit CLEAN — [DATE]. No violations found.`
 - Do NOT make any code changes during this skill. Audit only.
 - Do NOT re-read files already in context from Step 1.
 - The Explore agent in Step 2 handles all grep work. Do not duplicate searches in the main context.
-- **Pipeline integration**: for Critical findings, ask the user: "Should I implement the identified fixes?" before touching any file. Medium/Low findings go directly to `docs/refactoring-backlog.md` without asking.
+- **Pipeline integration**: Critical findings block Phase 6 progression per pipeline.md severity handling. Medium/Low findings go directly to `docs/refactoring-backlog.md`.
 - **Concurrent execution**: when invoked from pipeline.md Phase 5d Track A, this skill launches concurrently with the first browser-based skill. It is fully static — no dev server required.
-- **Complementary skill**: run `/accessibility-audit` alongside `/ui-audit` for any UI change. It owns axe-core WCAG 2.2 scan, APCA contrast, and the static a11y patterns formerly numbered here as CHECK 11/13/14/16/17 and S4/S6/S7.
+- **Complementary skill**: run `/accessibility-audit` alongside `/ui-audit` for any UI change. It owns axe-core WCAG 2.2 scan, APCA contrast, and static a11y patterns (aria-label, tabindex, form labels, focus visibility, keyboard accessibility). These checks were migrated from this skill during the v2 review cycle.
+
+---
+
+## Pattern reference
+
+All framework-specific grep patterns, verification methods, and platform configuration are in `${CLAUDE_SKILL_DIR}/PATTERNS.md`. Read it in Step 1 before launching the Explore agent.

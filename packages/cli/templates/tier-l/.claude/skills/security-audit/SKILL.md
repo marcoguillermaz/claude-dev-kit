@@ -4,9 +4,13 @@ description: Security audit: auth/authz on API routes, input validation, RLS pol
 user-invocable: true
 model: sonnet
 context: fork
-effort: high
 argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 ---
+
+## Configuration (adapt before first run)
+
+> Replace these placeholders:
+> - `[SITEMAP_OR_ROUTE_LIST]` — file listing all API routes with method, path, roles, and grouping — e.g. `docs/sitemap.md`, `docs/routes.md`. If not configured, the skill discovers routes by scanning the project's route handler directories. Announce the discovered routes before proceeding.
 
 **Scope**: API routes, middleware/proxy, row-level access control policies, data validation, response shapes, environment variables, database configuration, dependencies. For native stacks: secrets management, platform security (Keychain/Keystore/entitlements), input validation, signing credentials, sensitive data protection.
 **Out of scope**: SEO, robots.txt, public crawlability, OpenGraph, sitemap.xml.
@@ -61,19 +65,19 @@ Apply target scope from Step 0 before proceeding.
 
 ## Step 2 — Auth, authorization, and injection checks (Explore agent)
 
-Launch a **single Explore subagent** (model: haiku) with the full route file list:
+Launch a **single Explore subagent** (model: haiku) with the full route file list. Read `${CLAUDE_SKILL_DIR}/PATTERNS.md` for stack-specific grep patterns used across all checks.
 
 **CHECK A1 — Missing auth check at route entry**
-Pattern: route handler function body does NOT contain any auth verification pattern within the first 20 lines (e.g. `getSession|getUser|auth()|session|req.user|currentUser`).
-Grep: for each route file, check if any auth pattern appears within the first 20 lines of the exported handler function. Flag any route file where none appear.
+Pattern: route handler function body does NOT contain any auth verification call within the first 20 lines.
+Grep: for each route file, check if any auth pattern from PATTERNS.md → A1 appears within the first 20 lines of the handler function. Flag any route file where none appear.
 Note: service-role-only routes must still verify the caller's role — a privileged client alone is not an auth check.
 
 **CHECK A2 — Role check present for admin routes**
 Flag: any admin route without an explicit role assertion.
 
 **CHECK A3 — Input validation on request body, path params, and query params**
-Pattern A (body): route files handling POST/PUT/PATCH should use a validation library (e.g. Zod, Joi, class-validator).
-Grep: in all write route files, check for validation patterns (e.g. `safeParse|\.parse\(|validate\(|Joi\.object`).
+Pattern A (body): route files handling POST/PUT/PATCH must validate the request body using a validation library before processing.
+Grep: in all write route files, check for validation patterns from PATTERNS.md → A3.
 Flag: any write route without validation on the request body.
 Flag: raw path params fed into DB queries without format validation — an invalid format causes a DB error, leaking implementation details.
 Pattern C (query params): grep all route files for user-provided query parameters whose return value is used in DB filter calls without an explicit allowlist or schema validation.
@@ -81,12 +85,12 @@ Flag: unvalidated query params used as DB filter inputs.
 
 **CHECK A4 — Raw user input in SQL/queries**
 Pattern: template literals or string concatenation used to build database queries with user-provided values.
-Grep: string interpolation or concatenation in query construction (e.g. `` `SELECT * FROM ${table}` ``, `.where('col = ' + val)`).
+Grep: string interpolation or concatenation in query construction — see PATTERNS.md → A4 for stack-specific patterns.
 Flag: any query built with string concatenation from user input. Use parameterized queries instead.
 
 **CHECK A5 — Sensitive fields in API responses**
 Pattern: API routes returning full objects that may include sensitive fields.
-Grep: routes selecting all columns (e.g. `SELECT *`, `.select('*')`, `.findAll()`) AND returning the full result to the client without explicit field filtering.
+Grep: routes selecting all columns (see PATTERNS.md → A5) AND returning the full result to the client without explicit field filtering.
 
 **CHECK A6 — Cron/job routes missing secret check**
 Flag: any job/cron route that does NOT verify a shared secret or API key before execution.
@@ -98,18 +102,18 @@ Flag: any export route without an explicit role assertion.
 
 **CHECK A8 — Client-exposed environment variable secret leak**
 Scope: all source files and `.env*` files.
-Pattern: environment variables with client-side prefixes (e.g. `NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `NUXT_PUBLIC_`) whose names contain secret-like suffixes (`KEY`, `SECRET`, `TOKEN`, `PASSWORD`).
+Pattern: environment variables with client-side prefixes (see PATTERNS.md → A8 for framework prefix list) whose names contain secret-like suffixes (`KEY`, `SECRET`, `TOKEN`, `PASSWORD`).
 Flag: any client-prefixed variable that contains a secret-like suffix. These variables are inlined into the client bundle and visible to all users.
 Note: public API URLs and non-secret anon keys are expected — exclude those.
 
 **CHECK A9 — Privileged credentials in client-side code**
-Scope: all client-side source files (files with `'use client'`, browser entry points, frontend components).
-Pattern: grep for privileged credential references (e.g. `SERVICE_ROLE|service_role|ADMIN_KEY|serviceRoleKey|masterKey`).
+Scope: all client-side source files (see PATTERNS.md → A9 for client-side markers per framework).
+Pattern: grep for privileged credential references (see PATTERNS.md → A9 for credential patterns).
 Flag: any match. Privileged credentials bypass access control — their presence in client-side code exposes them to every user.
 
 **CHECK A10 — Public URL for private storage assets**
 Scope: all route files and utility files that handle file/document/attachment operations.
-Pattern: public URL generation (e.g. `getPublicUrl`, direct S3 URL construction) in files that handle private assets (documents, contracts, receipts).
+Pattern: public URL generation (see PATTERNS.md → A10) in files that handle private assets (documents, contracts, receipts).
 Flag: any public URL call for a private asset. Private assets must use signed/temporary URLs with a TTL.
 Note: explicitly public storage (avatars, public uploads) is expected — exclude those.
 
@@ -121,11 +125,11 @@ Flag: any redirect where the target URL is constructed from user-controlled inpu
 Scope: all route files handling POST/PUT/PATCH.
 Pattern: find where the raw request body object is passed wholesale to a DB write operation without explicit field destructuring or schema validation first.
 Flag: any route where the raw body is inserted/updated directly.
-Note: routes that validate through a schema (e.g. `schema.parse(body)`) before inserting are safe — exclude those.
+Note: routes that validate through a schema before inserting are safe — exclude those.
 
 **CHECK A13 — Horizontal access control / IDOR**
 For each dynamic route:
-Step 1 — identify how the caller's identity is resolved (grep for `getSession|getUser|user\.id|session\.user|req\.user|currentUser`).
+Step 1 — identify how the caller's identity is resolved (grep for auth patterns from PATTERNS.md → A1).
 Step 2 — verify that the DB query filters by the caller's identity or scope, not just by the URL parameter alone.
 Insecure pattern: filtering only by the requested ID without verifying ownership — any authenticated user can access any record by guessing IDs.
 Flag: each route where ownership/scope is not enforced server-side in the query.
@@ -239,16 +243,7 @@ Grep all source files for patterns that indicate hardcoded secrets:
 Flag: each hardcoded secret. Secrets must come from environment variables, platform keychain, or a secrets manager.
 
 ### NS2 — Dependency vulnerability scan
-Run the appropriate dependency audit tool:
-- Swift: check for known CVEs in Package.resolved dependencies
-- Kotlin: `./gradlew dependencyCheckAnalyze` or review build.gradle for outdated dependencies
-- Rust: `cargo audit`
-- Go: `govulncheck ./...`
-- Python: `pip-audit` or `safety check`
-- Ruby: `bundle-audit check`
-- Java: `mvn org.owasp:dependency-check-maven:check`
-- dotnet: `dotnet list package --vulnerable`
-
+Run the same dependency audit as Step 3c (adapt the command to the native stack's package manager).
 Flag: Critical/High CVEs as Critical/High findings. Medium/Low CVEs noted in report.
 
 ### NS3 — Input validation on external boundaries
@@ -261,20 +256,12 @@ For each entry point (CLI args, file parsing, IPC, network input, URL schemes, d
 Flag: each unvalidated external input.
 
 ### NS4 — Platform security checks
-Execute each item from the stack-specific checklist above as a targeted grep/read check:
-- **Swift**: verify Keychain usage (not UserDefaults) for secrets, check ATS exceptions in Info.plist, verify Data Protection on sensitive files, audit entitlements for minimal privilege, confirm hardened runtime enabled, check TCC usage descriptions present
-- **Kotlin**: verify Android Keystore usage (not SharedPreferences) for secrets, check certificate pinning config, verify ProGuard/R8 enabled for release, audit ContentProvider export settings, check WebView JavaScript disabled by default
-- **Rust**: audit every `unsafe` block for safety justification comment, verify no use-after-free/double-free patterns, check FFI boundaries for input validation, verify constant-time comparison for secrets
-- **Go**: verify parameterized SQL queries (no string concatenation), check goroutine context cancellation propagated, verify crypto stdlib usage (no custom crypto), check govulncheck results
-- **Python**: verify parameterized queries (no f-strings in SQL), check subprocess usage (no shell=True with user input), verify no pickle on untrusted data, check for SSRF in URL handling
-- **Ruby**: verify strong parameters on controllers, check CSRF protection enabled, verify no string interpolation in where(), check secure cookie settings
-- **Java**: verify no ObjectInputStream on untrusted data, check PreparedStatement usage, verify XXE prevention in XML parsers, check SecureRandom usage
-- **dotnet**: verify Secret Manager or Key Vault usage (not appsettings.json for secrets), check anti-forgery tokens, verify HTTPS enforcement, check ProblemDetails in production
+Execute each item from the stack-specific checklist above as a targeted grep/read check. See PATTERNS.md → NS4 for per-language grep patterns and flag conditions.
 
 Flag: each violation with severity based on exploitability.
 
 ### NS5 — Sensitive data protection
-- Verify sensitive data written to disk uses platform encryption (Data Protection API on Apple, EncryptedSharedPreferences on Android, file permissions on systems stacks)
+- Verify sensitive data written to disk uses platform encryption (see PATTERNS.md → NS4 for platform-specific mechanisms)
 - Check that temporary files with sensitive content are deleted after use
 - Verify no sensitive data in logs (grep for log/print statements near secret/token/password handling)
 - Check that error messages do not expose internal state or stack traces to users
@@ -302,10 +289,7 @@ Flag: each signing credential in repository as Critical.
 | `Content-Security-Policy` | Present (even permissive) | XSS escalation |
 | `Permissions-Policy` | camera/mic/geolocation denied | Feature abuse |
 
-**Live check** (staging): run:
-```bash
-```
-Compare actual headers received vs configuration. A header present in config but absent in the curl output indicates a misconfiguration (pattern mismatch, wrong route scope, etc.).
+**Live check** (staging): curl the staging URL and compare actual headers received vs configuration. A header present in config but absent in the response indicates a misconfiguration.
 
 Flag: any header present in config but absent in live response — this means the config is ineffective.
 
@@ -325,120 +309,7 @@ Flag: any header present in config but absent in live response — this means th
 
 ### Output format
 
-```
-## Security Audit — [DATE] — [TARGET]
-
-### Executive summary
-- [2-8 bullets: lead with the most critical risk. One bullet per Critical/High finding or notable PASS cluster. Be specific — name the route, table, or pattern.]
-
-### Scope reviewed
-- Routes / entry points: [N routes, list categories]
-- Validation layer: schema validation in [N] route files
-- DB/access control layer: [N] migration files + DB advisors (if available)
-- Headers: server config + live curl on staging
-- Assumptions: [e.g. "No server-side form actions — N/A"]
-
-### Security maturity assessment
-| Dimension | Rating | Notes |
-|---|---|---|
-| Auth coverage | low/medium/high | [summary] |
-| Authorization quality (RBAC + ownership) | low/medium/high | [summary] |
-| Input validation coverage | low/medium/high | [summary] |
-| Data exposure control | low/medium/high | [summary] |
-| RLS / row isolation | low/medium/high | [summary] |
-| Config hardening (headers, proxy) | low/medium/high | [summary] |
-| Release readiness | low/medium/high | [summary] |
-
-### Auth & Authorization (API routes)
-| # | Check | Routes flagged | Severity | Verdict |
-|---|---|---|---|---|
-| A1 | Missing auth check | N | Critical | ✅/❌ |
-| A2 | Missing role check (admin routes) | N | Critical | ✅/❌ |
-| A3 | Missing input validation (body/params/query) | N | High | ✅/❌ |
-| A4 | Raw input in queries | N | Critical | ✅/❌ |
-| A5 | Sensitive fields in responses | N | High | ✅/❌ |
-| A6 | Cron routes missing secret | N | Critical | ✅/❌ |
-| A7 | Export routes missing role check | N | High | ✅/❌ |
-| A8 | Client-exposed env var secret leak | N | Critical | ✅/❌ |
-| A9 | Privileged credentials in client code | N | Critical | ✅/❌ |
-| A10 | Public URL on private storage asset | N | High | ✅/❌ |
-| A11 | Open redirect | N | High | ✅/❌ |
-| A12 | Mass assignment | N | High | ✅/❌ |
-| A13 | Horizontal AC / IDOR (dynamic routes) | N | High | ✅/❌ |
-| A14 | State machine enforcement | N | High | ✅/❌ |
-
-### Response Shape Review
-| # | Check | Verdict | Notes |
-|---|---|---|---|
-| R1 | Sensitive field exposure (PII, financial) | ✅/❌ | |
-| R2 | Restricted data exposure | ✅/❌ | |
-| R3 | Error message verbosity | ✅/❌ | |
-| R5 | Rate limiting on high-value endpoints | ✅/❌ | |
-
-### RLS — Code-level check
-| # | Check | Tables flagged | Verdict |
-|---|---|---|---|
-| RLS-1 | Tables without row-level access control | N | ✅/❌ |
-| RLS-2 | Access control enabled but zero policies | N | ✅/❌ |
-| RLS-3 | Write-side policy checks missing | N | ✅/❌ |
-
-### Native Application Security (if applicable)
-| # | Check | Matches | Severity | Verdict |
-|---|---|---|---|---|
-| NS1 | Hardcoded secrets | N | Critical | ✅/❌ |
-| NS2 | Dependency vulnerabilities | N | High | ✅/❌ |
-| NS3 | Unvalidated external input | N | High | ✅/❌ |
-| NS4 | Platform security (stack-specific) | N | varies | ✅/❌ |
-| NS5 | Sensitive data protection | N | High | ✅/❌ |
-| NS6 | Code signing credentials in repo | N | Critical | ✅/❌ |
-
-### Database Security Advisors (if available)
-| Level | Count | Items |
-|---|---|---|
-| error (Critical) | N | [list] |
-| warning (High) | N | [list] |
-| info (Low) | N | [list] |
-
-### Dependency CVEs
-| Package | Version | Severity | CVE | Fix available |
-|---|---|---|---|---|
-| [name] | [range] | critical/high | [id] | yes/no |
-
-### HTTP Headers
-| Header | In config | In live response | Verdict |
-|---|---|---|---|
-| X-Frame-Options | ✅/❌ | ✅/❌ | ✅/❌ |
-| X-Content-Type-Options | ✅/❌ | ✅/❌ | ✅/❌ |
-| Referrer-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
-| Content-Security-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
-| Permissions-Policy | ✅/❌ | ✅/❌ | ✅/❌ |
-
-### Proxy / Middleware
-| Check | Verdict | Notes |
-|---|---|---|
-| API protected behind auth layer | ✅/❌ | |
-| Auth-gated redirects server-side (not client-side) | ✅/❌ | |
-| Public route whitelist is narrow (no wildcard) | ✅/❌ | |
-| No forgeable bypass header trusted | ✅/❌ | |
-
-### Prioritized findings (Critical → High → Medium → Low)
-Format: `[SEVERITY] route/file:line — check# — issue — exploit path — recommended fix — effort`
-
-### Quick wins
-[findings that are isolated, low-risk fixes — e.g. add ownership filter, add validation enum on query param, add write-side policy check]
-
-### Strategic refactors
-[findings requiring broader changes — e.g. state machine enforcement across all transition routes, centralized response serializers, access control policy overhaul]
-
-### Validation checklist
-After applying fixes, verify:
-- [ ] Unauthenticated request (no token) to each fixed route → 401
-- [ ] Horizontal AC: request with valid token but different owner's ID → 403 or 404
-- [ ] State machine: request with invalid transition on current state → 422
-- [ ] Path param validation: request with invalid ID format → 400
-- [ ] Row-level access: unprivileged query on fixed tables → 0 rows (not error)
-- [ ] DB advisors re-run after schema changes → 0 critical-level items
-```
+Generate the report using the template in `${CLAUDE_SKILL_DIR}/REPORT.md`. Apply the severity guide from the same file.
 
 ### Backlog decision gate
 
@@ -461,13 +332,6 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - Assign ID: `SEC-[n]`
 - Add to priority index
 - Add full detail section with exploit scenario and recommended fix
-
-### Severity guide
-
-- **Critical**: unauthenticated route exposing or modifying data; row-level access bypass; privileged credentials in client code; client-exposed env var secret; cron route with no secret check; raw input in queries; DB advisor critical-level finding; table missing row-level access control on sensitive data (RLS-1); hardcoded secrets in source code (NS1); signing credentials committed to repo (NS6); unsafe block without safety justification in Rust (NS4)
-- **High**: admin route without role check; sensitive PII/financial field exposed to non-owner; export route without role check; public URL on private storage asset; open redirect; mass assignment; horizontal AC / IDOR on sensitive records (A13); state machine bypass on financial/status transitions (A14); missing write-side policy checks (RLS-3); DB advisor warning-level finding; critical/high CVE in production dependency (NS2); unvalidated external input at system boundary (NS3); sensitive data written without platform encryption (NS5); disabled code signing (NS6)
-- **Medium**: missing validation on write route body; unvalidated path param or query param used in DB filter (A3); error message leaking DB internals; missing security header; no rate limiting on high-value endpoints; access control enabled but zero policies (RLS-2); sensitive data in log output (NS5)
-- **Low**: header best-practice gap; informational DB advisor finding; moderate/low CVE not directly exploitable; state machine bypass on low-risk status fields
 
 ---
 

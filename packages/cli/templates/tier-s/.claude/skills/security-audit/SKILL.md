@@ -4,7 +4,6 @@ description: Security audit: auth/authz on API routes, input validation, RLS pol
 user-invocable: true
 model: sonnet
 context: fork
-effort: high
 argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
 ---
 

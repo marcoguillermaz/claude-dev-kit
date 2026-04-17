@@ -17,7 +17,7 @@ Classify based on staged files:
 | Staged files | Type |
 |---|---|
 | Source code correcting broken behaviour | `fix` |
-| Test files only (`__tests__/`, `e2e/`) | `test` |
+| Test files only (`__tests__/`, `e2e/`, `tests/`, `test_*.py`, `*_test.go`, `*Tests.swift`, `*Test.kt`, `*Test.java`, `src/test/`) | `test` |
 | Docs only (`docs/`, `README.md`) | `docs` |
 | Context/config files (`.claude/`, `CLAUDE.md`, `MEMORY.md`, pipeline, skills, settings) | `chore` |
 | Restructuring without behaviour change | `refactor` |
