@@ -52,7 +52,7 @@
 | 11 | simplify | ✓ | ✓ | ✓ | 3 | cross-tier | haiku model |
 | 12 | skill-db | - | ✓ | ✓ | 4 | cross-tier | live SQL verification; SKILL.md + REPORT.md per tier |
 | 13 | skill-dev | ✓ | ✓ | ✓ | 3 | cross-tier | code quality audit |
-| 14 | test-audit | - | ✓ | ✓ | 4 | cross-tier | recently added (v1.9.1); SKILL.md + REPORT.md per tier |
+| 14 | test-audit | - | ✓ | ✓ | 4 | cross-tier | SKILL.md + PATTERNS.md + REPORT.md per tier |
 | 15 | ui-audit | - | ✓ | ✓ | 4 | cross-tier | static grep, token compliance; SKILL.md + PATTERNS.md per tier |
 | 16 | ux-audit | - | ✓ | ✓ | 2 | cross-tier | Playwright, opus model |
 | 17 | visual-audit | - | ✓ | ✓ | 4 | cross-tier | Playwright, opus model; SKILL.md + DIMENSIONS.md per tier |

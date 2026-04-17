@@ -46,7 +46,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 15 audit skills
+### 16 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -67,6 +67,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/ui-audit` | M L | Design token compliance, component adoption, empty states. |
 | `/accessibility-audit` | M L | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels). |
 | `/test-audit` | M L | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps). |
+| `/skill-review` | M L | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures. |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
 
