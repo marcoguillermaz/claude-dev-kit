@@ -50,7 +50,7 @@ Run before every release to validate all tier/mode combinations:
 node packages/cli/test/integration/run.js
 # Add --verbose for per-check output
 ```
-533 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation, new named stacks (swift/kotlin/rust/dotnet/ruby/java), conditional docs pruning (sitemap.md, db-map.md), security rule variant selection (6 stack/API combinations + leak check + deny verification), placeholder noise reduction (unfilled sections stripped from CLAUDE.md), native skill adaptation (8 stacks), simplify skill presence, rubric scoring (D2/D5/D7/D8 for node-ts/swift/python with quality floor), test-audit universal gating (Tier M/L unconditional, Tier S absent), excludeNative edge case (3 native stacks with hasFrontend:true), full CLI execution via `--answers` fixtures (9 scenarios). Output is gitignored (`packages/cli/test/integration/output/`).
+536 checks: file structure per tier, Stop hook presence and resolution, pipeline gate counts, wizard placeholder resolution, safe-mode preservation, new named stacks (swift/kotlin/rust/dotnet/ruby/java), conditional docs pruning (sitemap.md, db-map.md), security rule variant selection (6 stack/API combinations + leak check + deny verification), placeholder noise reduction (unfilled sections stripped from CLAUDE.md), native skill adaptation (8 stacks), simplify skill presence, rubric scoring (D2/D5/D7/D8 for node-ts/swift/python with quality floor), test-audit universal gating (Tier M/L unconditional, Tier S absent), excludeNative edge case (3 native stacks with hasFrontend:true), full CLI execution via `--answers` fixtures (9 scenarios). Output is gitignored (`packages/cli/test/integration/output/`).
 
 ## Interaction Protocol
 **Perimeter questions** (scope, vision, user, future): always use the `AskUserQuestion` tool — never present as inline text. Max 4 questions per call, each with 2–4 options. Open-ended questions get representative options + "Other" for custom input.
@@ -92,4 +92,4 @@ These updates are part of the commit sequence (docs commit), not a post-merge af
 - All updated as mandatory final step after every round of changes (standing rule)
 
 ## Current Version
-`v1.9.1` — skill registry, incremental adoption, /test-audit. excludeNative pruning (4 browser-only skills), agnosticity remediation (15 SKILL.md files), 281 unit tests, 533 integration checks.
+`v1.10.0` — /skill-review, Pipeline v2 body purity (17 SKILL.md + 19 reference files), 18 skills, 281 unit tests, 536 integration checks.
