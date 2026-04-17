@@ -22,6 +22,9 @@ out/
 secrets/
 credentials/
 
+# Claude Code — project context (local, never commit)
+CLAUDE.md
+
 # Claude Code — personal overrides (never share)
 .claude/CLAUDE.local.md
 .claude/settings.local.json
