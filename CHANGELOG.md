@@ -7,6 +7,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.10.0] — 2026-04-17
+
+### Added
+- `/skill-review` skill (Tier M lite, Tier L full) — quality review pipeline for skill portfolios. Includes 5 supporting documents: REVIEW_FRAMEWORK.md, SEVERITY_SCALE.md, SPEC_SNAPSHOT.md, SKILLS_INVENTORY.md, CALIBRATION_KIT.md. Tier M skips Phase 4 (external LLM) and Phase 9 (midpoint drift). Tier L runs full pipeline.
+- 19 reference files across 15 skills: PATTERNS.md (10), CHECKS.md (2), REPORT.md (6), DIMENSIONS.md (1) — stack-scaffolded patterns separated from skill body logic.
+
+### Changed
+- Pipeline v2 body purity: all 17 SKILL.md files reworked — framework-specific patterns (grep commands, CSS utilities, Tailwind classes, SwiftUI literals) extracted from bodies into reference files. Bodies contain only universal principles. Net -2009 lines.
+- Configuration sections added to security-audit (`[SITEMAP_OR_ROUTE_LIST]`), perf-audit (`[PERF_TOOL]`, `[PROFILER_COMMAND]`), skill-dev (`[LINT_COMMAND]`).
+- skill-dev: scope filter for stack-specific check exclusion, refactoring-backlog.md fallback for missing file, D8 native stack clarification.
+- Skill registry: 18 entries (added skill-review).
+- `add skill` command: 18 skills available.
+- Cross-validated by 4 LLMs (GPT-4.1, Gemini 2.5 Pro, Mistral Large, Sonar Pro) + 36 behavioral fixture cases across 6 high-risk skills.
+- Integration checks: 536 (was 533).
+
+---
+
 ## [Unreleased] — v1.9.1
 
 ### Added
@@ -16,17 +33,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `new skill` command - interactive wizard to scaffold custom skills with valid frontmatter, test fixture, and CLAUDE.md registration (#55)
 - `claudemd-update.js` shared utility - extracted CLAUDE.md Active Skills registration for reuse across commands
 - `.github/drift-tracker/` - weekly GitHub Action that scrapes Anthropic docs for native features overlapping with CDK, opens `anthropic-drift` issues when overlap detected (#56)
-- `add skill <name>` command - install a single skill without full scaffold (12 skills available)
+- `add skill <name>` command - install a single skill without full scaffold (18 skills available)
 - `add rule <name>` command - install a single rule with stack-specific security variants (`--stack swift|kotlin|rust|dotnet|java|go`)
 - `custom-*` skill convention - user-created skills preserved across `upgrade` and `init` operations
 - `docs/custom-skills.md` - SKILL.md authoring guide (frontmatter schema, model selection, body patterns)
-- `skill-registry.js` - single source of truth for skill applicability rules (12 entries, 3 query functions)
+- `skill-registry.js` - single source of truth for skill applicability rules (18 entries, 3 query functions)
 - `.github/FUNDING.yml` - GitHub Sponsors enabled
 - `.github/ISSUE_TEMPLATE/skill_request.md` - issue template for new skill requests (tier, stack, install condition)
 - `.github/ISSUE_TEMPLATE/config.yml` - issue chooser; blank issues disabled, support redirected to Discussions Q&A
 - `.github/workflows/discussion-monitor.yml` - weekly cron: finds unanswered Q&A discussions (>14 days), creates summary issue
 - GitHub Project board populated with Q1-Q2 roadmap deliverables (14 issues across 2 milestones)
-- Skill `description` field in all 12 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
+- Skill `description` field in all 18 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
 
 ### Fixed
 - Hook `timeout` values corrected from milliseconds to seconds per Anthropic JSON schema (Tier M: 300000→300, Tier L: 600000→600)

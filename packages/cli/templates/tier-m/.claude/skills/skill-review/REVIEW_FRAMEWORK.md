@@ -5,7 +5,7 @@
 **Updated**: 2026-04-14 — cross-model review (Gemini 2.5 Pro + Mistral Large + GPT-4.1) integrated. 7 convergent structural fixes (C1-C7) + 3 single-model critical (T2.1 targeted / T2.3 / T2.4) applied.
 **Status**: Consolidated - ready for execution once pre-work artifacts P1-P5 are produced.
 
-**Purpose**: single source of truth for the quality review of all 17 CDK skills. Replaces any prior partial framework. Every check, decision point, and severity level lives here.
+**Purpose**: single source of truth for the quality review of all 18 CDK skills. Replaces any prior partial framework. Every check, decision point, and severity level lives here.
 
 ---
 
@@ -84,7 +84,7 @@ Five artifacts must exist before any skill review begins. Build in sequence with
 ### P3 - Canonical skills inventory
 
 **File**: `docs/reviews/skills-quality-review/skills-inventory.md`
-**Purpose**: reference table of all 17 skills with metadata. Enables cross-skill checks, conditional Phase 4 gating, stable baseline.
+**Purpose**: reference table of all 18 skills with metadata. Enables cross-skill checks, conditional Phase 4 gating, stable baseline.
 **Content**: name, tier, line count, model, allowed-tools, registry flags, placeholder list, subagent usage, effort field presence, supporting files, behavioral-fixture target (yes/no per D1), pre-existing LLM review (yes/no per O2).
 **Coverage check (T2.6)**: every skill under `packages/cli/templates/*/skills/` must have a P3 row. Missing rows block cycle start.
 **Status**: Pending.
@@ -421,7 +421,7 @@ Remaining before execution:
 - [ ] Retro-apply to ui-audit (Block C)
 
 Deferred to vNext (v1.3 or later):
-- T2.1 full — behavioral fixtures on all 17 skills (currently 6 only).
+- T2.1 full — behavioral fixtures on all 18 skills (currently 6 only).
 - T2.2 — bundle-level system behavior end-to-end check.
 - R3 — export mode split (lite / audit / portfolio).
 - Second-reviewer sample (D5 defer).

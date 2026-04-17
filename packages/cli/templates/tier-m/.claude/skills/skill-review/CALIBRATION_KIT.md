@@ -5,7 +5,7 @@
 **Bundled with**: `/skill-review` skill (for export to user projects)
 **Status**: reviewer-facing document. Read at cycle start and at Phase 9 midpoint.
 
-**Purpose**: prevent reviewer drift across a ~34-hour, 17-skill review cycle. Drift = unconscious deviation from the severity rubric when fatigue, repetition, or recent findings bias the next judgment.
+**Purpose**: prevent reviewer drift across a ~34-hour, 18-skill review cycle. Drift = unconscious deviation from the severity rubric when fatigue, repetition, or recent findings bias the next judgment.
 
 **When to read**:
 - Before starting skill #1 (cycle-start anchoring).

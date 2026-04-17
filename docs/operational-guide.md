@@ -693,7 +693,7 @@ Defined in the `CLAUDE.md` template for Tier M/L. Governs how Claude handles non
 
 ## 10. Audit skills
 
-Fourteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Sixteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 All skill applicability rules are managed by a central skill registry (`packages/cli/src/scaffold/skill-registry.js`). Each skill declares which tiers and project conditions it requires.
 
@@ -716,6 +716,7 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/ui-audit` | - | x | x | `hasFrontend=true` AND `hasDesignSystem=true` | - (static) |
 | `/accessibility-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
 | `/test-audit` | - | x | x | always (no `requires`) | - (static analysis) |
+| `/skill-review` | - | x | x | always | - (static analysis) |
 
 ### General rules
 
@@ -852,6 +853,12 @@ Checks:
 - **Anti-patterns (T1-T8, all stack-adapted)**: T1 `.only`/`fit`/`fdescribe` committed (Critical), T2 skipped tests (Medium; High if > 10% of suite), T3 `.todo` placeholders (Low), T4 empty test bodies (High), T5 tests without assertions (High), T6 hardcoded sleeps ≥ 500ms (Medium), T7 debug output left in tests (Low), T8 multi-file `.only` pattern (Critical).
 
 Universal gating: installed on every Tier M/L project regardless of feature flags (no `requires`). Backlog prefix: `TEST-`. Flaky-test detection and live re-run analysis are deferred - v1 is static-only.
+
+#### /skill-review
+
+**File**: `.claude/skills/skill-review/SKILL.md` | **Tier**: M (lite), L (full)
+
+Quality review pipeline for skill portfolios. Orchestrates Phase 1 preflight (C1-C8 spec compliance), Phase 2 structural review (fundamentals, cross-tier coherence, refinements, behavioral fixtures), Phase 3 fix + rollback, Phase 6 closeout. Tier M lite mode skips Phase 4 (external LLM review) and Phase 9 (midpoint drift check). Tier L full mode includes all phases. Includes 5 supporting documents: REVIEW_FRAMEWORK.md, SEVERITY_SCALE.md, SPEC_SNAPSHOT.md, SKILLS_INVENTORY.md, CALIBRATION_KIT.md.
 
 #### /simplify
 
