@@ -73,14 +73,21 @@ node packages/cli/test/integration/run.js
 
 ## Roadmap Tracking
 
-When work starts or completes on a roadmap item (any issue linked to a GitHub milestone), update these three locations:
+**Canonical source**: `.claude/initiatives/roadmap-status.md` (ICE-prioritized, quarterly).
+**GitHub mirror**: milestones Q1-Q4 + issue labels. Must stay in sync.
 
-**On start**: set status to `In Progress`, record start date in `.claude/initiatives/roadmap-status.md`. Update GitHub Project board start date via `gh api graphql`.
+**On start**: set status to `In Progress`, record start date in `roadmap-status.md`. Move GitHub issue to the correct milestone if not already there.
 
 **On completion** (PR created, before merging):
-1. `.claude/initiatives/roadmap-status.md` — set status to `Done`, record end date and PR number
-2. GitHub Project board — set status to Done, update start/target dates via `gh api graphql`
-3. Close the GitHub issue with implementation summary
+1. `roadmap-status.md` — set status to `Done`, record end date and PR number
+2. Close the GitHub issue with implementation summary
+3. If the issue had an ICE score, keep it in the ICE scoring reference table for historical tracking
+
+**Sync rule (pre-commit gate)**: before any commit that changes `roadmap-status.md`, verify:
+- Every open item with a `#issue` number has a matching open GitHub issue in the correct milestone
+- Every GitHub issue in a milestone appears in the corresponding quarter's table
+- No milestone contains issues that were moved to a different quarter or backlog
+- Stale references (closed issues still marked Open, wrong milestone assignments) are fixed in the same commit
 
 These updates are part of the commit sequence (docs commit), not a post-merge afterthought.
 
