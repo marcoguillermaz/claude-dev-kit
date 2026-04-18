@@ -550,10 +550,20 @@ function resolveDevCommand(userCommand, nativeDefault) {
 }
 
 function resolveE2eToolName(config) {
-  if (config.e2eCommand && config.e2eCommand.trim() !== '' && config.e2eCommand !== '# not configured') {
+  if (
+    config.e2eCommand &&
+    config.e2eCommand.trim() !== '' &&
+    config.e2eCommand !== '# not configured'
+  ) {
     return config.e2eCommand.split(/\s/)[0]; // e.g. 'playwright' from 'playwright test'
   }
-  const nativeTools = { swift: 'XCUITest', kotlin: 'Espresso', rust: 'integration tests', dotnet: 'UI tests', java: 'integration tests' };
+  const nativeTools = {
+    swift: 'XCUITest',
+    kotlin: 'Espresso',
+    rust: 'integration tests',
+    dotnet: 'UI tests',
+    java: 'integration tests',
+  };
   return nativeTools[config.techStack] || 'Playwright/Cypress';
 }
 

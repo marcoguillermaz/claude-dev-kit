@@ -404,7 +404,6 @@ describe('interpolate — simple placeholders', () => {
   it('MIGRATION_COMMAND defaults to "# not configured"', () => {
     assert.equal(interp('[MIGRATION_COMMAND]', { techStack: 'node-ts' }), '# not configured');
   });
-
 });
 
 describe('interpolate — FRAMEWORK_VALUE via frameworkValue()', () => {

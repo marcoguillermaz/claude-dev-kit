@@ -65,24 +65,36 @@ function warn(label, detail = '') {
 /** Assert file content contains a substring */
 function assertContains(dir, relPath, substring, label) {
   const full = path.join(dir, relPath);
-  if (!fs.existsSync(full)) { fail(`${label || relPath} — file missing`); return; }
+  if (!fs.existsSync(full)) {
+    fail(`${label || relPath} — file missing`);
+    return;
+  }
   const content = fs.readFileSync(full, 'utf8');
   if (content.includes(substring)) {
     pass(label || `${relPath} contains "${substring.slice(0, 40)}"`);
   } else {
-    fail(label || `${relPath} should contain "${substring.slice(0, 60)}"`, `not found in ${relPath}`);
+    fail(
+      label || `${relPath} should contain "${substring.slice(0, 60)}"`,
+      `not found in ${relPath}`,
+    );
   }
 }
 
 /** Assert file content does NOT contain a substring */
 function assertNotContains(dir, relPath, substring, label) {
   const full = path.join(dir, relPath);
-  if (!fs.existsSync(full)) { pass(label || `${relPath} absent (OK)`); return; }
+  if (!fs.existsSync(full)) {
+    pass(label || `${relPath} absent (OK)`);
+    return;
+  }
   const content = fs.readFileSync(full, 'utf8');
   if (!content.includes(substring)) {
     pass(label || `${relPath} free of "${substring.slice(0, 40)}"`);
   } else {
-    fail(label || `${relPath} should NOT contain "${substring.slice(0, 60)}"`, `found in ${relPath}`);
+    fail(
+      label || `${relPath} should NOT contain "${substring.slice(0, 60)}"`,
+      `found in ${relPath}`,
+    );
   }
 }
 
@@ -109,8 +121,7 @@ function assertNoBannedPattern(dir, pattern, label) {
 function countSkillDirs(dir) {
   const skillsDir = path.join(dir, '.claude', 'skills');
   if (!fs.existsSync(skillsDir)) return 0;
-  return fs.readdirSync(skillsDir, { withFileTypes: true })
-    .filter(e => e.isDirectory()).length;
+  return fs.readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).length;
 }
 
 /** Get skill names from cheatsheet.md "Audit skills" table */
@@ -120,7 +131,7 @@ function getCheatsheetSkillNames(dir) {
   const content = fs.readFileSync(f, 'utf8');
   const auditMatch = content.match(/## Audit skills\n([\s\S]*?)(?=\n## |\n$|$)/);
   if (!auditMatch) return [];
-  return [...auditMatch[1].matchAll(/^\| `\/([\w-]+)`/gm)].map(m => m[1]);
+  return [...auditMatch[1].matchAll(/^\| `\/([\w-]+)`/gm)].map((m) => m[1]);
 }
 
 /** Count skill rows in cheatsheet.md "Audit skills" table */
@@ -133,7 +144,10 @@ function assertCheatsheetSkillsHaveDirs(dir, prefix) {
   const cheatSkills = getCheatsheetSkillNames(dir);
   const skillsDir = path.join(dir, '.claude', 'skills');
   const existingDirs = fs.existsSync(skillsDir)
-    ? fs.readdirSync(skillsDir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name)
+    ? fs
+        .readdirSync(skillsDir, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
     : [];
   const existingSet = new Set(existingDirs);
 
@@ -2031,21 +2045,42 @@ async function scenarioSwiftContentAssertions() {
   assertContains(dir, 'CLAUDE.md', '# no install step', 'R1: native install comment');
 
   // R2: Phase 4 disabled, no "# not configured" in prose
-  assertContains(dir, '.claude/rules/pipeline.md', 'Phase 4 — UAT / E2E tests *(disabled)*', 'R2: Phase 4 disabled heading');
+  assertContains(
+    dir,
+    '.claude/rules/pipeline.md',
+    'Phase 4 — UAT / E2E tests *(disabled)*',
+    'R2: Phase 4 disabled heading',
+  );
   // count "# not configured" — should only appear in bash blocks, not prose
   const pipelineContent = fs.readFileSync(path.join(dir, '.claude/rules/pipeline.md'), 'utf8');
   const notConfiguredInProse = pipelineContent
     .split('\n')
-    .filter(l => l.includes('# not configured') && !l.trim().startsWith('`') && !l.trim().startsWith('#'));
+    .filter(
+      (l) =>
+        l.includes('# not configured') && !l.trim().startsWith('`') && !l.trim().startsWith('#'),
+    );
   if (notConfiguredInProse.length === 0) {
     pass('R2: no "# not configured" in pipeline prose');
   } else {
-    fail('R2: "# not configured" found in pipeline prose', `${notConfiguredInProse.length} occurrences`);
+    fail(
+      'R2: "# not configured" found in pipeline prose',
+      `${notConfiguredInProse.length} occurrences`,
+    );
   }
 
   // R3: dependency-scan no contradictory "true is false"
-  assertNotContains(dir, '.claude/skills/dependency-scan/SKILL.md', 'true is false', 'R3: no "true is false"');
-  assertNotContains(dir, '.claude/skills/dependency-scan/SKILL.md', '`true`; skip when `false`', 'R3: no interpolated contradiction');
+  assertNotContains(
+    dir,
+    '.claude/skills/dependency-scan/SKILL.md',
+    'true is false',
+    'R3: no "true is false"',
+  );
+  assertNotContains(
+    dir,
+    '.claude/skills/dependency-scan/SKILL.md',
+    '`true`; skip when `false`',
+    'R3: no interpolated contradiction',
+  );
 
   // R4: .gitignore has Swift patterns
   assertContains(dir, '.gitignore', 'xcuserdata/', 'R4: .gitignore xcuserdata');
@@ -2053,7 +2088,12 @@ async function scenarioSwiftContentAssertions() {
   assertContains(dir, '.gitignore', '.build/', 'R4: .gitignore .build');
 
   // R5: FIRST_SESSION no Playwright for native
-  assertNotContains(dir, '.claude/FIRST_SESSION.md', 'Playwright/Cypress', 'R5: no Playwright in FIRST_SESSION');
+  assertNotContains(
+    dir,
+    '.claude/FIRST_SESSION.md',
+    'Playwright/Cypress',
+    'R5: no Playwright in FIRST_SESSION',
+  );
   assertContains(dir, '.claude/FIRST_SESSION.md', 'XCUITest', 'R5: XCUITest in FIRST_SESSION');
 
   // R6: every cheatsheet skill row has a corresponding skill directory
@@ -2063,7 +2103,12 @@ async function scenarioSwiftContentAssertions() {
   assertNoBannedPattern(dir, 'staff-manager', 'R7: zero staff-manager in all files');
 
   // R8: CLAUDE.md Environment is native
-  assertContains(dir, 'CLAUDE.md', 'native (DMG / TestFlight / App Store)', 'R8: native distribution');
+  assertContains(
+    dir,
+    'CLAUDE.md',
+    'native (DMG / TestFlight / App Store)',
+    'R8: native distribution',
+  );
   assertNotContains(dir, 'CLAUDE.md', '.env.local', 'R8: no .env.local in CLAUDE.md');
   assertNotContains(dir, 'CLAUDE.md', 'staging URL', 'R8: no staging URL');
 
@@ -2075,7 +2120,12 @@ async function scenarioSwiftContentAssertions() {
   assertContains(dir, 'CLAUDE.md', '_native distribution_', 'R9: native deploy');
 
   // R10: design system injected
-  assertContains(dir, 'CLAUDE.md', 'Apple Human Interface Guidelines', 'R10: HIG in Coding Conventions');
+  assertContains(
+    dir,
+    'CLAUDE.md',
+    'Apple Human Interface Guidelines',
+    'R10: HIG in Coding Conventions',
+  );
   assertContains(dir, 'CLAUDE.md', 'Design guideline', 'R10: Design guideline label');
 }
 
@@ -2134,8 +2184,18 @@ async function scenarioNodeTsContentAssertions() {
   assertNotContains(dir, '.gitignore', '.build/', 'NT6: no .build in .gitignore');
 
   // NT7: FIRST_SESSION mentions Playwright/Cypress for web, not XCUITest
-  assertContains(dir, '.claude/FIRST_SESSION.md', 'Playwright/Cypress', 'NT7: Playwright in FIRST_SESSION');
-  assertNotContains(dir, '.claude/FIRST_SESSION.md', 'XCUITest', 'NT7: no XCUITest in FIRST_SESSION');
+  assertContains(
+    dir,
+    '.claude/FIRST_SESSION.md',
+    'Playwright/Cypress',
+    'NT7: Playwright in FIRST_SESSION',
+  );
+  assertNotContains(
+    dir,
+    '.claude/FIRST_SESSION.md',
+    'XCUITest',
+    'NT7: no XCUITest in FIRST_SESSION',
+  );
 
   // NT8: design system injected
   assertContains(dir, 'CLAUDE.md', 'shadcn/ui', 'NT8: shadcn/ui in CLAUDE.md');
@@ -2273,7 +2333,12 @@ async function scenarioCrossStackInvariants() {
     // INV-2: no native artifacts in web stacks
     if (!isNative) {
       assertNotContains(dir, '.gitignore', 'xcuserdata/', `${stack}: no xcuserdata in .gitignore`);
-      assertNotContains(dir, '.gitignore', 'DerivedData/', `${stack}: no DerivedData in .gitignore`);
+      assertNotContains(
+        dir,
+        '.gitignore',
+        'DerivedData/',
+        `${stack}: no DerivedData in .gitignore`,
+      );
     }
 
     // INV-3: native stacks have stack-specific .gitignore section
