@@ -105,7 +105,7 @@ Framework v1.2 D1 decision: T2.1 behavioral fixtures applied to 6 UI/security sk
 
 | Target skill | Rationale |
 |---|---|
-| ui-audit | staff-manager `Color.red` case proved literal-correctness misses stack-sensitive defects |
+| ui-audit | pilot-project `Color.red` case proved literal-correctness misses stack-sensitive defects |
 | visual-audit | subjective scoring (10 aesthetic dimensions) prone to domain-emotion labeling |
 | accessibility-audit | axe-core rule interpretation is judgment-heavy; false positives on hidden elements |
 | security-audit | false-negative risk highest (missed invariant violation) - hard invariants need fixture confirmation |
