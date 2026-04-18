@@ -64,6 +64,7 @@ packages/cli/test/integration/output/
 # Local-only scripts (not part of published CLI)
 packages/cli/src/commands/sync-from-pilot.js
 scripts/
+!scripts/lint-templates.mjs
 
 # Internal project management (not product docs)
 FIRST_SESSION.md
