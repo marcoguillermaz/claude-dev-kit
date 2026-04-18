@@ -51,6 +51,27 @@ export async function generateClaudeMd(config, targetDir) {
     content = content.replace(/^- \*\*Deploy\*\*:.*$/m, '- **Deploy**: _native distribution_');
   }
 
+  // Replace Environment section for native stacks (no .env, no staging/production URLs)
+  if (NATIVE_STACKS.includes(config.techStack)) {
+    content = content.replace(
+      /## Environment[\s\S]*$/,
+      `## Environment\n- **Distribution**: _native (DMG / TestFlight / App Store)_\n- **Signing**: _configure in Xcode Signing & Capabilities_\n`,
+    );
+  }
+
+  // Strip Database placeholder if hasDatabase=false
+  if (config.hasDatabase === false) {
+    content = content.replace(/^- \*\*Database\*\*:.*\n/m, '');
+  }
+
+  // Add design system reference to Coding Conventions when specified
+  if (config.hasDesignSystem && config.designSystemName && config.designSystemName !== 'component library') {
+    content = content.replace(
+      /## Coding Conventions/,
+      `## Coding Conventions\n- **Design guideline**: ${config.designSystemName}. UI decisions should follow this reference.`,
+    );
+  }
+
   // Strip sections containing only placeholder content to save context tokens
   content = stripUnfilledSections(content);
 
@@ -98,7 +119,12 @@ const NATIVE_CMD_DEFAULTS = {
 function buildCommandsBlock(config) {
   const ncd = NATIVE_CMD_DEFAULTS[config.techStack] || {};
   const install = config.installCommand || ncd.install || 'npm install';
-  const dev = config.devCommand || ncd.dev || 'npm run dev';
+  const dev =
+    config.devCommand != null && config.devCommand !== ''
+      ? config.devCommand
+      : config.devCommand === ''
+        ? ''
+        : ncd.dev || 'npm run dev';
   const build = config.buildCommand || ncd.build || 'npm run build';
   const test = config.testCommand || ncd.test || 'npm test';
   const typeCheck = config.typeCheckCommand || ncd.typeCheck || '';
