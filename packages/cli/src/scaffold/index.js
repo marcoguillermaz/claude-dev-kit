@@ -1,6 +1,5 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
 import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
 
 /**

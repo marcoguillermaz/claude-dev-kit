@@ -65,7 +65,11 @@ export async function generateClaudeMd(config, targetDir) {
   }
 
   // Add design system reference to Coding Conventions when specified
-  if (config.hasDesignSystem && config.designSystemName && config.designSystemName !== 'component library') {
+  if (
+    config.hasDesignSystem &&
+    config.designSystemName &&
+    config.designSystemName !== 'component library'
+  ) {
     content = content.replace(
       /## Coding Conventions/,
       `## Coding Conventions\n- **Design guideline**: ${config.designSystemName}. UI decisions should follow this reference.`,
@@ -120,7 +124,7 @@ function buildCommandsBlock(config) {
   const ncd = NATIVE_CMD_DEFAULTS[config.techStack] || {};
   const install = config.installCommand || ncd.install || 'npm install';
   const dev =
-    config.devCommand != null && config.devCommand !== ''
+    config.devCommand !== null && config.devCommand !== undefined && config.devCommand !== ''
       ? config.devCommand
       : config.devCommand === ''
         ? ''

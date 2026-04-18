@@ -117,13 +117,6 @@ function assertNoBannedPattern(dir, pattern, label) {
   }
 }
 
-/** Count skill directories under .claude/skills/ */
-function countSkillDirs(dir) {
-  const skillsDir = path.join(dir, '.claude', 'skills');
-  if (!fs.existsSync(skillsDir)) return 0;
-  return fs.readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).length;
-}
-
 /** Get skill names from cheatsheet.md "Audit skills" table */
 function getCheatsheetSkillNames(dir) {
   const f = path.join(dir, '.claude', 'cheatsheet.md');
@@ -132,11 +125,6 @@ function getCheatsheetSkillNames(dir) {
   const auditMatch = content.match(/## Audit skills\n([\s\S]*?)(?=\n## |\n$|$)/);
   if (!auditMatch) return [];
   return [...auditMatch[1].matchAll(/^\| `\/([\w-]+)`/gm)].map((m) => m[1]);
-}
-
-/** Count skill rows in cheatsheet.md "Audit skills" table */
-function countCheatsheetSkills(dir) {
-  return getCheatsheetSkillNames(dir).length;
 }
 
 /** Assert every cheatsheet skill row has a corresponding skill directory */
