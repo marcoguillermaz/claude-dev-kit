@@ -77,7 +77,7 @@ Per `REVIEW_FRAMEWORK.md` v1.2, Phase 2 is split 2.A → 2.E. Execute sequential
 - Clarity: is the skill's purpose clear in 3 lines?
 - Scope boundary: does the claimed scope match the body?
 - Project-agnosticity (4 dimensions from framework v1.2 T2.4):
-  1. Literal contamination (file paths, symbol names from staff-manager or pilot project).
+  1. Literal contamination (file paths, symbol names from a pilot project).
   2. Severity habits (inherited severity defaults from a specific stack).
   3. Remediation style (assumes a specific tool-chain).
   4. Architectural assumptions (e.g., "there is a database").
@@ -100,7 +100,7 @@ Present findings to user. For multi-option review questions, ALWAYS use `AskUser
 ### 2.E - Behavioral fixtures *(only for 6 targeted skills per D1: ui-audit, visual-audit, accessibility-audit, security-audit, api-design, migration-audit)*
 - 3 representative cases: run the skill, record output, verify expected severity labels.
 - 2 adversarial cases: craft input that should trip the skill; verify skill catches it.
-- 1 contamination probe: a staff-manager-like literal; verify the skill does NOT flag as stack-specific.
+- 1 contamination probe: a pilot-project-like literal; verify the skill does NOT flag as stack-specific.
 - 1 severity-calibration case: a finding at a known severity; verify the skill produces that label.
 
 **Mode `fixtures-only`**: stop after 2.E, report.

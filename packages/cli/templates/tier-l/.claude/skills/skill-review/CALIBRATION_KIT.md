@@ -18,7 +18,7 @@
 
 ## 1. Severity anchor catalog
 
-12 canonical examples, 3 per level. Two are abstract references from P2; one per level is a CDK-specific anchor tied to a known staff-manager or spec artifact.
+12 canonical examples, 3 per level. Two are abstract references from P2; one per level is a CDK-specific anchor tied to a known pilot-project or spec artifact.
 
 ### Critical anchors (3)
 
@@ -42,7 +42,7 @@
 |---|---|---|
 | M-1 | api-design reports inconsistent pagination across endpoints | Real finding, remediation requires team decision, not blocking |
 | M-2 | arch-audit reports cyclomatic complexity 18 without threshold | Metric present, remediation path missing - actionability drags down one level |
-| M-3 | Skill body references staff-manager route path literally (e.g. `/admin/users`) | Project-agnosticity violation on literal dimension, fix is a rename, not blocking |
+| M-3 | Skill body references pilot-project route path literally (e.g. `/admin/users`) | Project-agnosticity violation on literal dimension, fix is a rename, not blocking |
 
 ### Low anchors (3)
 
@@ -105,7 +105,7 @@ Triggered after completing skill #9 (`skill-db` per P3 ordering). Before startin
 When §4 produces major drift:
 
 1. **Quarantine skills #1-#9**: mark the review output of already-reviewed skills as "pending recalibration".
-2. **Root cause analysis**: identify the drift direction (inflation: labels climbed; deflation: labels dropped). Hypothesize cause (fatigue, a specific finding that anchored too heavily, staff-manager contamination that normalized a pattern).
+2. **Root cause analysis**: identify the drift direction (inflation: labels climbed; deflation: labels dropped). Hypothesize cause (fatigue, a specific finding that anchored too heavily, pilot-project contamination that normalized a pattern).
 3. **Re-anchor**: re-read §1 + §2 + P2 in full. No shortcuts.
 4. **Re-score skills #1-#9** with the recalibrated anchor. Apply corrections.
 5. **Log**: write an entry in `DRIFT_LOG.md` with date, drift pattern, root cause hypothesis, corrections applied.

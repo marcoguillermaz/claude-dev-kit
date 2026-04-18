@@ -24,7 +24,7 @@ For each affected route path:
 - **Server-rendered web** (Django, Rails, Laravel, Flask): grep for URL references — Django: `reverse(`, `{% url`, `path(` in urls.py; Rails: `_path`, `_url` helpers; Laravel: `route(`, `redirect(`; Flask: `url_for(`
 - **Native projects — Swift/iOS/macOS**: grep for `NavigationLink`, `navigationDestination`, `.sheet(`, `fullScreenCover(`, deep link URL patterns matching the route
 - **Native projects — Kotlin/Android**: grep for `Intent(`, `NavController.navigate(`, `findNavController().navigate(`, deep link URI patterns matching the route
-- **No frontend** (`[HAS_FRONTEND]` is `false`): mark Check 1 as N/A
+- **No frontend**: if `hasFrontend` is `false`, mark Check 1 as N/A and skip to Check 2
 - Report: file path + line number + usage type
 
 ### Check 2 — Import consumers

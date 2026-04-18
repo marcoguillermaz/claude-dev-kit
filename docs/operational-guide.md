@@ -1,6 +1,6 @@
 # claude-dev-kit - Operational Guide
 
-**Version**: 1.10.0
+**Version**: 1.10.1
 **Audience**: Builder PMs, tech leads, and senior developers using Claude Code - from first exploration to structured, reviewable delivery
 **Format**: Reference + step-by-step. Read section 1 and your target tier section first, then use the rest as a lookup.
 
@@ -1231,4 +1231,4 @@ Nine example fixtures are in `packages/cli/test/fixtures/wizard-answers/`. Copy 
 
 ---
 
-*Last updated: 2026-04-17 - v1.10.0*
+*Last updated: 2026-04-18 - v1.10.1*

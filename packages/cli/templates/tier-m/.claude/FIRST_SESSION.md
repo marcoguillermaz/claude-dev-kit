@@ -80,7 +80,7 @@ Read-only operations (Read, Grep, git status/log) always run without confirmatio
 | 2 — Implementation | Code + security checklist | — |
 | 3 — Build + unit tests | Type check, build, unit tests | — |
 | 3b — API integration tests | Auth, authz, validation, business rules (if API routes touched) | — |
-| 4 — E2E tests | Playwright/Cypress (if configured + UI flows confirmed) | — |
+| 4 — E2E tests | [E2E_TOOL_NAME] (if configured + UI flows confirmed) | — |
 | 5b — Test data setup | Representative records for smoke test | — |
 | 5c — Staging deploy | Merge to staging + smoke test | — |
 | 6 — Outcome checklist | Full verification report | ⏸ STOP |

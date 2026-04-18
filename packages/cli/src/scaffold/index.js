@@ -1,6 +1,5 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { AUDIT_MODEL_DEFAULT } from '../utils/constants.js';
 import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
 
 /**
@@ -536,6 +535,37 @@ const securityChecklistByStack = {
 - No sensitive data in exception details (ProblemDetails in production)`,
 };
 
+/**
+ * Resolve dev command with awareness that empty string means "user explicitly skipped".
+ * Prevents fallback to native defaults (e.g. `swift run`) for Xcode GUI apps.
+ */
+function resolveDevCommand(userCommand, nativeDefault) {
+  // User provided an explicit command — use it
+  if (userCommand && userCommand.trim() !== '') return userCommand;
+  // User explicitly left blank (e.g. Xcode GUI app) — use a descriptive comment
+  if (userCommand === '') return '# no dev server — launch from IDE';
+  // No user input at all — fall back to native default or generic
+  return nativeDefault || 'npm run dev';
+}
+
+function resolveE2eToolName(config) {
+  if (
+    config.e2eCommand &&
+    config.e2eCommand.trim() !== '' &&
+    config.e2eCommand !== '# not configured'
+  ) {
+    return config.e2eCommand.split(/\s/)[0]; // e.g. 'playwright' from 'playwright test'
+  }
+  const nativeTools = {
+    swift: 'XCUITest',
+    kotlin: 'Espresso',
+    rust: 'integration tests',
+    dotnet: 'UI tests',
+    java: 'integration tests',
+  };
+  return nativeTools[config.techStack] || 'Playwright/Cypress';
+}
+
 function interpolate(content, config) {
   const techStackLabels = {
     'node-ts': 'Node.js + TypeScript',
@@ -590,7 +620,7 @@ function interpolate(content, config) {
   };
   const ncd = nativeCommandDefaults[config.techStack] || {};
 
-  return content
+  let result = content
     .replace(/\[PROJECT_NAME\]/g, config.projectName || 'My Project')
     .replace(
       /\[TECH_STACK_SUMMARY\]/g,
@@ -602,19 +632,13 @@ function interpolate(content, config) {
     )
     .replace(/\[TEST_COMMAND\]/g, config.testCommand || ncd.test || 'npm test')
     .replace(/\[BUILD_COMMAND\]/g, config.buildCommand || ncd.build || 'npm run build')
-    .replace(/\[DEV_COMMAND\]/g, config.devCommand || ncd.dev || 'npm run dev')
+    .replace(/\[DEV_COMMAND\]/g, resolveDevCommand(config.devCommand, ncd.dev))
     .replace(/\[INSTALL_COMMAND\]/g, config.installCommand || ncd.install || 'npm install')
     .replace(/\[TECH_LEAD\]/g, config.techLead || 'tech-lead')
     .replace(/\[BACKEND_LEAD\]/g, config.backendLead || 'backend-lead')
     .replace(/\[SECURITY_REVIEWER\]/g, config.securityReviewer || 'security-reviewer')
     .replace(/\[E2E_COMMAND\]/g, config.e2eCommand || '# not configured')
-    .replace(/\[HAS_API\]/g, config.hasApi === false ? 'false' : 'true')
-    .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
-    .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
-    .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
-    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
-    .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
-    .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false')
+    .replace(/\[E2E_TOOL_NAME\]/g, resolveE2eToolName(config))
     .replace(
       /\[FRAMEWORK\]/g,
       ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)
@@ -662,6 +686,80 @@ function interpolate(content, config) {
       /\[SECURITY_CHECKLIST_ITEMS\]/g,
       securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack',
     );
+
+  // ── Post-interpolation: simplify Phase 4 when E2E is not configured ───
+  if (!config.hasE2E) {
+    // Phase 1 scope gate: replace the E2E conditional with a clear skip statement
+    result = result.replace(
+      /Also declare:.*?Phase 4 is skipped\. State this explicitly\./s,
+      'Phase 4 (UAT/E2E) is **disabled** for this project — no E2E command configured. Skip Phase 4 unconditionally.',
+    );
+    // Phase 4 body: replace the activation check with explicit disabled notice
+    result = result.replace(
+      /## Phase 4 — UAT \/ E2E tests[\s\S]*?(?=## Phase 5b)/,
+      `## Phase 4 — UAT / E2E tests *(disabled)*\n\n**Disabled**: no E2E test command configured. Skip this phase.\n\n`,
+    );
+  }
+
+  // ── Post-interpolation: prune files-guide references to non-existent docs ───
+  if (result.includes('docs/prd/prd.md') && !config.hasPrd) {
+    result = result.replace(/^.*docs\/prd\/prd\.md.*\n?/gm, '');
+  }
+  if (result.includes('docs/contracts/') && !config.hasApi) {
+    result = result.replace(/^.*docs\/contracts\/.*\n?/gm, '');
+  }
+  if (result.includes('docs/migrations-log.md') && config.hasDatabase === false) {
+    result = result.replace(/^.*docs\/migrations-log\.md.*\n?/gm, '');
+  }
+
+  // ── Post-interpolation: append stack-specific .gitignore sections ───
+  const gitignoreSections = {
+    swift: `
+# Xcode / Swift
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+*.dSYM
+*.ipa
+*.xcarchive
+Pods/
+Carthage/Build/`,
+    kotlin: `
+# Android / Kotlin
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.iml`,
+    rust: `
+# Rust
+target/
+Cargo.lock`,
+    dotnet: `
+# .NET
+bin/
+obj/
+*.user
+*.suo`,
+    java: `
+# Java
+target/
+*.class
+*.jar
+*.war`,
+    go: `
+# Go
+bin/`,
+  };
+  const gitignoreSection = gitignoreSections[config.techStack];
+  if (gitignoreSection && result.includes('# Logs')) {
+    result = result.replace('# Logs', gitignoreSection + '\n\n# Logs');
+  }
+
+  return result;
 }
 
 // Named export — used by generators/claude-md.js to resolve all template placeholders

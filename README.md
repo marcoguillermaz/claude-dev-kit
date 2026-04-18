@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![536 integration checks](https://img.shields.io/badge/integration-536%20checks-blue.svg)](#testing)
+[![828 integration checks](https://img.shields.io/badge/integration-828%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -154,11 +154,11 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 536 integration checks
-node --test packages/cli/test/unit/*.test.js   # 281 unit tests
+node packages/cli/test/integration/run.js    # 828 integration checks
+node --test packages/cli/test/unit/*.test.js   # 267 unit tests
 ```
 
-Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, full CLI execution via `--answers` fixtures.
+Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
 
 ---
 
@@ -185,7 +185,7 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.10.0 - /skill-review, Pipeline v2 body purity (17 skills + 19 reference files), 18 skills, 536 integration checks.
+**Current**: v1.10.1 - Native stack validation hardening, template lint, 828 integration + 267 unit tests across 29 scenarios.
 
 **Next**: Q2 skills (`/compliance-audit`, `/api-contract-audit`, `/infra-audit`) and `/doc-audit` to close Q1 skill block.
 

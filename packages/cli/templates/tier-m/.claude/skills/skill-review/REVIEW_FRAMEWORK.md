@@ -186,7 +186,7 @@ Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on hig
 1. **Frontmatter↔body coherence**: argument-hint targets/modes match body handlers.
 2. **Project-agnosticity test — extended** *(D3 — 4 dimensions)*:
    - **(a) Literal contamination**: no example, file path, entity name, API reference tied to a specific project. Every reference is a placeholder or universal concept. Universal = applies unchanged across ≥3 of 6 CDK-supported stacks.
-   - **(b) Severity habits**: severity labels not inherited from pilot project's domain. E.g., "any hardcoded color = Critical" is staff-manager habit; in non-UI projects, color is not Critical.
+   - **(b) Severity habits**: severity labels not inherited from pilot project's domain. E.g., "any hardcoded color = Critical" is a pilot-project habit; in non-UI projects, color is not Critical.
    - **(c) Remediation style**: fix suggestions not formatted/structured in pilot project's conventions. E.g., remediation always in "SwiftUI-like" declarative form.
    - **(d) Architectural assumptions**: no implicit assumption about routing, state management, persistence layer, auth pattern tied to pilot's architecture.
    - **(e) Default mental-model**: no framework-specific vocabulary ("View", "ViewModel", "@Published") or design pattern as default expectation.

@@ -34,6 +34,8 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 
 | Skill | What it checks | When to run |
 |---|---|---|
+| `/arch-audit` | CLAUDE.md compliance, Anthropic docs drift, ecosystem consistency, hook config | Weekly; after upgrading Claude Code; after changing CLAUDE.md |
+| `/commit` | Classify staged changes, generate conventional commit message, execute commit | After every implementation phase to commit work |
 | `/security-audit` | Auth guards, input validation, sensitive data in responses, HTTP headers | Before production deploy; after adding new API routes |
 | `/skill-dev` | Coupling, duplication, dead code, magic strings, oversized components | Before major refactoring; quarterly review |
 | `/skill-db` | Missing indexes, access control gaps, constraint completeness, N+1 queries | After migration waves; before production releases |
@@ -41,8 +43,14 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/api-design` | HTTP verb correctness, URL structure, response shape, error codes, pagination | After adding 3+ new routes; quarterly |
 | `/perf-audit` | Server/client boundaries, heavy imports, serial awaits, image optimization, N+1 | Before production releases; after major UI changes |
 | `/accessibility-audit` | axe-core WCAG 2.2 scan, APCA contrast, static a11y patterns (aria, tabindex, focus, labels) | After UI changes; before compliance milestones |
+| `/responsive-audit` | Breakpoint coverage, viewport rendering, touch targets, layout integrity at mobile/tablet/desktop | After UI changes to public-facing routes |
+| `/visual-audit` | Typography, spacing, colour consistency, hierarchy, density, dark-mode rendering | After UI changes; before design sign-off |
+| `/ux-audit` | Task completion paths, feedback clarity, cognitive load, error recovery | After adding user flows; before usability reviews |
+| `/ui-audit` | Design system token compliance, component adoption, empty/error/loading states | After UI changes; when design system is configured |
 | `/test-audit` | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps) | After Phase 3 tests green; every block |
 | `/simplify` | Early returns, nesting depth, local duplication, dead code, magic values | After writing code (Phase 2); on demand |
+| `/dependency-scan` | Route hrefs, import consumers, shared type consumers, test refs, FK refs, access control | Phase 1 mandatory; before finalizing file list |
+| `/skill-review` | Skill quality audit: structural review, severity calibration, fix verification | After modifying skills; quarterly review cycle |
 
 > **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
 > **Prerequisites for screenshot-based skills**: dev server must be running (check your project's dev command for the URL).

@@ -218,44 +218,6 @@ describe('interpolate — user override precedence', () => {
   });
 });
 
-describe('interpolate — boolean flag serialization', () => {
-  it('hasApi=false serializes to "false"', () => {
-    assert.equal(interp('[HAS_API]', { techStack: 'node-ts', hasApi: false }), 'false');
-  });
-
-  it('hasApi=true serializes to "true"', () => {
-    assert.equal(interp('[HAS_API]', { techStack: 'node-ts', hasApi: true }), 'true');
-  });
-
-  it('hasApi=undefined serializes to "true" (default)', () => {
-    assert.equal(interp('[HAS_API]', { techStack: 'node-ts' }), 'true');
-  });
-
-  it('hasDatabase=false serializes to "false"', () => {
-    assert.equal(interp('[HAS_DATABASE]', { techStack: 'node-ts', hasDatabase: false }), 'false');
-  });
-
-  it('hasDatabase=undefined serializes to "true"', () => {
-    assert.equal(interp('[HAS_DATABASE]', { techStack: 'node-ts' }), 'true');
-  });
-
-  it('hasFrontend=false serializes to "false"', () => {
-    assert.equal(interp('[HAS_FRONTEND]', { techStack: 'node-ts', hasFrontend: false }), 'false');
-  });
-
-  it('hasFrontend=undefined serializes to "true"', () => {
-    assert.equal(interp('[HAS_FRONTEND]', { techStack: 'node-ts' }), 'true');
-  });
-
-  it('hasE2E=true serializes to "true"', () => {
-    assert.equal(interp('[HAS_E2E]', { techStack: 'node-ts', hasE2E: true }), 'true');
-  });
-
-  it('hasE2E=undefined serializes to "false" (opt-in)', () => {
-    assert.equal(interp('[HAS_E2E]', { techStack: 'node-ts' }), 'false');
-  });
-});
-
 describe('interpolate — conditional FRAMEWORK value', () => {
   it('returns "N/A — native app" for swift', () => {
     assert.equal(interp('[FRAMEWORK]', { techStack: 'swift' }), 'N/A — native app');
@@ -441,29 +403,6 @@ describe('interpolate — simple placeholders', () => {
 
   it('MIGRATION_COMMAND defaults to "# not configured"', () => {
     assert.equal(interp('[MIGRATION_COMMAND]', { techStack: 'node-ts' }), '# not configured');
-  });
-
-  it('AUDIT_MODEL defaults to constant', () => {
-    assert.equal(interp('[AUDIT_MODEL]', { techStack: 'node-ts' }), 'claude-sonnet-4-6');
-  });
-
-  it('AUDIT_MODEL uses config override', () => {
-    assert.equal(
-      interp('[AUDIT_MODEL]', { techStack: 'node-ts', auditModel: 'claude-opus-4-6' }),
-      'claude-opus-4-6',
-    );
-  });
-
-  it('DESIGN_SYSTEM_NAME defaults to "component library"', () => {
-    assert.equal(interp('[DESIGN_SYSTEM_NAME]', { techStack: 'node-ts' }), 'component library');
-  });
-
-  it('HAS_PRD=true serializes to "true"', () => {
-    assert.equal(interp('[HAS_PRD]', { techStack: 'node-ts', hasPrd: true }), 'true');
-  });
-
-  it('HAS_PRD=undefined serializes to "false"', () => {
-    assert.equal(interp('[HAS_PRD]', { techStack: 'node-ts' }), 'false');
   });
 });
 

@@ -288,9 +288,12 @@ const checks = [
         const settings = JSON.parse(fs.readFileSync(p, 'utf8'));
         const stopHooks = settings?.hooks?.Stop || [];
         if (stopHooks.length === 0) return { pass: true, skip: true };
-        const allHaveTimeout = stopHooks.every(
-          (entry) => typeof entry.timeout === 'number' && entry.timeout <= 600,
-        );
+        const allHaveTimeout = stopHooks.every((entry) => {
+          // Timeout can be at outer level (entry.timeout) or inner level (entry.hooks[].timeout)
+          if (typeof entry.timeout === 'number' && entry.timeout <= 600) return true;
+          const inner = entry.hooks || [];
+          return inner.every((h) => typeof h.timeout === 'number' && h.timeout <= 600);
+        });
         return {
           pass: allHaveTimeout,
           warn: true,
