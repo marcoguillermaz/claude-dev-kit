@@ -7,6 +7,24 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.10.1] — 2026-04-18
+
+### Fixed
+- Native stack scaffolding gaps found via Swift validation: `swift run` default for GUI apps, `# not configured` in pipeline prose, dependency-scan `true is false` interpolation, staff-manager contamination, `Color.red` pilot example.
+- Doctor command: timeout check at both outer and inner hook levels.
+- Cheatsheet gap: 4 skills (responsive/visual/ux/ui-audit) now listed in cheatsheet templates with conditional pruning via `cheatsheet: true` in skill-registry.
+- Tier-L template sync: 3 missing docs files (implementation-checklist, refactoring-backlog, requirements) copied from tier-M.
+- Dead code: 7 orphan `replace()` calls removed from `interpolate()` (HAS_API, HAS_DATABASE, HAS_FRONTEND, HAS_E2E, AUDIT_MODEL, DESIGN_SYSTEM_NAME, HAS_PRD) — no template contained these placeholders.
+
+### Added
+- `scripts/lint-templates.mjs` — static analysis: banned patterns, wizard placeholder coverage, tier M/L file sync. Zero warnings, zero false positives.
+- Content assertion tests for 3 golden-file stacks: Swift (20 checks), Node-TS (22 checks), Python (22 checks).
+- Cross-stack invariant tests: 10 stacks × 6 invariants = 60 assertions.
+- Integration checks: 828 (was 536). Unit tests: 267 (was 281 — 14 removed for dead code).
+- 29 integration scenarios (was 27).
+
+---
+
 ## [1.10.0] — 2026-04-17
 
 ### Added
