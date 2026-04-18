@@ -281,10 +281,14 @@ describe('getCheatsheetSkillsToRemove', () => {
     assert.equal(result.length, 2);
   });
 
-  it('hasFrontend=false removes accessibility-audit from cheatsheet (only frontend skill with cheatsheet=true)', () => {
+  it('hasFrontend=false removes all frontend cheatsheet skills', () => {
     const result = getCheatsheetSkillsToRemove({ techStack: 'node-ts', hasFrontend: false });
-    // Frontend skills with cheatsheet=false (responsive/visual/ux/ui-audit) are not returned;
-    // accessibility-audit has cheatsheet=true and requires hasFrontend → returned.
-    assert.deepEqual(result, ['accessibility-audit']);
+    // All 5 frontend skills now have cheatsheet=true → all returned when hasFrontend=false
+    assert.ok(result.includes('responsive-audit'));
+    assert.ok(result.includes('visual-audit'));
+    assert.ok(result.includes('ux-audit'));
+    assert.ok(result.includes('ui-audit'));
+    assert.ok(result.includes('accessibility-audit'));
+    assert.equal(result.length, 5);
   });
 });
