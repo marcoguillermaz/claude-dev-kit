@@ -630,13 +630,6 @@ function interpolate(content, config) {
     .replace(/\[SECURITY_REVIEWER\]/g, config.securityReviewer || 'security-reviewer')
     .replace(/\[E2E_COMMAND\]/g, config.e2eCommand || '# not configured')
     .replace(/\[E2E_TOOL_NAME\]/g, resolveE2eToolName(config))
-    .replace(/\[HAS_API\]/g, config.hasApi === false ? 'false' : 'true')
-    .replace(/\[HAS_DATABASE\]/g, config.hasDatabase === false ? 'false' : 'true')
-    .replace(/\[HAS_FRONTEND\]/g, config.hasFrontend === false ? 'false' : 'true')
-    .replace(/\[HAS_E2E\]/g, config.hasE2E ? 'true' : 'false')
-    .replace(/\[AUDIT_MODEL\]/g, config.auditModel || AUDIT_MODEL_DEFAULT)
-    .replace(/\[DESIGN_SYSTEM_NAME\]/g, config.designSystemName || 'component library')
-    .replace(/\[HAS_PRD\]/g, config.hasPrd ? 'true' : 'false')
     .replace(
       /\[FRAMEWORK\]/g,
       ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)

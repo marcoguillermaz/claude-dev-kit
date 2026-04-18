@@ -2079,6 +2079,156 @@ async function scenarioSwiftContentAssertions() {
   assertContains(dir, 'CLAUDE.md', 'Design guideline', 'R10: Design guideline label');
 }
 
+// ── Scenario: Node-TS content assertions ──────────────────────────────────────
+
+async function scenarioNodeTsContentAssertions() {
+  section('Node-TS content assertions — regression guard');
+  const config = {
+    ...BASE,
+    tier: 'm',
+    projectName: 'node-ts-content-check',
+    techStack: 'node-ts',
+    framework: 'Next.js 15',
+    testCommand: 'npx vitest run',
+    buildCommand: 'npm run build',
+    devCommand: 'npm run dev',
+    installCommand: 'npm install',
+    typeCheckCommand: 'npx tsc --noEmit',
+    hasApi: true,
+    hasDatabase: true,
+    hasFrontend: true,
+    hasE2E: false,
+    hasPrd: false,
+    hasDesignSystem: true,
+    designSystemName: 'shadcn/ui',
+    e2eCommand: '',
+    includePreCommit: true,
+    includeGithub: true,
+  };
+  const dir = await scaffold('node-ts-content-check', 'm', config);
+
+  // NT1: npm commands present in CLAUDE.md
+  assertContains(dir, 'CLAUDE.md', 'npm install', 'NT1: npm install in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'npm run build', 'NT1: npm run build in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'npm run dev', 'NT1: npm run dev in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'npx vitest run', 'NT1: npx vitest run in CLAUDE.md');
+
+  // NT2: TypeScript type check
+  assertContains(dir, 'CLAUDE.md', 'npx tsc --noEmit', 'NT2: tsc type check in CLAUDE.md');
+
+  // NT3: language and framework labels
+  assertContains(dir, 'CLAUDE.md', '**Language**: TypeScript', 'NT3: Language label');
+  assertContains(dir, 'CLAUDE.md', '**Framework**: Next.js 15', 'NT3: Framework label');
+
+  // NT4: web Environment section (not native)
+  assertContains(dir, 'CLAUDE.md', '.env.local', 'NT4: .env.local in Environment');
+  assertNotContains(dir, 'CLAUDE.md', '_native distribution_', 'NT4: no native distribution');
+  assertNotContains(dir, 'CLAUDE.md', 'DMG / TestFlight', 'NT4: no DMG/TestFlight');
+
+  // NT5: web Tech Stack lines present
+  assertContains(dir, 'CLAUDE.md', '**Database**:', 'NT5: Database line present');
+
+  // NT6: no native .gitignore patterns
+  assertNotContains(dir, '.gitignore', 'xcuserdata/', 'NT6: no xcuserdata in .gitignore');
+  assertNotContains(dir, '.gitignore', 'DerivedData/', 'NT6: no DerivedData in .gitignore');
+  assertNotContains(dir, '.gitignore', '.build/', 'NT6: no .build in .gitignore');
+
+  // NT7: FIRST_SESSION mentions Playwright/Cypress for web, not XCUITest
+  assertContains(dir, '.claude/FIRST_SESSION.md', 'Playwright/Cypress', 'NT7: Playwright in FIRST_SESSION');
+  assertNotContains(dir, '.claude/FIRST_SESSION.md', 'XCUITest', 'NT7: no XCUITest in FIRST_SESSION');
+
+  // NT8: design system injected
+  assertContains(dir, 'CLAUDE.md', 'shadcn/ui', 'NT8: shadcn/ui in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'Design guideline', 'NT8: Design guideline label');
+
+  // NT9: API convention line present
+  assertContains(dir, 'CLAUDE.md', 'Every API route', 'NT9: API convention line');
+
+  // NT10: cheatsheet parity + no banned patterns
+  assertCheatsheetSkillsHaveDirs(dir, 'NT10');
+  assertNoBannedPattern(dir, 'staff-manager', 'NT10: no staff-manager');
+}
+
+// ── Scenario: Python content assertions ───────────────────────────────────────
+
+async function scenarioPythonContentAssertions() {
+  section('Python content assertions — regression guard');
+  const config = {
+    ...BASE,
+    tier: 'm',
+    projectName: 'python-content-check',
+    techStack: 'python',
+    framework: 'FastAPI',
+    testCommand: 'pytest',
+    buildCommand: 'python -m build',
+    devCommand: 'uvicorn app:app --reload',
+    installCommand: 'pip install -r requirements.txt',
+    typeCheckCommand: 'mypy .',
+    hasApi: true,
+    hasDatabase: true,
+    hasFrontend: false,
+    hasE2E: false,
+    hasPrd: false,
+    hasDesignSystem: false,
+    designSystemName: '',
+    e2eCommand: '',
+    includePreCommit: true,
+    includeGithub: true,
+  };
+  const dir = await scaffold('python-content-check', 'm', config);
+
+  // PY1: Python commands in CLAUDE.md
+  assertContains(dir, 'CLAUDE.md', 'pytest', 'PY1: pytest in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'pip install', 'PY1: pip install in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'uvicorn', 'PY1: uvicorn in CLAUDE.md');
+  assertContains(dir, 'CLAUDE.md', 'mypy', 'PY1: mypy in CLAUDE.md');
+
+  // PY2: no npm in CLAUDE.md (Python stack, no Node.js)
+  assertNotContains(dir, 'CLAUDE.md', 'npm', 'PY2: no npm in CLAUDE.md');
+  assertNotContains(dir, 'CLAUDE.md', 'npx', 'PY2: no npx in CLAUDE.md');
+
+  // PY3: language and framework labels
+  assertContains(dir, 'CLAUDE.md', '**Language**: Python', 'PY3: Language label');
+  assertContains(dir, 'CLAUDE.md', '**Framework**: FastAPI', 'PY3: Framework label');
+
+  // PY4: web Environment (not native) — Python is web stack
+  assertContains(dir, 'CLAUDE.md', '.env.local', 'PY4: .env.local in Environment');
+  assertNotContains(dir, 'CLAUDE.md', '_native distribution_', 'PY4: no native distribution');
+
+  // PY5: Database line present (hasDatabase=true)
+  assertContains(dir, 'CLAUDE.md', '**Database**:', 'PY5: Database line present');
+
+  // PY6: no native .gitignore sections
+  assertNotContains(dir, '.gitignore', 'xcuserdata/', 'PY6: no xcuserdata in .gitignore');
+  assertNotContains(dir, '.gitignore', 'DerivedData/', 'PY6: no DerivedData in .gitignore');
+
+  // PY7: base .gitignore already has Python patterns
+  assertContains(dir, '.gitignore', '__pycache__/', 'PY7: __pycache__ in .gitignore');
+  assertContains(dir, '.gitignore', '.venv/', 'PY7: .venv in .gitignore');
+
+  // PY8: hasFrontend=false — frontend skills pruned
+  const frontendSkills = ['responsive-audit', 'visual-audit', 'ux-audit', 'accessibility-audit'];
+  for (const skill of frontendSkills) {
+    const skillDir = path.join(dir, '.claude', 'skills', skill);
+    if (!fs.existsSync(skillDir)) {
+      pass(`PY8: ${skill} pruned (no frontend)`);
+    } else {
+      fail(`PY8: ${skill} should be pruned (hasFrontend=false)`, 'dir still exists');
+    }
+  }
+
+  // PY9: API convention line present (hasApi=true)
+  assertContains(dir, 'CLAUDE.md', 'Every API route', 'PY9: API convention line');
+
+  // PY10: no "Every API route" stripped (hasApi is true)
+  // no design system (hasDesignSystem=false)
+  assertNotContains(dir, 'CLAUDE.md', 'Design guideline', 'PY10: no design system injected');
+
+  // PY11: cheatsheet parity + no banned patterns
+  assertCheatsheetSkillsHaveDirs(dir, 'PY11');
+  assertNoBannedPattern(dir, 'staff-manager', 'PY11: no staff-manager');
+}
+
 // ── Scenario: Cross-stack content invariants ─────────────────────────────────
 
 async function scenarioCrossStackInvariants() {
@@ -2194,6 +2344,8 @@ async function main() {
   await scenarioRubricScore();
   await scenarioNewSkillScaffolder();
   await scenarioSwiftContentAssertions();
+  await scenarioNodeTsContentAssertions();
+  await scenarioPythonContentAssertions();
   await scenarioCrossStackInvariants();
 
   // ── Summary ────────────────────────────────────────────────────────────────
