@@ -208,7 +208,17 @@ async function patchSettingsPermissions(targetDir, config) {
     java: ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
     ruby: ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
     go: ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
-    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(pytest:*)', 'Bash(mypy:*)', 'Bash(uvicorn:*)', 'Bash(alembic:*)', 'Bash(curl:*)'],
+    python: [
+      'Bash(git:*)',
+      'Bash(python:*)',
+      'Bash(pip:*)',
+      'Bash(uv:*)',
+      'Bash(pytest:*)',
+      'Bash(mypy:*)',
+      'Bash(uvicorn:*)',
+      'Bash(alembic:*)',
+      'Bash(curl:*)',
+    ],
   };
 
   const denyByStack = {
@@ -755,71 +765,101 @@ function interpolate(content, config) {
       /\[SECURITY_CHECKLIST_ITEMS\]/g,
       securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack',
     )
-    .replace(/\[VALIDATION_LIBRARIES\]/g, (() => {
-      const libs = {
-        'node-ts': '(Zod, Yup, Joi, class-validator)',
-        'node-js': '(Zod, Yup, Joi, class-validator)',
-        python: '(Pydantic - native in FastAPI)',
-        go: '(go-playground/validator, ozzo-validation)',
-        ruby: '(Active Model Validations, dry-validation)',
-        java: '(Jakarta Bean Validation, Hibernate Validator)',
-        dotnet: '(FluentValidation, Data Annotations)',
-      };
-      return libs[config.techStack] || '(schema validation library for your stack)';
-    })())
-    .replace(/\[TEST_CLEANUP_PATTERN\]/g, (() => {
-      const patterns = {
-        'node-ts': 'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
-        'node-js': 'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
-        python: 'Every test that writes to DB must use a fixture with cleanup. Use `yield` fixtures for teardown. Define shared fixtures in `conftest.py` with appropriate scope. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).',
-        go: 'Every test that writes to DB must clean up via `t.Cleanup()`. Use cleanup-first pattern (delete pre-existing test data before creating fixtures in `TestMain` or test setup).',
-        ruby: 'Every test that writes to DB must clean up. Use `database_cleaner` or transaction rollback strategy. Define shared setup in `rails_helper.rb` or `spec_helper.rb`.',
-        java: 'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
-        dotnet: 'Every test that writes to DB must clean up in `[OneTimeTearDown]`. Use cleanup-first pattern in `[OneTimeSetUp]` (delete pre-existing test data before creating fixtures).',
-        rust: 'Every test that writes to DB must clean up after execution. Use setup functions with explicit cleanup. Consider `sqlx::test` macro for automatic transaction rollback.',
-        swift: 'Every test that writes to DB must clean up in `tearDownWithError()`. Use cleanup-first pattern in `setUpWithError()` (delete pre-existing test data before creating fixtures).',
-        kotlin: 'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
-      };
-      return patterns[config.techStack] || 'Every test that writes to DB must clean up after execution. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).';
-    })())
-    .replace(/\[COMMIT_EXAMPLES\]/g, (() => {
-      const examples = {
-        'node-ts': "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade TypeScript to 5.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        'node-js': "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade Express to 5.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        python: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Pydantic v2 for validation\nchore(deps): upgrade FastAPI to 0.115\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        go: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use go-playground/validator\nchore(deps): upgrade Go to 1.23\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        ruby: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use dry-validation\nchore(deps): upgrade Rails to 8.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        swift: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Codable for serialization\nchore(deps): upgrade Swift to 6.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        kotlin: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use kotlinx.serialization\nchore(deps): upgrade Kotlin to 2.1\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        rust: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use serde for serialization\nchore(deps): upgrade Rust edition to 2024\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        java: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Jakarta Validation\nchore(deps): upgrade Spring Boot to 3.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-        dotnet: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use FluentValidation\nchore(deps): upgrade .NET to 9.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
-      };
-      return examples[config.techStack] || examples['node-ts'];
-    })())
-    .replace(/\[BUILD_ARTIFACTS\]/g, (() => {
-      const artifacts = {
-        'node-ts': '`dist/`, `.next/`, `node_modules/`',
-        'node-js': '`dist/`, `.next/`, `node_modules/`',
-        python: '`dist/`, `__pycache__/`, `*.egg-info/`, `.venv/`',
-        go: '`bin/`, built binaries',
-        ruby: '`tmp/`, `vendor/bundle/`',
-        swift: '`.build/`, `DerivedData/`, `*.xcuserdata`',
-        kotlin: '`build/`, `*.apk`, `*.aab`',
-        rust: '`target/`',
-        java: '`target/`, `*.class`, `*.jar`',
-        dotnet: '`bin/`, `obj/`, `*.user`',
-      };
-      return artifacts[config.techStack] || '`dist/`, `build/`';
-    })())
-    .replace(/\[ENVIRONMENT_SETUP\]/g, (() => {
-      const setup = {
-        python: `\n**0. Set up virtual environment** (Python projects):\n\`\`\`bash\npython -m venv .venv\nsource .venv/bin/activate  # macOS/Linux\n# .venv\\Scripts\\activate   # Windows\npip install -r requirements.txt\n\`\`\`\nActivate the venv in every new terminal session before running any command.\n`,
-        go: `\n**0. Download Go modules**:\n\`\`\`bash\ngo mod download\n\`\`\`\n`,
-        ruby: `\n**0. Install Ruby dependencies**:\n\`\`\`bash\nbundle install\n\`\`\`\n`,
-      };
-      return setup[config.techStack] || '';
-    })());
+    .replace(
+      /\[VALIDATION_LIBRARIES\]/g,
+      (() => {
+        const libs = {
+          'node-ts': '(Zod, Yup, Joi, class-validator)',
+          'node-js': '(Zod, Yup, Joi, class-validator)',
+          python: '(Pydantic - native in FastAPI)',
+          go: '(go-playground/validator, ozzo-validation)',
+          ruby: '(Active Model Validations, dry-validation)',
+          java: '(Jakarta Bean Validation, Hibernate Validator)',
+          dotnet: '(FluentValidation, Data Annotations)',
+        };
+        return libs[config.techStack] || '(schema validation library for your stack)';
+      })(),
+    )
+    .replace(
+      /\[TEST_CLEANUP_PATTERN\]/g,
+      (() => {
+        const patterns = {
+          'node-ts':
+            'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
+          'node-js':
+            'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
+          python:
+            'Every test that writes to DB must use a fixture with cleanup. Use `yield` fixtures for teardown. Define shared fixtures in `conftest.py` with appropriate scope. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).',
+          go: 'Every test that writes to DB must clean up via `t.Cleanup()`. Use cleanup-first pattern (delete pre-existing test data before creating fixtures in `TestMain` or test setup).',
+          ruby: 'Every test that writes to DB must clean up. Use `database_cleaner` or transaction rollback strategy. Define shared setup in `rails_helper.rb` or `spec_helper.rb`.',
+          java: 'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
+          dotnet:
+            'Every test that writes to DB must clean up in `[OneTimeTearDown]`. Use cleanup-first pattern in `[OneTimeSetUp]` (delete pre-existing test data before creating fixtures).',
+          rust: 'Every test that writes to DB must clean up after execution. Use setup functions with explicit cleanup. Consider `sqlx::test` macro for automatic transaction rollback.',
+          swift:
+            'Every test that writes to DB must clean up in `tearDownWithError()`. Use cleanup-first pattern in `setUpWithError()` (delete pre-existing test data before creating fixtures).',
+          kotlin:
+            'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
+        };
+        return (
+          patterns[config.techStack] ||
+          'Every test that writes to DB must clean up after execution. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).'
+        );
+      })(),
+    )
+    .replace(
+      /\[COMMIT_EXAMPLES\]/g,
+      (() => {
+        const examples = {
+          'node-ts':
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade TypeScript to 5.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          'node-js':
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade Express to 5.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          python:
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Pydantic v2 for validation\nchore(deps): upgrade FastAPI to 0.115\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          go: 'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use go-playground/validator\nchore(deps): upgrade Go to 1.23\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          ruby: 'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use dry-validation\nchore(deps): upgrade Rails to 8.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          swift:
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Codable for serialization\nchore(deps): upgrade Swift to 6.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          kotlin:
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use kotlinx.serialization\nchore(deps): upgrade Kotlin to 2.1\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          rust: 'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use serde for serialization\nchore(deps): upgrade Rust edition to 2024\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          java: 'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Jakarta Validation\nchore(deps): upgrade Spring Boot to 3.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+          dotnet:
+            'feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use FluentValidation\nchore(deps): upgrade .NET to 9.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow',
+        };
+        return examples[config.techStack] || examples['node-ts'];
+      })(),
+    )
+    .replace(
+      /\[BUILD_ARTIFACTS\]/g,
+      (() => {
+        const artifacts = {
+          'node-ts': '`dist/`, `.next/`, `node_modules/`',
+          'node-js': '`dist/`, `.next/`, `node_modules/`',
+          python: '`dist/`, `__pycache__/`, `*.egg-info/`, `.venv/`',
+          go: '`bin/`, built binaries',
+          ruby: '`tmp/`, `vendor/bundle/`',
+          swift: '`.build/`, `DerivedData/`, `*.xcuserdata`',
+          kotlin: '`build/`, `*.apk`, `*.aab`',
+          rust: '`target/`',
+          java: '`target/`, `*.class`, `*.jar`',
+          dotnet: '`bin/`, `obj/`, `*.user`',
+        };
+        return artifacts[config.techStack] || '`dist/`, `build/`';
+      })(),
+    )
+    .replace(
+      /\[ENVIRONMENT_SETUP\]/g,
+      (() => {
+        const setup = {
+          python: `\n**0. Set up virtual environment** (Python projects):\n\`\`\`bash\npython -m venv .venv\nsource .venv/bin/activate  # macOS/Linux\n# .venv\\Scripts\\activate   # Windows\npip install -r requirements.txt\n\`\`\`\nActivate the venv in every new terminal session before running any command.\n`,
+          go: `\n**0. Download Go modules**:\n\`\`\`bash\ngo mod download\n\`\`\`\n`,
+          ruby: `\n**0. Install Ruby dependencies**:\n\`\`\`bash\nbundle install\n\`\`\`\n`,
+        };
+        return setup[config.techStack] || '';
+      })(),
+    );
 
   // ── Post-interpolation: simplify Phase 4 when E2E is not configured ───
   if (!config.hasE2E) {
@@ -869,7 +909,10 @@ function interpolate(content, config) {
 
   // ── Post-interpolation: adjust Phase 5b terminology for backend-only projects ───
   if (config.hasFrontend === false) {
-    result = result.replace(/every UI state that must be visible/g, 'every data state that must be verifiable');
+    result = result.replace(
+      /every UI state that must be visible/g,
+      'every data state that must be verifiable',
+    );
   }
 
   // ── Post-interpolation: prune files-guide references to non-existent docs ───

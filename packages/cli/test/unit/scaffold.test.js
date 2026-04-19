@@ -689,7 +689,17 @@ describe('patchSettingsPermissions', () => {
     java: ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
     ruby: ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
     go: ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
-    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(pytest:*)', 'Bash(mypy:*)', 'Bash(uvicorn:*)', 'Bash(alembic:*)', 'Bash(curl:*)'],
+    python: [
+      'Bash(git:*)',
+      'Bash(python:*)',
+      'Bash(pip:*)',
+      'Bash(uv:*)',
+      'Bash(pytest:*)',
+      'Bash(mypy:*)',
+      'Bash(uvicorn:*)',
+      'Bash(alembic:*)',
+      'Bash(curl:*)',
+    ],
   };
 
   for (const [stack, expected] of Object.entries(expectedAllow)) {
