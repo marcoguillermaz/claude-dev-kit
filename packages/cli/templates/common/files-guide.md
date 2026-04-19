@@ -1,4 +1,4 @@
-# Claude Code — Files Guide
+# Claude Code - Files Guide
 
 Reference guide for understanding each Claude Code file: official purpose, loading behaviour,
 and how this project uses them.
@@ -23,20 +23,22 @@ CLAUDE.md                        ← project context (official, committed)
 
 Loaded on demand (adapt paths to your project)
 ─────────────────────────────────────
-MEMORY.md (project root)         ← shared lessons (project convention — read in Phase 0)
+MEMORY.md (project root)         ← shared lessons (project convention - read in Phase 0)
 docs/requirements.md             ← product spec (read in Phase 1)
 docs/implementation-checklist.md ← progress tracker (read in Phase 1)
 docs/refactoring-backlog.md      ← tech debt (read in Phase 1)
-docs/prd/prd.md                  ← PRD source of truth (read in Phase 1; updated in Phase 8 — mandatory if exists)
+docs/prd/prd.md                  ← PRD source of truth (read in Phase 1; updated in Phase 8 - mandatory if exists)
 docs/contracts/*.md              ← per-entity field×role×surface contracts (read in Phase 1, if applicable)
+docs/sitemap.md                  ← route map (read by skills, updated in Phase 8; if applicable)
+docs/db-map.md                   ← database schema map (read by /skill-db, updated in Phase 8; if applicable)
 docs/migrations-log.md           ← migration history (read/written in Phase 2, if applicable)
 ```
 
 ---
 
-## CLAUDE.md — Project context
+## CLAUDE.md - Project context
 
-**Official Anthropic feature**: yes — auto-loaded at every session start.
+**Official Anthropic feature**: yes - auto-loaded at every session start.
 
 **What it is**: the "orientation brief" Claude reads before starting any task. It holds project
 truths that cannot be inferred from the code alone: non-obvious architectural decisions, RBAC
@@ -76,9 +78,9 @@ changes RBAC, or adds a new coding convention. Not every block requires a CLAUDE
 
 ---
 
-## .claude/rules/ — Modular rule files
+## .claude/rules/ - Modular rule files
 
-**Official Anthropic feature**: yes — all `.md` files in this directory are auto-loaded
+**Official Anthropic feature**: yes - all `.md` files in this directory are auto-loaded
 at session start, with the same priority as CLAUDE.md.
 
 **What it is**: a way to split a large CLAUDE.md into focused, well-organised files.
@@ -88,17 +90,17 @@ Each file in `.claude/rules/` can cover a specific topic (workflow, API conventi
 path-specific rules (e.g. a rule that applies only to `e2e/*.spec.ts` files).
 
 **This project uses it for**:
-- `pipeline.md` — the mandatory development pipeline (Phases 0–8.5, R1–R4, cross-cutting rules). Separated from CLAUDE.md because it is long and specialised.
-- `context-review.md` — the Phase 8.5 compliance checklist (C1–C12). Contains specific, verifiable checks executed at the end of every block. Separated from pipeline.md to keep the checklist independently updatable.
+- `pipeline.md` - the mandatory development pipeline (Phases 0–8.5, R1–R4, cross-cutting rules). Separated from CLAUDE.md because it is long and specialised.
+- `context-review.md` - the Phase 8.5 compliance checklist (C1–C12). Contains specific, verifiable checks executed at the end of every block. Separated from pipeline.md to keep the checklist independently updatable.
 
-**When to update**: only when the workflow itself changes — a phase is added, a rule is refined,
+**When to update**: only when the workflow itself changes - a phase is added, a rule is refined,
 or a process error reveals a gap. Not routine.
 
 ---
 
-## CLAUDE.local.md — Personal/temporary overrides
+## CLAUDE.local.md - Personal/temporary overrides
 
-**Official Anthropic feature**: yes — auto-loaded at session start. Gitignored in this project
+**Official Anthropic feature**: yes - auto-loaded at session start. Gitignored in this project
 (explicitly added to `.gitignore`). Official Anthropic default path is `CLAUDE.local.md` at
 project root; this project uses `.claude/CLAUDE.local.md` (both paths are supported).
 
@@ -119,19 +121,19 @@ what is currently active. Remove or update when the temporary phase ends.
 
 ---
 
-## MEMORY.md — Session memory
+## MEMORY.md - Session memory
 
-**Two distinct MEMORY files coexist in this project — do not confuse them**:
+**Two distinct MEMORY files coexist in this project - do not confuse them**:
 
 | File | Path | Committed? | Loaded by | Purpose |
 |---|---|---|---|---|
-| Auto-memory | `~/.claude/projects/.../memory/MEMORY.md` | ❌ no | Claude Code system (injected in context) | Claude's private persistent patterns — never add to git |
+| Auto-memory | `~/.claude/projects/.../memory/MEMORY.md` | ❌ no | Claude Code system (injected in context) | Claude's private persistent patterns - never add to git |
 
 **This project's MEMORY.md** (at the repo root) is a **project convention**:
 - It is **NOT auto-loaded** by Claude Code
 - Claude reads it explicitly in **Phase 0** of the pipeline ("Check MEMORY.md")
 - It is committed and shared with the team (it tracks project-level learnings, not personal state)
-- Must never contain sensitive data (tokens, credentials) — those belong in `.env.local` only
+- Must never contain sensitive data (tokens, credentials) - those belong in `.env.local` only
 
 **Why it exists**: bridges sessions. After a context reset, Claude re-reads MEMORY.md in
 Phase 0 to re-align without you re-explaining the situation.
@@ -141,7 +143,7 @@ Phase 0 to re-align without you re-explaining the situation.
 | Section | What goes in it | When updated |
 |---|---|---|
 | **Active plan** | Current step, status, next action, open questions | Phase 8 (close step) or mid-block |
-| **Lessons/Patterns** | Concrete findings from past blocks — bugs discovered, pitfalls, workarounds | Phase 8 (only if new, not already in CLAUDE.md) |
+| **Lessons/Patterns** | Concrete findings from past blocks - bugs discovered, pitfalls, workarounds | Phase 8 (only if new, not already in CLAUDE.md) |
 
 **Rules**:
 - Keep under ~150 active lines. Beyond that: extract a topic into a separate file and link it.
@@ -152,7 +154,7 @@ Phase 0 to re-align without you re-explaining the situation.
 
 ## .claude/settings.json and .claude/settings.local.json
 
-**Official Anthropic feature**: yes — both auto-loaded at session start.
+**Official Anthropic feature**: yes - both auto-loaded at session start.
 
 **What they configure**: tool permissions (which commands run without a prompt), environment
 variables, model selection, sandbox mode, and more.
@@ -166,13 +168,13 @@ variables, model selection, sandbox mode, and more.
 
 **This project's `.claude/settings.json`** (committed): all Bash commands + MCP tools pre-authorised,
 so Claude does not ask for permission at every pipeline command (build tools, test runners, git, scripts).
-No `settings.local.json` is currently active — personal overrides are in `~/.claude/settings.json` (Bash(*) global).
+No `settings.local.json` is currently active - personal overrides are in `~/.claude/settings.json` (Bash(*) global).
 
 Key settings configured:
-- `attribution.commit/pr: ""` — suppresses automatic Co-Authored-By (pipeline adds it manually in commit heredoc)
-- `includeGitInstructions: false` — removes redundant built-in git instructions from system prompt (pipeline.md covers this); replaces the old `env.CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS` env var approach
-- `hooks.SessionStart` — checks `.claude/session/last-arch-audit` timestamp in the project directory; if >7 days since last `/arch-audit`, prints a reminder at session open
-- `hooks.InstructionsLoaded` — appends raw hook payload (JSON) to `/tmp/claude-instructions-YYYYMMDD.log` (async, non-blocking); inspect this file to debug which CLAUDE.md or rules files were loaded and when
+- `attribution.commit/pr: ""` - suppresses automatic Co-Authored-By (pipeline adds it manually in commit heredoc)
+- `includeGitInstructions: false` - removes redundant built-in git instructions from system prompt (pipeline.md covers this); replaces the old `env.CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS` env var approach
+- `hooks.SessionStart` - checks `.claude/session/last-arch-audit` timestamp in the project directory; if >7 days since last `/arch-audit`, prints a reminder at session open
+- `hooks.InstructionsLoaded` - appends raw hook payload (JSON) to `/tmp/claude-instructions-YYYYMMDD.log` (async, non-blocking); inspect this file to debug which CLAUDE.md or rules files were loaded and when
 
 ---
 
@@ -180,18 +182,18 @@ Key settings configured:
 
 Two pipeline-integrated skills run in forked context during specific pipeline phases and return structured results to the main session:
 
-- **`/dependency-scan`** (Tier M/L) — Phase 1: runs 6 dependency checks (route consumers, imports, types, tests, FKs, access control) and returns a structured report with mandatory file additions.
-- **`/context-review`** (Tier L only) — Phase 8.5: runs C1-C3 grep checks (credential patterns, unresolved placeholders, field name staleness) and returns pass/fail per check.
+- **`/dependency-scan`** (Tier M/L) - Phase 1: runs 6 dependency checks (route consumers, imports, types, tests, FKs, access control) and returns a structured report with mandatory file additions.
+- **`/context-review`** (Tier L only) - Phase 8.5: runs C1-C3 grep checks (credential patterns, unresolved placeholders, field name staleness) and returns pass/fail per check.
 
 ---
 
-## .claude/commands/ — Custom commands (Tier M/L)
+## .claude/commands/ - Custom commands (Tier M/L)
 
 Reusable prompt templates invoked with `/command-name`. See `.claude/commands/README.md` for usage and examples.
 
 ---
 
-## Quick reference — "Where does this information go?"
+## Quick reference - "Where does this information go?"
 
 | Information type | File |
 |---|---|
@@ -211,7 +213,7 @@ Reusable prompt templates invoked with `/command-name`. See `.claude/commands/RE
 
 ---
 
-## Quick reference — "When does Claude read this?"
+## Quick reference - "When does Claude read this?"
 
 | File | When | How |
 |---|---|---|

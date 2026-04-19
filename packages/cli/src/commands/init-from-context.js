@@ -26,7 +26,7 @@ export async function initFromContext(options) {
   const sourceInputs = [];
   console.log(
     chalk.bold('Source repositories') +
-      chalk.dim(' (GitHub URL, org/repo, or local path — empty line when done):'),
+      chalk.dim(' (GitHub URL, org/repo, or local path - empty line when done):'),
   );
 
   while (true) {
@@ -52,7 +52,7 @@ export async function initFromContext(options) {
   console.log();
   console.log(
     chalk.bold('Source documents') +
-      chalk.dim(' (PDF, MD, TXT file paths — optional, empty line when done):'),
+      chalk.dim(' (PDF, MD, TXT file paths - optional, empty line when done):'),
   );
 
   const docInputs = [];
@@ -71,7 +71,7 @@ export async function initFromContext(options) {
       : path.resolve(doc);
 
     if (!(await fs.pathExists(resolved))) {
-      console.log(chalk.yellow(`  ⚠ File not found: ${resolved} — skipping`));
+      console.log(chalk.yellow(`  ⚠ File not found: ${resolved} - skipping`));
       continue;
     }
     docInputs.push(resolved);
@@ -106,9 +106,9 @@ export async function initFromContext(options) {
         message: 'Pipeline tier:',
         when: !options.tier,
         choices: [
-          { name: 'S — Fast Lane    (bugfixes, ≤3 files)', value: 's' },
-          { name: 'M — Standard     (feature blocks, 1–2 weeks)', value: 'm' },
-          { name: 'L — Full         (complex domain, long-running)', value: 'l' },
+          { name: 'S - Fast Lane    (bugfixes, ≤3 files)', value: 's' },
+          { name: 'M - Standard     (feature blocks, 1–2 weeks)', value: 'm' },
+          { name: 'L - Full         (complex domain, long-running)', value: 'l' },
         ],
       },
       {
@@ -139,7 +139,7 @@ export async function initFromContext(options) {
 
   if (options.dryRun) {
     console.log();
-    console.log(chalk.yellow('Dry run — no files will be written.'));
+    console.log(chalk.yellow('Dry run - no files will be written.'));
     console.log();
     config.sourceRepos = sourceInputs.map((s) => ({ source: s }));
     config.sourceDocs = docInputs;
@@ -241,7 +241,7 @@ export async function initFromContext(options) {
   console.log();
   console.log(
     chalk.yellow.bold('Important:') +
-      ' CONTEXT_IMPORT.md is added to .gitignore — it contains local paths.',
+      ' CONTEXT_IMPORT.md is added to .gitignore - it contains local paths.',
   );
   console.log(chalk.dim('Docs: https://github.com/marcoguillermaz/claude-dev-kit'));
 }

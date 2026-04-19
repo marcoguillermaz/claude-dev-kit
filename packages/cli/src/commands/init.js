@@ -8,7 +8,7 @@ export async function init(options) {
   console.log();
   console.log(
     chalk.bold('claude-dev-kit') +
-      chalk.dim(' — rules, workflows, and pipeline templates for Claude Code'),
+      chalk.dim(' - rules, workflows, and pipeline templates for Claude Code'),
   );
   console.log();
   console.log(chalk.dim('  Sets up your project so Claude works consistently from day one.'));
@@ -26,15 +26,15 @@ export async function init(options) {
         message: "What's the state of this project?",
         choices: [
           {
-            name: 'Existing project — add CDK to a project that already has code',
+            name: 'Existing project - add CDK to a project that already has code',
             value: 'in-place',
           },
           {
-            name: "New project — starting from scratch, you'll fill in the details",
+            name: "New project - starting from scratch, you'll fill in the details",
             value: 'greenfield',
           },
           {
-            name: 'From existing docs — share your docs and Claude populates everything',
+            name: 'From existing docs - share your docs and Claude populates everything',
             value: 'from-context',
           },
         ],

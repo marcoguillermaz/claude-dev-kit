@@ -1,4 +1,4 @@
-# Test Audit — Report Template
+# Test Audit - Report Template
 
 ## Test Audit - [DATE] - [SCOPE] - stack: [STACK] / framework: [FRAMEWORK]
 

@@ -19,13 +19,13 @@ export async function generateContextImport(config, targetDir, clonedRepos, copi
       ? clonedRepos
           .map((r) => {
             const contextPath = r.error
-              ? `⚠ ${r.source} — clone failed: ${r.error}`
+              ? `⚠ ${r.source} - clone failed: ${r.error}`
               : `- \`.claude/context/repos/${r.name}/\` ← from \`${r.source}\``;
             return contextPath;
           })
           .join('\n')
       : mode === 'in-place'
-        ? '- `.` (current directory — the project itself)'
+        ? '- `.` (current directory - the project itself)'
         : '*(none provided)*';
 
   // Build docs list section

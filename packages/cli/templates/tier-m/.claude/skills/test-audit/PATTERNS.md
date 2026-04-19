@@ -1,11 +1,11 @@
-# Test Audit — Stack Patterns
+# Test Audit - Stack Patterns
 
 Reference file for `/test-audit`. Contains grep patterns per check, organized by stack.
 The executing agent reads this file at the start of Step 6. For each check, select the patterns matching the detected stack. Checks without a matching pattern produce `N/A - skipped for <stack>`.
 
 ---
 
-## T1 — `.only` / focused test patterns
+## T1 - `.only` / focused test patterns
 
 | Stack | Patterns | N/A? |
 |---|---|---|
@@ -20,7 +20,7 @@ The executing agent reads this file at the start of Step 6. For each check, sele
 
 ---
 
-## T2 — Skipped test patterns
+## T2 - Skipped test patterns
 
 | Stack | Patterns |
 |---|---|
@@ -35,7 +35,7 @@ The executing agent reads this file at the start of Step 6. For each check, sele
 
 ---
 
-## T3 — `.todo` placeholder patterns
+## T3 - `.todo` placeholder patterns
 
 | Stack | Patterns | N/A? |
 |---|---|---|
@@ -46,7 +46,7 @@ The executing agent reads this file at the start of Step 6. For each check, sele
 
 ---
 
-## T4 — Empty test body patterns
+## T4 - Empty test body patterns
 
 Multiline regex - use with `multiline: true` where supported.
 
@@ -62,7 +62,7 @@ Multiline regex - use with `multiline: true` where supported.
 
 ---
 
-## T5 — Assertion patterns (any match = test has assertions)
+## T5 - Assertion patterns (any match = test has assertions)
 
 | Stack / framework | Assertion patterns |
 |---|---|
@@ -81,7 +81,7 @@ Multiline regex - use with `multiline: true` where supported.
 
 ---
 
-## T6 — Hardcoded sleep patterns
+## T6 - Hardcoded sleep patterns
 
 | Stack | Patterns |
 |---|---|
@@ -96,7 +96,7 @@ Multiline regex - use with `multiline: true` where supported.
 
 ---
 
-## T7 — Debug output patterns
+## T7 - Debug output patterns
 
 | Stack | Patterns |
 |---|---|

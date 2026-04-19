@@ -1,11 +1,11 @@
-# Code Quality Audit — Stack Patterns
+# Code Quality Audit - Stack Patterns
 
 Reference file for `/skill-dev`. Contains language-specific and framework-specific grep patterns.
-The executing agent reads this file at the start of Step 2. Select patterns matching the detected stack. Checks without a matching pattern produce `N/A — skipped for <stack>`.
+The executing agent reads this file at the start of Step 2. Select patterns matching the detected stack. Checks without a matching pattern produce `N/A - skipped for <stack>`.
 
 ---
 
-## DL1 — Language-specific lint and analysis checks
+## DL1 - Language-specific lint and analysis checks
 
 ### Swift
 
@@ -37,7 +37,7 @@ The executing agent reads this file at the start of Step 2. Select patterns matc
 | Check | Grep pattern | Flag condition |
 |---|---|---|
 | Go vet | `go vet ./...` | Any finding |
-| Unchecked errors | `errcheck` — return values of error-returning functions ignored | Silent failure |
+| Unchecked errors | `errcheck` - return values of error-returning functions ignored | Silent failure |
 | Staticcheck | `staticcheck ./...` | Any finding |
 | Naked goroutines | `go func` or `go ` inside loops without context cancellation | Goroutine leak risk |
 
@@ -77,7 +77,7 @@ The executing agent reads this file at the start of Step 2. Select patterns matc
 
 ---
 
-## D3 — Database query call patterns
+## D3 - Database query call patterns
 
 | ORM / Client | Query method pattern |
 |---|---|
@@ -99,7 +99,7 @@ The executing agent reads this file at the start of Step 2. Select patterns matc
 
 ---
 
-## D4 — Public API surface patterns (per language)
+## D4 - Public API surface patterns (per language)
 
 | Language | Public symbol pattern | Description |
 |---|---|---|
@@ -115,22 +115,22 @@ The executing agent reads this file at the start of Step 2. Select patterns matc
 
 ---
 
-## D8 — Type safety suppression patterns
+## D8 - Type safety suppression patterns
 
-### Pattern A — Directive suppressions
+### Pattern A - Directive suppressions
 
 | Language | Suppression pattern | Severity note |
 |---|---|---|
-| TypeScript | `@ts-ignore` | Highest — silences all errors |
+| TypeScript | `@ts-ignore` | Highest - silences all errors |
 | TypeScript | `@ts-expect-error` | Acceptable only with description comment |
-| TypeScript | `@ts-nocheck` | File-level suppression — always flag |
+| TypeScript | `@ts-nocheck` | File-level suppression - always flag |
 | Python | `# type: ignore` | Suppresses mypy/pyright checks |
 | Java / Kotlin | `@SuppressWarnings` | Flag with specific warning type |
 | Rust | `unsafe` blocks | Flag unless justified in comment |
 | Go | `// nolint` | Suppresses linter checks |
 | .NET | `#pragma warning disable` | Flag with specific warning code |
 
-### Pattern B — Untyped escape hatches (TypeScript-specific)
+### Pattern B - Untyped escape hatches (TypeScript-specific)
 
 | Pattern | Context |
 |---|---|
@@ -141,13 +141,13 @@ The executing agent reads this file at the start of Step 2. Select patterns matc
 
 Exclude: generated type files, vendor types, explicit exemptions in CLAUDE.md Known Patterns.
 
-### Pattern C — Floating promises
+### Pattern C - Floating promises
 
 Grep for async calls (DB queries, route navigation, API calls) that appear as bare statements without `await`, `void`, `return`, or error handling. These are silent fire-and-forget calls.
 
 ---
 
-## D9 — Lifecycle/side-effect hook patterns
+## D9 - Lifecycle/side-effect hook patterns
 
 | Framework | Lifecycle hooks |
 |---|---|
@@ -160,7 +160,7 @@ Grep for async calls (DB queries, route navigation, API calls) that appear as ba
 
 ---
 
-## D10 — Debug output patterns
+## D10 - Debug output patterns
 
 | Language | Debug output pattern |
 |---|---|

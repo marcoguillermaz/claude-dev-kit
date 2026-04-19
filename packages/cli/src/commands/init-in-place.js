@@ -33,7 +33,7 @@ export async function initInPlace(options) {
     if (detected.detectedFiles.length > 0) {
       console.log(chalk.dim(`  Detected: ${detected.detectedFiles.join(', ')}`));
     } else {
-      console.log(chalk.dim("  No stack detected — you'll confirm the details below."));
+      console.log(chalk.dim("  No stack detected - you'll confirm the details below."));
     }
 
     let hasGithubRemote = false;
@@ -63,7 +63,7 @@ export async function initInPlace(options) {
         name: 'techStack',
         message:
           detected.techStack !== 'other'
-            ? 'Tech stack (detected — confirm or change):'
+            ? 'Tech stack (detected - confirm or change):'
             : 'Tech stack:',
         default: detected.techStack,
         choices: [
@@ -110,12 +110,12 @@ export async function initInPlace(options) {
       {
         type: 'input',
         name: 'testCommand',
-        message: "Test command (reference only — CDK won't run it):",
+        message: "Test command (reference only - CDK won't run it):",
         default: (a) => {
           if (a.techStack === 'other') return '';
           if (detected.testCommand) return detected.testCommand;
           const nativeDefaults = {
-            swift: 'xcodebuild test',
+            swift: `xcodebuild test -scheme ${a.projectName}`,
             kotlin: './gradlew test',
             rust: 'cargo test',
             dotnet: 'dotnet test',
@@ -156,14 +156,14 @@ export async function initInPlace(options) {
       {
         type: 'list',
         name: 'tier',
-        message: `Pipeline tier (suggested: ${tierDefault.toUpperCase()} — ${tierLabels[tierDefault]}${detected.detectedFiles.length > 0 ? ', based on project size' : ''}):`,
+        message: `Pipeline tier (suggested: ${tierDefault.toUpperCase()} - ${tierLabels[tierDefault]}${detected.detectedFiles.length > 0 ? ', based on project size' : ''}):`,
         when: !options.tier,
         default: tierDefault,
         choices: [
-          { name: '0 — Discovery (context only, no pipeline)', value: '0' },
-          { name: 'S — Fast Lane (bugfixes, ≤3 files)', value: 's' },
-          { name: 'M — Standard (feature blocks, 1–2 weeks)', value: 'm' },
-          { name: 'L — Full (complex domain, long-running)', value: 'l' },
+          { name: '0 - Discovery (context only, no pipeline)', value: '0' },
+          { name: 'S - Fast Lane (bugfixes, ≤3 files)', value: 's' },
+          { name: 'M - Standard (feature blocks, 1–2 weeks)', value: 'm' },
+          { name: 'L - Full (complex domain, long-running)', value: 'l' },
         ],
       },
       {
@@ -182,7 +182,7 @@ export async function initInPlace(options) {
         message: (a) => {
           const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
           if (webStacks.includes(a.techStack)) {
-            return 'E2E test command (Playwright/Cypress — reference only, leave blank to skip):';
+            return 'E2E test command (Playwright/Cypress - reference only, leave blank to skip):';
           }
           const nativeExamples = {
             swift: 'XCUITest',
@@ -193,7 +193,7 @@ export async function initInPlace(options) {
           };
           const ex = nativeExamples[a.techStack];
           return ex
-            ? `UI/integration test command (${ex} — reference only, leave blank to skip):`
+            ? `UI/integration test command (${ex} - reference only, leave blank to skip):`
             : 'Integration test command (reference only, leave blank to skip):';
         },
         when: (a) => {
@@ -202,7 +202,7 @@ export async function initInPlace(options) {
         },
         default: '',
       },
-      // Feature flags — tier M/L only
+      // Feature flags - tier M/L only
       {
         type: 'confirm',
         name: 'hasApi',
@@ -292,7 +292,7 @@ export async function initInPlace(options) {
         type: 'list',
         name: 'auditModel',
         message:
-          'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
+          'Preferred model for deep analysis skills (ux-audit, visual-audit - full codebase scans)?',
         when: (a) => {
           const tier = options.tier || a.tier;
           return (tier === 'm' || tier === 'l') && a.hasFrontend === true;
@@ -343,13 +343,13 @@ export async function initInPlace(options) {
 
   if (options.dryRun) {
     console.log();
-    console.log(chalk.yellow('Dry run — no files will be written.'));
+    console.log(chalk.yellow('Dry run - no files will be written.'));
     console.log();
     printPlan(config);
     return;
   }
 
-  // ── Scaffold (safe mode — no overwrites) ─────────────────────────────
+  // ── Scaffold (safe mode - no overwrites) ─────────────────────────────
 
   const fsCheck = (await import('fs-extra')).default;
   const claudeMdExisted = await fsCheck.pathExists(path.join(cwd, 'CLAUDE.md'));
@@ -360,7 +360,7 @@ export async function initInPlace(options) {
     await scaffoldTierSafe(config.tier, cwd, config, TEMPLATES_DIR);
 
     // Generate processed CLAUDE.md (Active Skills, @-imports, section stripping)
-    // only when CLAUDE.md was freshly created — never overwrite a pre-existing one
+    // only when CLAUDE.md was freshly created - never overwrite a pre-existing one
     if (!claudeMdExisted && (config.tier === 's' || config.tier === 'm' || config.tier === 'l')) {
       await generateClaudeMd(config, cwd);
     }
@@ -419,7 +419,7 @@ export async function initInPlace(options) {
         execSync(`node "${process.argv[1]}" doctor`, { cwd, stdio: 'inherit' });
         ranDoctor = true;
       } catch {
-        console.log(chalk.yellow('  Doctor reported issues — review above before proceeding.'));
+        console.log(chalk.yellow('  Doctor reported issues - review above before proceeding.'));
       }
     }
 
@@ -445,7 +445,7 @@ export async function initInPlace(options) {
           spinner2.succeed('Pre-commit hooks installed.');
           ranPreCommit = true;
         } catch {
-          spinner2.fail(`Install failed — run manually: ${preCommitInstallCmd}`);
+          spinner2.fail(`Install failed - run manually: ${preCommitInstallCmd}`);
         }
       }
     }

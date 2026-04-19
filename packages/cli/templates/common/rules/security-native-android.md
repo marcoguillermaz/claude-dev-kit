@@ -1,4 +1,4 @@
-# Security Rules — Native Android (Kotlin / Java)
+# Security Rules - Native Android (Kotlin / Java)
 
 These rules apply when working on Android apps targeting the Android platform.
 
@@ -7,11 +7,11 @@ These rules apply when working on Android apps targeting the Android platform.
 - Every permission in `AndroidManifest.xml` must be justified. Never add permissions "just in case".
 - Use runtime permission requests (not just manifest declarations) for dangerous permissions (camera, microphone, location, storage).
 - Request permissions at the point of use, not at app launch. Explain why before the system dialog appears.
-- Handle the "denied" and "don't ask again" states gracefully — never crash or silently fail.
+- Handle the "denied" and "don't ask again" states gracefully - never crash or silently fail.
 
 ## Credential Storage
 
-- Store secrets (API keys, tokens, passwords) in Android Keystore or EncryptedSharedPreferences — never in plain SharedPreferences, SQLite without encryption, or plain files.
+- Store secrets (API keys, tokens, passwords) in Android Keystore or EncryptedSharedPreferences - never in plain SharedPreferences, SQLite without encryption, or plain files.
 - Never log credentials or tokens, even at debug level.
 - Never embed API keys directly in source code or `BuildConfig` fields committed to the repo. Use `local.properties` (gitignored) or CI/CD secrets.
 
@@ -26,7 +26,7 @@ These rules apply when working on Android apps targeting the Android platform.
 
 - Use `network_security_config.xml` to enforce certificate pinning for critical API endpoints.
 - Never allow cleartext traffic in production (`android:usesCleartextTraffic="false"`).
-- Validate SSL certificates — never implement a trust-all `TrustManager`.
+- Validate SSL certificates - never implement a trust-all `TrustManager`.
 
 ## Input Handling
 

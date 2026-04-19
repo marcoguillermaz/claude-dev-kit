@@ -1,9 +1,9 @@
-# Perf Audit — Report Template
+# Perf Audit - Report Template
 
-## Web Audit — Report Template
+## Web Audit - Report Template
 
 ```
-## Perf Audit — [DATE] — [SCOPE] — mode: [audit | apply]
+## Perf Audit - [DATE] - [SCOPE] - mode: [audit | apply]
 ### Sources: framework docs, web.dev/vitals, build tool docs
 
 ### Executive summary
@@ -13,7 +13,7 @@
 - Routes/components scanned: [N files]
 - Config files: framework config [present/absent]
 - Bundle evidence: bundle analyzer [configured / not configured]
-- Assumptions: [any scope limitations, e.g. "layout files excluded from B8 — none found"]
+- Assumptions: [any scope limitations, e.g. "layout files excluded from B8 - none found"]
 
 ### Core Web Vitals thresholds (reference)
 | Metric | Good | Needs work | Poor | Primary cause |
@@ -62,13 +62,13 @@ Scoring: 🟢 = 0 High/Critical findings · 🟡 = 1-2 Medium findings · 🔴 =
 
 ### Findings requiring action ([N] total)
 [Sorted Critical → High → Medium → Low]
-Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
+Format: `[SEVERITY] file:line - check# - issue - impact - suggested fix`
 
 ### Quick wins (implement in < 1 hour each)
-[findings that are isolated, low-risk, and self-contained — e.g. add Promise.all, add lazy/dynamic wrapper]
+[findings that are isolated, low-risk, and self-contained - e.g. add Promise.all, add lazy/dynamic wrapper]
 
 ### Strategic refactors (require planning)
-[findings that affect multiple files or need architectural decisions — e.g. move data fetch to server-rendered path, extract client island from layout]
+[findings that affect multiple files or need architectural decisions - e.g. move data fetch to server-rendered path, extract client island from layout]
 
 ### Validation checklist
 After applying fixes, verify:
@@ -77,16 +77,16 @@ After applying fixes, verify:
 
 ---
 
-## Web Audit — Backlog writing rules
+## Web Audit - Backlog writing rules
 
 Present all findings with severity Medium or above as a numbered decision list, sorted Critical → High → Medium:
 
 ```
 Found N findings at Medium or above. Which to add to backlog?
 
-[1] [CRITICAL] PERF-? — file:line — one-line description
-[2] [HIGH]     PERF-? — file:line — one-line description
-[3] [MEDIUM]   PERF-? — file:line — one-line description
+[1] [CRITICAL] PERF-? - file:line - one-line description
+[2] [HIGH]     PERF-? - file:line - one-line description
+[3] [MEDIUM]   PERF-? - file:line - one-line description
 ...
 
 Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
@@ -97,11 +97,11 @@ Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
 Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 - Assign ID: `PERF-[n]` (increment from last PERF entry)
 - Add row to the priority index table with columns: `| PERF-N | check# | file:line | Severity | Description |`
-- Add full detail section: `### PERF-N — [check label]` with sub-sections: **File**, **Issue**, **Impact**, **Suggested fix**
+- Add full detail section: `### PERF-N - [check label]` with sub-sections: **File**, **Issue**, **Impact**, **Suggested fix**
 
 ---
 
-## Web Audit — Severity guide
+## Web Audit - Severity guide
 
 - **Critical**: N+1 in dashboard/list endpoints under heavy load (Q3); heavy server-only library discovered in client bundle (B2)
 - **High**: Sequential await waterfall with >500ms combined latency risk (B5); client-side data fetching on a primary route (B3); unbounded query on large-growth table (Q1); request-scoped API in a layout causing route tree force-dynamic (B8)
@@ -110,10 +110,10 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ---
 
-## Native Audit — Report Template
+## Native Audit - Report Template
 
 ```
-## Perf Audit — [DATE] — [SCOPE] — mode: [audit | apply]
+## Perf Audit - [DATE] - [SCOPE] - mode: [audit | apply]
 ### Sources: platform profiling documentation, language performance guides
 
 ### Executive summary
@@ -122,7 +122,7 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 ### Scope reviewed
 - Source files scanned: [N files]
 - Profiling tool: [PERF_TOOL]
-- Profile data: [available / not available — recommend running profiler]
+- Profile data: [available / not available - recommend running profiler]
 
 ### Algorithmic & Resource Checks
 | # | Check | Matches | Severity | Verdict |
@@ -147,7 +147,7 @@ Then write ONLY the approved entries to `docs/refactoring-backlog.md`:
 
 ### Findings requiring action ([N] total)
 [Sorted Critical → High → Medium → Low]
-Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
+Format: `[SEVERITY] file:line - check# - issue - impact - suggested fix`
 
 ### Quick wins
 [isolated, low-risk, self-contained fixes]
@@ -158,15 +158,15 @@ Format: `[SEVERITY] file:line — check# — issue — impact — suggested fix`
 
 ---
 
-## Native Audit — Backlog writing rules
+## Native Audit - Backlog writing rules
 
 Present all findings with severity Medium or above:
 
 ```
 Found N findings at Medium or above. Which to add to backlog?
 
-[1] [HIGH]     PERF-? — file:line — one-line description
-[2] [MEDIUM]   PERF-? — file:line — one-line description
+[1] [HIGH]     PERF-? - file:line - one-line description
+[2] [MEDIUM]   PERF-? - file:line - one-line description
 
 Reply with numbers to include (e.g. "1 2 4"), "all", or "none".
 ```
@@ -177,7 +177,7 @@ Then write approved entries to `docs/refactoring-backlog.md` using the same ID f
 
 ---
 
-## Native Audit — Severity guide
+## Native Audit - Severity guide
 
 - **Critical**: O(n²+) in a hot path processing user-visible data; memory leak causing OOM on long sessions; main-thread blocking > 1s; Activity/Context leak via static reference (Kotlin)
 - **High**: synchronous I/O blocking UI/main thread (NP3); sequential network calls with >500ms combined latency; goroutine/thread/coroutine leak; unbounded collection growth (NR2); heavy initialization in app entry point delaying launch (NR1); GlobalScope.launch without lifecycle cancellation

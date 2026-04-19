@@ -10,7 +10,7 @@
 
 <!-- Add a section per implemented block below. Keep in sync with implementation-checklist.md. -->
 
-### Block 1 — [Block name]
+### Block 1 - [Block name]
 
 **Status**: ⏳ planned / 🔄 in progress / ✅ complete
 

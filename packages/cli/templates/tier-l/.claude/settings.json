@@ -22,7 +22,9 @@
       "Bash(git push origin main*)",
       "Bash(git push origin staging*)",
       "Bash(rm -rf /*)",
-      "Bash(chmod 777*)"
+      "Bash(chmod 777*)",
+      "Bash(npm publish*)",
+      "Bash(DROP DATABASE*)"
     ]
   },
   "hooks": {

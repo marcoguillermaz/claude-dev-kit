@@ -12,7 +12,9 @@
       "Bash(git push origin main*)",
       "Bash(rm -rf /*)",
       "Bash(DROP TABLE*)",
-      "Bash(TRUNCATE*)"
+      "Bash(DROP DATABASE*)",
+      "Bash(TRUNCATE*)",
+      "Bash(npm publish*)"
     ]
   },
   "hooks": {

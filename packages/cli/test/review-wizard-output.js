@@ -1,5 +1,5 @@
 /**
- * review-wizard-output.js — Qualitative review of all significant printPlan/printNextSteps combinations.
+ * review-wizard-output.js - Qualitative review of all significant printPlan/printNextSteps combinations.
  *
  * Covers the full branching space of the wizard output layer:
  *   tier (0/S/M/L) × stack (11) × flags (hasApi/hasDatabase/hasFrontend/hasDesignSystem)
@@ -41,7 +41,7 @@ function header(group, label) {
   scenarioCount++;
   const num = String(scenarioCount).padStart(2, '0');
   console.log('\n' + '═'.repeat(72));
-  console.log(c.bold(c.cyan(`  [${num}] ${group.toUpperCase()} — ${label}`)));
+  console.log(c.bold(c.cyan(`  [${num}] ${group.toUpperCase()} - ${label}`)));
   console.log('═'.repeat(72) + '\n');
   return true;
 }
@@ -94,11 +94,11 @@ const BASE = {
   ...FULL_FLAGS,
 };
 
-// ── Group 1: Tier progression — node-ts, greenfield, full flags ───────────────
+// ── Group 1: Tier progression - node-ts, greenfield, full flags ───────────────
 
 run(
   'tiers',
-  'Tier 0 — Discovery (node-ts, greenfield)',
+  'Tier 0 - Discovery (node-ts, greenfield)',
   {
     ...BASE,
     tier: '0',
@@ -111,7 +111,7 @@ run(
 
 run(
   'tiers',
-  'Tier S — Fast Lane (node-ts, greenfield, full)',
+  'Tier S - Fast Lane (node-ts, greenfield, full)',
   {
     ...BASE,
     tier: 's',
@@ -121,7 +121,7 @@ run(
 
 run(
   'tiers',
-  'Tier M — Standard (node-ts, greenfield, full)',
+  'Tier M - Standard (node-ts, greenfield, full)',
   {
     ...BASE,
     tier: 'm',
@@ -134,7 +134,7 @@ run(
 
 run(
   'tiers',
-  'Tier L — Full (node-ts, greenfield, full)',
+  'Tier L - Full (node-ts, greenfield, full)',
   {
     ...BASE,
     tier: 'l',
@@ -145,9 +145,9 @@ run(
   { nextSteps: true },
 );
 
-// ── Group 2: Web stacks — Tier M, greenfield, all flags true ─────────────────
+// ── Group 2: Web stacks - Tier M, greenfield, all flags true ─────────────────
 
-run('stacks', 'node-js — Tier M, full flags', {
+run('stacks', 'node-js - Tier M, full flags', {
   ...BASE,
   tier: 'm',
   techStack: 'node-js',
@@ -156,7 +156,7 @@ run('stacks', 'node-js — Tier M, full flags', {
   devCommand: 'npm run dev',
 });
 
-run('stacks', 'python — Tier M, full flags', {
+run('stacks', 'python - Tier M, full flags', {
   ...BASE,
   tier: 'm',
   techStack: 'python',
@@ -169,7 +169,7 @@ run('stacks', 'python — Tier M, full flags', {
   hasE2E: true,
 });
 
-run('stacks', 'go — Tier M, full flags', {
+run('stacks', 'go - Tier M, full flags', {
   ...BASE,
   tier: 'm',
   techStack: 'go',
@@ -180,7 +180,7 @@ run('stacks', 'go — Tier M, full flags', {
   installCommand: 'go mod download',
 });
 
-run('stacks', 'ruby — Tier M, full flags', {
+run('stacks', 'ruby - Tier M, full flags', {
   ...BASE,
   tier: 'm',
   techStack: 'ruby',
@@ -193,9 +193,9 @@ run('stacks', 'ruby — Tier M, full flags', {
   hasE2E: true,
 });
 
-// ── Group 3: Native stacks — Tier M, realistic flags ─────────────────────────
+// ── Group 3: Native stacks - Tier M, realistic flags ─────────────────────────
 
-run('native', 'swift — Tier M, greenfield (no-api, has-db/ui, no-design-sys)', {
+run('native', 'swift - Tier M, greenfield (no-api, has-db/ui, no-design-sys)', {
   ...BASE,
   tier: 'm',
   techStack: 'swift',
@@ -214,7 +214,7 @@ run('native', 'swift — Tier M, greenfield (no-api, has-db/ui, no-design-sys)',
   includeGithub: false,
 });
 
-run('native', 'kotlin — Tier M, greenfield (no-api, has-db/ui, no-design-sys)', {
+run('native', 'kotlin - Tier M, greenfield (no-api, has-db/ui, no-design-sys)', {
   ...BASE,
   tier: 'm',
   techStack: 'kotlin',
@@ -233,7 +233,7 @@ run('native', 'kotlin — Tier M, greenfield (no-api, has-db/ui, no-design-sys)'
   includeGithub: false,
 });
 
-run('native', 'rust — Tier M, greenfield (CLI: no-api, no-db, no-ui)', {
+run('native', 'rust - Tier M, greenfield (CLI: no-api, no-db, no-ui)', {
   ...BASE,
   tier: 'm',
   techStack: 'rust',
@@ -250,7 +250,7 @@ run('native', 'rust — Tier M, greenfield (CLI: no-api, no-db, no-ui)', {
   hasDesignSystem: false,
 });
 
-run('native', 'dotnet — Tier M, greenfield (has-api, has-db, has-ui)', {
+run('native', 'dotnet - Tier M, greenfield (has-api, has-db, has-ui)', {
   ...BASE,
   tier: 'm',
   techStack: 'dotnet',
@@ -268,7 +268,7 @@ run('native', 'dotnet — Tier M, greenfield (has-api, has-db, has-ui)', {
   hasDesignSystem: false,
 });
 
-run('native', 'java — Tier M, greenfield (has-api, has-db, no-ui — Spring Boot)', {
+run('native', 'java - Tier M, greenfield (has-api, has-db, no-ui - Spring Boot)', {
   ...BASE,
   tier: 'm',
   techStack: 'java',
@@ -286,7 +286,7 @@ run('native', 'java — Tier M, greenfield (has-api, has-db, no-ui — Spring Bo
   hasDesignSystem: false,
 });
 
-run('native', 'other — Tier M, greenfield (all false, no commands)', {
+run('native', 'other - Tier M, greenfield (all false, no commands)', {
   ...BASE,
   tier: 'm',
   techStack: 'other',
@@ -300,7 +300,7 @@ run('native', 'other — Tier M, greenfield (all false, no commands)', {
   ...NO_FLAGS,
 });
 
-// ── Group 4: Flag matrix — node-ts, Tier M, greenfield ───────────────────────
+// ── Group 4: Flag matrix - node-ts, Tier M, greenfield ───────────────────────
 
 run('flags', 'all flags TRUE (baseline)', {
   ...BASE,
@@ -392,7 +392,7 @@ run('inclusions', 'includeGithub = false, includePreCommit = false', {
 
 run(
   'mode',
-  'node-ts — Tier M, in-place, full flags',
+  'node-ts - Tier M, in-place, full flags',
   {
     ...BASE,
     tier: 'm',
@@ -405,7 +405,7 @@ run(
 
 run(
   'mode',
-  'swift — Tier M, in-place (no-api, has-db/ui, no-design-sys)',
+  'swift - Tier M, in-place (no-api, has-db/ui, no-design-sys)',
   {
     ...BASE,
     tier: 'm',
@@ -427,7 +427,7 @@ run(
   { nextSteps: true },
 );
 
-run('mode', 'python — Tier L, in-place, full flags', {
+run('mode', 'python - Tier L, in-place, full flags', {
   ...BASE,
   tier: 'l',
   mode: 'in-place',
@@ -443,7 +443,7 @@ run('mode', 'python — Tier L, in-place, full flags', {
 
 run(
   'mode',
-  'rust — Tier S, in-place, no github',
+  'rust - Tier S, in-place, no github',
   {
     ...BASE,
     tier: 's',
@@ -507,7 +507,7 @@ run('commands', 'auditModel = claude-opus-4-6 (shown in commands block?)', {
   hasDesignSystem: true,
 });
 
-run('commands', 'devCommand = "" on native stack (blank — should show nothing)', {
+run('commands', 'devCommand = "" on native stack (blank - should show nothing)', {
   ...BASE,
   tier: 'm',
   techStack: 'kotlin',
@@ -522,42 +522,42 @@ run('commands', 'devCommand = "" on native stack (blank — should show nothing)
   hasDesignSystem: false,
 });
 
-// ── Group 8: Next steps — all modes ──────────────────────────────────────────
+// ── Group 8: Next steps - all modes ──────────────────────────────────────────
 
 if (!FILTER || FILTER === 'nextsteps') {
   const sep = '\n' + '─'.repeat(72);
 
   console.log('\n' + '═'.repeat(72));
-  console.log(c.bold(c.cyan('  NEXTSTEPS — printNextSteps across all modes and inclusions')));
+  console.log(c.bold(c.cyan('  NEXTSTEPS - printNextSteps across all modes and inclusions')));
   console.log('═'.repeat(72));
 
   const nextCases = [
     {
-      label: 'Greenfield Tier S — with precommit + github',
+      label: 'Greenfield Tier S - with precommit + github',
       config: { ...BASE, tier: 's', includePreCommit: true, includeGithub: true },
     },
     {
-      label: 'Greenfield Tier S — no precommit, no github',
+      label: 'Greenfield Tier S - no precommit, no github',
       config: { ...BASE, tier: 's', includePreCommit: false, includeGithub: false },
     },
     {
-      label: 'Greenfield Tier M — with precommit',
+      label: 'Greenfield Tier M - with precommit',
       config: { ...BASE, tier: 'm', includePreCommit: true, includeGithub: true },
     },
     {
-      label: 'Greenfield Tier M — no precommit',
+      label: 'Greenfield Tier M - no precommit',
       config: { ...BASE, tier: 'm', includePreCommit: false },
     },
     {
-      label: 'Greenfield Tier L — with precommit',
+      label: 'Greenfield Tier L - with precommit',
       config: { ...BASE, tier: 'l', includePreCommit: true, includeGithub: true },
     },
     {
-      label: 'In-place Tier M — with precommit',
+      label: 'In-place Tier M - with precommit',
       config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: true },
     },
     {
-      label: 'In-place Tier M — no precommit',
+      label: 'In-place Tier M - no precommit',
       config: { ...BASE, tier: 'm', mode: 'in-place', includePreCommit: false },
     },
     {

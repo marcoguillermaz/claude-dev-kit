@@ -10,10 +10,10 @@ export function printPlan(config) {
 
   console.log(chalk.bold('Project:') + ` ${config.projectName}`);
   console.log(chalk.bold('Mode:') + ` ${formatMode(mode)}`);
-  console.log(chalk.bold('Tier:') + ` ${tier} — ${TIER_LABELS[tier] || tier}`);
+  console.log(chalk.bold('Tier:') + ` ${tier} - ${TIER_LABELS[tier] || tier}`);
   if (config.techStack) console.log(chalk.bold('Stack:') + ` ${config.techStack}`);
 
-  // 3.3 — commands summary (only non-misleading values)
+  // 3.3 - commands summary (only non-misleading values)
   const cmdLines = getCommandSummary(config);
   if (cmdLines.length > 0) {
     console.log();
@@ -25,7 +25,7 @@ export function printPlan(config) {
   console.log(chalk.bold('Files that will be created:'));
   getFilePlan(config).forEach((f) => console.log(`  ${chalk.dim('+')} ${f}`));
 
-  // 3.1 — BUG-01: skills section for Tier S/M/L
+  // 3.1 - BUG-01: skills section for Tier S/M/L
   if (tier !== '0') {
     const { included, skipped } = getSkillsSummary(config);
     console.log();
@@ -49,9 +49,9 @@ export function printPlan(config) {
 export function printNextSteps(config, opts = {}) {
   const mode = config.mode || 'greenfield';
 
-  // 3.4 — adapt doctor command to execution context
+  // 3.4 - adapt doctor command to execution context
   const doctorCmd = getDoctorCmd();
-  // 3.2 — detect package manager for pre-commit
+  // 3.2 - detect package manager for pre-commit
   const preCommitCmd = getPreCommitInstallCmd();
 
   if (mode === 'greenfield') {
@@ -61,7 +61,7 @@ export function printNextSteps(config, opts = {}) {
       console.log(
         `  ${step++}. Read ` +
           chalk.cyan('.claude/FIRST_SESSION.md') +
-          " — your team's guide to the first session",
+          " - your team's guide to the first session",
       );
     }
     console.log(
@@ -73,7 +73,7 @@ export function printNextSteps(config, opts = {}) {
     console.log(
       `  ${step}. Run ` +
         chalk.cyan('claude') +
-        ' — start with ' +
+        ' - start with ' +
         chalk.cyan('/arch-audit') +
         ' to verify setup',
     );
@@ -101,10 +101,10 @@ export function printNextSteps(config, opts = {}) {
 
     console.log();
     console.log(
-      '  2. ' + chalk.bold('Discovery pass') + chalk.dim(' — starts automatically on first open'),
+      '  2. ' + chalk.bold('Discovery pass') + chalk.dim(' - starts automatically on first open'),
     );
     console.log(
-      '       Claude reads ' + chalk.cyan('CONTEXT_IMPORT.md') + ' — your project briefing file —',
+      '       Claude reads ' + chalk.cyan('CONTEXT_IMPORT.md') + ' - your project briefing file -',
     );
     console.log('       and scans your codebase. It generates CLAUDE.md, fills in docs/,');
     console.log('       and asks you about anything it could not infer from the code.');
@@ -141,7 +141,7 @@ function formatMode(mode) {
 }
 
 /**
- * 3.2 — Detect the right pre-commit install command for this machine.
+ * 3.2 - Detect the right pre-commit install command for this machine.
  * macOS + Homebrew → brew; everything else → pip.
  */
 function getPreCommitInstallCmd() {
@@ -157,7 +157,7 @@ function getPreCommitInstallCmd() {
 }
 
 /**
- * 3.4 — Detect if the CLI is being run from its local source tree (e.g., during
+ * 3.4 - Detect if the CLI is being run from its local source tree (e.g., during
  * development: `node packages/cli/src/index.js`) vs installed via npm/npx.
  * Returns the appropriate doctor command string.
  */
@@ -168,7 +168,7 @@ function getDoctorCmd() {
 }
 
 /**
- * 3.3 — Return command lines to display in the summary, skipping values that are
+ * 3.3 - Return command lines to display in the summary, skipping values that are
  * misleading defaults (e.g., "npm run dev" shown for a native/non-web stack).
  */
 function getCommandSummary(config) {
@@ -182,7 +182,7 @@ function getCommandSummary(config) {
   }
 
   if (config.devCommand) {
-    // Skip 'npm run dev' for non-web stacks — it's a wrong default, not a real setting
+    // Skip 'npm run dev' for non-web stacks - it's a wrong default, not a real setting
     const isWrongDefault = !isWeb && config.devCommand === 'npm run dev';
     if (!isWrongDefault) {
       const label = isNative ? chalk.dim('Launch:') : chalk.dim('Dev:   ');
@@ -204,7 +204,7 @@ function getCommandSummary(config) {
 }
 
 /**
- * 3.1 — BUG-01: compute the skills included/skipped based on config flags.
+ * 3.1 - BUG-01: compute the skills included/skipped based on config flags.
  * Mirrors the logic in scaffold/index.js → pruneSkills().
  */
 function getSkillsSummary(config) {
@@ -269,7 +269,7 @@ function getFilePlan(config) {
   const tier = (config.tier || 's').toUpperCase();
   const mode = config.mode || 'greenfield';
 
-  // Tier 0 is a minimal scaffold — no pipeline, no rules, no governance layer
+  // Tier 0 is a minimal scaffold - no pipeline, no rules, no governance layer
   if (tier === '0') {
     return [
       'CLAUDE.md',

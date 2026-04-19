@@ -72,7 +72,7 @@ export async function addSkill(name, options) {
   }
 
   if (options.dryRun) {
-    console.log(chalk.yellow('Dry run — no files written.'));
+    console.log(chalk.yellow('Dry run - no files written.'));
     console.log(`  Would create: .claude/skills/${name}/SKILL.md`);
     return;
   }
@@ -134,7 +134,7 @@ export async function addRule(name, options) {
   }
 
   if (options.dryRun) {
-    console.log(chalk.yellow('Dry run — no files written.'));
+    console.log(chalk.yellow('Dry run - no files written.'));
     console.log(`  Would create: .claude/rules/${name}.md`);
     if (name === 'security') {
       console.log(

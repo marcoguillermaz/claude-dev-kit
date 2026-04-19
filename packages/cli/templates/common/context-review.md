@@ -2,34 +2,34 @@
 
 Executed in **Phase 8.5** at the end of every block.
 Each check has a specific, verifiable pass/fail condition.
-**The phase is complete only when all checks are ✅ — not when the review "seems thorough".**
+**The phase is complete only when all checks are ✅ - not when the review "seems thorough".**
 
 ---
 
-## C1 — Security: no credentials in auto-memory
+## C1 - Security: no credentials in auto-memory
 
 **What**: grep for token/secret patterns in the auto-memory MEMORY.md.
 **Pass**: 0 matches (placeholder strings like `sbp_...` or `re_...` with no further characters are allowed).
 **Fail**: redact immediately → replace value with `...see .env.local` → remind user to rotate the exposed credential.
-**Note**: `must_change_password`, `password=false` in code examples are NOT credentials — they are property names. The grep targets actual token strings (minimum 10 chars after the prefix).
+**Note**: `must_change_password`, `password=false` in code examples are NOT credentials - they are property names. The grep targets actual token strings (minimum 10 chars after the prefix).
 
 ---
 
-## C2 — Language: no non-English prose in internal explanatory text
+## C2 - Language: no non-English prose in internal explanatory text
 
 **Scope**: every non-code-block line in CLAUDE.md and auto-memory MEMORY.md.
 **Flag** non-English words that are clearly explanatory prose, not quoted values or domain terms.
 Configure the keyword list for your project's primary non-English language risk. Default (Italian):
 `obbligatori`, `opzional`, `rimozione`, `rimosso`, `aggiunto`, `aggiornato`, `necessario`, `corretto`, `utilizza`, `gestisce`, `nota bene`, `attenzione`, `verificare`
 
-**Run on CLAUDE.md**: `grep -n "[NON_ENGLISH_KEYWORDS]" CLAUDE.md` — replace `[NON_ENGLISH_KEYWORDS]` with a pipe-separated list of indicator words for your language.
+**Run on CLAUDE.md**: `grep -n "[NON_ENGLISH_KEYWORDS]" CLAUDE.md` - replace `[NON_ENGLISH_KEYWORDS]` with a pipe-separated list of indicator words for your language.
 **Run on auto-memory**: same grep on `~/.claude/projects/<project-path-hash>/memory/MEMORY.md` (run `ls ~/.claude/projects/` to find your project hash)
 **Pass**: 0 matches, or all matches are inside quoted UI strings or domain values.
 **Fail**: translate flagged text to English.
 
 ---
 
-## C3 — Field name staleness (CLAUDE.md)
+## C3 - Field name staleness (CLAUDE.md)
 
 **What**: every data field name mentioned in CLAUDE.md must exist in the current schema or data model.
 **Specific risk pattern**: field renames across blocks. After each block that renames a column or field: immediately update every mention in CLAUDE.md.
@@ -39,7 +39,7 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C4 — Stale block references (CLAUDE.md + auto-memory)
+## C4 - Stale block references (CLAUDE.md + auto-memory)
 
 **What**: references like "(Block N)", "(optional, Block N)", "from Block N" must not describe closed blocks as if they are open or future.
 **Run on CLAUDE.md**: `grep -n "Block [0-9]" CLAUDE.md`
@@ -49,7 +49,7 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C5 — MEMORY.md qualifier completeness (pipeline.md)
+## C5 - MEMORY.md qualifier completeness (pipeline.md)
 
 **What**: every mention of "MEMORY.md" in pipeline.md must be unambiguous about which file is meant.
 **Run**: `grep -n "MEMORY\.md" .claude/rules/pipeline.md`
@@ -58,7 +58,7 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C6 — No duplication: auto-memory vs CLAUDE.md
+## C6 - No duplication: auto-memory vs CLAUDE.md
 
 **What**: a pattern in auto-memory that has become a stable project truth belongs in CLAUDE.md, not in both files.
 **Check method**: read the "Key technical patterns" section of auto-memory and the "Known Patterns" section of CLAUDE.md side by side.
@@ -67,14 +67,14 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C7 — Size compliance
+## C7 - Size compliance
 
 **Pass**: file < 150 lines.
 **Fail**: extract oldest or least-referenced patterns into a new section of the auto-memory file or remove obsolete entries.
 
 ---
 
-## C8 — files-guide.md path accuracy
+## C8 - files-guide.md path accuracy
 
 **What**: every file path listed in the "Automatically loaded" tree must exist on disk and be correct.
 **Run**: for each path in the tree, `ls [path]` or Glob to confirm existence.
@@ -84,7 +84,7 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C9 — Active plan currency (project-root MEMORY.md)
+## C9 - Active plan currency (project-root MEMORY.md)
 
 **What**: the Active plan table must reflect the actual state of the project at the time of the current commit.
 **Check each row**:
@@ -96,7 +96,7 @@ Configure the keyword list for your project's primary non-English language risk.
 
 ---
 
-## C10 — Dead file references (cross-doc)
+## C10 - Dead file references (cross-doc)
 
 **What**: file paths referenced in context docs must exist on disk. Any `docs/*.md` or `.claude/*.md` path mentioned in CLAUDE.md, pipeline.md, or refactoring-backlog.md that no longer exists is a silent broken pointer.
 **Run**:
@@ -110,7 +110,7 @@ For each path found, verify it exists: `ls [path]`.
 
 ---
 
-## C11 — Refactoring backlog: completed items
+## C11 - Refactoring backlog: completed items
 
 **What**: items in `docs/refactoring-backlog.md` that correspond to work completed in the current block must be removed. Completed items inflate the backlog and dilute attention on real open issues.
 **Pass**: no completed item remains open in the priority index or detail sections.
@@ -118,7 +118,7 @@ For each path found, verify it exists: `ls [path]`.
 
 ---
 
-## C12 — Canonical docs currency (sitemap + data map)
+## C12 - Canonical docs currency (sitemap + data map)
 
 **What**: verify that the project's route documentation and data model documentation are up to date with the current codebase state. Skip checks for doc files that do not exist in the project.
 
@@ -133,15 +133,15 @@ Compare the resulting route list against routes listed in the route documentatio
 Compare against the latest migration or schema change. If the documentation references a "Last synced" marker, verify it matches the most recent migration.
 **Fail**: update the data model documentation to reflect the current schema, then run the project's refresh script if one exists.
 
-**Note**: this check is a backstop — the Phase 8 doc update steps are the primary enforcement point. C12 catches drift that slipped through.
+**Note**: this check is a backstop - the Phase 8 doc update steps are the primary enforcement point. C12 catches drift that slipped through.
 
 ---
 
 ---
 
-## C13 — CLAUDE.md Known Patterns hygiene
+## C13 - CLAUDE.md Known Patterns hygiene
 
-**Trigger**: run when CLAUDE.md exceeds 100 lines, OR every 4 completed blocks — whichever comes first. Skip if neither condition is met.
+**Trigger**: run when CLAUDE.md exceeds 100 lines, OR every 4 completed blocks - whichever comes first. Skip if neither condition is met.
 
 **What**: audit every entry under `## Known Patterns` in `CLAUDE.md` against the decision filter:
 > "Would Claude make this mistake on a new block, without prior warning, even after reading the relevant code and schema?"

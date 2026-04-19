@@ -1,4 +1,4 @@
-# Context Import — Discovery Required
+# Context Import - Discovery Required
 
 **Status**: `PENDING_DISCOVERY`
 
@@ -32,7 +32,7 @@
 
 Execute these steps **in order** before any development work. This is a one-time setup pass.
 
-### Step 1 — Read source repositories
+### Step 1 - Read source repositories
 
 For each repository listed under "Source repositories":
 
@@ -48,29 +48,29 @@ For each repository listed under "Source repositories":
    - **Known patterns**: any non-obvious technical decisions visible in code comments or README
    - **Test setup**: framework, test file locations, coverage approach
 
-### Step 2 — Read source documents
+### Step 2 - Read source documents
 
 For each file listed under "Source documents":
 - Extract: product requirements, business rules, user roles, key workflows, data model hints
 - Note any architectural decisions that should become ADRs
 
-### Step 3 — Populate project files
+### Step 3 - Populate project files
 
 Using what was discovered, populate the following files **with real content** (replace all `[PLACEHOLDER]` values):
 
 **Always populate:**
-- `CLAUDE.md` — fill in: project overview, tech stack, key commands, coding conventions, known patterns
-- `.claude/rules/pipeline.md` — replace `[TYPE_CHECK_COMMAND]`, `[TEST_COMMAND]`, `[BUILD_COMMAND]`, `[DEV_COMMAND]`
-- `.claude/settings.json` — replace `[TEST_COMMAND]` in the Stop hook
+- `CLAUDE.md` - fill in: project overview, tech stack, key commands, coding conventions, known patterns
+- `.claude/rules/pipeline.md` - replace `[TYPE_CHECK_COMMAND]`, `[TEST_COMMAND]`, `[BUILD_COMMAND]`, `[DEV_COMMAND]`
+- `.claude/settings.json` - replace `[TEST_COMMAND]` in the Stop hook
 
 **If Tier M or L:**
-- `docs/requirements.md` — populate with extracted product requirements and key workflows
-- `docs/implementation-checklist.md` — add initial planned blocks based on requirements
+- `docs/requirements.md` - populate with extracted product requirements and key workflows
+- `docs/implementation-checklist.md` - add initial planned blocks based on requirements
 
 **If architectural decisions were found in source docs:**
 - Create `docs/adr/NNNN-title.md` for each significant decision (use the ADR template)
 
-### Step 4 — Present discovery summary
+### Step 4 - Present discovery summary
 
 Present a structured summary:
 
@@ -104,11 +104,11 @@ Present a structured summary:
 - docs/requirements.md ✓ / ✗
 - [any other files]
 
-### Gaps — questions for you
+### Gaps - questions for you
 [List anything that could NOT be inferred and needs the developer's input]
 ```
 
-### Step 5 — Ask targeted gap questions
+### Step 5 - Ask targeted gap questions
 
 Use `AskUserQuestion` for anything that could not be inferred:
 - Auth mechanism (if not visible from code)
@@ -116,7 +116,7 @@ Use `AskUserQuestion` for anything that could not be inferred:
 - Team size (for tier validation)
 - Any role/permission model not visible in code
 
-### Step 6 — Mark discovery complete
+### Step 6 - Mark discovery complete
 
 After the developer confirms the summary and all gap questions are answered:
 

@@ -54,7 +54,7 @@ describe('securityRuleVariant', () => {
 // interpolate()
 // ---------------------------------------------------------------------------
 
-describe('interpolate — tech stack labels', () => {
+describe('interpolate - tech stack labels', () => {
   const cases = [
     ['node-ts', 'Node.js + TypeScript'],
     ['node-js', 'Node.js + JavaScript'],
@@ -76,7 +76,7 @@ describe('interpolate — tech stack labels', () => {
   }
 });
 
-describe('interpolate — language values', () => {
+describe('interpolate - language values', () => {
   const cases = [
     ['node-ts', 'TypeScript'],
     ['node-js', 'JavaScript'],
@@ -104,7 +104,7 @@ describe('interpolate — language values', () => {
   });
 });
 
-describe('interpolate — native command defaults', () => {
+describe('interpolate - native command defaults', () => {
   const nativeDefaults = {
     swift: {
       install: '# no install step',
@@ -162,8 +162,8 @@ describe('interpolate — native command defaults', () => {
   }
 });
 
-describe('interpolate — JS fallback commands', () => {
-  const jsStacks = ['node-ts', 'node-js', 'python', 'go', 'ruby'];
+describe('interpolate - JS fallback commands', () => {
+  const jsStacks = ['node-ts', 'node-js'];
 
   for (const stack of jsStacks) {
     it(`${stack} falls through to npm install`, () => {
@@ -184,7 +184,70 @@ describe('interpolate — JS fallback commands', () => {
   }
 });
 
-describe('interpolate — user override precedence', () => {
+describe('interpolate - python/go/ruby stack command defaults', () => {
+  const stackDefaults = {
+    python: {
+      install: 'pip install -r requirements.txt',
+      dev: '',
+      build: '',
+      test: 'pytest',
+      typeCheck: 'mypy .',
+    },
+    go: {
+      install: 'go mod download',
+      dev: 'go run .',
+      build: 'go build ./...',
+      test: 'go test ./...',
+      typeCheck: 'go vet ./...',
+    },
+    ruby: {
+      install: 'bundle install',
+      dev: 'rails server',
+      build: '',
+      test: 'bundle exec rspec',
+      typeCheck: '',
+    },
+  };
+
+  for (const [stack, cmds] of Object.entries(stackDefaults)) {
+    it(`${stack} uses stack-specific install command`, () => {
+      assert.equal(interp('[INSTALL_COMMAND]', { techStack: stack }), cmds.install);
+    });
+    if (cmds.dev) {
+      it(`${stack} uses stack-specific dev command`, () => {
+        assert.equal(interp('[DEV_COMMAND]', { techStack: stack }), cmds.dev);
+      });
+    } else {
+      it(`${stack} dev command falls through to npm run dev`, () => {
+        // empty string ncd.dev is falsy, so resolveDevCommand returns 'npm run dev'
+        assert.equal(interp('[DEV_COMMAND]', { techStack: stack }), 'npm run dev');
+      });
+    }
+    if (cmds.build) {
+      it(`${stack} uses stack-specific build command`, () => {
+        assert.equal(interp('[BUILD_COMMAND]', { techStack: stack }), cmds.build);
+      });
+    } else {
+      it(`${stack} build command falls through to npm run build`, () => {
+        assert.equal(interp('[BUILD_COMMAND]', { techStack: stack }), 'npm run build');
+      });
+    }
+    it(`${stack} uses stack-specific test command`, () => {
+      assert.equal(interp('[TEST_COMMAND]', { techStack: stack }), cmds.test);
+    });
+    if (cmds.typeCheck) {
+      it(`${stack} uses stack-specific type-check command`, () => {
+        assert.equal(interp('[TYPE_CHECK_COMMAND]', { techStack: stack }), cmds.typeCheck);
+      });
+    } else {
+      it(`${stack} type-check command falls through to npx tsc --noEmit`, () => {
+        assert.equal(interp('[TYPE_CHECK_COMMAND]', { techStack: stack }), 'npx tsc --noEmit');
+      });
+    }
+  }
+});
+
+describe('interpolate - user override precedence', () => {
   it('user testCommand overrides native default', () => {
     assert.equal(interp('[TEST_COMMAND]', { techStack: 'swift', testCommand: 'pytest' }), 'pytest');
   });
@@ -218,27 +281,27 @@ describe('interpolate — user override precedence', () => {
   });
 });
 
-describe('interpolate — conditional FRAMEWORK value', () => {
-  it('returns "N/A — native app" for swift', () => {
-    assert.equal(interp('[FRAMEWORK]', { techStack: 'swift' }), 'N/A — native app');
+describe('interpolate - conditional FRAMEWORK value', () => {
+  it('returns "N/A - native app" for swift', () => {
+    assert.equal(interp('[FRAMEWORK]', { techStack: 'swift' }), 'N/A - native app');
   });
 
-  it('returns "N/A — native app" for kotlin', () => {
-    assert.equal(interp('[FRAMEWORK]', { techStack: 'kotlin' }), 'N/A — native app');
+  it('returns "N/A - native app" for kotlin', () => {
+    assert.equal(interp('[FRAMEWORK]', { techStack: 'kotlin' }), 'N/A - native app');
   });
 
-  it('returns "N/A — native app" for rust', () => {
-    assert.equal(interp('[FRAMEWORK]', { techStack: 'rust' }), 'N/A — native app');
+  it('returns "N/A - native app" for rust', () => {
+    assert.equal(interp('[FRAMEWORK]', { techStack: 'rust' }), 'N/A - native app');
   });
 
-  it('returns "N/A — native app" for dotnet', () => {
-    assert.equal(interp('[FRAMEWORK]', { techStack: 'dotnet' }), 'N/A — native app');
+  it('returns "N/A - native app" for dotnet', () => {
+    assert.equal(interp('[FRAMEWORK]', { techStack: 'dotnet' }), 'N/A - native app');
   });
 
-  it('returns "N/A — no web frontend" when hasFrontend=false', () => {
+  it('returns "N/A - no web frontend" when hasFrontend=false', () => {
     assert.equal(
       interp('[FRAMEWORK]', { techStack: 'node-ts', hasFrontend: false }),
-      'N/A — no web frontend',
+      'N/A - no web frontend',
     );
   });
 
@@ -250,14 +313,14 @@ describe('interpolate — conditional FRAMEWORK value', () => {
   });
 });
 
-describe('interpolate — conditional SITEMAP_OR_ROUTE_LIST', () => {
+describe('interpolate - conditional SITEMAP_OR_ROUTE_LIST', () => {
   const nativeStacks = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
 
   for (const stack of nativeStacks) {
     it(`returns N/A for native stack ${stack}`, () => {
       assert.equal(
         interp('[SITEMAP_OR_ROUTE_LIST]', { techStack: stack }),
-        'N/A — no web frontend',
+        'N/A - no web frontend',
       );
     });
   }
@@ -265,7 +328,7 @@ describe('interpolate — conditional SITEMAP_OR_ROUTE_LIST', () => {
   it('returns N/A when hasFrontend=false', () => {
     assert.equal(
       interp('[SITEMAP_OR_ROUTE_LIST]', { techStack: 'node-ts', hasFrontend: false }),
-      'N/A — no web frontend',
+      'N/A - no web frontend',
     );
   });
 
@@ -274,11 +337,11 @@ describe('interpolate — conditional SITEMAP_OR_ROUTE_LIST', () => {
   });
 });
 
-describe('interpolate — conditional API placeholders', () => {
+describe('interpolate - conditional API placeholders', () => {
   it('API_TESTS_PATH returns "# N/A" when hasApi=false', () => {
     assert.equal(
       interp('[API_TESTS_PATH]', { techStack: 'node-ts', hasApi: false }),
-      '# N/A — no API routes',
+      '# N/A - no API routes',
     );
   });
 
@@ -289,7 +352,7 @@ describe('interpolate — conditional API placeholders', () => {
   it('API_ROUTES_PATH returns "N/A" when hasApi=false', () => {
     assert.equal(
       interp('[API_ROUTES_PATH]', { techStack: 'node-ts', hasApi: false }),
-      'N/A — no API routes',
+      'N/A - no API routes',
     );
   });
 
@@ -298,13 +361,13 @@ describe('interpolate — conditional API placeholders', () => {
   });
 });
 
-describe('interpolate — BUNDLE_TOOL conditional', () => {
-  it('returns "N/A — native app" for swift', () => {
-    assert.equal(interp('[BUNDLE_TOOL]', { techStack: 'swift' }), 'N/A — native app');
+describe('interpolate - BUNDLE_TOOL conditional', () => {
+  it('returns "N/A - native app" for swift', () => {
+    assert.equal(interp('[BUNDLE_TOOL]', { techStack: 'swift' }), 'N/A - native app');
   });
 
-  it('returns "N/A — native app" for java', () => {
-    assert.equal(interp('[BUNDLE_TOOL]', { techStack: 'java' }), 'N/A — native app');
+  it('returns "N/A - native app" for java', () => {
+    assert.equal(interp('[BUNDLE_TOOL]', { techStack: 'java' }), 'N/A - native app');
   });
 
   it('returns generic tool name for web stack', () => {
@@ -315,7 +378,7 @@ describe('interpolate — BUNDLE_TOOL conditional', () => {
   });
 });
 
-describe('interpolate — skill-related placeholders', () => {
+describe('interpolate - skill-related placeholders', () => {
   it('PERF_TOOL returns Instruments for swift', () => {
     const result = interp('[PERF_TOOL]', { techStack: 'swift' });
     assert.ok(result.includes('Instruments'));
@@ -377,7 +440,7 @@ describe('interpolate — skill-related placeholders', () => {
   });
 });
 
-describe('interpolate — simple placeholders', () => {
+describe('interpolate - simple placeholders', () => {
   it('PROJECT_NAME uses config value', () => {
     assert.equal(
       interp('[PROJECT_NAME]', { techStack: 'node-ts', projectName: 'Acme App' }),
@@ -406,7 +469,7 @@ describe('interpolate — simple placeholders', () => {
   });
 });
 
-describe('interpolate — FRAMEWORK_VALUE via frameworkValue()', () => {
+describe('interpolate - FRAMEWORK_VALUE via frameworkValue()', () => {
   it('uses explicit framework from config', () => {
     assert.equal(
       interp('[FRAMEWORK_VALUE]', { techStack: 'node-ts', framework: 'Next.js 15' }),
@@ -414,28 +477,49 @@ describe('interpolate — FRAMEWORK_VALUE via frameworkValue()', () => {
     );
   });
 
-  it('returns "N/A — native app" for native stacks', () => {
+  it('returns "N/A - native app" for native stacks', () => {
     for (const stack of ['swift', 'kotlin', 'rust', 'dotnet', 'java']) {
-      assert.equal(interp('[FRAMEWORK_VALUE]', { techStack: stack }), 'N/A — native app');
+      assert.equal(interp('[FRAMEWORK_VALUE]', { techStack: stack }), 'N/A - native app');
     }
   });
 
   it('returns fill-in prompt for web stack without explicit framework', () => {
     assert.equal(
       interp('[FRAMEWORK_VALUE]', { techStack: 'node-ts' }),
-      '_fill in: e.g. Next.js 15, Express, Django, Rails_',
+      '_fill in: e.g. Next.js 15, Express, Fastify, NestJS, Hono_',
+    );
+  });
+
+  it('returns stack-specific examples for python', () => {
+    assert.equal(
+      interp('[FRAMEWORK_VALUE]', { techStack: 'python' }),
+      '_fill in: e.g. FastAPI, Django, Flask, Litestar_',
+    );
+  });
+
+  it('returns stack-specific examples for go', () => {
+    assert.equal(
+      interp('[FRAMEWORK_VALUE]', { techStack: 'go' }),
+      '_fill in: e.g. Gin, Echo, Fiber, Chi_',
+    );
+  });
+
+  it('returns stack-specific examples for ruby', () => {
+    assert.equal(
+      interp('[FRAMEWORK_VALUE]', { techStack: 'ruby' }),
+      '_fill in: e.g. Rails, Sinatra, Hanami_',
     );
   });
 });
 
-describe('interpolate — multiple placeholders in one string', () => {
+describe('interpolate - multiple placeholders in one string', () => {
   it('replaces all placeholders in a single pass', () => {
     const template = 'Stack: [TECH_STACK_SUMMARY], Test: [TEST_COMMAND], Name: [PROJECT_NAME]';
     const result = interpolate(template, {
       techStack: 'swift',
       projectName: 'MyApp',
     });
-    assert.equal(result, 'Stack: Swift / macOS, Test: xcodebuild test, Name: MyApp');
+    assert.equal(result, 'Stack: Swift / macOS, Test: xcodebuild test -scheme MyApp, Name: MyApp');
   });
 
   it('replaces repeated placeholders', () => {
@@ -541,7 +625,7 @@ describe('pruneSkills', () => {
   });
 
   it('missing skills directory does not crash', async () => {
-    // no setupSkills — dir has no .claude/skills
+    // no setupSkills - dir has no .claude/skills
     await pruneSkills(tmpDir, { techStack: 'node-ts', hasApi: false });
     // should complete without error
   });
@@ -605,7 +689,17 @@ describe('patchSettingsPermissions', () => {
     java: ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
     ruby: ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
     go: ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
-    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(curl:*)'],
+    python: [
+      'Bash(git:*)',
+      'Bash(python:*)',
+      'Bash(pip:*)',
+      'Bash(uv:*)',
+      'Bash(pytest:*)',
+      'Bash(mypy:*)',
+      'Bash(uvicorn:*)',
+      'Bash(alembic:*)',
+      'Bash(curl:*)',
+    ],
   };
 
   for (const [stack, expected] of Object.entries(expectedAllow)) {
@@ -626,7 +720,7 @@ describe('patchSettingsPermissions', () => {
     dotnet: ['Bash(dotnet nuget push*)'],
     java: ['Bash(mvn deploy*)', 'Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
     ruby: ['Bash(gem push*)'],
-    python: ['Bash(twine upload*)'],
+    python: ['Bash(twine upload*)', 'Bash(alembic downgrade base*)'],
   };
 
   for (const [stack, extraDeny] of Object.entries(expectedDenyAppended)) {
@@ -659,7 +753,7 @@ describe('patchSettingsPermissions', () => {
   // --- edge cases ---
 
   it('missing settings.json does not crash', async () => {
-    // no writeSettings — file doesn't exist
+    // no writeSettings - file doesn't exist
     await patchSettingsPermissions(tmpDir, { techStack: 'swift' });
     // should complete without error
   });
@@ -672,7 +766,7 @@ describe('patchSettingsPermissions', () => {
     // should complete without error (catch block)
   });
 
-  it('go has no deny list — original deny preserved without additions', async () => {
+  it('go has no deny list - original deny preserved without additions', async () => {
     await writeSettings(tmpDir, baseSettings);
     await patchSettingsPermissions(tmpDir, { techStack: 'go' });
     const result = await readSettings(tmpDir);

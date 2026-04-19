@@ -2,9 +2,9 @@ import fs from 'fs-extra';
 import path from 'path';
 
 const tierDescriptions = {
-  s: 'Fast Lane (Tier S) — minimal pipeline for bugfixes and small changes',
-  m: 'Standard (Tier M) — 5-phase pipeline for feature blocks',
-  l: 'Full (Tier L) — complete governance pipeline for complex, long-running projects',
+  s: 'Fast Lane (Tier S) - minimal pipeline for bugfixes and small changes',
+  m: 'Standard (Tier M) - 5-phase pipeline for feature blocks',
+  l: 'Full (Tier L) - complete governance pipeline for complex, long-running projects',
 };
 
 export async function generateReadme(config, targetDir) {
@@ -38,10 +38,10 @@ This project uses [Claude Code](https://claude.ai/code) with a governance scaffo
 **Pipeline**: ${tierDesc}
 
 Key files:
-- \`CLAUDE.md\` — project context for Claude (tech stack, conventions, known patterns)
-- \`.claude/rules/pipeline.md\` — mandatory development workflow
-- \`.claude/settings.json\` — tool permissions and governance hooks
-- \`docs/adr/\` — architecture decision records
+- \`CLAUDE.md\` - project context for Claude (tech stack, conventions, known patterns)
+- \`.claude/rules/pipeline.md\` - mandatory development workflow
+- \`.claude/settings.json\` - tool permissions and governance hooks
+- \`docs/adr/\` - architecture decision records
 
 **Every AI-assisted commit is tagged** via \`attribution.commit\` in \`.claude/settings.json\`
 and should be reviewed by a human before merging to shared branches.

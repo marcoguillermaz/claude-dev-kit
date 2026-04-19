@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
-// Files that are safe to upgrade (non-destructive — they don't contain user content)
+// Files that are safe to upgrade (non-destructive - they don't contain user content)
 const UPGRADEABLE_FILES = [
   { template: 'common/context-review.md', target: '.claude/rules/context-review.md' },
   { template: 'common/rules/security.md', target: '.claude/rules/security.md' },
@@ -80,11 +80,11 @@ export async function upgrade(options) {
   REVIEW_REQUIRED.forEach((f) => {
     const exists = fs.existsSync(path.join(cwd, f));
     if (exists) {
-      console.log(`  ${chalk.yellow('⚠')} ${f} — compare with template manually`);
+      console.log(`  ${chalk.yellow('⚠')} ${f} - compare with template manually`);
     }
   });
 
-  // Detect and report custom skills (custom-* prefix — never touched by upgrade)
+  // Detect and report custom skills (custom-* prefix - never touched by upgrade)
   const customSkillsDir = path.join(cwd, '.claude', 'skills');
   if (fs.existsSync(customSkillsDir)) {
     const entries = fs.readdirSync(customSkillsDir, { withFileTypes: true });
@@ -93,14 +93,14 @@ export async function upgrade(options) {
       .map((e) => e.name);
     if (customSkills.length > 0) {
       console.log();
-      console.log(chalk.bold('Custom skills (preserved — never modified by upgrade):'));
+      console.log(chalk.bold('Custom skills (preserved - never modified by upgrade):'));
       customSkills.forEach((s) => console.log(`  ${chalk.green('✓')} .claude/skills/${s}/`));
     }
   }
 
   if (options.dryRun || updates.length === 0) {
     if (options.dryRun) console.log();
-    if (options.dryRun) console.log(chalk.yellow('Dry run — no files written.'));
+    if (options.dryRun) console.log(chalk.yellow('Dry run - no files written.'));
     return;
   }
 

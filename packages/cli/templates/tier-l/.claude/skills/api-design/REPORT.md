@@ -1,6 +1,6 @@
-# API Design Audit — Report Template
+# API Design Audit - Report Template
 
-## API Design Audit — [DATE] — [TARGET] — mode: [audit|remediation|apply]
+## API Design Audit - [DATE] - [TARGET] - mode: [audit|remediation|apply]
 ### Scope: [N] API routes
 ### Sources: framework route handler docs, RFC 9457, validation library docs, MDN HTTP status codes
 
@@ -15,9 +15,9 @@
 ### Detected API Conventions (current project state)
 - Routing style: [e.g. REST resource-oriented, /api/[resource]/[id]/[action]]
 - Naming style: [e.g. camelCase params, snake_case DB fields]
-- Error format: [e.g. { error: string } — consistent/inconsistent]
-- Pagination pattern: [e.g. { items, total, page, pageSize } — partial/full]
-- Validation strategy: [e.g. non-throwing validation before DB — X% of write routes]
+- Error format: [e.g. { error: string } - consistent/inconsistent]
+- Pagination pattern: [e.g. { items, total, page, pageSize } - partial/full]
+- Validation strategy: [e.g. non-throwing validation before DB - X% of write routes]
 
 ### Pattern Checks
 | # | Check | Issues | Severity | Verdict |
@@ -52,21 +52,21 @@
 
 ### Error Shape Consistency Note
 Current project standard: `{ error: string }`. RFC 9457 standard: `{ type, title, status, detail }`.
-Verdict: [Consistent / Inconsistent — N routes diverge with { message: } or { errors: [] }]
+Verdict: [Consistent / Inconsistent - N routes diverge with { message: } or { errors: [] }]
 Recommendation: [keep current if consistent | standardize to { error, status } minimum]
 
 ### Inconsistencies requiring action ([N] total)
-[route — check# — issue — standard to apply — fix]
+[route - check# - issue - standard to apply - fix]
 
 ### Strategic improvements
-[Include ONLY if 3+ routes show the same structural issue. Each entry: title · impacted routes count · effort estimate (S/M/L) · suggested block name. Skip entire section if no strategic issue found — do not invent one.]
+[Include ONLY if 3+ routes show the same structural issue. Each entry: title · impacted routes count · effort estimate (S/M/L) · suggested block name. Skip entire section if no strategic issue found - do not invent one.]
 
 ### Recommended platform standards
 
 | Convention | Current state | Recommended standard |
 |---|---|---|
-| Error shape | { error: string } | keep — consistent |
-| Pagination params | page + pageSize | keep — or: adopt page + limit if majority uses limit |
+| Error shape | { error: string } | keep - consistent |
+| Pagination params | page + pageSize | keep - or: adopt page + limit if majority uses limit |
 | Field naming in bodies | [detected: camelCase/snake_case/mixed] | [recommendation] |
 | Action endpoint policy | [state-machine transitions as /[id]/[verb]] | accept with max 1 action segment per route |
 | Max nesting depth | [detected max] | max 2 levels: /[resource]/[id]/[sub-resource] |
@@ -79,11 +79,11 @@ Recommendation: [keep current if consistent | standardize to { error, status } m
 For each **High/Critical** finding, append to `docs/refactoring-backlog.md`:
 - Assign ID: `API-[n]`
 - Add to priority index table
-- Add full detail section: `### API-[n] — [title]` with description, impacted files, fix.
+- Add full detail section: `### API-[n] - [title]` with description, impacted files, fix.
 
 For each **Medium** finding, append:
 - Add to priority index table (lower priority tier)
-- Add section: `### API-[n] — [title]` with description and impacted files. No fix required — mark as "planned."
+- Add section: `### API-[n] - [title]` with description and impacted files. No fix required - mark as "planned."
 
 **Low** findings: add only to priority index as a single line. No detail section. Include only if actionable in < 30 min.
 

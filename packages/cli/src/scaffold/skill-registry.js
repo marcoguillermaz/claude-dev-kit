@@ -1,5 +1,5 @@
 /**
- * Skill Registry — single source of truth for skill applicability rules.
+ * Skill Registry - single source of truth for skill applicability rules.
  *
  * Consumed by:
  *   - pruneSkills()          in scaffold/index.js   (which dirs to delete)
@@ -75,7 +75,7 @@ const TIER_ORDER = { s: 0, m: 1, l: 2 };
 
 /**
  * Check whether a skill is active for the given config.
- * A feature flag must be explicitly `false` to disable — undefined/true both pass.
+ * A feature flag must be explicitly `false` to disable - undefined/true both pass.
  */
 function isSkillActive(skill, config) {
   for (const flag of Object.keys(skill.requires)) {
@@ -87,7 +87,7 @@ function isSkillActive(skill, config) {
 
 /**
  * Skills to remove from disk after template copy.
- * Used by pruneSkills() — does NOT filter by tier (the template already contains
+ * Used by pruneSkills() - does NOT filter by tier (the template already contains
  * only the skills for its tier).
  */
 export function getSkillsToRemove(config) {

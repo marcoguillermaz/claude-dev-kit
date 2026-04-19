@@ -1,4 +1,4 @@
-# Security Rules — Native Apple (macOS / iOS)
+# Security Rules - Native Apple (macOS / iOS)
 
 These rules apply when working on Swift/Objective-C apps targeting Apple platforms.
 
@@ -10,7 +10,7 @@ These rules apply when working on Swift/Objective-C apps targeting Apple platfor
 
 ## Keychain & Credentials
 
-- Store secrets (API keys, tokens, passwords) in Keychain Services — never in UserDefaults, plists, or plain files.
+- Store secrets (API keys, tokens, passwords) in Keychain Services - never in UserDefaults, plists, or plain files.
 - Use `kSecAttrAccessible` values appropriate to the data sensitivity. Prefer `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for high-sensitivity items.
 - Never log Keychain values, even at debug level.
 
@@ -18,14 +18,14 @@ These rules apply when working on Swift/Objective-C apps targeting Apple platfor
 
 - Declare every required permission in `Info.plist` with a clear, user-facing usage description.
 - Request permissions at the point of use, not at app launch. Explain why before the system prompt appears.
-- Handle the "denied" state gracefully — never crash or silently fail when permission is denied.
+- Handle the "denied" state gracefully - never crash or silently fail when permission is denied.
 - Never access protected resources without checking authorization status first.
 
 ## Data Persistence
 
 - Sensitive data written to disk must use Data Protection (`FileProtectionType.complete` or `.completeUnlessOpen`).
 - SQLite databases containing user data should enable encryption (SQLCipher or equivalent) if the threat model requires it.
-- Temporary files with sensitive content must be deleted after use — never leave them in `tmp/` indefinitely.
+- Temporary files with sensitive content must be deleted after use - never leave them in `tmp/` indefinitely.
 
 ## Code Signing & Distribution
 

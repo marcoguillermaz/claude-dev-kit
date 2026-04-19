@@ -14,7 +14,9 @@
     ],
     "deny": [
       "Bash(git push --force*)",
-      "Bash(rm -rf /*)"
+      "Bash(rm -rf /*)",
+      "Bash(npm publish*)",
+      "Bash(DROP DATABASE*)"
     ]
   },
   "hooks": {

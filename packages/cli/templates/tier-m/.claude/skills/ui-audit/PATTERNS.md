@@ -1,4 +1,4 @@
-# UI Audit — Pattern Reference
+# UI Audit - Pattern Reference
 
 Reference file loaded by `/ui-audit`. Contains framework-specific grep patterns and verification methods for each check. Fill in the patterns for your stack, then remove the placeholder markers.
 
@@ -14,7 +14,7 @@ For hybrid projects (Tauri, Electron, React Native with web views): use `web` if
 
 ## Dynamic route detection
 
-`[DYNAMIC_ROUTE_PATTERN]` — pattern to identify single-record/detail pages.
+`[DYNAMIC_ROUTE_PATTERN]` - pattern to identify single-record/detail pages.
 
 | Stack | Example pattern |
 |---|---|
@@ -71,7 +71,7 @@ Examples: React `<EmptyState`, SwiftUI `ContentUnavailableView`, Vue `<EmptyStat
 | S1 | Singleton duplication | Singleton UI indicator (badge, avatar) rendered more than once per viewport | `[your verification approach]` |
 | S2 | Destructive action color | Destructive action using hardcoded color instead of semantic destructive token | `[your pattern]` |
 | S3 | Table container width | Table container wrapper without width constraint | `[your pattern]` |
-| S4 | Rendering boundary | Client-side rendering directive at root layout level (SSR only — skip if SPA or native) | `[your pattern or N/A]` |
+| S4 | Rendering boundary | Client-side rendering directive at root layout level (SSR only - skip if SPA or native) | `[your pattern or N/A]` |
 
 ### SSR framework detection (for S4)
 

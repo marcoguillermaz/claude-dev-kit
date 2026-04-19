@@ -1,5 +1,5 @@
 /**
- * claude-dev-kit — Integration test suite
+ * claude-dev-kit - Integration test suite
  *
  * Tests the scaffold layer directly (bypasses Inquirer).
  * Validates file structure, placeholder resolution, and Stop hook presence
@@ -50,14 +50,14 @@ function pass(label) {
 
 function fail(label, detail = '') {
   failed++;
-  const msg = detail ? `${label} — ${detail}` : label;
+  const msg = detail ? `${label} - ${detail}` : label;
   failures.push(msg);
-  console.log(`  ${c.red('✗')} ${label}${detail ? c.dim(' — ' + detail) : ''}`);
+  console.log(`  ${c.red('✗')} ${label}${detail ? c.dim(' - ' + detail) : ''}`);
 }
 
 function warn(label, detail = '') {
   warned++;
-  if (VERBOSE) console.log(`  ${c.yellow('⚠')} ${label}${detail ? c.dim(' — ' + detail) : ''}`);
+  if (VERBOSE) console.log(`  ${c.yellow('⚠')} ${label}${detail ? c.dim(' - ' + detail) : ''}`);
 }
 
 // ── Assertions ───────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ function warn(label, detail = '') {
 function assertContains(dir, relPath, substring, label) {
   const full = path.join(dir, relPath);
   if (!fs.existsSync(full)) {
-    fail(`${label || relPath} — file missing`);
+    fail(`${label || relPath} - file missing`);
     return;
   }
   const content = fs.readFileSync(full, 'utf8');
@@ -204,7 +204,7 @@ function assertNoUnfilledWizardPlaceholders(dir) {
 
   for (const f of allFiles) {
     // CONTEXT_IMPORT.md intentionally references these patterns as instructions
-    // for Claude to fill in pipeline.md — not actual unfilled wizard placeholders
+    // for Claude to fill in pipeline.md - not actual unfilled wizard placeholders
     if (path.basename(f) === 'CONTEXT_IMPORT.md') continue;
 
     const ext = path.extname(f);
@@ -228,7 +228,7 @@ function assertNoUnfilledWizardPlaceholders(dir) {
 function assertStopHookPresent(dir) {
   const settingsPath = path.join(dir, '.claude', 'settings.json');
   if (!fs.existsSync(settingsPath)) {
-    fail('Stop hook check — .claude/settings.json missing');
+    fail('Stop hook check - .claude/settings.json missing');
     return;
   }
   const raw = fs.readFileSync(settingsPath, 'utf8');
@@ -322,7 +322,7 @@ const BASE = {
   backendLead: 'backend-lead',
   securityReviewer: 'security-reviewer',
   mode: 'greenfield',
-  // Feature flags (default: all enabled — full install)
+  // Feature flags (default: all enabled - full install)
   hasApi: true,
   hasDatabase: true,
   hasFrontend: true,
@@ -336,7 +336,7 @@ const BASE = {
 // ── Scenarios ────────────────────────────────────────────────────────────────
 
 async function scenarioTier0() {
-  section('Tier 0 — Discovery');
+  section('Tier 0 - Discovery');
   const config = {
     ...BASE,
     tier: '0',
@@ -363,7 +363,7 @@ async function scenarioTier0() {
 }
 
 async function scenarioTierS_full() {
-  section('Tier S — Greenfield (full: precommit + github)');
+  section('Tier S - Greenfield (full: precommit + github)');
   const config = { ...BASE, tier: 's', isDiscovery: false };
   const dir = await scaffold('tier-s-full', 's', config);
 
@@ -424,7 +424,7 @@ async function scenarioTierS_full() {
   assertExists(dir, '.github/CODEOWNERS');
   assertExists(dir, '.pre-commit-config.yaml');
 
-  // Tier S skips informational docs (P2 — reduce file count)
+  // Tier S skips informational docs (P2 - reduce file count)
   assertNotExists(dir, '.claude/files-guide.md');
   assertNotExists(dir, 'docs/adr/template.md');
   assertNotExists(dir, 'docs/pipeline-standards.md');
@@ -442,7 +442,7 @@ async function scenarioTierS_full() {
 }
 
 async function scenarioTierS_minimal() {
-  section('Tier S — Greenfield (minimal: no precommit, no github)');
+  section('Tier S - Greenfield (minimal: no precommit, no github)');
   const config = {
     ...BASE,
     tier: 's',
@@ -464,7 +464,7 @@ async function scenarioTierS_minimal() {
 }
 
 async function scenarioTierM() {
-  section('Tier M — Greenfield (Standard)');
+  section('Tier M - Greenfield (Standard)');
   const config = {
     ...BASE,
     tier: 'm',
@@ -499,7 +499,7 @@ async function scenarioTierM() {
   assertExists(dir, '.claude/skills/dependency-scan/SKILL.md');
   assertNotExists(dir, '.claude/skills/context-review/SKILL.md');
 
-  // Skills (M has full set — all flags enabled in BASE)
+  // Skills (M has full set - all flags enabled in BASE)
   assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
   assertExists(dir, '.claude/skills/security-audit/SKILL.md');
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
@@ -519,7 +519,7 @@ async function scenarioTierM() {
 }
 
 async function scenarioTierL() {
-  section('Tier L — Greenfield (Full)');
+  section('Tier L - Greenfield (Full)');
   const config = {
     ...BASE,
     tier: 'l',
@@ -572,7 +572,7 @@ async function scenarioTierL() {
 }
 
 async function scenarioInPlaceSafe() {
-  section('In-place — safe mode (existing files not overwritten)');
+  section('In-place - safe mode (existing files not overwritten)');
 
   const dir = path.join(OUTPUT_DIR, 'in-place-safe');
   await fs.ensureDir(dir);
@@ -594,7 +594,7 @@ async function scenarioInPlaceSafe() {
 }
 
 async function scenarioStopHookContent() {
-  section('Stop hook — content correctness');
+  section('Stop hook - content correctness');
 
   // All tiers must have a Stop hook that runs the test command
   for (const tier of ['0', 's', 'm', 'l']) {
@@ -645,7 +645,7 @@ async function scenarioStopHookContent() {
 }
 
 async function scenarioArchAuditTimestamp() {
-  section('Arch audit — timestamp system');
+  section('Arch audit - timestamp system');
 
   for (const tier of ['s', 'm', 'l']) {
     const config = {
@@ -677,14 +677,14 @@ async function scenarioArchAuditTimestamp() {
       if (skillRaw.includes('last-arch-audit')) {
         pass(`Tier ${tier}: arch-audit Step 5 writes last-arch-audit timestamp`);
       } else {
-        fail(`Tier ${tier}: arch-audit Step 5 bash block is empty — timestamp never written`);
+        fail(`Tier ${tier}: arch-audit Step 5 bash block is empty - timestamp never written`);
       }
     }
   }
 }
 
 async function scenarioPerfAuditPlaceholders() {
-  section('perf-audit — placeholder resolution + applicability guard');
+  section('perf-audit - placeholder resolution + applicability guard');
 
   for (const tier of ['m', 'l']) {
     const config = { ...BASE, tier, isDiscovery: false, hasFrontend: true, hasApi: true };
@@ -721,7 +721,7 @@ async function scenarioPerfAuditPlaceholders() {
 }
 
 async function scenarioSkillDevApplicabilityCheck() {
-  section('skill-dev — applicability guard present (tier M/L)');
+  section('skill-dev - applicability guard present (tier M/L)');
 
   for (const tier of ['m', 'l']) {
     const config = { ...BASE, tier, isDiscovery: false };
@@ -743,7 +743,7 @@ async function scenarioSkillDevApplicabilityCheck() {
     }
 
     if (raw.includes('CHECK D9') && raw.includes('UI frameworks only')) {
-      pass(`Tier ${tier}: skill-dev skip list includes D9 (lifecycle — UI frameworks only)`);
+      pass(`Tier ${tier}: skill-dev skip list includes D9 (lifecycle - UI frameworks only)`);
     } else {
       fail(`Tier ${tier}: skill-dev skip list missing D9 annotation`);
     }
@@ -751,7 +751,7 @@ async function scenarioSkillDevApplicabilityCheck() {
 }
 
 async function scenarioSkillPruning() {
-  section('Skill pruning — no API, no DB, no frontend');
+  section('Skill pruning - no API, no DB, no frontend');
   const config = {
     ...BASE,
     tier: 'm',
@@ -782,12 +782,12 @@ async function scenarioSkillPruning() {
   assertExists(dir, '.claude/skills/skill-dev/SKILL.md');
   assertExists(dir, '.claude/skills/perf-audit/SKILL.md');
   assertExists(dir, '.claude/skills/commit/SKILL.md');
-  // test-audit has no `requires` flags — universally present in Tier M/L
+  // test-audit has no `requires` flags - universally present in Tier M/L
   assertExists(dir, '.claude/skills/test-audit/SKILL.md');
 }
 
 async function scenarioTierSSkillPruning() {
-  section('Tier S skill pruning — hasApi=false keeps security-audit (stack-agnostic)');
+  section('Tier S skill pruning - hasApi=false keeps security-audit (stack-agnostic)');
   const config = {
     ...BASE,
     tier: 's',
@@ -829,7 +829,7 @@ async function scenarioTierSSkillPruning() {
 }
 
 async function scenarioUiAuditPruning() {
-  section('Skill pruning — frontend yes, design system no → ui-audit absent');
+  section('Skill pruning - frontend yes, design system no → ui-audit absent');
   const config = {
     ...BASE,
     tier: 'm',
@@ -839,7 +839,7 @@ async function scenarioUiAuditPruning() {
   };
   const dir = await scaffold('tier-m-no-design-system', 'm', config);
 
-  // ui-audit requires design system — must be absent
+  // ui-audit requires design system - must be absent
   assertNotExists(dir, '.claude/skills/ui-audit/SKILL.md');
 
   // Other frontend skills must be present
@@ -851,20 +851,20 @@ async function scenarioUiAuditPruning() {
 }
 
 async function scenarioCommitSkillAllTiers() {
-  section('Commit skill — present in tier S');
+  section('Commit skill - present in tier S');
   const config = { ...BASE, tier: 's', isDiscovery: false };
   const dir = await scaffold('tier-s-commit', 's', config);
   assertExists(dir, '.claude/skills/commit/SKILL.md');
 }
 
 async function scenarioNewRuleFiles() {
-  section('New rule files — output-style in tier S; standards docs skipped for S, present in M');
+  section('New rule files - output-style in tier S; standards docs skipped for S, present in M');
   const config = { ...BASE, tier: 's', isDiscovery: false };
   const dir = await scaffold('tier-s-rules', 's', config);
 
-  // output-style.md stays in .claude/rules/ (operational rule — all tiers)
+  // output-style.md stays in .claude/rules/ (operational rule - all tiers)
   assertExists(dir, '.claude/rules/output-style.md');
-  // Standards reference docs skipped for Tier S (P2 — reduce file count)
+  // Standards reference docs skipped for Tier S (P2 - reduce file count)
   assertNotExists(dir, 'docs/claudemd-standards.md');
   assertNotExists(dir, 'docs/pipeline-standards.md');
 
@@ -879,7 +879,7 @@ async function scenarioNewRuleFiles() {
 async function scenarioPipelineGateCount() {
   section('Pipeline gate counts per tier');
 
-  // Tier S has scope-confirm (not a STOP gate) — 0 STOP gates by design
+  // Tier S has scope-confirm (not a STOP gate) - 0 STOP gates by design
   const gateCounts = { m: 2, l: 4 };
 
   for (const [tier, expectedGates] of Object.entries(gateCounts)) {
@@ -906,7 +906,7 @@ async function scenarioPipelineGateCount() {
 }
 
 async function scenarioNewStacks() {
-  section('New named stacks — placeholder resolution + basic structure');
+  section('New named stacks - placeholder resolution + basic structure');
 
   const newStacks = [
     {
@@ -981,7 +981,7 @@ async function scenarioNewStacks() {
 }
 
 async function scenarioNativeStackCommandDefaults() {
-  section('Native stack command defaults — no npm fallback when commands omitted');
+  section('Native stack command defaults - no npm fallback when commands omitted');
 
   // Simulates detection failure: no commands supplied → should resolve to native defaults, not npm.
   const nativeDefaults = [
@@ -1039,7 +1039,7 @@ async function scenarioNativeStackCommandDefaults() {
 }
 
 async function scenarioWizardCoverage() {
-  section('Wizard coverage — full CLI execution via --answers');
+  section('Wizard coverage - full CLI execution via --answers');
 
   const CLI = path.resolve(__dirname, '../../src/index.js');
   const FIXTURES_DIR = path.resolve(__dirname, '../fixtures/wizard-answers');
@@ -1076,7 +1076,7 @@ async function scenarioWizardCoverage() {
 }
 
 async function scenarioSecurityVariants() {
-  section('Security rule variants — stack-aware security.md selection');
+  section('Security rule variants - stack-aware security.md selection');
 
   const variants = [
     {
@@ -1178,9 +1178,9 @@ async function scenarioSecurityVariants() {
 }
 
 async function scenarioPlaceholderNoiseReduction() {
-  section('Placeholder noise reduction — unfilled sections stripped from CLAUDE.md');
+  section('Placeholder noise reduction - unfilled sections stripped from CLAUDE.md');
 
-  // Tier M — RBAC, Key Workflows, Known Patterns stripped
+  // Tier M - RBAC, Key Workflows, Known Patterns stripped
   const configM = { ...BASE, tier: 'm', isDiscovery: false };
   const dirM = await scaffold('noise-reduction-tier-m', 'm', configM);
   const claudeM = fs.readFileSync(path.join(dirM, 'CLAUDE.md'), 'utf8');
@@ -1209,7 +1209,7 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  // Tier L — additionally strips Navigation by Role
+  // Tier L - additionally strips Navigation by Role
   const configL = {
     ...BASE,
     tier: 'l',
@@ -1253,10 +1253,10 @@ async function scenarioPlaceholderNoiseReduction() {
   if (lineCountM < 80) {
     pass(`Tier M: CLAUDE.md line count reduced (${lineCountM} lines)`);
   } else {
-    fail(`Tier M: CLAUDE.md still ${lineCountM} lines — expected < 80 after stripping`);
+    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 80 after stripping`);
   }
 
-  // Tier S — Known Patterns stripped (only section applicable)
+  // Tier S - Known Patterns stripped (only section applicable)
   const configS = { ...BASE, tier: 's', isDiscovery: false };
   const dirS = await scaffold('noise-reduction-tier-s', 's', configS);
   const claudeS = fs.readFileSync(path.join(dirS, 'CLAUDE.md'), 'utf8');
@@ -1267,7 +1267,7 @@ async function scenarioPlaceholderNoiseReduction() {
     fail('Tier S: section "## Known Patterns" should be stripped');
   }
 
-  // Native stack (swift, hasApi=false) — web convention stripped, no [HAS_API] literal
+  // Native stack (swift, hasApi=false) - web convention stripped, no [HAS_API] literal
   const configNative = {
     ...BASE,
     tier: 'm',
@@ -1303,12 +1303,12 @@ async function scenarioPlaceholderNoiseReduction() {
 }
 
 async function scenarioInPlaceClaudeMdGeneration() {
-  section('In-place — generateClaudeMd runs when no pre-existing CLAUDE.md');
+  section('In-place - generateClaudeMd runs when no pre-existing CLAUDE.md');
 
   const dir = path.join(OUTPUT_DIR, 'in-place-claudemd-gen');
   await fs.ensureDir(dir);
 
-  // No pre-existing CLAUDE.md — scaffold should generate a processed one
+  // No pre-existing CLAUDE.md - scaffold should generate a processed one
   const config = {
     ...BASE,
     tier: 'm',
@@ -1367,7 +1367,7 @@ async function scenarioInPlaceClaudeMdGeneration() {
 }
 
 async function scenarioCheatsheetPruning() {
-  section('Cheatsheet pruning — removed skills stripped from cheatsheet');
+  section('Cheatsheet pruning - removed skills stripped from cheatsheet');
 
   const config = { ...BASE, tier: 'm', isDiscovery: false, hasApi: false, hasDatabase: false };
   const dir = await scaffold('cheatsheet-pruning', 'm', config);
@@ -1407,7 +1407,7 @@ async function scenarioCheatsheetPruning() {
   if (cheat.includes('refactoring-backlog.md')) {
     pass('cheatsheet: correct doc reference (refactoring-backlog.md)');
   } else {
-    fail('cheatsheet: wrong doc reference — expected refactoring-backlog.md');
+    fail('cheatsheet: wrong doc reference - expected refactoring-backlog.md');
   }
 
   if (!cheat.includes('backlog-refinement.md')) {
@@ -1418,7 +1418,7 @@ async function scenarioCheatsheetPruning() {
 }
 
 async function scenarioNativeSkillAdaptation() {
-  section('Native skill adaptation — perf-audit, skill-dev, security-audit for non-web stacks');
+  section('Native skill adaptation - perf-audit, skill-dev, security-audit for non-web stacks');
 
   const stacks = [
     { stack: 'swift', perfTool: 'Instruments', lintCmd: 'swiftlint', secChecklist: 'Keychain API' },
@@ -1474,7 +1474,7 @@ async function scenarioNativeSkillAdaptation() {
       if (perf.includes(perfTool)) {
         pass(`native-skill[${stack}]: perf-audit [PERF_TOOL] resolved to ${perfTool}`);
       } else {
-        fail(`native-skill[${stack}]: perf-audit [PERF_TOOL] not resolved — expected ${perfTool}`);
+        fail(`native-skill[${stack}]: perf-audit [PERF_TOOL] not resolved - expected ${perfTool}`);
       }
 
       if (!perf.includes('[PERF_TOOL]') && !perf.includes('[PROFILER_COMMAND]')) {
@@ -1507,7 +1507,7 @@ async function scenarioNativeSkillAdaptation() {
       if (dev.includes(lintCmd)) {
         pass(`native-skill[${stack}]: skill-dev [LINT_COMMAND] resolved to ${lintCmd}`);
       } else {
-        fail(`native-skill[${stack}]: skill-dev [LINT_COMMAND] not resolved — expected ${lintCmd}`);
+        fail(`native-skill[${stack}]: skill-dev [LINT_COMMAND] not resolved - expected ${lintCmd}`);
       }
 
       if (!dev.includes('[LINT_COMMAND]')) {
@@ -1532,11 +1532,11 @@ async function scenarioNativeSkillAdaptation() {
 
       if (sec.includes(secChecklist)) {
         pass(
-          `native-skill[${stack}]: security-audit checklist resolved — contains ${secChecklist}`,
+          `native-skill[${stack}]: security-audit checklist resolved - contains ${secChecklist}`,
         );
       } else {
         fail(
-          `native-skill[${stack}]: security-audit checklist not resolved — expected ${secChecklist}`,
+          `native-skill[${stack}]: security-audit checklist not resolved - expected ${secChecklist}`,
         );
       }
 
@@ -1567,7 +1567,7 @@ async function scenarioNativeSkillAdaptation() {
 // ── excludeNative edge case ─────────────────────────────────────────────────
 
 async function scenarioExcludeNativeWithFrontend() {
-  section('excludeNative — native stack with hasFrontend:true still excludes browser-only skills');
+  section('excludeNative - native stack with hasFrontend:true still excludes browser-only skills');
 
   const nativeStacks = ['swift', 'kotlin', 'rust'];
   for (const stack of nativeStacks) {
@@ -1595,7 +1595,7 @@ async function scenarioExcludeNativeWithFrontend() {
     assertExists(dir, '.claude/skills/test-audit/SKILL.md');
     assertExists(dir, '.claude/skills/arch-audit/SKILL.md');
 
-    // ui-audit uses hasDesignSystem gating, not excludeNative — present when design system = true
+    // ui-audit uses hasDesignSystem gating, not excludeNative - present when design system = true
     assertExists(dir, '.claude/skills/ui-audit/SKILL.md');
   }
 }
@@ -1631,7 +1631,7 @@ function resetRubricDims() {
 }
 
 async function scenarioRubricScore() {
-  section('Rubric scoring — D2/D5/D7/D8 for 3 representative stacks');
+  section('Rubric scoring - D2/D5/D7/D8 for 3 representative stacks');
 
   const rubricConfigs = [
     {
@@ -1734,7 +1734,7 @@ async function scenarioRubricScore() {
       }
     }
 
-    // No pruned skill should be listed (security-audit is always present — not API-gated)
+    // No pruned skill should be listed (security-audit is always present - not API-gated)
     if (!hasApi) {
       if (!activeBlock.includes('/api-design')) {
         rubricPass('D5', `[${name}] no API-only skills listed when hasApi=false`);
@@ -1883,7 +1883,7 @@ async function scenarioRubricScore() {
 // ── new skill scaffolder ────────────────────────────────────────────────────
 
 async function scenarioNewSkillScaffolder() {
-  section('new skill scaffolder — end-to-end');
+  section('new skill scaffolder - end-to-end');
 
   const dir = path.join(OUTPUT_DIR, 'new-skill');
   await fs.ensureDir(path.join(dir, '.claude'));
@@ -2004,7 +2004,7 @@ async function scenarioNewSkillScaffolder() {
 // ── Scenario: Swift content assertions (every R1 finding = one assertion) ────
 
 async function scenarioSwiftContentAssertions() {
-  section('Swift content assertions — regression guard');
+  section('Swift content assertions - regression guard');
   const config = {
     ...BASE,
     projectName: 'swift-content-check',
@@ -2036,10 +2036,10 @@ async function scenarioSwiftContentAssertions() {
   assertContains(
     dir,
     '.claude/rules/pipeline.md',
-    'Phase 4 — UAT / E2E tests *(disabled)*',
+    'Phase 4 - UAT / E2E tests *(disabled)*',
     'R2: Phase 4 disabled heading',
   );
-  // count "# not configured" — should only appear in bash blocks, not prose
+  // count "# not configured" - should only appear in bash blocks, not prose
   const pipelineContent = fs.readFileSync(path.join(dir, '.claude/rules/pipeline.md'), 'utf8');
   const notConfiguredInProse = pipelineContent
     .split('\n')
@@ -2120,7 +2120,7 @@ async function scenarioSwiftContentAssertions() {
 // ── Scenario: Node-TS content assertions ──────────────────────────────────────
 
 async function scenarioNodeTsContentAssertions() {
-  section('Node-TS content assertions — regression guard');
+  section('Node-TS content assertions - regression guard');
   const config = {
     ...BASE,
     tier: 'm',
@@ -2200,7 +2200,7 @@ async function scenarioNodeTsContentAssertions() {
 // ── Scenario: Python content assertions ───────────────────────────────────────
 
 async function scenarioPythonContentAssertions() {
-  section('Python content assertions — regression guard');
+  section('Python content assertions - regression guard');
   const config = {
     ...BASE,
     tier: 'm',
@@ -2239,7 +2239,7 @@ async function scenarioPythonContentAssertions() {
   assertContains(dir, 'CLAUDE.md', '**Language**: Python', 'PY3: Language label');
   assertContains(dir, 'CLAUDE.md', '**Framework**: FastAPI', 'PY3: Framework label');
 
-  // PY4: web Environment (not native) — Python is web stack
+  // PY4: web Environment (not native) - Python is web stack
   assertContains(dir, 'CLAUDE.md', '.env.local', 'PY4: .env.local in Environment');
   assertNotContains(dir, 'CLAUDE.md', '_native distribution_', 'PY4: no native distribution');
 
@@ -2254,7 +2254,7 @@ async function scenarioPythonContentAssertions() {
   assertContains(dir, '.gitignore', '__pycache__/', 'PY7: __pycache__ in .gitignore');
   assertContains(dir, '.gitignore', '.venv/', 'PY7: .venv in .gitignore');
 
-  // PY8: hasFrontend=false — frontend skills pruned
+  // PY8: hasFrontend=false - frontend skills pruned
   const frontendSkills = ['responsive-audit', 'visual-audit', 'ux-audit', 'accessibility-audit'];
   for (const skill of frontendSkills) {
     const skillDir = path.join(dir, '.claude', 'skills', skill);
@@ -2361,7 +2361,7 @@ async function scenarioCrossStackInvariants() {
 
 async function main() {
   console.log();
-  console.log(c.bold('claude-dev-kit — Integration tests'));
+  console.log(c.bold('claude-dev-kit - Integration tests'));
   console.log(c.dim(`Output: ${OUTPUT_DIR}`));
   console.log(c.dim(`Verbose: ${VERBOSE ? 'on' : 'off (use --verbose for full output)'}`));
 

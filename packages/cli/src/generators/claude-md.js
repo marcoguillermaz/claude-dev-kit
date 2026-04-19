@@ -9,7 +9,7 @@ const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
 
 /**
  * Generate CLAUDE.md from the tier template, applying wizard answers.
- * Single authoritative writer — scaffold/index.js does NOT copy CLAUDE.md.
+ * Single authoritative writer - scaffold/index.js does NOT copy CLAUDE.md.
  *
  * Pipeline: raw template → interpolate() (all placeholders) → command block
  *           → rule imports → active skills → conditional stripping → write
@@ -82,7 +82,7 @@ export async function generateClaudeMd(config, targetDir) {
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
 }
 
-const NATIVE_CMD_DEFAULTS = {
+const STACK_CMD_DEFAULTS = {
   swift: {
     install: '# no install step',
     dev: 'swift run',
@@ -118,10 +118,34 @@ const NATIVE_CMD_DEFAULTS = {
     test: 'mvn test',
     typeCheck: '',
   },
+  python: {
+    install: 'pip install -r requirements.txt',
+    dev: '',
+    build: '',
+    test: 'pytest',
+    typeCheck: '',
+  },
+  go: {
+    install: 'go mod download',
+    dev: 'go run .',
+    build: 'go build ./...',
+    test: 'go test ./...',
+    typeCheck: '',
+  },
+  ruby: {
+    install: 'bundle install',
+    dev: 'rails server',
+    build: '',
+    test: 'bundle exec rspec',
+    typeCheck: '',
+  },
 };
 
 function buildCommandsBlock(config) {
-  const ncd = NATIVE_CMD_DEFAULTS[config.techStack] || {};
+  const ncd = STACK_CMD_DEFAULTS[config.techStack] || {};
+  // Swift xcodebuild commands need -scheme to target the correct scheme
+  const swiftScheme =
+    config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
   const install = config.installCommand || ncd.install || 'npm install';
   const dev =
     config.devCommand !== null && config.devCommand !== undefined && config.devCommand !== ''
@@ -129,8 +153,9 @@ function buildCommandsBlock(config) {
       : config.devCommand === ''
         ? ''
         : ncd.dev || 'npm run dev';
-  const build = config.buildCommand || ncd.build || 'npm run build';
-  const test = config.testCommand || ncd.test || 'npm test';
+  const build =
+    config.buildCommand || (ncd.build ? ncd.build + swiftScheme : '') || 'npm run build';
+  const test = config.testCommand || (ncd.test ? ncd.test + swiftScheme : '') || 'npm test';
   const typeCheck = config.typeCheckCommand || ncd.typeCheck || '';
   const migration = config.migrationCommand || '';
   const e2e = config.e2eCommand || '';
@@ -219,7 +244,7 @@ function stripUnfilledSections(content) {
     .replace(/\n{3,}/g, '\n\n');
 }
 
-// Exported for unit testing only — not part of the public API
+// Exported for unit testing only - not part of the public API
 export const _testHelpers = {
   buildCommandsBlock,
   injectRuleImports,
@@ -228,7 +253,7 @@ export const _testHelpers = {
 };
 
 function getMinimalTemplate() {
-  return `# [PROJECT_NAME] — Project Context
+  return `# [PROJECT_NAME] - Project Context
 
 ## Overview
 [One paragraph: what the product does, who uses it, what problem it solves.]

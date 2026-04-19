@@ -21,7 +21,7 @@ export default [
       'no-duplicate-case': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-redeclare': 'error',
-      'eqeqeq': ['error', 'always'],
+      eqeqeq: ['error', 'always'],
       'no-var': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
     },

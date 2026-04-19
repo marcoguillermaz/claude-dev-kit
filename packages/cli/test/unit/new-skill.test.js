@@ -36,7 +36,7 @@ function answersArgs(overrides = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Test helpers — internal functions
+// Test helpers - internal functions
 // ---------------------------------------------------------------------------
 
 import { _testHelpers } from '../../src/commands/new-skill.js';
@@ -222,7 +222,7 @@ describe('buildTestFixture', () => {
 // CLI integration via --answers
 // ---------------------------------------------------------------------------
 
-describe('new skill — CLI', () => {
+describe('new skill - CLI', () => {
   before(async () => {
     await fs.remove(TMP);
     await fs.ensureDir(path.join(TMP, '.claude'));

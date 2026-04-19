@@ -1,4 +1,4 @@
-# Performance Audit — Stack Patterns
+# Performance Audit - Stack Patterns
 
 Reference file for `/perf-audit`. Contains framework/language-specific grep patterns.
 The executing agent reads this file at the start of Step 2 (web) or Step 6 (native). Select patterns matching the detected stack.
@@ -7,7 +7,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 
 # Web Performance Patterns
 
-## B1 — Client-side rendering directives
+## B1 - Client-side rendering directives
 
 | Framework | Client directive | Server default |
 |---|---|---|
@@ -18,7 +18,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Angular (SSR) | N/A (all client by default with SSR hydration) | Client |
 | Remix | N/A (loaders are server, components are shared) | Shared |
 
-## B3 — Client-side lifecycle hooks (data fetching)
+## B3 - Client-side lifecycle hooks (data fetching)
 
 | Framework | Lifecycle hooks to flag |
 |---|---|
@@ -28,7 +28,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Angular | `ngOnInit(` with HTTP call inside |
 | Generic | Any client-side lifecycle hook containing a data fetch call |
 
-## B9 — Lazy loading mechanisms
+## B9 - Lazy loading mechanisms
 
 | Framework | Dynamic import pattern |
 |---|---|
@@ -39,7 +39,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Angular | `loadComponent:`, `loadChildren:` (route-level) |
 | Generic | `import(` (dynamic import expression) |
 
-## P1 — Bundle analyzer tools
+## P1 - Bundle analyzer tools
 
 | Build tool | Analyzer |
 |---|---|
@@ -49,7 +49,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Rollup | `@rollup/plugin-visualizer` |
 | esbuild | `esbuild-visualizer` |
 
-## Q2 — Select-all / over-fetch patterns
+## Q2 - Select-all / over-fetch patterns
 
 | ORM / Client | Pattern |
 |---|---|
@@ -61,13 +61,13 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | ActiveRecord | `.all`, `.find(` without `.select(` |
 | Sequelize | `.findAll()` without `attributes:` |
 | Drizzle | `select()` without explicit column list |
-| Go (sqlx) | `Select(&`, `Get(&` — check struct for unused fields |
+| Go (sqlx) | `Select(&`, `Get(&` - check struct for unused fields |
 
 ---
 
 # Native / Backend Performance Patterns
 
-## Step 6b — Language-specific checks
+## Step 6b - Language-specific checks
 
 ### Swift
 
@@ -112,7 +112,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 
 | Check | Grep pattern | Flag condition |
 |---|---|---|
-| Regex in loops | `re.compile` or `re.search`/`re.match` with literal pattern inside `for`/`while` | Constant pattern — compile once outside loop |
+| Regex in loops | `re.compile` or `re.search`/`re.match` with literal pattern inside `for`/`while` | Constant pattern - compile once outside loop |
 | List vs generator | `[... for ... in ...]` passed to `sum(`, `max(`, `min(`, `any(`, `all(` | Generator expression avoids materializing full list |
 | Deep copies | `copy.deepcopy` in hot paths | Extremely expensive |
 | GIL contention | `threading.Thread` doing CPU-bound work | Use `multiprocessing` or `ProcessPoolExecutor` |
@@ -145,7 +145,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 
 ---
 
-## NR1 — Entry point patterns
+## NR1 - Entry point patterns
 
 | Language | Entry point |
 |---|---|
@@ -153,7 +153,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Kotlin | `Application.onCreate` or `MainActivity.onCreate` |
 | Rust / Go / Python / Ruby / Java / .NET | `main()` function or entry module |
 
-## NR2 — Memory management patterns
+## NR2 - Memory management patterns
 
 | Language | Pattern | Flag condition |
 |---|---|---|
@@ -165,7 +165,7 @@ The executing agent reads this file at the start of Step 2 (web) or Step 6 (nati
 | Go | `sync.Map` or map growth without periodic cleanup | Unbounded maps |
 | All | Large static/global collections persisting for process lifetime | Permanent memory |
 
-## NR3 — Energy / background patterns (mobile only)
+## NR3 - Energy / background patterns (mobile only)
 
 | Language | Pattern | Flag condition |
 |---|---|---|

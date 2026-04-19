@@ -32,6 +32,7 @@ build/
 .next/
 out/
 *.egg-info/
+*.tsbuildinfo
 
 # Editor
 .vscode/

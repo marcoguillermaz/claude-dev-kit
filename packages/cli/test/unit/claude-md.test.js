@@ -103,11 +103,11 @@ describe('injectRuleImports', () => {
     assert.ok(importIdx < overviewIdx);
   });
 
-  it('is idempotent — skips if all imports present', () => {
+  it('is idempotent - skips if all imports present', () => {
     const input =
       '# My Project\n@.claude/rules/output-style.md\n@docs/claudemd-standards.md\n@docs/pipeline-standards.md\n\n## Overview';
     const result = injectRuleImports(input);
-    // count occurrences — should be exactly 1 each
+    // count occurrences - should be exactly 1 each
     const count = (str, sub) => str.split(sub).length - 1;
     assert.equal(count(result, '@.claude/rules/output-style.md'), 1);
     assert.equal(count(result, '@docs/claudemd-standards.md'), 1);
@@ -244,10 +244,10 @@ describe('stripUnfilledSections', () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateClaudeMd() — end-to-end smoke test
+// generateClaudeMd() - end-to-end smoke test
 // ---------------------------------------------------------------------------
 
-describe('generateClaudeMd — end-to-end', () => {
+describe('generateClaudeMd - end-to-end', () => {
   let tmpDir;
 
   beforeEach(async () => {
