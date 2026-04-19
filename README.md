@@ -155,7 +155,7 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 
 ```bash
 node packages/cli/test/integration/run.js    # 828 integration checks
-node --test packages/cli/test/unit/*.test.js   # 267 unit tests
+node --test packages/cli/test/unit/*.test.js   # 270 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
@@ -185,7 +185,7 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.10.1 - Native stack validation hardening, template lint, 828 integration + 267 unit tests across 29 scenarios.
+**Current**: v1.10.2 - Cross-stack audit fixes (Node-TS + Python), Opus 4.7 alignment, 828 integration + 270 unit tests across 29 scenarios.
 
 **Next**: Q2 skills (`/compliance-audit`, `/api-contract-audit`, `/infra-audit`) and `/doc-audit` to close Q1 skill block.
 
