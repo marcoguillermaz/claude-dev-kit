@@ -7,6 +7,27 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.10.2] — 2026-04-19
+
+### Fixed
+- Cross-stack audit fixes (14 items from Node-TS + Python senior audits): NT-B1/B2, NT-T1-T5, PY-B1-B3, PY-T3/T4/T6/T7.
+- Python, Go, Ruby now scaffold with stack-specific commands instead of npm fallbacks (PY-B1).
+- `frameworkValue()` returns per-stack examples: FastAPI/Django/Flask for Python, Gin/Echo for Go, Rails/Sinatra for Ruby (NT-B1).
+- Em-dash replaced with hyphen across all 107 template .md files per `output-style.md` rule (NT-B2).
+- Phase 3b RLS generalized to "row-level access control (database-level RLS or application-level guards)" (NT-T3).
+
+### Added
+- 5 stack-conditional placeholders: `[VALIDATION_LIBRARIES]`, `[TEST_CLEANUP_PATTERN]`, `[COMMIT_EXAMPLES]`, `[BUILD_ARTIFACTS]`, `[ENVIRONMENT_SETUP]`.
+- Python permissions extended: pytest, mypy, uvicorn, alembic in allow list; `alembic downgrade base` in deny (PY-B2/B3).
+- Deny list hardening: `DROP DATABASE*` and `npm publish*` added to all tier settings.json (PY-T4).
+- `SEC-` prefix added to severity handling in pipeline.md (NT-T5).
+- `docs/sitemap.md` and `docs/db-map.md` added to files-guide.md "Loaded on demand" section.
+- arch-audit skill aligned to Opus 4.7 (released April 16, 2026): new model IDs, retiring Claude 4.0 IDs, 4 new hook events, 5 new hook capabilities, settings awareness for `xhigh`/`autoMode`/`sandbox`.
+- `.claude/rules/` and `.claude/settings.json` removed from git tracking (workspace config, not product).
+- Unit tests: 270 (was 267). Integration checks: 828 (unchanged).
+
+---
+
 ## [1.10.1] — 2026-04-18
 
 ### Fixed
