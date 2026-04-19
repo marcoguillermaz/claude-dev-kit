@@ -1,10 +1,10 @@
-# Claude Code + Project — Cheat Sheet
+# Claude Code + Project - Cheat Sheet
 
 > Quick reference for commands, pipeline shortcuts, and available skills.
 
 ---
 
-## Claude Code — Session
+## Claude Code - Session
 
 | Command | Action |
 |---|---|
@@ -21,7 +21,7 @@
 | Situation | Action |
 |---|---|
 | Starting a new block | `git checkout -b feature/block-name` |
-| Quick fix (≤3 files) | `git checkout -b fix/description` — use Fast Lane |
+| Quick fix (≤3 files) | `git checkout -b fix/description` - use Fast Lane |
 | Session interrupted | Check `.claude/session/` for recovery file |
 | Context window ~50% | Run `/compact` before continuing |
 | End of block | Run context review (C1–C12) then `/compact` |

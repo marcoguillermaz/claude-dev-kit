@@ -1,4 +1,4 @@
-# [PROJECT_NAME] — Memory
+# [PROJECT_NAME] - Memory
 
 ## Active plan
 

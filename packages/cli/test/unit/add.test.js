@@ -164,7 +164,7 @@ describe('add rule', () => {
   });
 });
 
-describe('add skill — CLAUDE.md Active Skills integration', () => {
+describe('add skill - CLAUDE.md Active Skills integration', () => {
   before(async () => {
     await fs.remove(TMP);
     await fs.ensureDir(path.join(TMP, '.claude'));
@@ -193,7 +193,7 @@ describe('add skill — CLAUDE.md Active Skills integration', () => {
   });
 });
 
-describe('upgrade — custom skill preservation', () => {
+describe('upgrade - custom skill preservation', () => {
   const UPGRADE_TMP = path.join(TMP, '..', 'upgrade-custom-test');
 
   before(async () => {

@@ -4,17 +4,17 @@
 
 ## Type
 
-- [ ] `feat` — new feature
-- [ ] `fix` — bug fix
-- [ ] `refactor` — code change, no functional change
-- [ ] `docs` — documentation only
-- [ ] `chore` — dependencies, config, tooling
+- [ ] `feat` - new feature
+- [ ] `fix` - bug fix
+- [ ] `refactor` - code change, no functional change
+- [ ] `docs` - documentation only
+- [ ] `chore` - dependencies, config, tooling
 
 ## AI Involvement
 
 - [ ] No AI assistance used
-- [ ] AI-assisted (Claude Code) — review checklist below
-- [ ] Primarily AI-generated — requires thorough review
+- [ ] AI-assisted (Claude Code) - review checklist below
+- [ ] Primarily AI-generated - requires thorough review
 
 ### AI Review Checklist *(complete if AI-assisted or AI-generated)*
 
@@ -37,7 +37,7 @@
 ## Breaking Changes
 
 - [ ] No breaking changes
-- [ ] Breaking changes — described below:
+- [ ] Breaking changes - described below:
 
 <!-- Describe what breaks and migration path if applicable -->
 

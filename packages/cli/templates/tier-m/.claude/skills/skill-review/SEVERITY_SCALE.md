@@ -71,7 +71,7 @@
 - Style preference.
 - Documentation polish.
 
-**User-pain criteria**: not relevant — cosmetic findings by definition have negligible user pain.
+**User-pain criteria**: not relevant - cosmetic findings by definition have negligible user pain.
 
 **Pipeline action**: ignore, register opportunistically, or fix if encountered during other work.
 
@@ -242,7 +242,7 @@ When a review finds that a skill miscalibrated a severity:
 - **Miscalibration in 1 skill only**: fix at skill level. Relabel the runtime severity in the skill's check list.
 - **Miscalibration pattern in ≥2 skills for the same check type**: framework defect. Fix this scale (P2) first, then re-apply to all affected skills.
 
-This rule prevents the "fix at skill level always" fallacy — when the miscalibration is caused by an unclear P2 scale, patching individual skills just creates inconsistent debt.
+This rule prevents the "fix at skill level always" fallacy - when the miscalibration is caused by an unclear P2 scale, patching individual skills just creates inconsistent debt.
 
 ---
 
@@ -258,7 +258,7 @@ Avoid these during skill design and during runtime classification.
 6. **Stack-specific severity defaults**: e.g., treating any hardcoded color as Critical is a UI-specific habit. Not applicable to CLI or backend-only stacks.
 7. **Recency bias**: labeling based on how recently you saw a similar pattern rather than on the decision tree. A fresh memory of a painful bug inflates severity for unrelated findings. Re-anchor on the rubric, not on the last case seen.
 8. **Severity inheritance**: copying the severity of a similar check from another skill without re-evaluating technical + user-pain criteria for the new context. A check that is Critical in a security skill may be Medium in a docs skill.
-9. **Reviewer-pain projection**: labeling based on the reviewer's discomfort while auditing rather than the user's pain when the finding fires. "This was annoying to diagnose" is not a severity signal — the user may never see the diagnosis path.
+9. **Reviewer-pain projection**: labeling based on the reviewer's discomfort while auditing rather than the user's pain when the finding fires. "This was annoying to diagnose" is not a severity signal - the user may never see the diagnosis path.
 
 ---
 
@@ -270,19 +270,19 @@ These examples are referenced by P5 (`CALIBRATION_KIT.md`). Read before starting
 - A UI skill flags `Color.red` in a SwiftUI project as "hardcoded color". This is a false positive because `Color.red` is a system-adaptive color that respects dark mode. The misclassification is Critical on the skill itself because it makes the skill produce wrong output on an entire stack.
 
 **Canonical Critical (edge)**:
-- A security-audit skill detects SQL injection by greping only `${...}` interpolation. It misses `+` string concatenation, which is the dominant pattern in older code. The gap is Critical because the skill produces a green verdict while the vulnerability exists — false negative on a hard invariant. Drift risk: a reviewer who sees the grep pattern may label this Medium ("incomplete coverage"). Anchor: consequence is "pipeline green on actual vulnerability" → Critical.
+- A security-audit skill detects SQL injection by greping only `${...}` interpolation. It misses `+` string concatenation, which is the dominant pattern in older code. The gap is Critical because the skill produces a green verdict while the vulnerability exists - false negative on a hard invariant. Drift risk: a reviewer who sees the grep pattern may label this Medium ("incomplete coverage"). Anchor: consequence is "pipeline green on actual vulnerability" → Critical.
 
 **Canonical High (typical)**:
 - A security-audit skill does not check for secrets in logs. The gap is High because logs commonly leak secrets, but skilled users know to check manually.
 
 **Canonical High (edge)**:
-- A UI skill labels every cross-origin image load as Critical for CSP compliance. On an API-only project with no frontend, this fires on test fixtures and is meaningless — invocation context ignored. The misclassification is High: the skill is running where it should not have been invoked, and labels create noise that erodes trust. Drift risk: reviewer sees "CSP" and labels Critical on technical severity. Anchor: user-pain cap — FP rate on wrong stack is ~100%, drops below Critical per the cap rule.
+- A UI skill labels every cross-origin image load as Critical for CSP compliance. On an API-only project with no frontend, this fires on test fixtures and is meaningless - invocation context ignored. The misclassification is High: the skill is running where it should not have been invoked, and labels create noise that erodes trust. Drift risk: reviewer sees "CSP" and labels Critical on technical severity. Anchor: user-pain cap - FP rate on wrong stack is ~100%, drops below Critical per the cap rule.
 
 **Canonical Medium (typical)**:
 - An api-design skill reports inconsistent pagination conventions across endpoints as "inconsistent". Medium because the finding is real but remediation requires team-level decision.
 
 **Canonical Medium (edge)**:
-- An arch-audit skill reports a cyclomatic complexity score of 18 for a function without specifying a threshold or remediation target. The metric is real but the finding is not actionable without the reviewer defining "too complex". Medium because the issue exists but remediation clarity is absent. Drift risk: reviewer inflates to High on "complexity = maintenance debt" framing. Anchor: actionability rubric — no clear fix path pushes down one level.
+- An arch-audit skill reports a cyclomatic complexity score of 18 for a function without specifying a threshold or remediation target. The metric is real but the finding is not actionable without the reviewer defining "too complex". Medium because the issue exists but remediation clarity is absent. Drift risk: reviewer inflates to High on "complexity = maintenance debt" framing. Anchor: actionability rubric - no clear fix path pushes down one level.
 
 **Canonical Low (typical)**:
 - A test-audit skill reports a test name that does not follow convention. Low because the test works correctly; the finding is stylistic.
@@ -295,7 +295,7 @@ These examples are referenced by P5 (`CALIBRATION_KIT.md`). Read before starting
 ## Versioning
 
 Bump this scale when:
-- Labels change (unlikely — would break every skill).
+- Labels change (unlikely - would break every skill).
 - Decision tree changes.
 - User-pain dimensions expand.
 - FP-rate caps are recalibrated based on observed data.

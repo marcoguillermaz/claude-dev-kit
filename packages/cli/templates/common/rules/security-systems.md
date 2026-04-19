@@ -1,4 +1,4 @@
-# Security Rules — Systems & Backend (Rust / Go / .NET / Java / C++)
+# Security Rules - Systems & Backend (Rust / Go / .NET / Java / C++)
 
 These rules apply when working on systems-level applications, CLI tools, daemons, or backend services without a web API layer.
 
@@ -6,7 +6,7 @@ These rules apply when working on systems-level applications, CLI tools, daemons
 
 - Never use `unsafe` blocks (Rust) or raw pointers (Go, C++) without a comment justifying why safe alternatives are insufficient.
 - Validate buffer sizes before read/write operations. Never trust external input to determine buffer length without bounds checking.
-- Close file handles, network connections, and other resources deterministically — use RAII (Rust/C++), `defer` (Go), `using` (C#), or try-with-resources (Java).
+- Close file handles, network connections, and other resources deterministically - use RAII (Rust/C++), `defer` (Go), `using` (C#), or try-with-resources (Java).
 
 ## Input Handling
 
@@ -24,20 +24,20 @@ These rules apply when working on systems-level applications, CLI tools, daemons
 
 - Never construct shell commands from user input. Use direct process execution with argument arrays (no shell interpretation).
 - If shelling out is unavoidable: sanitize every argument and never pass raw user input to a shell.
-- Child processes should inherit minimal environment — strip sensitive environment variables before spawning.
+- Child processes should inherit minimal environment - strip sensitive environment variables before spawning.
 
 ## Secrets and Credentials
 
 - Never hardcode secrets, tokens, passwords, or connection strings in source code.
 - Never log secrets, even at debug level.
-- Read secrets from environment variables, secret managers, or encrypted config files — never from command-line arguments (visible in `ps`).
+- Read secrets from environment variables, secret managers, or encrypted config files - never from command-line arguments (visible in `ps`).
 - Use `.gitignore` to exclude any file that could contain secrets (`.env*`, `*.pem`, `*.key`, `secrets/`, `credentials/`).
 
 ## Dependency Management
 
 - Pin dependency versions. Avoid floating version ranges in production builds.
 - Audit dependencies for known vulnerabilities before release (`cargo audit`, `go vuln check`, `dotnet list package --vulnerable`, `mvn dependency-check:check`).
-- Minimize transitive dependencies — each dependency is an attack surface.
+- Minimize transitive dependencies - each dependency is an attack surface.
 
 ## Error Handling
 

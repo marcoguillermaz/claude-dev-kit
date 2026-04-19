@@ -36,7 +36,7 @@ export async function initGreenfield(options) {
         message: 'How familiar is your team with Claude Code?',
         choices: [
           {
-            name: "Just starting out — show me what's possible  (Discovery tier)",
+            name: "Just starting out - show me what's possible  (Discovery tier)",
             value: '0',
           },
           {
@@ -92,20 +92,20 @@ export async function initGreenfield(options) {
         message: (a) => {
           const suggested = suggestTierFromDiagnostics(a);
           const tierDesc = {
-            0: '0 — Discovery    Context only, no pipeline.',
-            s: 'S — Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
-            m: 'M — Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
-            l: 'L — Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
+            0: '0 - Discovery    Context only, no pipeline.',
+            s: 'S - Fast Lane     4 steps, 1 scope-confirm. Bugfixes, ≤3 files.',
+            m: 'M - Standard     8 phases, 2 STOP gates. Feature blocks, 1–2 weeks.',
+            l: 'L - Full         11 phases, 4 STOP gates + audit. Complex domain, team.',
           };
           return `Suggested: ${tierDesc[suggested]}\n  Pipeline tier:`;
         },
         when: () => !isDiscovery && !options.tier,
         default: (a) => suggestTierFromDiagnostics(a),
         choices: [
-          { name: '0 — Discovery (context only, no pipeline)', value: '0' },
-          { name: 'S — Fast Lane (bugfixes, ≤3 files, 1 gate)', value: 's' },
-          { name: 'M — Standard (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
-          { name: 'L — Full (complex domain, full governance, 4 gates)', value: 'l' },
+          { name: '0 - Discovery (context only, no pipeline)', value: '0' },
+          { name: 'S - Fast Lane (bugfixes, ≤3 files, 1 gate)', value: 's' },
+          { name: 'M - Standard (feature blocks, 1–2 weeks, 2 gates)', value: 'm' },
+          { name: 'L - Full (complex domain, full governance, 4 gates)', value: 'l' },
         ],
       },
       {
@@ -129,7 +129,7 @@ export async function initGreenfield(options) {
       {
         type: 'input',
         name: 'testCommand',
-        message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
+        message: 'Test command: (used as reference in pipeline docs - not executed by the CLI)',
         default: (a) => {
           const defaults = {
             'node-ts': 'npx vitest run',
@@ -184,7 +184,7 @@ export async function initGreenfield(options) {
         message: (a) => {
           const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
           if (webStacks.includes(a.techStack)) {
-            return 'E2E test command (Playwright/Cypress — leave blank to skip):';
+            return 'E2E test command (Playwright/Cypress - leave blank to skip):';
           }
           const nativeExamples = {
             swift: 'XCUITest',
@@ -195,7 +195,7 @@ export async function initGreenfield(options) {
           };
           const ex = nativeExamples[a.techStack];
           return ex
-            ? `UI/integration test command (${ex} — leave blank to skip):`
+            ? `UI/integration test command (${ex} - leave blank to skip):`
             : 'Integration test command (optional, leave blank to skip):';
         },
         when: (a) => {
@@ -205,7 +205,7 @@ export async function initGreenfield(options) {
         },
         default: '',
       },
-      // Feature flags — tier M/L only
+      // Feature flags - tier M/L only
       {
         type: 'list',
         name: 'hasApi',
@@ -290,7 +290,7 @@ export async function initGreenfield(options) {
         type: 'list',
         name: 'auditModel',
         message:
-          'Preferred model for deep analysis skills (ux-audit, visual-audit — full codebase scans)?',
+          'Preferred model for deep analysis skills (ux-audit, visual-audit - full codebase scans)?',
         when: (a) => {
           if (isDiscovery) return false;
           const tier = options.tier || a.tier;
@@ -303,7 +303,7 @@ export async function initGreenfield(options) {
         type: 'confirm',
         name: 'hasPrd',
         message:
-          'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks — if yes, a PRD template is added to each)',
+          'Track a PRD per feature block? (In Tier M/L work is split in ~1–2 week blocks - if yes, a PRD template is added to each)',
         when: (a) => {
           if (isDiscovery) return false;
           const tier = options.tier || a.tier;
@@ -349,7 +349,7 @@ export async function initGreenfield(options) {
 
   if (options.dryRun) {
     console.log();
-    console.log(chalk.yellow('Dry run — no files will be written.'));
+    console.log(chalk.yellow('Dry run - no files will be written.'));
     console.log();
     printPlan(config);
     return;
@@ -376,21 +376,21 @@ export async function initGreenfield(options) {
     console.log();
     console.log(chalk.bold('What was created:'));
     console.log(
-      `  ${chalk.cyan('CLAUDE.md')}             — fill this in: project overview, stack, key commands`,
+      `  ${chalk.cyan('CLAUDE.md')}             - fill this in: project overview, stack, key commands`,
     );
     console.log(
-      `  ${chalk.cyan('.claude/settings.json')} — Stop hook: tests must pass before Claude declares done`,
+      `  ${chalk.cyan('.claude/settings.json')} - Stop hook: tests must pass before Claude declares done`,
     );
     console.log(
-      `  ${chalk.cyan('GETTING_STARTED.md')}    — your team's guide to the first session`,
+      `  ${chalk.cyan('GETTING_STARTED.md')}    - your team's guide to the first session`,
     );
     console.log();
     console.log(chalk.bold('Next steps:'));
     console.log(
-      `  1. Edit ${chalk.cyan('CLAUDE.md')} — add your project description and fill in the commands`,
+      `  1. Edit ${chalk.cyan('CLAUDE.md')} - add your project description and fill in the commands`,
     );
     console.log(`  2. Run ${chalk.cyan('claude')} from this directory to start your first session`);
-    console.log(`  3. Read ${chalk.cyan('GETTING_STARTED.md')} — or share it with your team`);
+    console.log(`  3. Read ${chalk.cyan('GETTING_STARTED.md')} - or share it with your team`);
     console.log();
     console.log(
       chalk.dim("When you're ready for more structure: npx mg-claude-dev-kit upgrade --tier=s"),

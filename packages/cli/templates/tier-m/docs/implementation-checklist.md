@@ -9,7 +9,7 @@
 
 | # | Block | Status | Branch | Notes |
 |---|---|---|---|---|
-| 1 | [Block name] | ⏳ | — | — |
+| 1 | [Block name] | ⏳ | - | - |
 
 ---
 

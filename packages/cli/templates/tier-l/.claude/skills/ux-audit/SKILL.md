@@ -11,11 +11,11 @@ allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwr
 ## Configuration (fill in before first run)
 
 > Replace these placeholders:
-> - `[DEV_URL]` — e.g. `http://localhost:3000`
-> - `[LOGIN_ROUTE]` — your login page path, e.g. `login`, `signin`, `auth/login`
-> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md`
-> - `[TEST_ACCOUNTS]` — email/password pairs per role
-> - `[DEV_COMMAND]` — e.g. `npm run dev`, `pnpm dev`
+> - `[DEV_URL]` - e.g. `http://localhost:3000`
+> - `[LOGIN_ROUTE]` - your login page path, e.g. `login`, `signin`, `auth/login`
+> - `[SITEMAP_OR_ROUTE_LIST]` - e.g. `docs/sitemap.md`
+> - `[TEST_ACCOUNTS]` - email/password pairs per role
+> - `[DEV_COMMAND]` - e.g. `npm run dev`, `pnpm dev`
 >
 > Then fill in the **Flow catalog** (Step 5) with your project's key user journeys.
 > Start with 3-5 Priority 1 flows covering the most critical tasks per role.
@@ -24,40 +24,40 @@ allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwr
 
 
 
-## Step 0 — Mode + target detection
+## Step 0 - Mode + target detection
 
 Parse `$ARGUMENTS`:
 
 **Mode** (which flows to run):
 - `role:<role>` → run all flows for a specific role (e.g. `role:viewer`)
 - `full` → run all flows including Priority 2
-- No mode keyword → **standard** — run all Priority 1 flows (P1) for all roles
+- No mode keyword → **standard** - run all Priority 1 flows (P1) for all roles
 
-**Target** (filters to a specific area — applied on top of mode):
+**Target** (filters to a specific area - applied on top of mode):
 - `target:role:<role_name>` → only that role's flows
-- No target → no filter — run ALL flows in the selected mode across ALL routes in `[SITEMAP_OR_ROUTE_LIST]`
+- No target → no filter - run ALL flows in the selected mode across ALL routes in `[SITEMAP_OR_ROUTE_LIST]`
 
-**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (run all flows in the selected mode). If `$ARGUMENTS` is empty → STANDARD mode, full scope (all P1 flows, no filter).
+**STRICT PARSING - mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (run all flows in the selected mode). If `$ARGUMENTS` is empty → STANDARD mode, full scope (all P1 flows, no filter).
 
 Announce at start:
-`Running ux-audit in [STANDARD | FLOW:<id> | ROLE:<role> | FULL] mode — scope: [FULL | target: <resolved description>]`
+`Running ux-audit in [STANDARD | FLOW:<id> | ROLE:<role> | FULL] mode - scope: [FULL | target: <resolved description>]`
 
 ---
 
-## Step 1 — Load architecture context
+## Step 1 - Load architecture context
 
 Read in parallel:
-1. `[SITEMAP_OR_ROUTE_LIST]` — full route inventory, sub-hierarchies, role mapping, test accounts
+1. `[SITEMAP_OR_ROUTE_LIST]` - full route inventory, sub-hierarchies, role mapping, test accounts
 
 From sitemap sub-hierarchies, build a mental model of:
 - What tabs exist per page
 - What states each page can be in (empty, loading, error, data)
 - What actions are available per role
-- Which flows are newly implemented (check `docs/implementation-checklist.md` for recently completed blocks) — these need extra scrutiny
+- Which flows are newly implemented (check `docs/implementation-checklist.md` for recently completed blocks) - these need extra scrutiny
 
 ---
 
-## Step 2 — Pre-flight check
+## Step 2 - Pre-flight check
 
 Navigate to `[DEV_URL]`. If not reachable:
 > ❌ Dev server not running. Start with `[DEV_COMMAND]` then re-run `/ux-audit`.
@@ -66,59 +66,59 @@ Record the base URL. If redirected to `/login`, record that a session must be es
 
 ---
 
-## Step 3 — UX evaluation framework
+## Step 3 - UX evaluation framework
 
 Apply these 7 dimensions to every flow simulated. Dimensions are anchored to ISO 9241-11 (Effectiveness / Efficiency / Satisfaction) and Nielsen's 10 Usability Heuristics for rigour and comparability.
 
 | Dimension | ISO anchor | Nielsen heuristic | Question | What to look for |
 |---|---|---|---|---|
-| **D1 — Task completion** | Effectiveness | H1 Visibility of status | Can the user finish the task without confusion? | Dead ends, missing CTAs, ambiguous button labels, unexpected redirects |
-| **D3 — Feedback clarity** | Effectiveness | H1 Visibility · H9 Error recovery | Does the user always know what happened? | Toast presence/absence, loading states, success/error messaging, state changes; **error message quality: Specific ✅ / Generic ⚠️ / Absent ❌** |
-| **D4 — Navigation clarity** | Efficiency | H4 Consistency · H6 Recognition | Does the user always know where they are? | Page titles, breadcrumbs, back affordances, active state in sidebar, role-specific routes |
-| **D5 — Cognitive load** | Efficiency | H8 Minimalist design | How many decisions or pieces of info per screen? | Form fields per step, actions per card, info density, label clarity; Baymard optimal: ≤8 fields per step |
-| **D6 — Error recovery** | Effectiveness | H9 Recognize/diagnose/recover | When something goes wrong, is the path forward clear? | Validation messages, retry affordances, empty state guidance, rejection states |
-| **D7 — User confidence** | **Satisfaction** | H3 User control · H5 Error prevention | Does the user feel in control and certain of the outcome? | **Structured C1-C5 checks** (apply per flow — see framework below): C1 Cancel path in all dialogs/forms; C2 Irreversible actions guarded by confirmation; C3 State-changing action has visible confirmation; C4 Read-only constraints explicitly communicated; C5 Multi-step flows confirm outcome. |
+| **D1 - Task completion** | Effectiveness | H1 Visibility of status | Can the user finish the task without confusion? | Dead ends, missing CTAs, ambiguous button labels, unexpected redirects |
+| **D3 - Feedback clarity** | Effectiveness | H1 Visibility · H9 Error recovery | Does the user always know what happened? | Toast presence/absence, loading states, success/error messaging, state changes; **error message quality: Specific ✅ / Generic ⚠️ / Absent ❌** |
+| **D4 - Navigation clarity** | Efficiency | H4 Consistency · H6 Recognition | Does the user always know where they are? | Page titles, breadcrumbs, back affordances, active state in sidebar, role-specific routes |
+| **D5 - Cognitive load** | Efficiency | H8 Minimalist design | How many decisions or pieces of info per screen? | Form fields per step, actions per card, info density, label clarity; Baymard optimal: ≤8 fields per step |
+| **D6 - Error recovery** | Effectiveness | H9 Recognize/diagnose/recover | When something goes wrong, is the path forward clear? | Validation messages, retry affordances, empty state guidance, rejection states |
+| **D7 - User confidence** | **Satisfaction** | H3 User control · H5 Error prevention | Does the user feel in control and certain of the outcome? | **Structured C1-C5 checks** (apply per flow - see framework below): C1 Cancel path in all dialogs/forms; C2 Irreversible actions guarded by confirmation; C3 State-changing action has visible confirmation; C4 Read-only constraints explicitly communicated; C5 Multi-step flows confirm outcome. |
 
-**D7 structured framework — apply per flow:**
+**D7 structured framework - apply per flow:**
 
 | Check | What to verify | PASS | FAIL |
 |---|---|---|---|
-| C2 — Destructive guard | Irreversible actions trigger confirmation BEFORE execution | Confirmation dialog with action name + consequence | Single-click destructive action without confirmation |
-| C3 — Silent success prevention | Every state-changing action has visible confirmation | Toast + page reflects new state (status badge changes) | Toast absent OR page unchanged after action |
-| C4 — Constraint visibility | Read-only constraints explicitly communicated | Label, tooltip, or disabled button with explanation | Functionality silently absent |
-| C5 — Positive feedback | Multi-step flows confirm outcome explicitly | Explicit success state, not just redirect | Redirect to list with no success indication |
+| C2 - Destructive guard | Irreversible actions trigger confirmation BEFORE execution | Confirmation dialog with action name + consequence | Single-click destructive action without confirmation |
+| C3 - Silent success prevention | Every state-changing action has visible confirmation | Toast + page reflects new state (status badge changes) | Toast absent OR page unchanged after action |
+| C4 - Constraint visibility | Read-only constraints explicitly communicated | Label, tooltip, or disabled button with explanation | Functionality silently absent |
+| C5 - Positive feedback | Multi-step flows confirm outcome explicitly | Explicit success state, not just redirect | Redirect to list with no success indication |
 
 Record per flow: `C1:[✅/❌/N/A] C2:[✅/❌/N/A] C3:[✅/❌/N/A] C4:[✅/❌/N/A] C5:[✅/❌/N/A]`
 
 **Severity scale:**
-- **Critical** — user cannot complete a core task (blocker)
-- **Major** — user is confused or slowed significantly (friction)
-- **Minor** — small inconsistency or suboptimal pattern (polish)
+- **Critical** - user cannot complete a core task (blocker)
+- **Major** - user is confused or slowed significantly (friction)
+- **Minor** - small inconsistency or suboptimal pattern (polish)
 
 ---
 
-## Step 4 — Component context load
+## Step 4 - Component context load
 
 Before simulating each flow, read the primary page file and key components involved in that flow. Specifically look for:
-- Form field count and labels — are they clear and unambiguous?
-- CTA button labels — are they action-oriented (verb + noun) or vague (e.g., "Submit")?
-- Post-submit behavior — does the code show a redirect, modal close, or toast?
-- Empty state handling — is there a meaningful empty state or just a blank area?
-- Error state handling — are validation errors per-field or only at submit?
+- Form field count and labels - are they clear and unambiguous?
+- CTA button labels - are they action-oriented (verb + noun) or vague (e.g., "Submit")?
+- Post-submit behavior - does the code show a redirect, modal close, or toast?
+- Empty state handling - is there a meaningful empty state or just a blank area?
+- Error state handling - are validation errors per-field or only at submit?
 
 ### Baymard form checklist (apply to every flow involving a form)
 
-Source: Baymard Institute — 4,400+ moderated usability sessions.
+Source: Baymard Institute - 4,400+ moderated usability sessions.
 
 For each form in the flow, during code inspection verify:
 
 | # | Check | Good practice | Baymard finding |
 |---|---|---|---|
-| BF1 | Error message content | Field-specific: "Amount must be positive" | 98% of sites use generic messages — users cannot recover |
-| BF2 | Inline validation timing | Fires on `onBlur` or post-submit — NOT `onChange` | Premature validation disrupts typing and increases errors |
+| BF1 | Error message content | Field-specific: "Amount must be positive" | 98% of sites use generic messages - users cannot recover |
+| BF2 | Inline validation timing | Fires on `onBlur` or post-submit - NOT `onChange` | Premature validation disrupts typing and increases errors |
 | BF3 | Positive inline validation | Shows ✓ or green border after correction | Reduces user anxiety; confirms correction was accepted |
 | BF4 | Required/optional labeling | Required = `*`; Optional fields explicitly labeled | Unlabeled optional fields cause over-completion |
-| BF5 | Multi-step progress | "Step N of M" — exact count, not vague percentage | Accurate progress reduces abandonment in multi-step flows |
+| BF5 | Multi-step progress | "Step N of M" - exact count, not vague percentage | Accurate progress reduces abandonment in multi-step flows |
 | BF6 | Field count per step | ≤ 8 fields without stepper; flag if exceeded | Optimal: 6–8 fields. Average: 11.3 (Baymard e-commerce data) |
 
 Record BF1–BF6 verdict for each form. Include in D3/D5/D6 analysis as evidence.
@@ -127,7 +127,7 @@ This code context MUST be referenced in the D1–D7 analysis. Don't rely purely 
 
 ---
 
-## Step 5 — Flow catalog
+## Step 5 - Flow catalog
 
 > **Customise before first run.** Replace the example flows below with your project's actual user journeys.
 > Define 3-5 Priority 1 flows covering the most critical task per role. Add Priority 2 flows for full-mode coverage.
@@ -136,19 +136,19 @@ This code context MUST be referenced in the D1–D7 analysis. Don't rely purely 
 
 <!-- Copy this template for each P1 flow. Number sequentially: F1, F2, F3... -->
 
-#### F1 — [Flow name] (e.g. Create record, Submit form, Complete onboarding)
+#### F1 - [Flow name] (e.g. Create record, Submit form, Complete onboarding)
 **Role**: [role from RBAC table] · **Priority**: 1
 **Read before simulating**: [primary page/component path]
 **Steps**:
 1. Login with [role] credentials → navigate to [route]
-2. [Trigger action — click CTA, open form, etc.]
+2. [Trigger action - click CTA, open form, etc.]
 3. [Fill required fields]
 4. Submit
-5. Verify: [expected outcome — redirect, toast, record in list, status change]
+5. Verify: [expected outcome - redirect, toast, record in list, status change]
 
 **Evaluate**: D1 (can user find the CTA?), D3 (success feedback + BF1 message quality), D5 (field count vs BF6), D6 (validation messages specific per BF1?), D7 (cancel path present?)
 
-#### F2 — [Flow name]
+#### F2 - [Flow name]
 **Role**: [role] · **Priority**: 1
 **Steps**:
 1. [step]
@@ -163,14 +163,14 @@ This code context MUST be referenced in the D1–D7 analysis. Don't rely purely 
 
 <!-- Add P2 flows for secondary tasks, edge-case roles, or less critical journeys. -->
 
-#### F[N] — [Flow name]
+#### F[N] - [Flow name]
 **Role**: [role] · **Priority**: 2
 **Steps**: [route] → [action sequence]
 **Evaluate**: [relevant dimensions]
 
 ---
 
-## Step 6 — Flow simulation
+## Step 6 - Flow simulation
 
 For each flow in scope:
 
@@ -182,7 +182,7 @@ For each flow in scope:
    - Error state (if triggerable without data setup)
 5. **Measure per flow**:
    - **Total clicks** to complete task (target: ≤ 3 for primary actions)
-   - **Wasted clicks**: clicks that produced no navigation or visible DOM change within 300ms — note each one as a discoverability failure candidate
+   - **Wasted clicks**: clicks that produced no navigation or visible DOM change within 300ms - note each one as a discoverability failure candidate
    - **Form field count** (target: ≤ 8 per step per BF6)
    - **Error message quality rating**: Specific ✅ / Generic ⚠️ / Absent ❌ (per D3/BF1)
    - **Redirect count** after submission (target: ≤ 1)
@@ -203,7 +203,7 @@ Login helper:
 
 ---
 
-## Step 7 — Analysis pass
+## Step 7 - Analysis pass
 
 After simulation, for each flow apply a structured analysis:
 
@@ -218,16 +218,16 @@ After simulation, for each flow apply a structured analysis:
 **Cross-flow consistency check**:
 - CRUD across different entities (from `[SITEMAP_OR_ROUTE_LIST]`): same action placement and pattern?
 
-### Heuristic sweep (after all flows — 5 checks)
+### Heuristic sweep (after all flows - 5 checks)
 
 Run these 5 heuristic checks across the full set of pages visited during simulation. These are cross-cutting patterns not captured by individual flow steps.
 
-Source: Nielsen Norman Group — 10 Usability Heuristics for User Interface Design (original 1994, updated 2020).
+Source: Nielsen Norman Group - 10 Usability Heuristics for User Interface Design (original 1994, updated 2020).
 
 | H# | Heuristic | What to check | Flag if |
 |---|---|---|---|
-| H5 | Error prevention | Destructive or irreversible actions (delete record, change status irreversibly, revoke access, cancel application) trigger a confirmation dialog BEFORE execution — not after. | Any destructive action that executes on single click without confirmation |
-| H6 | Recognition vs recall | Form fields have persistent visible labels — not just placeholder text that disappears on focus/fill. User should not need to remember what a field asked. | Any input relying solely on placeholder for its label |
+| H5 | Error prevention | Destructive or irreversible actions (delete record, change status irreversibly, revoke access, cancel application) trigger a confirmation dialog BEFORE execution - not after. | Any destructive action that executes on single click without confirmation |
+| H6 | Recognition vs recall | Form fields have persistent visible labels - not just placeholder text that disappears on focus/fill. User should not need to remember what a field asked. | Any input relying solely on placeholder for its label |
 | H8 | Minimalist design | Each screen shows only information needed for the current task. Identify any UI element with low information value that adds visual noise or competes with primary content. | Any page where the eye has nowhere obvious to start |
 | H9 | Error diagnosis | Validation error messages name the specific field AND tell the user what correction is needed (not just that one is needed). | Any generic "This field is required" without the specific constraint |
 
@@ -235,10 +235,10 @@ Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Viola
 
 ---
 
-## Step 8 — Report
+## Step 8 - Report
 
 ```
-## UX Audit — [DATE] — [MODE] — [TARGET]
+## UX Audit - [DATE] - [MODE] - [TARGET]
 ### Reference: [SITEMAP_OR_ROUTE_LIST] · flows F[N]–F[N]
 ### Framework: ISO 9241-11 (Effectiveness/Efficiency/Satisfaction) · Nielsen's 10 Heuristics · Baymard Form Research
 ### Scope: task completion · consistency · feedback · navigation · cognitive load · error recovery · user confidence
@@ -258,20 +258,20 @@ Record each heuristic check result as: ✅ Pass / ⚠️ Issue found / ❌ Viola
 
 ### Flow results
 
-#### F[N] — [Flow name] — [Role]
+#### F[N] - [Flow name] - [Role]
 
 - **Task completion**: [steps taken] / [total clicks] clicks / [wasted clicks] wasted
 - **Form**: [field count] fields · Error messages: Specific ✅/Generic ⚠️/Absent ❌ · Cancel path: Yes/No · Confirmation on destructive: Yes/No/N/A
 - **Baymard form**: BF1:[✅/⚠️] BF2:[✅/⚠️] BF3:[✅/⚠️] BF4:[✅/⚠️] BF5:[✅/⚠️] BF6:[✅/⚠️]
 - **D7 user confidence**: C1:[✅/❌/N/A] C2:[✅/❌/N/A] C3:[✅/❌/N/A] C4:[✅/❌/N/A] C5:[✅/❌/N/A]
-- **Code context**: [key finding from reading the component — 2-3 bullet points]
+- **Code context**: [key finding from reading the component - 2-3 bullet points]
 - **Outcome**: ✅ Completed without friction / ⚠️ Completed with friction / ❌ Could not complete
 
 **Findings:**
 
 | # | Dimension | ISO | Severity | Observation | Fix |
 |---|---|---|---|---|---|
-| UX-[N] | D[N] — [name] | Eff/Eff/Sat | Critical/Major/Minor | [what was observed + code reference] | [concrete suggestion] |
+| UX-[N] | D[N] - [name] | Eff/Eff/Sat | Critical/Major/Minor | [what was observed + code reference] | [concrete suggestion] |
 
 **Screenshots**: [list filenames]
 
@@ -311,7 +311,7 @@ Order by severity, then by impact (flows affected):
 ---
 
 ### What's working well
-[2–4 positive observations — patterns that are clear, consistent, and worth preserving]
+[2–4 positive observations - patterns that are clear, consistent, and worth preserving]
 
 ### Skipped flows
 [List any flows skipped due to missing test accounts or preflight failures]
@@ -319,7 +319,7 @@ Order by severity, then by impact (flows affected):
 
 ---
 
-## Step 9 — Final offer
+## Step 9 - Final offer
 
 After the report:
 
@@ -328,11 +328,11 @@ After the report:
 > - Compare two specific sections for consistency
 > - Generate a fix checklist to integrate into the backlog (`docs/refactoring-backlog.md`)"
 
-**Do NOT apply code changes directly.** UX findings must be validated with the user before implementation — they often require design decisions, not just code fixes.
+**Do NOT apply code changes directly.** UX findings must be validated with the user before implementation - they often require design decisions, not just code fixes.
 
 ---
 
-## Step 10 — Screenshot cleanup
+## Step 10 - Screenshot cleanup
 
 After the report is delivered, delete any screenshots taken during analysis. Run unconditionally at session end.
 

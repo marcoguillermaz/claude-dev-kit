@@ -1,4 +1,4 @@
-# Accessibility Audit — Check Reference
+# Accessibility Audit - Check Reference
 
 Reference file loaded by `/accessibility-audit`. Contains severity classifications, WCAG references, APCA thresholds, and known false positive guidance.
 
@@ -52,8 +52,8 @@ Reference file loaded by `/accessibility-audit`. Contains severity classificatio
 
 ## Known false positives to suppress (document, not fix)
 
-- `color-contrast` on muted text inside a portal overlay — axe measures the portal layer, not the semantic background. Verify manually against Step 3 C1 data.
-- `aria-hidden-focus` inside a closed Dialog/Sheet — headless UI libraries with composition patterns (e.g. `asChild`, render props, `inert` attribute) manage focus internally. Verify library version before flagging.
+- `color-contrast` on muted text inside a portal overlay - axe measures the portal layer, not the semantic background. Verify manually against Step 3 C1 data.
+- `aria-hidden-focus` inside a closed Dialog/Sheet - headless UI libraries with composition patterns (e.g. `asChild`, render props, `inert` attribute) manage focus internally. Verify library version before flagging.
 
 ---
 

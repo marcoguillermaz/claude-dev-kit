@@ -1,7 +1,7 @@
 # Refactoring Backlog
 
 Technical debt and structural issues identified during development.
-Reviewed at the start of each block (Phase 1) — address items that intersect the current block.
+Reviewed at the start of each block (Phase 1) - address items that intersect the current block.
 
 ## Priority index
 
@@ -13,11 +13,11 @@ Reviewed at the start of each block (Phase 1) — address items that intersect t
 
 ## Detail
 
-### R1 — [Title]
+### R1 - [Title]
 
 **Area**: [component / layer / pattern]
 **Discovered**: [date / block]
 **Description**: [What the problem is]
-**Impact**: [Why it matters — what breaks or gets harder if not fixed]
+**Impact**: [Why it matters - what breaks or gets harder if not fixed]
 **Proposed fix**: [How to address it]
 **Blockers**: [What needs to happen first, if anything]

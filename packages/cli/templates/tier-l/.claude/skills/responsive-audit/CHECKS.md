@@ -1,20 +1,20 @@
-# responsive-audit — Check Reference
+# responsive-audit - Check Reference
 
 Scripts and patterns referenced by SKILL.md. Run as-is or adapt to your stack.
 
 ## Static pre-check patterns
 
-### S1 — Viewport unit font trap
+### S1 - Viewport unit font trap
 ```
 text-\[[0-9.]+vw\]|font-size.*[0-9]vw|fontSize.*vw
 ```
 
-### S2 — overflow:hidden on html/body
+### S2 - overflow:hidden on html/body
 ```
 (html|body).*overflow.*hidden|overflow.*hidden.*(html|body)
 ```
 
-### S3 — Images without responsive width constraint
+### S3 - Images without responsive width constraint
 
 Adapt to your stack - the pattern must find `<img>` tags missing a responsive width class or style.
 
@@ -29,7 +29,7 @@ Adapt to your stack - the pattern must find `<img>` tags missing a responsive wi
 
 Run via `browser_evaluate` at the indicated step.
 
-### Preflight validation (Step 5 — before screenshot)
+### Preflight validation (Step 5 - before screenshot)
 
 ```js
 ({
@@ -42,7 +42,7 @@ Run via `browser_evaluate` at the indicated step.
 })
 ```
 
-### Overflow check (Step 5 — after screenshot)
+### Overflow check (Step 5 - after screenshot)
 
 ```js
 (() => {
@@ -66,7 +66,7 @@ Run via `browser_evaluate` at the indicated step.
 })()
 ```
 
-### Tap target check (Step 5 — BP0 + BP1 only)
+### Tap target check (Step 5 - BP0 + BP1 only)
 
 ```js
 (() => {
@@ -109,7 +109,7 @@ Run via `browser_evaluate` at the indicated step.
 })()
 ```
 
-### Sidebar/nav collapse check (Step 5 — BP0 + BP1 only)
+### Sidebar/nav collapse check (Step 5 - BP0 + BP1 only)
 
 ```js
 (() => {

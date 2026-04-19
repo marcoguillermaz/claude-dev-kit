@@ -194,9 +194,9 @@ export async function newSkill(options) {
         name: 'model',
         message: 'Model:',
         choices: [
-          { name: 'haiku  — fast, pattern-matching, grep-based checks', value: 'haiku' },
-          { name: 'sonnet — balanced analysis, multi-file reasoning', value: 'sonnet' },
-          { name: 'opus   — visual analysis, complex architectural reasoning', value: 'opus' },
+          { name: 'haiku  - fast, pattern-matching, grep-based checks', value: 'haiku' },
+          { name: 'sonnet - balanced analysis, multi-file reasoning', value: 'sonnet' },
+          { name: 'opus   - visual analysis, complex architectural reasoning', value: 'opus' },
         ],
         default: 'sonnet',
       },
@@ -211,17 +211,17 @@ export async function newSkill(options) {
         name: 'effort',
         message: 'Expected effort level:',
         choices: [
-          { name: 'low    — quick checks, single file', value: 'low' },
-          { name: 'medium — multi-file analysis', value: 'medium' },
-          { name: 'high   — deep audit, subagent delegation', value: 'high' },
-          { name: '(skip) — omit from frontmatter', value: '(skip)' },
+          { name: 'low    - quick checks, single file', value: 'low' },
+          { name: 'medium - multi-file analysis', value: 'medium' },
+          { name: 'high   - deep audit, subagent delegation', value: 'high' },
+          { name: '(skip) - omit from frontmatter', value: '(skip)' },
         ],
         default: 'medium',
       },
       {
         type: 'input',
         name: 'argumentHint',
-        message: 'Argument hint (e.g. [quick|full]) — leave blank for none:',
+        message: 'Argument hint (e.g. [quick|full]) - leave blank for none:',
         default: '',
       },
       {
@@ -284,7 +284,7 @@ export async function newSkill(options) {
 
   // Dry run
   if (options.dryRun) {
-    console.log(chalk.yellow('Dry run — no files written.'));
+    console.log(chalk.yellow('Dry run - no files written.'));
     console.log(`  Would create: .claude/skills/${answers.name}/SKILL.md`);
     console.log(`  Would create: .claude/skills/${answers.name}/test-skill.js`);
     console.log(`  Would register: /${answers.name} in CLAUDE.md Active Skills`);
@@ -306,7 +306,7 @@ export async function newSkill(options) {
     console.log(`${chalk.green('✓')} Added /${answers.name} to CLAUDE.md Active Skills`);
   } else if (reg.reason === 'CLAUDE.md not found') {
     console.log(
-      chalk.dim(`  No CLAUDE.md found — add /${answers.name} to Active Skills manually.`),
+      chalk.dim(`  No CLAUDE.md found - add /${answers.name} to Active Skills manually.`),
     );
   }
 
@@ -321,7 +321,7 @@ export async function newSkill(options) {
   console.log();
   console.log(chalk.dim('Next steps:'));
   console.log(
-    chalk.dim(`  1. Edit .claude/skills/${answers.name}/SKILL.md — fill in the step instructions`),
+    chalk.dim(`  1. Edit .claude/skills/${answers.name}/SKILL.md - fill in the step instructions`),
   );
   console.log(chalk.dim(`  2. Test: invoke /${answers.name} in Claude Code`));
   console.log(chalk.dim(`  3. Validate: node .claude/skills/${answers.name}/test-skill.js`));

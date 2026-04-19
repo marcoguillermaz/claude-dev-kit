@@ -2,7 +2,7 @@
 
 **Version**: 1.2
 **Created**: 2026-04-14
-**Updated**: 2026-04-14 — cross-model review (Gemini 2.5 Pro + Mistral Large + GPT-4.1) integrated. 7 convergent structural fixes (C1-C7) + 3 single-model critical (T2.1 targeted / T2.3 / T2.4) applied.
+**Updated**: 2026-04-14 - cross-model review (Gemini 2.5 Pro + Mistral Large + GPT-4.1) integrated. 7 convergent structural fixes (C1-C7) + 3 single-model critical (T2.1 targeted / T2.3 / T2.4) applied.
 **Status**: Consolidated - ready for execution once pre-work artifacts P1-P5 are produced.
 
 **Purpose**: single source of truth for the quality review of all 18 CDK skills. Replaces any prior partial framework. Every check, decision point, and severity level lives here.
@@ -24,7 +24,7 @@ The review validates each SKILL.md in `packages/cli/templates/tier-*/.claude/ski
 
 ---
 
-## Severity scale — FINDINGS (review-time)
+## Severity scale - FINDINGS (review-time)
 
 Classifies findings produced BY this review against each skill. Review-layer scale.
 
@@ -35,7 +35,7 @@ Classifies findings produced BY this review against each skill. Review-layer sca
 | Medium | Fix or register roadmap with explicit decision | Boilerplate drift, model↔complexity suboptimal, Anthropic compliance opportunity missed |
 | Low | Register roadmap, ignore, or fix if trivial | Minor token inefficiency, cosmetic drift |
 
-### Severity mapping — review ↔ runtime (C5 patched)
+### Severity mapping - review ↔ runtime (C5 patched)
 
 Two scales coexist:
 
@@ -59,7 +59,7 @@ The runtime severity scale (P2) is calibrated primarily on the target user's pai
 - **Remediation clarity**: whether the fix path is obvious.
 - **Invocation context**: whether the skill is clearly the right tool for the user's current task.
 
-A check with high FP rate or low actionability cannot be labeled Critical even if the technical severity is high — the effective user impact is degraded.
+A check with high FP rate or low actionability cannot be labeled Critical even if the technical severity is high - the effective user impact is degraded.
 
 ---
 
@@ -164,12 +164,12 @@ Six phases per skill + Phase 9 midpoint (runs once across cycle).
 **Output**: list of Critical/High findings for Phase 3
 
 Checks:
-1. **Anthropic spec compliance** — apply P1 C1-C8 to frontmatter and body.
-2. **Line count ≤ 500** — `wc -l`. If > 300, trigger progressive disclosure evaluation in Phase 2.C.
-3. **Registry↔body coherence** — verify `requires`/`excludeNative`/`minTier`/`cheatsheet` in `skill-registry.js` match body.
-4. **Allowed-tools↔body instructions** — grep body for capability keywords, cross-reference declared tools.
-5. **Placeholder resolution** — every `[PLACEHOLDER]` handled by `interpolate()` or documented as user-fill.
-6. **Model↔complexity alignment** — heuristic: line count + subagent usage + judgment steps.
+1. **Anthropic spec compliance** - apply P1 C1-C8 to frontmatter and body.
+2. **Line count ≤ 500** - `wc -l`. If > 300, trigger progressive disclosure evaluation in Phase 2.C.
+3. **Registry↔body coherence** - verify `requires`/`excludeNative`/`minTier`/`cheatsheet` in `skill-registry.js` match body.
+4. **Allowed-tools↔body instructions** - grep body for capability keywords, cross-reference declared tools.
+5. **Placeholder resolution** - every `[PLACEHOLDER]` handled by `interpolate()` or documented as user-fill.
+6. **Model↔complexity alignment** - heuristic: line count + subagent usage + judgment steps.
 
 **Fail handling**: Critical findings block Phase 2. Fixed in Phase 3.
 
@@ -181,10 +181,10 @@ Checks:
 
 Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on high-risk skills.
 
-#### 2.A — Fondamentali (block Phase 6 if failed)
+#### 2.A - Fondamentali (block Phase 6 if failed)
 
 1. **Frontmatter↔body coherence**: argument-hint targets/modes match body handlers.
-2. **Project-agnosticity test — extended** *(D3 — 4 dimensions)*:
+2. **Project-agnosticity test - extended** *(D3 - 4 dimensions)*:
    - **(a) Literal contamination**: no example, file path, entity name, API reference tied to a specific project. Every reference is a placeholder or universal concept. Universal = applies unchanged across ≥3 of 6 CDK-supported stacks.
    - **(b) Severity habits**: severity labels not inherited from pilot project's domain. E.g., "any hardcoded color = Critical" is a pilot-project habit; in non-UI projects, color is not Critical.
    - **(c) Remediation style**: fix suggestions not formatted/structured in pilot project's conventions. E.g., remediation always in "SwiftUI-like" declarative form.
@@ -196,7 +196,7 @@ Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on hig
 3. **Output template↔body coherence**: every report row matches body check name + severity.
 4. **Multi-stack + agnostic verification**: skill applies (or explicitly gates with `[web only]`/`[SSR only]`) across CDK-supported stacks.
 
-#### 2.B — Coerenza strutturale (cross-skill + cross-tier)
+#### 2.B - Coerenza strutturale (cross-skill + cross-tier)
 
 5. **Pipeline↔skill alignment**: `pipeline.md` references skill consistently.
 6. **Cross-skill reference coherence**: referenced skills exist, scope boundary claimed = actual scope (verified by grep of referenced skill's body + description), no overlap.
@@ -204,13 +204,13 @@ Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on hig
 8. **Boilerplate drift detection**: reference = most recently reviewed skill of same section type. Flag identical-where-should-differ or different-where-should-match.
 9. **Severity calibration vs P2 scale**: each severity level aligns with domain-neutral P2 per operational "aligned" definition. Cross-skill inconsistency flagged.
 
-#### 2.C — Raffinati
+#### 2.C - Raffinati
 
 10. **Token efficiency**: per-section token count (not line count). Flag sections >500 tokens that are not core logic.
 11. **Failure path**: skill handles absence of prerequisites with stop-and-report, not silent no-op.
 12. **Progressive disclosure evaluation**: if line count > 300, propose split into SKILL.md + supporting files.
 
-#### 2.D — Interactive review
+#### 2.D - Interactive review
 
 13. **Anthropic compliance opportunities**: for each documented feature not currently used, evaluate:
    - `paths` glob (if platform/file-type gating in body).
@@ -225,9 +225,9 @@ Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on hig
 
 15. **Cross-tier diff review (C6 STOP)**: if skill is multi-tier, user reviews cross-tier diff artifact (column-by-column comparison showing frontmatter, tool set, check list, severity labels, report template across variants). User approves propagation strategy.
 
-***** STOP — cross-tier diff approval. Wait for execution keyword before Phase 2.E or Phase 3. *****
+***** STOP - cross-tier diff approval. Wait for execution keyword before Phase 2.E or Phase 3. *****
 
-#### 2.E — Behavioral fixtures *(D1 — targeted, 6 skills only)*
+#### 2.E - Behavioral fixtures *(D1 - targeted, 6 skills only)*
 
 **Applies to**: ui-audit, visual-audit, ux-audit, responsive-audit, accessibility-audit, security-audit.
 **Rationale**: these skills have the highest false-positive / behavioral-drift risk (browser-based, pattern-heavy, subjective).
@@ -264,7 +264,7 @@ Steps:
 6. **Doc sync (O1)**: if fix changed facts in `README.md` or `docs/operational-guide.md` (skill count, capability claim, example), update both. If integration test counts changed, update README badges + inline counts.
 7. **Token budget hard check (T2.5)**: compute post-fix token count of SKILL.md. If >5000 tokens, hard-fail. Either compact (move to supporting files) or revert governance additions.
 
-***** STOP — Phase 3 → Phase 4 (C7). User approves fix diff before external LLMs see new version. *****
+***** STOP - Phase 3 → Phase 4 (C7). User approves fix diff before external LLMs see new version. *****
 
 ### Phase 4 - LLM cross-model review
 
@@ -387,7 +387,7 @@ Until all eight hold, cycle OPEN. No version bump claiming "skills quality-revie
   - Skill count → P3 regen.
   - Severity model → P2 regen.
   - Reviewer team change → P5 regen.
-- skill-review skill itself undergoes this review annually or on major Anthropic spec changes — dogfood.
+- skill-review skill itself undergoes this review annually or on major Anthropic spec changes - dogfood.
 - Emerging principles captured within freeze rule; rest roll to vNext.
 
 ---
@@ -396,21 +396,21 @@ Until all eight hold, cycle OPEN. No version bump claiming "skills quality-revie
 
 Resolved in v1.2:
 - [x] O1-O5 omissions (v1.1)
-- [x] P1 potential — retroactive re-application (v1.1) + freezed (v1.2 C3)
-- [x] P2 potential — cross-tier variations (v1.1) + STOP gate + taxonomy (v1.2 C6)
+- [x] P1 potential - retroactive re-application (v1.1) + freezed (v1.2 C3)
+- [x] P2 potential - cross-tier variations (v1.1) + STOP gate + taxonomy (v1.2 C6)
 - [x] Phase 2 micro-ordering (v1.1)
-- [x] C1 — LLM adjudication rule
-- [x] C2 — Phase 3 rollback (max 3 attempts)
-- [x] C3 — Retroactive freeze criterion
-- [x] C4 — Phase 4 pre-existing quarantine + override
-- [x] C5 — Severity 2-layer patch (operational aligned + fix-routing + user-pain)
-- [x] C6 — Cross-tier STOP + delta taxonomy
-- [x] C7 — Phase 3 → Phase 4 STOP
-- [x] T2.1 targeted — behavioral fixtures on 6 skills (D1)
-- [x] T2.3 — reviewer drift protection (D2 — P5 + Phase 9)
-- [x] T2.4 — project-agnosticity 4-dimension extension (D3)
-- [x] T2.5 — token count post-fix hard check
-- [x] T2.6 — P3 coverage check
+- [x] C1 - LLM adjudication rule
+- [x] C2 - Phase 3 rollback (max 3 attempts)
+- [x] C3 - Retroactive freeze criterion
+- [x] C4 - Phase 4 pre-existing quarantine + override
+- [x] C5 - Severity 2-layer patch (operational aligned + fix-routing + user-pain)
+- [x] C6 - Cross-tier STOP + delta taxonomy
+- [x] C7 - Phase 3 → Phase 4 STOP
+- [x] T2.1 targeted - behavioral fixtures on 6 skills (D1)
+- [x] T2.3 - reviewer drift protection (D2 - P5 + Phase 9)
+- [x] T2.4 - project-agnosticity 4-dimension extension (D3)
+- [x] T2.5 - token count post-fix hard check
+- [x] T2.6 - P3 coverage check
 
 Remaining before execution:
 - [ ] Create P2 severity scale artifact (with user-pain dimensions)
@@ -421,9 +421,9 @@ Remaining before execution:
 - [ ] Retro-apply to ui-audit (Block C)
 
 Deferred to vNext (v1.3 or later):
-- T2.1 full — behavioral fixtures on all 18 skills (currently 6 only).
-- T2.2 — bundle-level system behavior end-to-end check.
-- R3 — export mode split (lite / audit / portfolio).
+- T2.1 full - behavioral fixtures on all 18 skills (currently 6 only).
+- T2.2 - bundle-level system behavior end-to-end check.
+- R3 - export mode split (lite / audit / portfolio).
 - Second-reviewer sample (D5 defer).
 
 ---

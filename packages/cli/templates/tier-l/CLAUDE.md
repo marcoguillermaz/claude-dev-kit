@@ -1,4 +1,4 @@
-# [PROJECT_NAME] — Project Context
+# [PROJECT_NAME] - Project Context
 
 ## Overview
 [One paragraph: what the product does, who uses it, what problem it solves.]
@@ -20,7 +20,7 @@
 | `[role_3]` | [what they can do] |
 
 ## Key Workflows
-<!-- Document state machines here — approval flows, document lifecycle, etc. -->
+<!-- Document state machines here - approval flows, document lifecycle, etc. -->
 
 ```
 [STATE_A] → [STATE_B] → [STATE_C]
@@ -55,34 +55,34 @@
 <!-- Add non-obvious gotchas here as you discover them. -->
 <!-- Format: short title → what → why it matters → how to handle it -->
 
-## Interaction Protocol — Plan-then-Confirm
+## Interaction Protocol - Plan-then-Confirm
 
 **Default behavior for all non-trivial requests**: before taking any action that modifies files, configuration, architecture, database, or external systems, Claude must:
 
 1. Confirm understanding of the full scope (what is requested, what is NOT, any ambiguities)
 2. List every intended action: file paths, what changes, tools used, any irreversible operations
-3. Flag missing information or unclear instructions — ask before acting
+3. Flag missing information or unclear instructions - ask before acting
 4. Wait for an explicit execution keyword before proceeding
 
 **Execution keywords** (the only phrases that authorize autonomous action):
 - `Execute` · `Proceed` · `Confirmed` · `Go ahead`
 
-**Exception — active Phase 2**: once a plan is confirmed and an execution keyword was given, Claude proceeds autonomously through implementation without re-confirming each individual file edit or tool call. The confirmation covers the approved plan, not each step.
+**Exception - active Phase 2**: once a plan is confirmed and an execution keyword was given, Claude proceeds autonomously through implementation without re-confirming each individual file edit or tool call. The confirmation covers the approved plan, not each step.
 
-**Exception — read-only operations**: `Read`, `Grep`, `Glob`, `git status/log/diff` may run without prior confirmation.
+**Exception - read-only operations**: `Read`, `Grep`, `Glob`, `git status/log/diff` may run without prior confirmation.
 
 ## Reference Documents
-- **Session recovery**: `.claude/session/` — per-block session files.
+- **Session recovery**: `.claude/session/` - per-block session files.
 - **Requirements**: `docs/requirements.md`
 - **Progress tracker**: `docs/implementation-checklist.md`
 - **Tech debt**: `docs/refactoring-backlog.md`
 - **Architecture decisions**: `docs/adr/`
-- **Entity contracts**: `docs/contracts/` — field × permission × validation matrices (if applicable)
-- **Sitemap**: `docs/sitemap.md` — route × roles × key components (if applicable)
-- **Dependency map**: `docs/dependency-map.md` — entity → surfaces lookup (if applicable)
+- **Entity contracts**: `docs/contracts/` - field × permission × validation matrices (if applicable)
+- **Sitemap**: `docs/sitemap.md` - route × roles × key components (if applicable)
+- **Dependency map**: `docs/dependency-map.md` - entity → surfaces lookup (if applicable)
 
 ## Environment
-- `.env.local` — never commit. Key vars: [list names without values]
+- `.env.local` - never commit. Key vars: [list names without values]
 - Staging DB: [staging identifier]
 - Production DB: [production identifier]
 - **Hard rule**: staging credentials only in local dev. Production credentials only on production server.

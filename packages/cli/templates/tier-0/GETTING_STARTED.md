@@ -16,7 +16,7 @@ fix them before declaring done.
 
 ---
 
-## Step 1 — Open Claude Code
+## Step 1 - Open Claude Code
 
 From your project root:
 
@@ -25,11 +25,11 @@ claude
 ```
 
 Claude reads `CLAUDE.md` at startup. That file tells it your stack, your commands, and any
-project-specific rules. Keep it under 200 lines — Claude loads the whole thing on every session.
+project-specific rules. Keep it under 200 lines - Claude loads the whole thing on every session.
 
 ---
 
-## Step 2 — Tell Claude what to do
+## Step 2 - Tell Claude what to do
 
 Describe your task in plain language. You don't need special commands for most things:
 
@@ -49,7 +49,7 @@ Claude will ask clarifying questions if the task is ambiguous. Answer them and i
 
 ---
 
-## Step 3 — Review the changes
+## Step 3 - Review the changes
 
 Claude shows you every file it plans to change before writing. You can:
 - **Approve** individual edits
@@ -60,7 +60,7 @@ Good habit: run your tests yourself after Claude finishes, even though the Stop 
 
 ---
 
-## Step 4 — Teach Claude about your project
+## Step 4 - Teach Claude about your project
 
 The more Claude knows about your project, the better its suggestions. After any session where it
 discovers something non-obvious, add it to `CLAUDE.md`:
@@ -69,14 +69,14 @@ discovers something non-obvious, add it to `CLAUDE.md`:
 ## Known Patterns
 - Auth token is stored in a cookie named `__session`, not `Authorization` header
 - All API errors follow the shape `{ error: { code, message } }`
-- Use `createError()` in `lib/errors.ts` — never throw raw exceptions
+- Use `createError()` in `lib/errors.ts` - never throw raw exceptions
 ```
 
 These notes persist across sessions. Claude reads them every time.
 
 ---
 
-## Step 5 — When you're ready for more structure
+## Step 5 - When you're ready for more structure
 
 Tier 0 (what you have now) gives you the minimum viable scaffold:
 - Claude knows your project via `CLAUDE.md`
@@ -90,7 +90,7 @@ npx mg-claude-dev-kit upgrade --tier=m   # Standard: phased pipeline with review
 npx mg-claude-dev-kit upgrade --tier=l   # Full: audit skills, security review, multi-agent
 ```
 
-Upgrade is non-destructive — it adds new files without overwriting your existing ones.
+Upgrade is non-destructive - it adds new files without overwriting your existing ones.
 
 ---
 

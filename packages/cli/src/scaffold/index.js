@@ -3,8 +3,8 @@ import path from 'path';
 import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
 
 /**
- * Scaffold Tier 0 (Discovery) — minimal: settings.json, GETTING_STARTED.md only.
- * CLAUDE.md is generated separately by generateClaudeMd() — not copied here.
+ * Scaffold Tier 0 (Discovery) - minimal: settings.json, GETTING_STARTED.md only.
+ * CLAUDE.md is generated separately by generateClaudeMd() - not copied here.
  * No pipeline, no docs folder, no pre-commit, no .github.
  */
 export async function scaffoldTier0(targetDir, config, templatesDir) {
@@ -41,7 +41,7 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   const commonDir = path.join(templatesDir, 'common');
   const tierDir = path.join(templatesDir, `tier-${tier.toLowerCase()}`);
 
-  // Copy common files — skip rules/ here, handled separately below
+  // Copy common files - skip rules/ here, handled separately below
   const commonFileMap = {
     gitignore: '.gitignore',
     'pre-commit-config.yaml': '.pre-commit-config.yaml',
@@ -69,12 +69,12 @@ export async function scaffoldTier(tier, targetDir, config, templatesDir) {
   await copyTemplateDir(commonDir, targetDir, config, commonFileMap, config, ['rules']);
 
   // Copy tier-specific files (includes tier rules/ like pipeline.md)
-  // CLAUDE.md is skipped — generated separately by generateClaudeMd()
+  // CLAUDE.md is skipped - generated separately by generateClaudeMd()
   if (await fs.pathExists(tierDir)) {
     await copyTemplateDir(tierDir, targetDir, config, {}, config, [], ['CLAUDE.md']);
   }
 
-  // Copy rules/ subdirectory from common — select security variant by stack family
+  // Copy rules/ subdirectory from common - select security variant by stack family
   const commonRulesDir = path.join(commonDir, 'rules');
   if (await fs.pathExists(commonRulesDir)) {
     const securityVariant = securityRuleVariant(config);
@@ -194,7 +194,7 @@ async function pruneCheatsheet(targetDir, config) {
 
 /**
  * Patch settings.json permissions.allow to use stack-appropriate CLI tools.
- * Default templates use node/npm/npx — this replaces them for non-JS stacks.
+ * Default templates use node/npm/npx - this replaces them for non-JS stacks.
  */
 async function patchSettingsPermissions(targetDir, config) {
   const settingsPath = path.join(targetDir, '.claude', 'settings.json');
@@ -208,7 +208,7 @@ async function patchSettingsPermissions(targetDir, config) {
     java: ['Bash(git:*)', 'Bash(mvn:*)', 'Bash(./gradlew:*)', 'Bash(gradle:*)', 'Bash(curl:*)'],
     ruby: ['Bash(git:*)', 'Bash(bundle:*)', 'Bash(rails:*)', 'Bash(rake:*)', 'Bash(curl:*)'],
     go: ['Bash(git:*)', 'Bash(go:*)', 'Bash(curl:*)'],
-    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(curl:*)'],
+    python: ['Bash(git:*)', 'Bash(python:*)', 'Bash(pip:*)', 'Bash(uv:*)', 'Bash(pytest:*)', 'Bash(mypy:*)', 'Bash(uvicorn:*)', 'Bash(alembic:*)', 'Bash(curl:*)'],
   };
 
   const denyByStack = {
@@ -218,7 +218,7 @@ async function patchSettingsPermissions(targetDir, config) {
     dotnet: ['Bash(dotnet nuget push*)'],
     java: ['Bash(mvn deploy*)', 'Bash(./gradlew publish*)', 'Bash(gradle publish*)'],
     ruby: ['Bash(gem push*)'],
-    python: ['Bash(twine upload*)'],
+    python: ['Bash(twine upload*)', 'Bash(alembic downgrade base*)'],
   };
 
   const stackPerms = permissionsAllowByStack[config.techStack];
@@ -289,7 +289,7 @@ async function copyTemplateDir(
 }
 
 /**
- * Scaffold a tier's template files into the target directory — safe mode.
+ * Scaffold a tier's template files into the target directory - safe mode.
  * Same as scaffoldTier but skips files that already exist at the target path.
  * Used for in-place and from-context init modes to avoid overwriting the user's existing files.
  */
@@ -316,7 +316,7 @@ export async function scaffoldTierSafe(tier, targetDir, config, templatesDir) {
     ['rules'],
   );
 
-  // CLAUDE.md is skipped — generated separately by generateClaudeMd()
+  // CLAUDE.md is skipped - generated separately by generateClaudeMd()
   if (await fs.pathExists(tierDir)) {
     await copyTemplateDirSafe(tierDir, targetDir, config, {}, config, [], ['CLAUDE.md']);
   }
@@ -437,8 +437,16 @@ function securityRuleVariant(config) {
 
 function frameworkValue(config) {
   if (config.framework) return config.framework;
-  if (NATIVE_STACKS.includes(config.techStack)) return 'N/A — native app';
-  return '_fill in: e.g. Next.js 15, Express, Django, Rails_';
+  if (NATIVE_STACKS.includes(config.techStack)) return 'N/A - native app';
+  const examples = {
+    'node-ts': 'Next.js 15, Express, Fastify, NestJS, Hono',
+    'node-js': 'Next.js 15, Express, Fastify, NestJS, Hono',
+    python: 'FastAPI, Django, Flask, Litestar',
+    go: 'Gin, Echo, Fiber, Chi',
+    ruby: 'Rails, Sinatra, Hanami',
+  };
+  const eg = examples[config.techStack] || 'Next.js 15, Express, Django, Rails';
+  return `_fill in: e.g. ${eg}_`;
 }
 
 function languageFromStack(techStack) {
@@ -515,52 +523,52 @@ const lintCommandByStack = {
  * Stack-specific security checklist items for security-audit native supplement.
  */
 const securityChecklistByStack = {
-  swift: `- Keychain API usage — no UserDefaults for secrets or tokens
-- App Transport Security (ATS) — no blanket NSAllowsArbitraryLoads
+  swift: `- Keychain API usage - no UserDefaults for secrets or tokens
+- App Transport Security (ATS) - no blanket NSAllowsArbitraryLoads
 - Data Protection API (NSFileProtectionComplete on sensitive files)
-- Entitlements audit — minimal privilege, no unnecessary capabilities
+- Entitlements audit - minimal privilege, no unnecessary capabilities
 - Code signing and hardened runtime enabled
-- TCC permissions (camera, microphone, file access) — request only when needed`,
-  kotlin: `- Android Keystore for cryptographic keys — no hardcoded secrets
-- EncryptedSharedPreferences — no plaintext SharedPreferences for tokens
+- TCC permissions (camera, microphone, file access) - request only when needed`,
+  kotlin: `- Android Keystore for cryptographic keys - no hardcoded secrets
+- EncryptedSharedPreferences - no plaintext SharedPreferences for tokens
 - Certificate pinning configuration for API connections
 - ProGuard/R8 obfuscation enabled for release builds
-- Content Provider permissions — exported=false by default
-- WebView security — JavaScript disabled unless required, no addJavascriptInterface on untrusted content`,
-  rust: `- unsafe block audit — each usage justified with a safety comment
-- Memory safety — no use-after-free, double-free, or buffer overflow patterns
-- cargo audit — dependency vulnerability scan
+- Content Provider permissions - exported=false by default
+- WebView security - JavaScript disabled unless required, no addJavascriptInterface on untrusted content`,
+  rust: `- unsafe block audit - each usage justified with a safety comment
+- Memory safety - no use-after-free, double-free, or buffer overflow patterns
+- cargo audit - dependency vulnerability scan
 - Input validation on all FFI boundaries
 - Constant-time comparison for secrets (ring or subtle crate)
-- No panic in library code — use Result for error handling`,
+- No panic in library code - use Result for error handling`,
   go: `- Input validation on all external boundaries (HTTP, CLI, file)
-- Goroutine leak detection — context cancellation propagated correctly
-- crypto/ stdlib usage — no custom crypto implementations
-- sql.Exec with parameterized queries — no string concatenation in SQL
-- govulncheck — dependency vulnerability scan
+- Goroutine leak detection - context cancellation propagated correctly
+- crypto/ stdlib usage - no custom crypto implementations
+- sql.Exec with parameterized queries - no string concatenation in SQL
+- govulncheck - dependency vulnerability scan
 - No sensitive data in error messages or logs`,
-  python: `- SQL injection — parameterized queries only, no f-strings or % formatting in SQL
-- Command injection — subprocess with list args, never shell=True with user input
-- Pickle deserialization — never on untrusted data
-- pip-audit or safety — dependency vulnerability scan
-- SSRF — validate and allowlist URLs before requests.get()
-- No secrets in source — use environment variables or secret manager`,
-  ruby: `- Mass assignment protection — strong parameters on all controllers
+  python: `- SQL injection - parameterized queries only, no f-strings or % formatting in SQL
+- Command injection - subprocess with list args, never shell=True with user input
+- Pickle deserialization - never on untrusted data
+- pip-audit or safety - dependency vulnerability scan
+- SSRF - validate and allowlist URLs before requests.get()
+- No secrets in source - use environment variables or secret manager`,
+  ruby: `- Mass assignment protection - strong parameters on all controllers
 - CSRF token verification enabled (protect_from_forgery)
-- Brakeman static analysis — run before each release
-- SQL injection — parameterized queries, no string interpolation in where()
-- bundler-audit — dependency vulnerability scan
+- Brakeman static analysis - run before each release
+- SQL injection - parameterized queries, no string interpolation in where()
+- bundler-audit - dependency vulnerability scan
 - Secure cookie settings (httponly, secure, samesite)`,
-  java: `- Deserialization safety — no ObjectInputStream on untrusted data
-- SQL injection — PreparedStatement only, no string concatenation
-- OWASP dependency-check — run in CI
-- XML External Entity (XXE) prevention — disable external entities in parsers
+  java: `- Deserialization safety - no ObjectInputStream on untrusted data
+- SQL injection - PreparedStatement only, no string concatenation
+- OWASP dependency-check - run in CI
+- XML External Entity (XXE) prevention - disable external entities in parsers
 - Secure random (SecureRandom, not java.util.Random for security contexts)
 - No sensitive data in logs (mask PII, tokens, passwords)`,
-  dotnet: `- Configuration secrets — use Secret Manager or Azure Key Vault, not appsettings.json
+  dotnet: `- Configuration secrets - use Secret Manager or Azure Key Vault, not appsettings.json
 - Anti-forgery tokens on all state-changing endpoints
-- dotnet list package --vulnerable — dependency audit
-- SQL injection — parameterized queries or EF Core, no string interpolation in raw SQL
+- dotnet list package --vulnerable - dependency audit
+- SQL injection - parameterized queries or EF Core, no string interpolation in raw SQL
 - HTTPS enforcement and HSTS header configured
 - No sensitive data in exception details (ProblemDetails in production)`,
 };
@@ -570,11 +578,11 @@ const securityChecklistByStack = {
  * Prevents fallback to native defaults (e.g. `swift run`) for Xcode GUI apps.
  */
 function resolveDevCommand(userCommand, nativeDefault) {
-  // User provided an explicit command — use it
+  // User provided an explicit command - use it
   if (userCommand && userCommand.trim() !== '') return userCommand;
-  // User explicitly left blank (e.g. Xcode GUI app) — use a descriptive comment
-  if (userCommand === '') return '# no dev server — launch from IDE';
-  // No user input at all — fall back to native default or generic
+  // User explicitly left blank (e.g. Xcode GUI app) - use a descriptive comment
+  if (userCommand === '') return '# no dev server - launch from IDE';
+  // No user input at all - fall back to native default or generic
   return nativeDefault || 'npm run dev';
 }
 
@@ -611,7 +619,7 @@ function interpolate(content, config) {
     other: 'Mixed',
   };
 
-  const nativeCommandDefaults = {
+  const stackCommandDefaults = {
     swift: {
       install: '# no install step',
       dev: 'swift run',
@@ -647,8 +655,29 @@ function interpolate(content, config) {
       test: 'mvn test',
       typeCheck: '# type checking handled by compiler',
     },
+    python: {
+      install: 'pip install -r requirements.txt',
+      dev: '',
+      build: '',
+      test: 'pytest',
+      typeCheck: 'mypy .',
+    },
+    go: {
+      install: 'go mod download',
+      dev: 'go run .',
+      build: 'go build ./...',
+      test: 'go test ./...',
+      typeCheck: 'go vet ./...',
+    },
+    ruby: {
+      install: 'bundle install',
+      dev: 'rails server',
+      build: '',
+      test: 'bundle exec rspec',
+      typeCheck: '',
+    },
   };
-  const ncd = nativeCommandDefaults[config.techStack] || {};
+  const ncd = stackCommandDefaults[config.techStack] || {};
   // Swift xcodebuild commands need -scheme to target the correct scheme
   const swiftScheme =
     config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
@@ -681,30 +710,30 @@ function interpolate(content, config) {
     .replace(
       /\[FRAMEWORK\]/g,
       ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)
-        ? 'N/A — native app'
+        ? 'N/A - native app'
         : config.hasFrontend === false
-          ? 'N/A — no web frontend'
+          ? 'N/A - no web frontend'
           : 'your frontend framework',
     )
     .replace(
       /\[SITEMAP_OR_ROUTE_LIST\]/g,
       config.hasFrontend === false ||
         ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
-        ? 'N/A — no web frontend'
+        ? 'N/A - no web frontend'
         : 'docs/sitemap.md',
     )
     .replace(
       /\[API_TESTS_PATH\]/g,
-      config.hasApi === false ? '# N/A — no API routes' : 'tests/api/',
+      config.hasApi === false ? '# N/A - no API routes' : 'tests/api/',
     )
     .replace(
       /\[API_ROUTES_PATH\]/g,
-      config.hasApi === false ? 'N/A — no API routes' : 'src/app/api/',
+      config.hasApi === false ? 'N/A - no API routes' : 'src/app/api/',
     )
     .replace(
       /\[BUNDLE_TOOL\]/g,
       ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
-        ? 'N/A — native app'
+        ? 'N/A - native app'
         : "your build tool's bundle analyzer",
     )
     .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
@@ -725,27 +754,92 @@ function interpolate(content, config) {
     .replace(
       /\[SECURITY_CHECKLIST_ITEMS\]/g,
       securityChecklistByStack[config.techStack] || '- Configure security checklist for your stack',
-    );
+    )
+    .replace(/\[VALIDATION_LIBRARIES\]/g, (() => {
+      const libs = {
+        'node-ts': '(Zod, Yup, Joi, class-validator)',
+        'node-js': '(Zod, Yup, Joi, class-validator)',
+        python: '(Pydantic - native in FastAPI)',
+        go: '(go-playground/validator, ozzo-validation)',
+        ruby: '(Active Model Validations, dry-validation)',
+        java: '(Jakarta Bean Validation, Hibernate Validator)',
+        dotnet: '(FluentValidation, Data Annotations)',
+      };
+      return libs[config.techStack] || '(schema validation library for your stack)';
+    })())
+    .replace(/\[TEST_CLEANUP_PATTERN\]/g, (() => {
+      const patterns = {
+        'node-ts': 'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
+        'node-js': 'Every test that writes to DB must clean up in `afterAll`. Use cleanup-first pattern in `beforeAll` (delete pre-existing test data before creating fixtures).',
+        python: 'Every test that writes to DB must use a fixture with cleanup. Use `yield` fixtures for teardown. Define shared fixtures in `conftest.py` with appropriate scope. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).',
+        go: 'Every test that writes to DB must clean up via `t.Cleanup()`. Use cleanup-first pattern (delete pre-existing test data before creating fixtures in `TestMain` or test setup).',
+        ruby: 'Every test that writes to DB must clean up. Use `database_cleaner` or transaction rollback strategy. Define shared setup in `rails_helper.rb` or `spec_helper.rb`.',
+        java: 'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
+        dotnet: 'Every test that writes to DB must clean up in `[OneTimeTearDown]`. Use cleanup-first pattern in `[OneTimeSetUp]` (delete pre-existing test data before creating fixtures).',
+        rust: 'Every test that writes to DB must clean up after execution. Use setup functions with explicit cleanup. Consider `sqlx::test` macro for automatic transaction rollback.',
+        swift: 'Every test that writes to DB must clean up in `tearDownWithError()`. Use cleanup-first pattern in `setUpWithError()` (delete pre-existing test data before creating fixtures).',
+        kotlin: 'Every test that writes to DB must clean up in `@AfterAll`. Use cleanup-first pattern in `@BeforeAll` (delete pre-existing test data before creating fixtures).',
+      };
+      return patterns[config.techStack] || 'Every test that writes to DB must clean up after execution. Use cleanup-first pattern (delete pre-existing test data before creating fixtures).';
+    })())
+    .replace(/\[COMMIT_EXAMPLES\]/g, (() => {
+      const examples = {
+        'node-ts': "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade TypeScript to 5.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        'node-js': "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Zod for validation\nchore(deps): upgrade Express to 5.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        python: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Pydantic v2 for validation\nchore(deps): upgrade FastAPI to 0.115\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        go: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use go-playground/validator\nchore(deps): upgrade Go to 1.23\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        ruby: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use dry-validation\nchore(deps): upgrade Rails to 8.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        swift: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Codable for serialization\nchore(deps): upgrade Swift to 6.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        kotlin: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use kotlinx.serialization\nchore(deps): upgrade Kotlin to 2.1\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        rust: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use serde for serialization\nchore(deps): upgrade Rust edition to 2024\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        java: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use Jakarta Validation\nchore(deps): upgrade Spring Boot to 3.4\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+        dotnet: "feat(auth): add email invite flow\nfix(api): return 403 instead of 404 for unauthorized access\ndocs(adr): record decision to use FluentValidation\nchore(deps): upgrade .NET to 9.0\nrefactor(data): extract query helpers to data layer\ntest(auth): add integration tests for invite flow",
+      };
+      return examples[config.techStack] || examples['node-ts'];
+    })())
+    .replace(/\[BUILD_ARTIFACTS\]/g, (() => {
+      const artifacts = {
+        'node-ts': '`dist/`, `.next/`, `node_modules/`',
+        'node-js': '`dist/`, `.next/`, `node_modules/`',
+        python: '`dist/`, `__pycache__/`, `*.egg-info/`, `.venv/`',
+        go: '`bin/`, built binaries',
+        ruby: '`tmp/`, `vendor/bundle/`',
+        swift: '`.build/`, `DerivedData/`, `*.xcuserdata`',
+        kotlin: '`build/`, `*.apk`, `*.aab`',
+        rust: '`target/`',
+        java: '`target/`, `*.class`, `*.jar`',
+        dotnet: '`bin/`, `obj/`, `*.user`',
+      };
+      return artifacts[config.techStack] || '`dist/`, `build/`';
+    })())
+    .replace(/\[ENVIRONMENT_SETUP\]/g, (() => {
+      const setup = {
+        python: `\n**0. Set up virtual environment** (Python projects):\n\`\`\`bash\npython -m venv .venv\nsource .venv/bin/activate  # macOS/Linux\n# .venv\\Scripts\\activate   # Windows\npip install -r requirements.txt\n\`\`\`\nActivate the venv in every new terminal session before running any command.\n`,
+        go: `\n**0. Download Go modules**:\n\`\`\`bash\ngo mod download\n\`\`\`\n`,
+        ruby: `\n**0. Install Ruby dependencies**:\n\`\`\`bash\nbundle install\n\`\`\`\n`,
+      };
+      return setup[config.techStack] || '';
+    })());
 
   // ── Post-interpolation: simplify Phase 4 when E2E is not configured ───
   if (!config.hasE2E) {
     // Phase 1 scope gate: replace the E2E conditional with a clear skip statement
     result = result.replace(
       /Also declare:.*?Phase 4 is skipped\. State this explicitly\./s,
-      'Phase 4 (UAT/E2E) is **disabled** for this project — no E2E command configured. Skip Phase 4 unconditionally.',
+      'Phase 4 (UAT/E2E) is **disabled** for this project - no E2E command configured. Skip Phase 4 unconditionally.',
     );
     // Phase 4 body: replace the activation check with explicit disabled notice
     result = result.replace(
-      /## Phase 4 — UAT \/ E2E tests[\s\S]*?(?=## Phase 5b)/,
-      `## Phase 4 — UAT / E2E tests *(disabled)*\n\n**Disabled**: no E2E test command configured. Skip this phase.\n\n`,
+      /## Phase 4 - UAT \/ E2E tests[\s\S]*?(?=## Phase 5b)/,
+      `## Phase 4 - UAT / E2E tests *(disabled)*\n\n**Disabled**: no E2E test command configured. Skip this phase.\n\n`,
     );
   }
 
   // ── Post-interpolation: simplify Phase 3b when no API routes ───
   if (config.hasApi === false) {
     result = result.replace(
-      /## Phase 3b — API integration tests[\s\S]*?(?=## Phase 4)/,
-      `## Phase 3b — API integration tests *(disabled)*\n\n**Disabled**: no API routes in this project. Skip this phase.\n\n`,
+      /## Phase 3b - API integration tests[\s\S]*?(?=## Phase 4)/,
+      `## Phase 3b - API integration tests *(disabled)*\n\n**Disabled**: no API routes in this project. Skip this phase.\n\n`,
     );
   }
 
@@ -753,10 +847,10 @@ function interpolate(content, config) {
   if (NATIVE_STACKS.includes(config.techStack)) {
     // Phase 5c: replace staging deploy with local build + smoke
     result = result.replace(
-      /## Phase 5c — Staging deploy \+ smoke test[\s\S]*?(?=## Phase 5d)/,
-      '## Phase 5c — Local build + smoke test\n\n' +
+      /## Phase 5c - Staging deploy \+ smoke test[\s\S]*?(?=## Phase 5d)/,
+      '## Phase 5c - Local build + smoke test\n\n' +
         '- Build the project and run it locally.\n' +
-        '- Verify the main flow in 3–5 steps.\n' +
+        '- Verify the main flow in 3-5 steps.\n' +
         '- Output: "smoke test OK" or describe the problem and fix before proceeding.\n\n',
     );
     // Phase 8 step 9: direct merge to main (no staging intermediate)
@@ -771,6 +865,11 @@ function interpolate(content, config) {
     );
     // Phase 0 branch check: remove staging
     result = result.replace(/if on `main` or `staging`, stop\./, 'if on `main`, stop.');
+  }
+
+  // ── Post-interpolation: adjust Phase 5b terminology for backend-only projects ───
+  if (config.hasFrontend === false) {
+    result = result.replace(/every UI state that must be visible/g, 'every data state that must be verifiable');
   }
 
   // ── Post-interpolation: prune files-guide references to non-existent docs ───
@@ -834,10 +933,10 @@ bin/`,
   return result;
 }
 
-// Named export — used by generators/claude-md.js to resolve all template placeholders
+// Named export - used by generators/claude-md.js to resolve all template placeholders
 export { interpolate };
 
-// Exported for unit testing only — not part of the public API
+// Exported for unit testing only - not part of the public API
 export const _testHelpers = {
   securityRuleVariant,
   interpolate,

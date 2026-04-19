@@ -10,15 +10,15 @@ argument-hint: [target:file:<filename>|target:range:<from>-<to>|mode:all]
 ## Configuration (adapt before first run)
 
 > Replace these placeholders:
-> - `[MIGRATIONS_PATH]` — e.g. `prisma/migrations/`, `drizzle/`, `supabase/migrations/`, `db/migrations/`
-> - `[APP_SOURCE_PATH]` — path to application source for column-reference cross-checks (e.g. `src/`, `app/`)
-> - `[STAGING_DB_URL]` — optional, for Step 4 applied-migration verification
+> - `[MIGRATIONS_PATH]` - e.g. `prisma/migrations/`, `drizzle/`, `supabase/migrations/`, `db/migrations/`
+> - `[APP_SOURCE_PATH]` - path to application source for column-reference cross-checks (e.g. `src/`, `app/`)
+> - `[STAGING_DB_URL]` - optional, for Step 4 applied-migration verification
 >
 > **Database scope**: checks target PostgreSQL DDL patterns. MySQL and SQLite migrations may trigger false negatives on lock-heavy DDL checks (M1, M6) that use PostgreSQL-specific syntax.
 
 ---
 
-## Step 0 — Target resolution
+## Step 0 - Target resolution
 
 Parse `$ARGUMENTS` for a `target:` or `mode:` token.
 
@@ -26,15 +26,15 @@ Parse `$ARGUMENTS` for a `target:` or `mode:` token.
 |---|---|
 | `target:file:<filename>` | Audit a single migration file (for debugging before apply) |
 | `target:range:<from>-<to>` | Audit a numeric range of migrations (e.g. `target:range:042-051`) |
-| `mode:all` / no argument | **Full audit — every migration file discovered in Step 2.** |
+| `mode:all` / no argument | **Full audit - every migration file discovered in Step 2.** |
 
 **STRICT PARSING**: derive target ONLY from explicit text in `$ARGUMENTS`. Do NOT infer from conversation context, recent blocks, or memory.
 
-Announce: `Running migration-audit — scope: [FULL | target: <resolved>] — stack: <pending detection>`
+Announce: `Running migration-audit - scope: [FULL | target: <resolved>] - stack: <pending detection>`
 
 ---
 
-## Step 1 — Stack detection
+## Step 1 - Stack detection
 
 Detect the migration framework in this priority order. First matching marker wins.
 
@@ -51,15 +51,15 @@ Detect the migration framework in this priority order. First matching marker win
 
 **Supported at launch**: Prisma, Drizzle, Supabase CLI, Raw SQL.
 
-For Rails / Django / Alembic / Flyway: announce `Framework detected: <name> — not yet supported. The audit checks assume SQL-based migrations (PostgreSQL DDL). If your framework generates raw SQL, pass target:file: with the migration file path.` and exit 0.
+For Rails / Django / Alembic / Flyway: announce `Framework detected: <name> - not yet supported. The audit checks assume SQL-based migrations (PostgreSQL DDL). If your framework generates raw SQL, pass target:file: with the migration file path.` and exit 0.
 
 If no marker is found: announce `No migration framework detected. Checked: Prisma, Drizzle, Supabase CLI, Raw SQL. If migrations live elsewhere, pass target:file: with the absolute path.` and exit 0.
 
-Update announcement: `Running migration-audit — scope: [FULL | target: <resolved>] — stack: <detected>`
+Update announcement: `Running migration-audit - scope: [FULL | target: <resolved>] - stack: <detected>`
 
 ---
 
-## Step 2 — Migration file discovery
+## Step 2 - Migration file discovery
 
 Use the path pattern from Step 1. Sort migrations by numeric prefix (or by `drizzle/meta/_journal.json` order for Drizzle, or Prisma timestamp directory order).
 
@@ -72,23 +72,23 @@ State: `Discovered N migration files. Auditing: <scope>`
 
 ---
 
-## Step 3 — Static safety checks (main context)
+## Step 3 - Static safety checks (main context)
 
 Run all eight checks per file. Record findings with SEVERITY / CHECK / FILE:LINE / SQL / REASON.
 
-### M1 — Lock-heavy DDL
+### M1 - Lock-heavy DDL
 
 Flag the following patterns (grep per file body):
 
 - `CREATE INDEX` (not `CONCURRENTLY`) on a table with likely > 1000 rows (check `docs/db-map.md` if available, or flag unconditionally for tables without known row count). Severity: **High**. Suggest `CREATE INDEX CONCURRENTLY ...`.
-- `CREATE INDEX CONCURRENTLY` appearing **inside** a `BEGIN` / `COMMIT` block (or any transaction marker). Severity: **Critical** — this fails at runtime in PostgreSQL. CONCURRENTLY cannot run inside a transaction.
-- `ADD COLUMN <col> <type> NOT NULL` **without** `DEFAULT` in the same statement. Severity: **High** — fails immediately on tables with existing rows.
-- `ADD COLUMN <col> <type> NOT NULL DEFAULT <expr>` where `<expr>` is volatile (`now()`, `random()`, `gen_random_uuid()`). Severity: **High** — triggers full table rewrite under ACCESS EXCLUSIVE lock. Suggest: add nullable, backfill, then `ALTER COLUMN ... SET NOT NULL`.
+- `CREATE INDEX CONCURRENTLY` appearing **inside** a `BEGIN` / `COMMIT` block (or any transaction marker). Severity: **Critical** - this fails at runtime in PostgreSQL. CONCURRENTLY cannot run inside a transaction.
+- `ADD COLUMN <col> <type> NOT NULL` **without** `DEFAULT` in the same statement. Severity: **High** - fails immediately on tables with existing rows.
+- `ADD COLUMN <col> <type> NOT NULL DEFAULT <expr>` where `<expr>` is volatile (`now()`, `random()`, `gen_random_uuid()`). Severity: **High** - triggers full table rewrite under ACCESS EXCLUSIVE lock. Suggest: add nullable, backfill, then `ALTER COLUMN ... SET NOT NULL`.
 - `ALTER COLUMN <col> TYPE <new_type>` where the type change requires a cast and full rewrite (e.g. `int` → `bigint`, `text` → `uuid`). Severity: **High**.
 - `RENAME COLUMN` / `RENAME TABLE`. Severity: **Medium** if there are active consumers in app source; **Low** otherwise.
-- `ALTER TYPE ... RENAME VALUE` — ACCESS EXCLUSIVE lock on every table using the enum. Severity: **Medium**.
+- `ALTER TYPE ... RENAME VALUE` - ACCESS EXCLUSIVE lock on every table using the enum. Severity: **Medium**.
 
-### M2 — Non-reversible operations without rollback
+### M2 - Non-reversible operations without rollback
 
 For any migration containing `DROP COLUMN`, `DROP TABLE`, `TRUNCATE`, `ALTER TYPE ... RENAME VALUE`, or irreversible `UPDATE <t> SET ...`:
 
@@ -100,13 +100,13 @@ For any migration containing `DROP COLUMN`, `DROP TABLE`, `TRUNCATE`, `ALTER TYP
 - Severity: **High** if the comment block is absent.
 - Severity: **Critical** if Step 4 confirms the file is already applied in staging/prod.
 
-### M3 — Unsafe backfills
+### M3 - Unsafe backfills
 
 Flag `UPDATE <table> SET <col> = <value>` statements without a `WHERE` clause that bounds scope, or without a batching pattern (e.g. `LIMIT`, cursor loop). Holds a table-level lock for the full duration and generates replication lag.
 
 Severity: **Medium** on any table; **High** if the table is called out as high-traffic in `docs/db-map.md` or `CLAUDE.md`.
 
-### M4 — Constraint sequencing
+### M4 - Constraint sequencing
 
 If a migration changes a status / enum value (e.g. `UPDATE users SET role = 'MEMBER' WHERE role = 'USER'`), verify the sequence:
 
@@ -114,39 +114,39 @@ If a migration changes a status / enum value (e.g. `UPDATE users SET role = 'MEM
 2. `UPDATE ...` (the value rename)
 3. `ALTER TABLE ... ADD CONSTRAINT <check_constraint>` with the new value set
 
-Severity: **High** if the UPDATE appears without the surrounding DROP/ADD CONSTRAINT — would fail on tables with an existing CHECK constraint on the column.
+Severity: **High** if the UPDATE appears without the surrounding DROP/ADD CONSTRAINT - would fail on tables with an existing CHECK constraint on the column.
 
-### M5 — Data loss risk
+### M5 - Data loss risk
 
 For every `DROP COLUMN <col>`:
-- Grep `[APP_SOURCE_PATH]` for references to `<col>` (field name match). If references exist, severity: **Critical** — application will break at runtime.
+- Grep `[APP_SOURCE_PATH]` for references to `<col>` (field name match). If references exist, severity: **Critical** - application will break at runtime.
 - If no references exist but the prior migration did NOT rename the column to `<col>_deprecated` (staged deprecation marker): severity: **High**. Data is removed before a cool-down period.
 
 For every `DROP TABLE <t>`:
 - Require a prior migration that renamed `<t>` to `<t>_deprecated` or added a deprecation comment. Severity: **High** if no staged deprecation found.
 
-### M6 — Unsafe type changes
+### M6 - Unsafe type changes
 
 - `ALTER TYPE <enum> RENAME VALUE 'X' TO 'Y'` outside the M4 constraint-replay sequence: severity: **High**.
 - Implicit `int` → `string` or `string` → `int` casts in ORM-generated migrations (common Prisma/Drizzle pitfall when schema column type changed). Severity: **High** if data coercion is required without an explicit `USING` clause.
 
-### M7 — FK without indexed child column
+### M7 - FK without indexed child column
 
 For each `ADD CONSTRAINT ... FOREIGN KEY (<col>) REFERENCES ...`:
 - Verify the same migration (or an earlier one in the same batch) adds `CREATE INDEX ON <table> (<col>)`.
-- Severity: **Medium** if the index is missing — every JOIN and every ON DELETE cascade on the parent will sequential-scan the child.
+- Severity: **Medium** if the index is missing - every JOIN and every ON DELETE cascade on the parent will sequential-scan the child.
 
-### M8 — Migration ordering integrity
+### M8 - Migration ordering integrity
 
 Compare the numeric prefix ordering of new migration files in this branch vs. the highest prefix already on `main`.
 
-- If a new file has a prefix `N` and `main` already contains a file with prefix `M > N`, flag as **Medium** — migration ordering collision on merge. Suggest renumber.
+- If a new file has a prefix `N` and `main` already contains a file with prefix `M > N`, flag as **Medium** - migration ordering collision on merge. Suggest renumber.
 - For Prisma (timestamp dirs): check that new timestamps are strictly greater than the highest timestamp on `main`.
 - For Drizzle: check `drizzle/meta/_journal.json` ordering is consistent.
 
 ---
 
-## Step 4 — Live DB cross-reference *(optional, Postgres / Supabase only)*
+## Step 4 - Live DB cross-reference *(optional, Postgres / Supabase only)*
 
 **Skip this step** if `[STAGING_DB_URL]` is not configured, or if the stack is not Postgres-backed.
 
@@ -163,23 +163,23 @@ SELECT id, migration_name, finished_at FROM _prisma_migrations WHERE migration_n
 SELECT id, hash, created_at FROM __drizzle_migrations WHERE id = <prefix>;
 ```
 
-If the file is already applied to staging/prod: escalate M2 finding to **Critical** and record the note: `Already applied — rollback must be run manually if issue confirmed.`
+If the file is already applied to staging/prod: escalate M2 finding to **Critical** and record the note: `Already applied - rollback must be run manually if issue confirmed.`
 
 ---
 
-## Step 5 — Report and backlog decision gate
+## Step 5 - Report and backlog decision gate
 
 ### Output format
 
 ```
-## Migration Audit — [DATE] — [SCOPE] — stack: [FRAMEWORK]
+## Migration Audit - [DATE] - [SCOPE] - stack: [FRAMEWORK]
 
 ### Executive summary
-[2-5 bullets — Critical and High findings only. Write concrete facts: file names, SQL line, impact.
-If nothing Critical/High: state that explicitly ("No Critical or High findings — migration set is safe to apply").
+[2-5 bullets - Critical and High findings only. Write concrete facts: file names, SQL line, impact.
+If nothing Critical/High: state that explicitly ("No Critical or High findings - migration set is safe to apply").
 Example bullets:
 - "Migration 052 drops `users.legacy_id` which is referenced in src/auth/session.ts:18 (M5 Critical)"
-- "Migration 047 has CREATE INDEX CONCURRENTLY inside a BEGIN block — will fail at apply time (M1 Critical)"]
+- "Migration 047 has CREATE INDEX CONCURRENTLY inside a BEGIN block - will fail at apply time (M1 Critical)"]
 
 ### Migration maturity assessment
 | Dimension | Rating | Notes |
@@ -205,7 +205,7 @@ Example bullets:
 
 ### Prioritized findings
 For each finding with severity Medium or above:
-[SEVERITY] [ID] [check] — [file:line] — [SQL excerpt] — [impact] — [fix] — [effort: S=<1h / M=half day / L=day+]
+[SEVERITY] [ID] [check] - [file:line] - [SQL excerpt] - [impact] - [fix] - [effort: S=<1h / M=half day / L=day+]
 
 ### Quick wins
 [Findings that meet all three: (a) Medium or High, (b) effort S, (c) single-file fix]
@@ -220,9 +220,9 @@ Present all findings with severity Medium or above as a numbered decision list, 
 ```
 Found N findings at Medium or above. Which to add to backlog?
 
-[1] [CRITICAL] MIG-? — file:line — one-line description
-[2] [HIGH]     MIG-? — file:line — one-line description
-[3] [MEDIUM]   MIG-? — file:line — one-line description
+[1] [CRITICAL] MIG-? - file:line - one-line description
+[2] [HIGH]     MIG-? - file:line - one-line description
+[3] [MEDIUM]   MIG-? - file:line - one-line description
 ...
 
 Reply with numbers to include (e.g. "1 2 4"), "all", or "none".

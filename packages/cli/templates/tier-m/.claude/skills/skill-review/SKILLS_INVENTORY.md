@@ -80,7 +80,7 @@ Skills with 2 or 3 tier variants. Review approach per framework v1.2 Phase 2.B: 
 
 | Family | Expected delta M -> L |
 |---|---|
-| accessibility-audit | **identical by design** — same checks, same CHECKS.md reference; no differentiation needed (confirmed in review cycle C2) |
+| accessibility-audit | **identical by design** - same checks, same CHECKS.md reference; no differentiation needed (confirmed in review cycle C2) |
 | api-design | near-identical; L may add contract-versioning checks |
 | dependency-scan | identical (same 6 checks) |
 | migration-audit | near-identical (same safety rules) |
@@ -89,7 +89,7 @@ Skills with 2 or 3 tier variants. Review approach per framework v1.2 Phase 2.B: 
 | test-audit | M minimal; L adds coverage trend |
 | ui-audit | M static; L adds sitemap-aware coverage |
 | ux-audit | near-identical (opus model) |
-| visual-audit | **identical by design** — content is optimal at current state; no differentiation needed (confirmed in review cycle C2) |
+| visual-audit | **identical by design** - content is optimal at current state; no differentiation needed (confirmed in review cycle C2) |
 
 ### Single-tier skills
 

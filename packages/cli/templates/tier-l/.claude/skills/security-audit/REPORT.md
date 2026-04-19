@@ -1,19 +1,19 @@
-# security-audit — Report Template
+# security-audit - Report Template
 
 Generate the report using this template. Fill each section with findings from Steps 2-5.
 
 ```
-## Security Audit — [DATE] — [TARGET]
+## Security Audit - [DATE] - [TARGET]
 
 ### Executive summary
-- [2-8 bullets: lead with the most critical risk. One bullet per Critical/High finding or notable PASS cluster. Be specific — name the route, table, or pattern.]
+- [2-8 bullets: lead with the most critical risk. One bullet per Critical/High finding or notable PASS cluster. Be specific - name the route, table, or pattern.]
 
 ### Scope reviewed
 - Routes / entry points: [N routes, list categories]
 - Validation layer: schema validation in [N] route files
 - DB/access control layer: [N] migration files + DB advisors (if available)
 - Headers: server config + live curl on staging
-- Assumptions: [e.g. "No server-side form actions — N/A"]
+- Assumptions: [e.g. "No server-side form actions - N/A"]
 
 ### Security maturity assessment
 | Dimension | Rating | Notes |
@@ -52,7 +52,7 @@ Generate the report using this template. Fill each section with findings from St
 | R3 | Error message verbosity | ✅/❌ | |
 | R5 | Rate limiting on high-value endpoints | ✅/❌ | |
 
-### RLS — Code-level check
+### RLS - Code-level check
 | # | Check | Tables flagged | Verdict |
 |---|---|---|---|
 | RLS-1 | Tables without row-level access control | N | ✅/❌ |
@@ -99,13 +99,13 @@ Generate the report using this template. Fill each section with findings from St
 | No forgeable bypass header trusted | ✅/❌ | |
 
 ### Prioritized findings (Critical → High → Medium → Low)
-Format: `[SEVERITY] route/file:line — check# — issue — exploit path — recommended fix — effort`
+Format: `[SEVERITY] route/file:line - check# - issue - exploit path - recommended fix - effort`
 
 ### Quick wins
-[findings that are isolated, low-risk fixes — e.g. add ownership filter, add validation enum on query param, add write-side policy check]
+[findings that are isolated, low-risk fixes - e.g. add ownership filter, add validation enum on query param, add write-side policy check]
 
 ### Strategic refactors
-[findings requiring broader changes — e.g. state machine enforcement across all transition routes, centralized response serializers, access control policy overhaul]
+[findings requiring broader changes - e.g. state machine enforcement across all transition routes, centralized response serializers, access control policy overhaul]
 
 ### Validation checklist
 After applying fixes, verify:

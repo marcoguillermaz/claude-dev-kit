@@ -10,7 +10,7 @@
 
 ## Context
 
-[What is the issue or decision that needs to be made? Describe the forces at play — technical constraints, team capabilities, business requirements, timeline pressure. Be specific about what makes this decision non-obvious.]
+[What is the issue or decision that needs to be made? Describe the forces at play - technical constraints, team capabilities, business requirements, timeline pressure. Be specific about what makes this decision non-obvious.]
 
 ## Decision
 
@@ -40,8 +40,8 @@
 <!-- It translates the decision into actionable constraints for Claude. -->
 
 When generating code related to [topic covered by this ADR]:
-- [Specific constraint 1 — use `X` instead of `Y`]
-- [Specific constraint 2 — always/never pattern]
+- [Specific constraint 1 - use `X` instead of `Y`]
+- [Specific constraint 2 - always/never pattern]
 - See reference implementation in `[path/to/example]`
 
 Do NOT:

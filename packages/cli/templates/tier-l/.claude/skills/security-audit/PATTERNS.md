@@ -1,11 +1,11 @@
-# Security Audit — Stack Patterns
+# Security Audit - Stack Patterns
 
 Reference file for `/security-audit`. Contains grep patterns per check, organized by stack.
 The executing agent reads this file at the start of Step 2 and Step 3e. For each check, select the patterns matching the detected stack. If no exact match, use Generic.
 
 ---
 
-## A1 — Auth verification patterns
+## A1 - Auth verification patterns
 
 Grep for these within the first 20 lines of each route handler.
 
@@ -27,7 +27,7 @@ Grep for these within the first 20 lines of each route handler.
 
 ---
 
-## A3 — Validation library patterns
+## A3 - Validation library patterns
 
 Grep for these in write route handlers (POST/PUT/PATCH).
 
@@ -49,7 +49,7 @@ Grep for these in write route handlers (POST/PUT/PATCH).
 
 ---
 
-## A4 — SQL injection / query interpolation patterns
+## A4 - SQL injection / query interpolation patterns
 
 Grep for unsafe query construction.
 
@@ -65,7 +65,7 @@ Grep for unsafe query construction.
 
 ---
 
-## A5 — Select-all / over-fetch patterns
+## A5 - Select-all / over-fetch patterns
 
 Grep for routes returning full objects without field filtering.
 
@@ -84,7 +84,7 @@ Grep for routes returning full objects without field filtering.
 
 ---
 
-## A8 — Client-exposed environment variable prefixes
+## A8 - Client-exposed environment variable prefixes
 
 These framework prefixes inline env vars into the client bundle. Grep `.env*` files and source for these prefixes combined with secret-like suffixes.
 
@@ -94,16 +94,16 @@ These framework prefixes inline env vars into the client bundle. Grep `.env*` fi
 | Vite / SvelteKit / Nuxt 3 | `VITE_` |
 | Create React App | `REACT_APP_` |
 | Nuxt 2 | `NUXT_ENV_` |
-| Angular | Env vars in `environment.ts` (no prefix convention — check `environment.prod.ts`) |
+| Angular | Env vars in `environment.ts` (no prefix convention - check `environment.prod.ts`) |
 | Expo / React Native | `EXPO_PUBLIC_` |
-| Flutter | Dart env via `--dart-define` (no prefix — check `main.dart` for hardcoded values) |
+| Flutter | Dart env via `--dart-define` (no prefix - check `main.dart` for hardcoded values) |
 | Generic | Any env var embedded in client-facing source files |
 
 Secret-like suffixes to flag: `KEY`, `SECRET`, `TOKEN`, `PASSWORD`, `CREDENTIALS`, `PRIVATE`.
 
 ---
 
-## A9 — Client-side file markers + privileged credential patterns
+## A9 - Client-side file markers + privileged credential patterns
 
 ### Client-side markers (how to identify client-rendered files)
 
@@ -127,7 +127,7 @@ Secret-like suffixes to flag: `KEY`, `SECRET`, `TOKEN`, `PASSWORD`, `CREDENTIALS
 
 ---
 
-## A10 — Public URL patterns for storage assets
+## A10 - Public URL patterns for storage assets
 
 | Stack | Public URL pattern |
 |---|---|
@@ -140,13 +140,13 @@ Secret-like suffixes to flag: `KEY`, `SECRET`, `TOKEN`, `PASSWORD`, `CREDENTIALS
 
 ---
 
-## A13 — Identity resolution patterns
+## A13 - Identity resolution patterns
 
 Reuse A1 patterns. Grep for the auth verification call to determine how the caller's identity is resolved.
 
 ---
 
-## NS4 — Platform-specific security checks
+## NS4 - Platform-specific security checks
 
 ### Swift (iOS / macOS)
 

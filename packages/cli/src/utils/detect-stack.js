@@ -172,7 +172,7 @@ export async function detectStack(dir) {
     const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
     result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
   } else if (await exists('build.gradle')) {
-    // Java via Gradle (non-Kotlin) — build.gradle.kts already caught above
+    // Java via Gradle (non-Kotlin) - build.gradle.kts already caught above
     result.techStack = 'java';
     result.detectedFiles.push('build.gradle');
     result.installCommand = './gradlew dependencies';

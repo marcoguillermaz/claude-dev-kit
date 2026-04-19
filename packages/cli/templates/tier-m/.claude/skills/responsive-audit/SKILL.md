@@ -11,18 +11,18 @@ allowed-tools: Read Glob Grep Bash mcp__playwright__browser_navigate mcp__playwr
 ## Configuration (fill in before first run)
 
 > Replace these placeholders:
-> - `[DEV_URL]` — e.g. `http://localhost:3000`
-> - `[LOGIN_ROUTE]` — your login page path, e.g. `login`, `signin`, `auth/login`
-> - `[SITEMAP_OR_ROUTE_LIST]` — e.g. `docs/sitemap.md` or `docs/routes.md`
-> - `[MOBILE_ROUTES]` — comma-separated routes to test in quick mode (pick 4–6 most-used)
-> - `[TEST_ACCOUNTS]` — one or more `email / password` pairs per role (from your project's test accounts)
-> - `[DEV_COMMAND]` — e.g. `npm run dev`, `pnpm dev`
-> - `[APP_SOURCE_GLOB]` — e.g. `src/**/*.{tsx,jsx}`, `app/**/*.{vue,svelte}`, `templates/**/*.html`
-> - `[SCOPE_NOTE]` — which roles/pages are in scope vs excluded
+> - `[DEV_URL]` - e.g. `http://localhost:3000`
+> - `[LOGIN_ROUTE]` - your login page path, e.g. `login`, `signin`, `auth/login`
+> - `[SITEMAP_OR_ROUTE_LIST]` - e.g. `docs/sitemap.md` or `docs/routes.md`
+> - `[MOBILE_ROUTES]` - comma-separated routes to test in quick mode (pick 4–6 most-used)
+> - `[TEST_ACCOUNTS]` - one or more `email / password` pairs per role (from your project's test accounts)
+> - `[DEV_COMMAND]` - e.g. `npm run dev`, `pnpm dev`
+> - `[APP_SOURCE_GLOB]` - e.g. `src/**/*.{tsx,jsx}`, `app/**/*.{vue,svelte}`, `templates/**/*.html`
+> - `[SCOPE_NOTE]` - which roles/pages are in scope vs excluded
 >
 > If `[DEV_URL]` or `[SITEMAP_OR_ROUTE_LIST]` is not filled, the skill reports an error and exits.
 
-## Step 0 — Mode + target detection
+## Step 0 - Mode + target detection
 
 Parse `$ARGUMENTS`:
 
@@ -31,19 +31,19 @@ Parse `$ARGUMENTS`:
 - `full` → all breakpoints (375px + 768px + 1024px), all R-flagged routes. No WCAG checks.
 - `wcag` → adds BP0 (320px) to the active breakpoint set + WCAG 1.4.4 resize text step (Step 5b). Stackable: `full wcag` = all breakpoints + WCAG compliance checks.
 
-**Target** (filters the route list — applied on top of mode):
+**Target** (filters the route list - applied on top of mode):
 - `target:role:<role_name>` → routes accessible by that role only
 - `target:section:<name>` → routes whose path contains `<name>`
-- No target → NO filter — ALL R-flagged routes from `[SITEMAP_OR_ROUTE_LIST]` per the selected mode
+- No target → NO filter - ALL R-flagged routes from `[SITEMAP_OR_ROUTE_LIST]` per the selected mode
 
-**STRICT PARSING — mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (all R-flagged routes per the selected mode).
+**STRICT PARSING - mandatory**: derive mode and target ONLY from the explicit text in `$ARGUMENTS`. Do NOT infer target from conversation context, recent work, active block names, or project memory. If `$ARGUMENTS` contains no `target:` token → apply NO filter (all R-flagged routes per the selected mode).
 
 Announce at start:
-`Running responsive-audit in [QUICK | FULL | WCAG] mode — scope: [FULL | target: <resolved description>]`
+`Running responsive-audit in [QUICK | FULL | WCAG] mode - scope: [FULL | target: <resolved description>]`
 
 ---
 
-## Step 1 — Load reference
+## Step 1 - Load reference
 
 Read `[SITEMAP_OR_ROUTE_LIST]`. Extract:
 - All routes with `R` in the Audit column (group by role)
@@ -58,19 +58,19 @@ Hold in working memory:
 
 ---
 
-## Step 1.5 — Static pre-checks
+## Step 1.5 - Static pre-checks
 
 Run **before** launching the browser. These are zero-cost static checks that catch common patterns:
 
-**S1 — Viewport unit font trap**
+**S1 - Viewport unit font trap**
 Scope: `[APP_SOURCE_GLOB]`. Flag any `vw`-based font size without a `calc()` fallback - disables user zoom (WCAG 1.4.4 violation). Pattern: see CHECKS.md S1.
 Expected: 0 matches. Any match is Medium severity.
 
-**S2 — overflow:hidden on html/body**
+**S2 - overflow:hidden on html/body**
 Scope: global stylesheet + root layout + `[APP_SOURCE_GLOB]` CSS files. Flag `overflow: hidden` on `<html>` or `<body>` - masks scroll symptoms and breaks `position: sticky`. Pattern: see CHECKS.md S2.
 Expected: 0 matches. Any match is Medium severity.
 
-**S3 — Images without responsive width constraint**
+**S3 - Images without responsive width constraint**
 Scope: `[APP_SOURCE_GLOB]`. All images must have a responsive width constraint (`max-width`, `width: 100%`, or framework equivalent). Flag `<img>` tags missing such a constraint. Pattern: see CHECKS.md S3 - adapt to your stack.
 Expected: 0 matches. Any match is Low severity.
 
@@ -78,7 +78,7 @@ Log results as "Static pre-checks: S1 [PASS/FAIL N] · S2 [PASS/FAIL N] · S3 [P
 
 ---
 
-## Step 2 — Pre-flight check
+## Step 2 - Pre-flight check
 
 Navigate to `[DEV_URL]`. If not reachable:
 > ❌ Dev server not running. Start with `[DEV_COMMAND]` then re-run `/responsive-audit`.
@@ -87,7 +87,7 @@ Record the base URL.
 
 ---
 
-## Step 3 — Breakpoint definitions
+## Step 3 - Breakpoint definitions
 
 | ID | Width | Height | Label | When active |
 |---|---|---|---|---|
@@ -101,16 +101,16 @@ Full mode: BP1 + BP2 + BP3.
 WCAG mode (any): prepends BP0 to the active set.
 
 **WCAG reference:**
-- BP0 (320px) = WCAG 2.2 SC 1.4.10 Reflow threshold — vertical-scrolling content must not require horizontal scroll at 320 CSS pixel width
-- BP1 (375px) = real device baseline — not a WCAG threshold but the most common small mobile viewport
+- BP0 (320px) = WCAG 2.2 SC 1.4.10 Reflow threshold - vertical-scrolling content must not require horizontal scroll at 320 CSS pixel width
+- BP1 (375px) = real device baseline - not a WCAG threshold but the most common small mobile viewport
 
 ---
 
-## Step 4 — Route matrix
+## Step 4 - Route matrix
 
 Apply the working route list from Step 1 (already filtered by target).
 
-**The definitive route list and per-route notes come from `[SITEMAP_OR_ROUTE_LIST]`** (Step 1). The examples below show the annotation format — do not treat them as an exhaustive or fixed list.
+**The definitive route list and per-route notes come from `[SITEMAP_OR_ROUTE_LIST]`** (Step 1). The examples below show the annotation format - do not treat them as an exhaustive or fixed list.
 
 For each route: check the sitemap's tabs/states and sub-hierarchy sections for tabs, sections, and components to verify at each breakpoint.
 
@@ -119,84 +119,84 @@ For each route: check the sitemap's tabs/states and sub-hierarchy sections for t
 Group routes by the role session needed. For each role defined in the project:
 - Include all routes with that role and `R` in the Audit column
 - Note tabs and multi-section layouts from sitemap sub-hierarchies
-- **Prerequisite**: if a test account for a role does not exist, skip that session block and log: "[Role] routes SKIPPED — test account not found. Create it before running this section."
+- **Prerequisite**: if a test account for a role does not exist, skip that session block and log: "[Role] routes SKIPPED - test account not found. Create it before running this section."
 
-### Shared routes (test with first role session — already logged in)
-Routes accessible to multiple roles — verify once with the first role session.
+### Shared routes (test with first role session - already logged in)
+Routes accessible to multiple roles - verify once with the first role session.
 
 ---
 
-## Step 5 — Screenshot loop
+## Step 5 - Screenshot loop
 
 For each session × route × breakpoint:
 
-1. `browser_resize(width, height)` — set viewport
+1. `browser_resize(width, height)` - set viewport
 2. `browser_navigate(url)`
 3. Wait 1500ms or until main content visible
-4. **DOM preflight validation** — run the preflight script from CHECKS.md § Preflight.
+4. **DOM preflight validation** - run the preflight script from CHECKS.md § Preflight.
    If `hasMain === false` OR `noError === false`:
-   > ⚠️ Route [route] @ BP[N] failed preflight. Skipping — record as WARN in report.
+   > ⚠️ Route [route] @ BP[N] failed preflight. Skipping - record as WARN in report.
    If `vpWidth` does not match the requested width: log the discrepancy and proceed anyway.
-6. **Overflow check** — run the overflow script from CHECKS.md § Overflow. Returns `hasHorizontalScroll`, `overflowPx`, `offendingElements`, `tableOverflows`.
-7. **Tap target check** (BP0 + BP1 only) — run the tap-target script from CHECKS.md § Tap target. Returns `tooSmall` (elements under 44px) and `spacingViolations` (pairs with gap < 8px).
-8. **Sidebar/nav collapse check** (BP0 + BP1 only) — run the sidebar script from CHECKS.md § Sidebar. Returns `sidebarFound`, `sidebarVisibleAtMobile`, `hamburgerFound`.
-9. `browser_snapshot` — ARIA snapshot for structural check
+6. **Overflow check** - run the overflow script from CHECKS.md § Overflow. Returns `hasHorizontalScroll`, `overflowPx`, `offendingElements`, `tableOverflows`.
+7. **Tap target check** (BP0 + BP1 only) - run the tap-target script from CHECKS.md § Tap target. Returns `tooSmall` (elements under 44px) and `spacingViolations` (pairs with gap < 8px).
+8. **Sidebar/nav collapse check** (BP0 + BP1 only) - run the sidebar script from CHECKS.md § Sidebar. Returns `sidebarFound`, `sidebarVisibleAtMobile`, `hamburgerFound`.
+9. `browser_snapshot` - ARIA snapshot for structural check
 
 ### Checks per screenshot
 
-**R1 — Horizontal overflow**
+**R1 - Horizontal overflow**
 `hasHorizontalScroll === true` → FAIL. Report `overflowPx` px overflow. Report `offendingElements` from the overflow check query above.
 At BP0: any horizontal scroll = WCAG 1.4.10 violation → FAIL (Critical).
 
-**R2 — Table overflow**
+**R2 - Table overflow**
 From `tableOverflows` array:
 - `hasScrollWrapper === false` AND `overflowPx > 0` → FAIL (raw table overflow, no scroll container)
-- `hasScrollWrapper === true` AND `overflowPx > 0` → WARN (deliberate scroll container present — verify scroll affordance is visible to user)
+- `hasScrollWrapper === true` AND `overflowPx > 0` → WARN (deliberate scroll container present - verify scroll affordance is visible to user)
 Report the specific table class and overflow amount.
 
-**R3 — Text truncation (visual check)**
+**R3 - Text truncation (visual check)**
 From screenshot: flag ALL of the following:
 - Text cut at viewport edge (not intentional `line-clamp`) → FAIL
 - Labels that wrap across 2+ lines breaking the label/value pairing visually → WARN
 - Any heading or title that wraps to 3+ lines due to font size disproportionate to the viewport width → WARN
-Intentional `line-clamp` on long body text (e.g. descriptions, notes) is acceptable — only flag when the truncation hides operationally critical content.
+Intentional `line-clamp` on long body text (e.g. descriptions, notes) is acceptable - only flag when the truncation hides operationally critical content.
 
-**R4 — Tap target size** (BP0 + BP1 only)
+**R4 - Tap target size** (BP0 + BP1 only)
 From `tooSmall` array: flag elements with `w < 44 OR h < 44`.
 Exclude: inline text links inside paragraphs, pagination numbers.
 Focus on: sidebar nav items, form submit buttons, tab bar items, action buttons in tables.
-Note: 44px is the minimum threshold (Apple HIG). Elements between 44-47px pass but do not meet the 48px Material Design recommendation — log as WARN if widespread.
+Note: 44px is the minimum threshold (Apple HIG). Elements between 44-47px pass but do not meet the 48px Material Design recommendation - log as WARN if widespread.
 
-**R5 — Stacked layout**
+**R5 - Stacked layout**
 At BP1: multi-column grid/flex containers should collapse to single column at mobile width. Check from screenshot - if columns do not stack, flag.
 Verify that stacked cells have sufficient height and padding - stacking without spacing adjustments produces visually compressed rows.
 
-**R6 — Modal/dialog usability**
+**R6 - Modal/dialog usability**
 If a Dialog is triggered: verify it does not overflow the viewport, has visible close affordance, and the confirm button is reachable without scrolling.
 
-**R7 — Calendar grids and dense multi-section layouts**
-At BP0/BP1: any day/week calendar grid (7-column grids are high-risk at 320-375px) — verify it fits within the viewport without horizontal overflow.
-At BP0/BP1: pages with 3+ distinct stacked content sections — verify section headers do not overlap when stacking and content remains readable.
+**R7 - Calendar grids and dense multi-section layouts**
+At BP0/BP1: any day/week calendar grid (7-column grids are high-risk at 320-375px) - verify it fits within the viewport without horizontal overflow.
+At BP0/BP1: pages with 3+ distinct stacked content sections - verify section headers do not overlap when stacking and content remains readable.
 
-**R8 — Tap target spacing** (BP0 + BP1 only)
+**R8 - Tap target spacing** (BP0 + BP1 only)
 From `spacingViolations` array: flag pairs of interactive elements with gap < 8px.
-8px minimum spacing between touch targets — web.dev / Material Design 3 standard.
+8px minimum spacing between touch targets - web.dev / Material Design 3 standard.
 Severity: WARN for occasional violations, FAIL if widespread on a primary flow (e.g. all table row action buttons touching).
 
-**R9 — Sidebar/nav collapse** (BP0 + BP1 only)
+**R9 - Sidebar/nav collapse** (BP0 + BP1 only)
 From sidebar check:
-- `sidebarFound === true` AND `sidebarVisibleAtMobile === true` → FAIL. Desktop sidebar must collapse at mobile — if visible, it covers content area.
-- `sidebarFound === true` AND `sidebarVisibleAtMobile === false` AND `hamburgerFound === false` → WARN. Sidebar hidden but no visible mobile nav trigger found — user cannot navigate.
+- `sidebarFound === true` AND `sidebarVisibleAtMobile === true` → FAIL. Desktop sidebar must collapse at mobile - if visible, it covers content area.
+- `sidebarFound === true` AND `sidebarVisibleAtMobile === false` AND `hamburgerFound === false` → WARN. Sidebar hidden but no visible mobile nav trigger found - user cannot navigate.
 - `sidebarFound === true` AND `sidebarVisibleAtMobile === false` AND `hamburgerFound === true` → PASS.
-- `sidebarFound === false` → log as "no sidebar detected" — verify visually from screenshot.
+- `sidebarFound === false` → log as "no sidebar detected" - verify visually from screenshot.
 
 ---
 
-### Visual responsiveness checks (Opus screenshot analysis — BP0 + BP1 only)
+### Visual responsiveness checks (Opus screenshot analysis - BP0 + BP1 only)
 
-Apply to EVERY screenshot at mobile breakpoints. These are pure visual checks — no DOM queries. They are page-agnostic and apply equally to dashboards, forms, lists, detail pages, and content pages.
+Apply to EVERY screenshot at mobile breakpoints. These are pure visual checks - no DOM queries. They are page-agnostic and apply equally to dashboards, forms, lists, detail pages, and content pages.
 
-**VR1 — Hero / header section reflow**
+**VR1 - Hero / header section reflow**
 If the page has a header or hero section (greeting, profile card, page title + metadata, avatar + name + date): does it reflow gracefully at 375px?
 Check for:
 - Multi-column layout in the header that has not collapsed to vertical stack at mobile
@@ -204,7 +204,7 @@ Check for:
 - Avatar or icon competing for horizontal space with text content causing awkward wrapping
 Severity: FAIL if the header is visually broken or creates a confusing hierarchy. WARN if layout is intact but sub-optimal (e.g. wastes vertical space).
 
-**VR2 — Card content density**
+**VR2 - Card content density**
 In any card, KPI tile, or list cell: are all labels, values, and subtitles readable at this viewport width?
 Check for:
 - Labels that are truncated with "..." where the truncated portion contains operationally important information
@@ -212,7 +212,7 @@ Check for:
 - Cards so narrow that font-size, padding, and content no longer fit proportionally
 Severity: FAIL if content is unreadable or identifying information is lost. WARN if visual polish is degraded.
 
-**VR3 — Typography proportionality**
+**VR3 - Typography proportionality**
 Is the font size distribution proportional to the 375px viewport?
 Check for:
 - Any heading that consumes 3+ lines, dominating the viewport and pushing content below fold
@@ -220,12 +220,12 @@ Check for:
 - Inconsistent text sizes within the same section (e.g. two adjacent labels at noticeably different sizes) that break visual rhythm
 Severity: WARN.
 
-**VR4 — Primary CTA above fold**
+**VR4 - Primary CTA above fold**
 Is the primary action for this page (submit button, main CTA, primary navigation link) visible within the first viewport height (~812px at BP1) without scrolling?
-Exception: pages that are explicitly long-form (wizard steps, long forms) — the primary CTA at the bottom of a form is expected. Flag only if the CTA is non-obvious or the page appears to have no visible primary action above fold.
+Exception: pages that are explicitly long-form (wizard steps, long forms) - the primary CTA at the bottom of a form is expected. Flag only if the CTA is non-obvious or the page appears to have no visible primary action above fold.
 Severity: WARN.
 
-**VR5 — Grid density at mobile**
+**VR5 - Grid density at mobile**
 Any 2-column grid at 375px: are each of the cells visually readable? Minimum readable card width at 375px: ~140px.
 Check for:
 - Cells with labels that wrap or are cut off because the cell is too narrow
@@ -233,7 +233,7 @@ Check for:
 - Chip/badge rows that overflow or wrap in a way that breaks the grid rhythm
 Severity: FAIL if content is unreadable. WARN if layout is intact but visually crowded.
 
-**VR6 — Content hierarchy at mobile**
+**VR6 - Content hierarchy at mobile**
 Does the page have a clear visual hierarchy at 375px? The most important content should be immediately visible; secondary content below.
 Check for:
 - Decorative or secondary sections (empty state illustrations, informational banners) appearing above primary content
@@ -245,20 +245,20 @@ Severity scale for visual checks: **FAIL** = layout is broken or content is unre
 
 ---
 
-## Step 5b — WCAG 1.4.4 Resize Text check (wcag mode only)
+## Step 5b - WCAG 1.4.4 Resize Text check (wcag mode only)
 
 **Skip this step if `wcag` flag was not set.**
 
 Select 3 representative routes (one per role, all from the working route list): ideally a form-heavy page, a table-heavy page, and a content page.
 
 For each:
-1. `browser_resize(1280, 800)` — desktop viewport
+1. `browser_resize(1280, 800)` - desktop viewport
 2. `browser_navigate(url)`
 3. Apply 200% font size via the resize script from CHECKS.md § WCAG 1.4.4 resize text.
 4. Wait 500ms for reflow
 5. Run overflow check (same script as Step 5 item 6)
 6. Check:
-   - `hasHorizontalScroll === true` → FAIL — WCAG 1.4.4 violation. Content lost or broken at 200% text size.
+   - `hasHorizontalScroll === true` → FAIL - WCAG 1.4.4 violation. Content lost or broken at 200% text size.
    - Any interactive element no longer reachable (visually clipped) → FAIL
    - Minor reflow/wrap changes → PASS (expected and acceptable)
 7. Reset font size (see CHECKS.md)
@@ -267,7 +267,7 @@ Log results in the WCAG compliance section of the report.
 
 ---
 
-## Step 6 — Session management
+## Step 6 - Session management
 
 ### Login helper (reuse across steps)
 ```
@@ -287,19 +287,19 @@ Log results in the WCAG compliance section of the report.
 
 ---
 
-## Step 7 — Report
+## Step 7 - Report
 
 ```
-## Responsive Audit — [DATE] — [MODE] — [TARGET]
+## Responsive Audit - [DATE] - [MODE] - [TARGET]
 ### Reference: [SITEMAP_OR_ROUTE_LIST] (R-flagged routes)
 ### Breakpoints tested: [BP0 320px (WCAG) · ] BP1 375px [· BP2 768px · BP3 1024px]
 
 ### Static pre-checks
 | Check | Result | Detail |
 |---|---|---|
-| S1 — vw font trap | PASS/FAIL N | [matches if any] |
-| S2 — overflow:hidden on html/body | PASS/FAIL N | [matches if any] |
-| S3 — Images without max-width | PASS/FAIL N | [matches if any] |
+| S1 - vw font trap | PASS/FAIL N | [matches if any] |
+| S2 - overflow:hidden on html/body | PASS/FAIL N | [matches if any] |
+| S3 - Images without max-width | PASS/FAIL N | [matches if any] |
 
 ### Route matrix
 
@@ -313,9 +313,9 @@ Legend: PASS = no issues · WARN = minor (scroll container present, 44-47px targ
 ### Violations detail
 
 For each WARN or FAIL:
-- **Route**: [url] — **Role**: [role] — **Breakpoint**: [bp]
-- **Check**: R[N] or VR[N] — [check name]
-- **Detail**: [description — for R1/R2: include overflowPx and offendingElements; for R8: gap values; for R9: sidebar state; for VR checks: describe exactly what was observed in the screenshot]
+- **Route**: [url] - **Role**: [role] - **Breakpoint**: [bp]
+- **Check**: R[N] or VR[N] - [check name]
+- **Detail**: [description - for R1/R2: include overflowPx and offendingElements; for R8: gap values; for R9: sidebar state; for VR checks: describe exactly what was observed in the screenshot]
 - **Screenshot**: [filename]
 - **Fix hint**: [suggested CSS fix or layout change]
 
@@ -341,7 +341,7 @@ For each WARN or FAIL:
 
 ---
 
-## Step 8 — Final offer
+## Step 8 - Final offer
 
 After the report:
 
@@ -356,6 +356,6 @@ After the report:
 
 ---
 
-## Step 9 — Screenshot cleanup
+## Step 9 - Screenshot cleanup
 
 After the report is delivered, delete any screenshots taken during analysis. Run unconditionally at session end.

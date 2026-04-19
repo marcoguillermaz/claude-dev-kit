@@ -1,13 +1,13 @@
-# Skill-DB Audit — Report Template
+# Skill-DB Audit - Report Template
 
-## Skill-DB Audit — [DATE] — [SCOPE]
+## Skill-DB Audit - [DATE] - [SCOPE]
 Sources: [DB_SYSTEM] docs (indexes, constraints, access control)
 
 ### Executive summary
-[2-5 bullets — Critical and High findings only. Write concrete facts: table names, column names, line counts.
-If nothing Critical/High: state that explicitly ("No Critical or High findings — schema is production-ready for this scope").
+[2-5 bullets - Critical and High findings only. Write concrete facts: table names, column names, line counts.
+If nothing Critical/High: state that explicitly ("No Critical or High findings - schema is production-ready for this scope").
 Example bullets:
-- "3 tables with UPDATE policy but no SELECT policy (S4D High)" — example format
+- "3 tables with UPDATE policy but no SELECT policy (S4D High)" - example format
 
 ### DB maturity assessment
 | Dimension | Rating | Notes |
@@ -23,18 +23,18 @@ Rating guide: strong = no significant issues; adequate = issues exist but low pr
 ### Schema Checks
 | # | Check | Verdict | Findings |
 |---|---|---|---|
-| S1A | Index — filter columns | ✅/⚠️ | [columns flagged] |
-| S1B | Index — FK column coverage | ✅/⚠️ | [N unindexed FK columns] |
-| S1C | Index — partial on status columns | ✅/⚠️ | |
-| S1D | Index — GIN for UUID[] arrays | ✅/⚠️ | |
+| S1A | Index - filter columns | ✅/⚠️ | [columns flagged] |
+| S1B | Index - FK column coverage | ✅/⚠️ | [N unindexed FK columns] |
+| S1C | Index - partial on status columns | ✅/⚠️ | |
+| S1D | Index - GIN for UUID[] arrays | ✅/⚠️ | |
 | S2 | Normalization and modeling | ✅/⚠️ | |
 | S2b | Constraint completeness (CHECK + composite UNIQUE) | ✅/⚠️ | |
 | S3 | Missing NOT NULL | ✅/⚠️ | |
-| S4A | RLS — policy completeness | ✅/⚠️ | |
-| S4B | RLS — function call caching | ✅/⚠️ | [N policies with bare function calls] |
-| S4C | RLS — explicit TO clause | ✅/⚠️ | |
-| S4D | RLS — SELECT before UPDATE | ✅/⚠️ | |
-| S4E | RLS — views security_invoker | ✅/⚠️ | |
+| S4A | RLS - policy completeness | ✅/⚠️ | |
+| S4B | RLS - function call caching | ✅/⚠️ | [N policies with bare function calls] |
+| S4C | RLS - explicit TO clause | ✅/⚠️ | |
+| S4D | RLS - SELECT before UPDATE | ✅/⚠️ | |
+| S4E | RLS - views security_invoker | ✅/⚠️ | |
 | S5 | Data type choices | ✅/⚠️ | [timestamp/varchar/serial hits] |
 | S6 | FK cascade behavior | ✅/⚠️ | |
 | S7 | Unused indexes | ✅/⚠️ | [N with 0 scans and qualifying criteria] |
@@ -50,11 +50,11 @@ Rating guide: strong = no significant issues; adequate = issues exist but low pr
 
 ### Prioritized findings
 For each finding with severity Medium or above:
-[SEVERITY] [ID] [check#] — [table/file:line] — [issue] — [business impact] — [fix] — [effort: S=<1h / M=half day / L=day+]
+[SEVERITY] [ID] [check#] - [table/file:line] - [issue] - [business impact] - [fix] - [effort: S=<1h / M=half day / L=day+]
 
 ### Quick wins
 [List findings that meet ALL three criteria: (a) Medium or High severity AND (b) effort S (<1 hour) AND (c) only DB migration OR only code change, not both simultaneously]
-Format: "DB-[n]: [one-line description] — [migration or code change]"
+Format: "DB-[n]: [one-line description] - [migration or code change]"
 If no quick wins: state explicitly.
 
 ---
@@ -66,9 +66,9 @@ Present all findings with severity Medium or above as a numbered decision list, 
 ```
 Found N findings at Medium or above. Which to add to backlog?
 
-[1] [CRITICAL] DB-? — table/check — one-line description
-[2] [HIGH]     DB-? — table/check — one-line description
-[3] [MEDIUM]   DB-? — table/check — one-line description
+[1] [CRITICAL] DB-? - table/check - one-line description
+[2] [HIGH]     DB-? - table/check - one-line description
+[3] [MEDIUM]   DB-? - table/check - one-line description
 ...
 
 Reply with numbers to include (e.g. "1 2 4"), "all", or "none".

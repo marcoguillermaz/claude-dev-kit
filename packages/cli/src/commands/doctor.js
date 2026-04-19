@@ -164,7 +164,7 @@ const checks = [
     check: (cwd) => {
       const githubDir = path.join(cwd, '.github');
       const p = path.join(githubDir, 'CODEOWNERS');
-      // If .github/ is absent the user opted out of GitHub files — skip silently
+      // If .github/ is absent the user opted out of GitHub files - skip silently
       if (!fs.existsSync(githubDir)) return { skip: true };
       if (!fs.existsSync(p))
         return {
@@ -176,7 +176,7 @@ const checks = [
       return {
         pass: content.includes('.claude/'),
         warn: true,
-        fix: 'Add `/.claude/ @tech-lead` to CODEOWNERS — Claude config changes should require human review.',
+        fix: 'Add `/.claude/ @tech-lead` to CODEOWNERS - Claude config changes should require human review.',
       };
     },
   },
@@ -378,7 +378,7 @@ export async function doctor(options = {}) {
     return;
   }
 
-  // --ci: silent mode — no output, just exit code
+  // --ci: silent mode - no output, just exit code
   if (ciMode) {
     if (failed > 0) process.exit(1);
     return;
@@ -386,7 +386,7 @@ export async function doctor(options = {}) {
 
   // interactive mode (default)
   console.log();
-  console.log(chalk.bold('claude-dev-kit doctor') + chalk.dim(` — ${cwd}`));
+  console.log(chalk.bold('claude-dev-kit doctor') + chalk.dim(` - ${cwd}`));
   console.log();
 
   for (const r of results) {
@@ -421,7 +421,7 @@ export async function doctor(options = {}) {
 
   if (warned > 0) {
     console.log();
-    console.log(chalk.dim('Review the warnings above — some may not apply to your setup.'));
+    console.log(chalk.dim('Review the warnings above - some may not apply to your setup.'));
   }
 
   console.log();

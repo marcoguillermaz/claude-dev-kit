@@ -1,11 +1,11 @@
-# API Design Audit — Stack Patterns
+# API Design Audit - Stack Patterns
 
 Reference file for `/api-design`. Contains grep patterns per check, organized by stack.
 The executing agent reads this file at the start of Step 2. For each check, select the patterns matching the detected stack. If no exact match, use Generic.
 
 ---
 
-## N3 — JSON response helper patterns
+## N3 - JSON response helper patterns
 
 Grep for these to find all route response calls.
 
@@ -29,7 +29,7 @@ Grep for these to find all route response calls.
 
 ---
 
-## N6 — Validation error access patterns
+## N6 - Validation error access patterns
 
 After catching a validation error, the error details must be accessed via the library's correct property - not a similar-but-wrong name.
 
@@ -50,7 +50,7 @@ Expected: 0 matches. All ZodError access must use `.issues`.
 
 ---
 
-## N6b — Async params access
+## N6b - Async params access
 
 Some frameworks require async handling of route params. This check is framework-conditional.
 
@@ -63,7 +63,7 @@ Some frameworks require async handling of route params. This check is framework-
 
 ---
 
-## N8 — Throwing vs non-throwing validation patterns
+## N8 - Throwing vs non-throwing validation patterns
 
 | Library | Non-throwing (correct) | Throwing (flag if unhandled) |
 |---|---|---|
@@ -77,7 +77,7 @@ Some frameworks require async handling of route params. This check is framework-
 
 ---
 
-## N9 — Request body parsing patterns
+## N9 - Request body parsing patterns
 
 Grep for these to find where route handlers parse the request body.
 
@@ -99,7 +99,7 @@ Grep for these to find where route handlers parse the request body.
 
 ---
 
-## V3 — Validation error detail property
+## V3 - Validation error detail property
 
 When returning validation errors to the client, use the library's documented property for field-level details.
 

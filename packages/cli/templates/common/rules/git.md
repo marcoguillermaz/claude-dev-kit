@@ -12,15 +12,10 @@
 
 ## Commit messages
 
-Format: `type(scope): short description` — imperative mood, under 72 characters.
+Format: `type(scope): short description` - imperative mood, under 72 characters.
 
 ```
-feat(auth): add email invite flow
-fix(api): return 403 instead of 404 for unauthorized access
-docs(adr): record decision to use Zod for validation
-chore(deps): upgrade TypeScript to 5.4
-refactor(data): extract query helpers to data layer
-test(auth): add integration tests for invite flow
+[COMMIT_EXAMPLES]
 ```
 
 **Types**: `feat` · `fix` · `docs` · `chore` · `refactor` · `test` · `perf` · `ci`
@@ -30,7 +25,7 @@ test(auth): add integration tests for invite flow
 ## What never goes in a commit
 
 - `.env*` files or any secrets/credentials
-- Build artifacts (`dist/`, `.next/`, `__pycache__/`)
+- Build artifacts ([BUILD_ARTIFACTS])
 - Personal editor config (`.vscode/` unless team-agreed)
 - Debug code, `console.log`, commented-out code blocks
 
@@ -45,5 +40,5 @@ Commits containing AI-generated code are tagged automatically via `attribution.c
 in `.claude/settings.json`. This creates an audit trail in git history without
 requiring manual tagging.
 
-The AI attribution does not replace human review — every AI-generated commit on a
+The AI attribution does not replace human review - every AI-generated commit on a
 shared branch should be reviewed before merging.

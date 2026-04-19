@@ -6,11 +6,11 @@ model: haiku
 context: fork
 ---
 
-## Step 1 — Read staged changes
+## Step 1 - Read staged changes
 
 If output is empty: respond "No staged files. Run `git add <files>` first." and stop.
 
-## Step 2 — Determine commit type
+## Step 2 - Determine commit type
 
 Classify based on staged files:
 
@@ -24,9 +24,9 @@ Classify based on staged files:
 
 When code + tests are staged together, type follows the code change (`feat` or `fix`).
 
-**BREAKING CHANGE**: if a migration drops a column, renames a table, removes an API field, or changes a response shape — append `!` after type/scope AND add a `BREAKING CHANGE:` footer line explaining the impact.
+**BREAKING CHANGE**: if a migration drops a column, renames a table, removes an API field, or changes a response shape - append `!` after type/scope AND add a `BREAKING CHANGE:` footer line explaining the impact.
 
-## Step 3 — Determine scope
+## Step 3 - Determine scope
 
 Derive from the primary functional area of the staged changes:
 
@@ -34,14 +34,14 @@ Derive from the primary functional area of the staged changes:
 - Horizontal: `ui` (UI-only, no domain logic) · `context` (pipeline.md, CLAUDE.md, skills, rules)
 - Omit scope if changes span >3 unrelated areas or are truly cross-cutting
 
-## Step 4 — Write description
+## Step 4 - Write description
 
 Rules:
-- Imperative mood: `add`, `fix`, `update`, `remove` — never past tense
+- Imperative mood: `add`, `fix`, `update`, `remove` - never past tense
 - Max 72 characters total including `type(scope): `
 - No period at end
 
-## Step 5 — Body (include when useful)
+## Step 5 - Body (include when useful)
 
 Include a body when:
 - The reason for the change is non-obvious
@@ -50,7 +50,7 @@ Include a body when:
 
 Separate body from subject with a blank line.
 
-## Step 6 — Execute
+## Step 6 - Execute
 
 Output the proposed commit message, then run:
 
@@ -63,10 +63,10 @@ Use multiple `-m` flags for subject + body. Never use `--amend` or `--no-verify`
 
 ---
 
-## Reference — Three-commit block pattern (S8)
+## Reference - Three-commit block pattern (S8)
 
 | Commit | Phase | Type | Scope | Content |
 |---|---|---|---|---|
-| 1 — code | Phase 3 | `feat` or `fix` | domain entity | source files + migrations + tests |
-| 2 — docs | Phase 8 | `docs` | block name | implementation-checklist, README, sitemap, db-map, contracts, PRD |
-| 3 — context | Phase 8 | `chore` | `context` | CLAUDE.md and/or MEMORY.md only if updated |
+| 1 - code | Phase 3 | `feat` or `fix` | domain entity | source files + migrations + tests |
+| 2 - docs | Phase 8 | `docs` | block name | implementation-checklist, README, sitemap, db-map, contracts, PRD |
+| 3 - context | Phase 8 | `chore` | `context` | CLAUDE.md and/or MEMORY.md only if updated |

@@ -17,7 +17,7 @@
 
 ## API Routes
 
-<!-- Optional — include if your project serves API endpoints alongside pages. -->
+<!-- Optional - include if your project serves API endpoints alongside pages. -->
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
