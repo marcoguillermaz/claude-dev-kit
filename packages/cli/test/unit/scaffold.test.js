@@ -435,7 +435,7 @@ describe('interpolate — multiple placeholders in one string', () => {
       techStack: 'swift',
       projectName: 'MyApp',
     });
-    assert.equal(result, 'Stack: Swift / macOS, Test: xcodebuild test, Name: MyApp');
+    assert.equal(result, 'Stack: Swift / macOS, Test: xcodebuild test -scheme MyApp, Name: MyApp');
   });
 
   it('replaces repeated placeholders', () => {

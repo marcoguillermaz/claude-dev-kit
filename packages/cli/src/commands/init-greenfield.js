@@ -130,20 +130,22 @@ export async function initGreenfield(options) {
         type: 'input',
         name: 'testCommand',
         message: 'Test command: (used as reference in pipeline docs — not executed by the CLI)',
-        default: (a) =>
-          ({
+        default: (a) => {
+          const defaults = {
             'node-ts': 'npx vitest run',
             'node-js': 'npm test',
             python: 'pytest',
             go: 'go test ./...',
-            swift: 'swift test',
+            swift: `xcodebuild test -scheme ${a.projectName}`,
             kotlin: './gradlew test',
             rust: 'cargo test',
             dotnet: 'dotnet test',
             ruby: 'bundle exec rspec',
             java: 'mvn test',
             other: '',
-          })[a.techStack] ?? 'npm test',
+          };
+          return defaults[a.techStack] ?? 'npm test';
+        },
       },
       {
         type: 'input',

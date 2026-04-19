@@ -168,6 +168,27 @@ async function pruneCheatsheet(targetDir, config) {
     content = content.replace(new RegExp(`^\\| \`\\/${skill}\` .*\\n`, 'm'), '');
   }
 
+  // Remove staging workflow rows for native stacks (no staging branch/URL)
+  if (NATIVE_STACKS.includes(config.techStack)) {
+    content = content.replace(/^\| Merge to staging .*\n/m, '');
+    content = content.replace(/^\| Promote to production .*\n/m, '');
+  }
+
+  // Replace web-centric skill descriptions with native equivalents
+  if (NATIVE_STACKS.includes(config.techStack)) {
+    const nativeDescriptions = {
+      '/security-audit':
+        'Entitlements, Keychain usage, TCC permissions, input validation, code signing',
+      '/perf-audit': 'Memory profiling, main thread blocking, energy impact, serial operations',
+    };
+    for (const [skill, desc] of Object.entries(nativeDescriptions)) {
+      content = content.replace(
+        new RegExp(`(\\| \`${skill.replace('/', '\\/')}\` \\| ).*?( \\|)`),
+        `$1${desc}$2`,
+      );
+    }
+  }
+
   await fs.writeFile(cheatPath, content);
 }
 
@@ -436,6 +457,15 @@ function languageFromStack(techStack) {
   return map[techStack] || '[TypeScript / Python / Go / etc.]';
 }
 
+function enumCaseConvention(techStack) {
+  const map = {
+    swift: 'camelCase',
+    kotlin: 'camelCase',
+    rust: 'PascalCase',
+  };
+  return map[techStack] || 'UPPER_SNAKE_CASE';
+}
+
 /**
  * Stack-specific profiling tool names for perf-audit native path.
  */
@@ -619,6 +649,9 @@ function interpolate(content, config) {
     },
   };
   const ncd = nativeCommandDefaults[config.techStack] || {};
+  // Swift xcodebuild commands need -scheme to target the correct scheme
+  const swiftScheme =
+    config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
 
   let result = content
     .replace(/\[PROJECT_NAME\]/g, config.projectName || 'My Project')
@@ -630,8 +663,14 @@ function interpolate(content, config) {
       /\[TYPE_CHECK_COMMAND\]/g,
       config.typeCheckCommand || ncd.typeCheck || 'npx tsc --noEmit',
     )
-    .replace(/\[TEST_COMMAND\]/g, config.testCommand || ncd.test || 'npm test')
-    .replace(/\[BUILD_COMMAND\]/g, config.buildCommand || ncd.build || 'npm run build')
+    .replace(
+      /\[TEST_COMMAND\]/g,
+      config.testCommand || (ncd.test ? ncd.test + swiftScheme : '') || 'npm test',
+    )
+    .replace(
+      /\[BUILD_COMMAND\]/g,
+      config.buildCommand || (ncd.build ? ncd.build + swiftScheme : '') || 'npm run build',
+    )
     .replace(/\[DEV_COMMAND\]/g, resolveDevCommand(config.devCommand, ncd.dev))
     .replace(/\[INSTALL_COMMAND\]/g, config.installCommand || ncd.install || 'npm install')
     .replace(/\[TECH_LEAD\]/g, config.techLead || 'tech-lead')
@@ -670,6 +709,7 @@ function interpolate(content, config) {
     )
     .replace(/\[FRAMEWORK_VALUE\]/g, frameworkValue(config))
     .replace(/\[LANGUAGE_VALUE\]/g, languageFromStack(config.techStack))
+    .replace(/\[ENUM_CASE_CONVENTION\]/g, enumCaseConvention(config.techStack))
     .replace(/\[MIGRATION_COMMAND\]/g, config.migrationCommand || '# not configured')
     .replace(/\[PERF_TOOL\]/g, perfToolByStack[config.techStack] || 'your platform profiler')
     .replace(
@@ -699,6 +739,38 @@ function interpolate(content, config) {
       /## Phase 4 — UAT \/ E2E tests[\s\S]*?(?=## Phase 5b)/,
       `## Phase 4 — UAT / E2E tests *(disabled)*\n\n**Disabled**: no E2E test command configured. Skip this phase.\n\n`,
     );
+  }
+
+  // ── Post-interpolation: simplify Phase 3b when no API routes ───
+  if (config.hasApi === false) {
+    result = result.replace(
+      /## Phase 3b — API integration tests[\s\S]*?(?=## Phase 4)/,
+      `## Phase 3b — API integration tests *(disabled)*\n\n**Disabled**: no API routes in this project. Skip this phase.\n\n`,
+    );
+  }
+
+  // ── Post-interpolation: simplify staging workflow for native stacks ───
+  if (NATIVE_STACKS.includes(config.techStack)) {
+    // Phase 5c: replace staging deploy with local build + smoke
+    result = result.replace(
+      /## Phase 5c — Staging deploy \+ smoke test[\s\S]*?(?=## Phase 5d)/,
+      '## Phase 5c — Local build + smoke test\n\n' +
+        '- Build the project and run it locally.\n' +
+        '- Verify the main flow in 3–5 steps.\n' +
+        '- Output: "smoke test OK" or describe the problem and fix before proceeding.\n\n',
+    );
+    // Phase 8 step 9: direct merge to main (no staging intermediate)
+    result = result.replace(
+      /git checkout main && git merge staging --no-ff && git push origin main/g,
+      'git checkout main && git merge feature/block-name --no-ff && git push origin main',
+    );
+    // Cross-cutting: remove staging from branch protection rule
+    result = result.replace(
+      /Never commit to `main` or `staging` directly\./g,
+      'Never commit to `main` directly.',
+    );
+    // Phase 0 branch check: remove staging
+    result = result.replace(/if on `main` or `staging`, stop\./, 'if on `main`, stop.');
   }
 
   // ── Post-interpolation: prune files-guide references to non-existent docs ───

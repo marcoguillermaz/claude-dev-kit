@@ -115,7 +115,7 @@ export async function initInPlace(options) {
           if (a.techStack === 'other') return '';
           if (detected.testCommand) return detected.testCommand;
           const nativeDefaults = {
-            swift: 'xcodebuild test',
+            swift: `xcodebuild test -scheme ${a.projectName}`,
             kotlin: './gradlew test',
             rust: 'cargo test',
             dotnet: 'dotnet test',

@@ -47,7 +47,7 @@
 
 ## Coding Conventions
 - Product UI language: **[Italian / English / other]**. Code/commits: **English**.
-- Status/enum values: `UPPER_SNAKE_CASE`.
+- Status/enum values: `[ENUM_CASE_CONVENTION]`.
 - Every API route: verify caller role before any operation.
 - [Other non-obvious conventions.]
 

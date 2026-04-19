@@ -122,6 +122,9 @@ const NATIVE_CMD_DEFAULTS = {
 
 function buildCommandsBlock(config) {
   const ncd = NATIVE_CMD_DEFAULTS[config.techStack] || {};
+  // Swift xcodebuild commands need -scheme to target the correct scheme
+  const swiftScheme =
+    config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
   const install = config.installCommand || ncd.install || 'npm install';
   const dev =
     config.devCommand !== null && config.devCommand !== undefined && config.devCommand !== ''
@@ -129,8 +132,9 @@ function buildCommandsBlock(config) {
       : config.devCommand === ''
         ? ''
         : ncd.dev || 'npm run dev';
-  const build = config.buildCommand || ncd.build || 'npm run build';
-  const test = config.testCommand || ncd.test || 'npm test';
+  const build =
+    config.buildCommand || (ncd.build ? ncd.build + swiftScheme : '') || 'npm run build';
+  const test = config.testCommand || (ncd.test ? ncd.test + swiftScheme : '') || 'npm test';
   const typeCheck = config.typeCheckCommand || ncd.typeCheck || '';
   const migration = config.migrationCommand || '';
   const e2e = config.e2eCommand || '';
