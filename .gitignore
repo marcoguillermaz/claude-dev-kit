@@ -25,7 +25,9 @@ credentials/
 # Claude Code — project context (local, never commit)
 CLAUDE.md
 
-# Claude Code — personal overrides (never share)
+# Claude Code — workspace config (used to develop CDK, not part of the product)
+.claude/rules/
+.claude/settings.json
 .claude/CLAUDE.local.md
 .claude/settings.local.json
 .claude/session/
