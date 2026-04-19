@@ -30,16 +30,20 @@ From the prompting guide sources extract: principles for system prompt design, i
 **URL resilience**: if any URL returns 404, try the canonical base `https://code.claude.com/docs/en/` to locate the current path. Note in the report if a URL changed. Do not skip a topic because one URL failed - find the current equivalent page.
 
 **Expected current model IDs** (as of last research - verify against the models page):
-- Opus: `claude-opus-4-6`
+
+- Opus: `claude-opus-4-7` (released April 16, 2026 - new tokenizer, `xhigh` effort level)
 - Sonnet: `claude-sonnet-4-6`
 - Haiku: `claude-haiku-4-5-20251001`
-- Deprecated: `claude-3-haiku-*` and `claude-3-5-haiku-*` (deprecation: April 19, 2026)
+- Legacy (still available): `claude-opus-4-6`
+- Deprecated: `claude-3-haiku-*` and `claude-3-5-haiku-*` (retired April 19, 2026)
+- Retiring soon: `claude-sonnet-4-20250514` and `claude-opus-4-20250514` (retirement June 15, 2026)
 
 Flag any changes to this list in the report.
 
 ## Step 2 - Read current architecture files (run in parallel with Step 1)
 
 Read these files in parallel while the Step 1 agent runs:
+
 - `CLAUDE.md`
 - `.claude/rules/pipeline.md`
 - `.claude/rules/context-review.md`
@@ -55,6 +59,7 @@ Read these files in parallel while the Step 1 agent runs:
 Compare Step 1 findings against Step 2 state. For each gap found, classify it:
 
 **AUTO-FIX** - apply directly without asking:
+
 - Deprecated keys in settings.json with a direct replacement
 - New settings keys that are clearly beneficial and low-risk (token efficiency, attribution)
 - Stale file paths or descriptions in files-guide.md
@@ -62,51 +67,54 @@ Compare Step 1 findings against Step 2 state. For each gap found, classify it:
 - Deprecated model IDs in SKILL.md files or settings.json
 
 **RECOMMEND** - list for user review, do not apply:
+
 - Structural changes (splitting files, new directories)
-- New features requiring user decision (sandbox, new MCP servers)
+- New features requiring user decision (sandbox, auto mode, new MCP servers, effort level `xhigh`)
 - Changes that could affect existing workflow behavior
 - Anything touching the pipeline phase gates
+- New settings keys that change execution model (`autoMode`, `sandbox.*`, `tui`, `viewMode`, `availableModels`)
 
 Every RECOMMEND must include: (1) specific file path(s) to modify, (2) section or line reference, (3) proposed change in one sentence. A RECOMMEND without a file target is incomplete - do not emit it.
 
 **File target map for common divergence types** - use this when classifying findings:
 
-| Divergence area | Files to update | Classification |
-|---|---|---|
-| Hook event name changed or deprecated | `.claude/settings.json` (hook key) | RECOMMEND |
-| Hook JSON response schema changed (new/removed fields) | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (Block output format section) | RECOMMEND |
-| Hook prompt logic updated (trigger conditions, exclusions, bypass format) | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (matching section) | RECOMMEND - both files always updated together; hook is authoritative, rubric follows |
-| Deprecated model ID in hook | `.claude/settings.json` (`model:` field in hook entry) | AUTO-FIX |
-| New hook event worth adding | `.claude/settings.json` (new hook entry) | RECOMMEND |
-| Pipeline phase gate wording | `.claude/rules/pipeline.md` | RECOMMEND |
-| CLAUDE.md instruction addition | `CLAUDE.md` | RECOMMEND |
-| Skill model ID deprecated | `.claude/skills/<name>/SKILL.md` (`model:` frontmatter) | AUTO-FIX |
-| Skill missing `context: fork` | `.claude/skills/<name>/SKILL.md` (frontmatter) | AUTO-FIX |
-| Skill missing `allowed-tools` | `.claude/skills/<name>/SKILL.md` (frontmatter) | AUTO-FIX |
-| claudemd-standards.md outdated | `.claude/rules/claudemd-standards.md` (relevant section + `Last verified` date) | RECOMMEND |
-| pipeline-standards.md outdated | `.claude/rules/pipeline-standards.md` (relevant section + `Last verified` date) | RECOMMEND |
+| Divergence area                                                           | Files to update                                                                                                       | Classification                                                                        |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Hook event name changed or deprecated                                     | `.claude/settings.json` (hook key)                                                                                    | RECOMMEND                                                                             |
+| Hook JSON response schema changed (new/removed fields)                    | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (Block output format section) | RECOMMEND                                                                             |
+| Hook prompt logic updated (trigger conditions, exclusions, bypass format) | `.claude/settings.json` (hook prompt inline) + `.claude/rules/prompt-quality-rubric.md` (matching section)            | RECOMMEND - both files always updated together; hook is authoritative, rubric follows |
+| Deprecated model ID in hook                                               | `.claude/settings.json` (`model:` field in hook entry)                                                                | AUTO-FIX                                                                              |
+| New hook event worth adding                                               | `.claude/settings.json` (new hook entry)                                                                              | RECOMMEND                                                                             |
+| Pipeline phase gate wording                                               | `.claude/rules/pipeline.md`                                                                                           | RECOMMEND                                                                             |
+| CLAUDE.md instruction addition                                            | `CLAUDE.md`                                                                                                           | RECOMMEND                                                                             |
+| Skill model ID deprecated                                                 | `.claude/skills/<name>/SKILL.md` (`model:` frontmatter)                                                               | AUTO-FIX                                                                              |
+| Skill missing `context: fork`                                             | `.claude/skills/<name>/SKILL.md` (frontmatter)                                                                        | AUTO-FIX                                                                              |
+| Skill missing `allowed-tools`                                             | `.claude/skills/<name>/SKILL.md` (frontmatter)                                                                        | AUTO-FIX                                                                              |
+| claudemd-standards.md outdated                                            | `.claude/rules/claudemd-standards.md` (relevant section + `Last verified` date)                                       | RECOMMEND                                                                             |
+| pipeline-standards.md outdated                                            | `.claude/rules/pipeline-standards.md` (relevant section + `Last verified` date)                                       | RECOMMEND                                                                             |
 
 ## Step 3b - Internal ecosystem consistency checks
 
 **Execution strategy - two tiers**:
+
 - **Grep-tier** (pure pattern matching, no judgment): C2, C4, C6, C9, C10, C11, C12, C13, C14, C15, C16, C17 - batch into a **single haiku subagent** that runs all commands and returns structured pass/fail results.
 - **Judgment-tier** (require file reading + interpretation): C1, C3, C5, C7, C8 - run in main context using files already read in Step 2.
 
 **Grep-tier batch** - invoke one Agent with `model: "haiku"`, pass these exact commands, and receive one structured result:
 
-| Check | Command | Pass condition |
-|---|---|---|
-| C4 | `grep -n "ln -s" .claude/rules/pipeline.md` | 0 matches |
-| C6 | `grep -A3 "Phase 5b" .claude/rules/pipeline.md \| grep -i "dev\|server\|localhost"` | ≥1 match |
-| C9 | `grep -c "\*\*\* STOP" .claude/rules/pipeline.md` | ≥5 |
-| C10 | `grep -n "Worktree isolation" .claude/rules/pipeline.md` | ≥1 match |
-| C11 | `for skill_dir in .claude/skills/*/; do name=$(basename "$skill_dir"); grep -q "$name" .claude/cheatsheet.md && echo "OK: $name" \|\| echo "MISSING: $name"; done` | 0 MISSING lines |
-| C12 | `grep -o "SessionStart\|PostCompact\|InstructionsLoaded" .claude/settings.json \| sort -u` | 3 lines |
-| C13 | `grep -rL --include="SKILL.md" "context: fork" .claude/skills/` | 0 files returned |
-| C14 | `git check-ignore -q CLAUDE.md && echo "PASS" \|\| echo "FAIL"` | PASS |
-| C15 | `wc -l CLAUDE.md \| awk '{print $1}'` | ≤200 |
-| C16 | `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet" .claude/skills/ .claude/settings.json` | 0 matches |
-| C17 | `for f in .claude/skills/*/SKILL.md; do if grep -q "mcp__" "$f" && ! grep -q "allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done` | 0 MISSING lines |
+| Check | Command                                                                                                                                                                                  | Pass condition   |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| C4    | `grep -n "ln -s" .claude/rules/pipeline.md`                                                                                                                                              | 0 matches        |
+| C6    | `grep -A3 "Phase 5b" .claude/rules/pipeline.md \| grep -i "dev\|server\|localhost"`                                                                                                      | ≥1 match         |
+| C9    | `grep -c "\*\*\* STOP" .claude/rules/pipeline.md`                                                                                                                                        | ≥5               |
+| C10   | `grep -n "Worktree isolation" .claude/rules/pipeline.md`                                                                                                                                 | ≥1 match         |
+| C11   | `for skill_dir in .claude/skills/*/; do name=$(basename "$skill_dir"); grep -q "$name" .claude/cheatsheet.md && echo "OK: $name" \|\| echo "MISSING: $name"; done`                       | 0 MISSING lines  |
+| C12   | `grep -o "SessionStart\|PostCompact\|InstructionsLoaded" .claude/settings.json \| sort -u`                                                                                               | 3 lines          |
+| C13   | `grep -rL --include="SKILL.md" "context: fork" .claude/skills/`                                                                                                                          | 0 files returned |
+| C14   | `git check-ignore -q CLAUDE.md && echo "PASS" \|\| echo "FAIL"`                                                                                                                          | PASS             |
+| C15   | `wc -l CLAUDE.md \| awk '{print $1}'`                                                                                                                                                    | ≤200             |
+| C16   | `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet\|claude-sonnet-4-20250514\|claude-opus-4-20250514" .claude/skills/ .claude/settings.json` | 0 matches        |
+| C17   | `for f in .claude/skills/*/SKILL.md; do if grep -q "mcp__" "$f" && ! grep -q "allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`                                     | 0 MISSING lines  |
 
 Collect batch results, then run judgment-tier checks below. For each FAIL: classify as AUTO-FIX or RECOMMEND using the same criteria as Step 3.
 
@@ -167,19 +175,33 @@ Expected: 3 lines (SessionStart, PostCompact, InstructionsLoaded). Any missing =
 RECOMMEND if failing - do not auto-fix (hooks require verifying intent before restoring).
 
 Additionally (judgment check in main context): verify that the hook configurations use the appropriate hook type. Claude Code supports 4 hook types - `command`, `http`, `prompt`, and `agent`. For reference:
+
 - `command` - runs a shell command, captures stdout for injection
 - `http` - calls a URL endpoint with event data as JSON body
 - `prompt` - injects a text message into the conversation
 - `agent` - spawns an agent to handle the hook event
-Flag any hook that uses `command` type but would benefit from `prompt` type (simpler config, no shell needed for static reminders), or vice versa.
+  Flag any hook that uses `command` type but would benefit from `prompt` type (simpler config, no shell needed for static reminders), or vice versa.
 
 Also flag any of the following new events from recent Claude Code releases that the project might benefit from adding:
+
 - `WorktreeCreate` / `WorktreeRemove` - auto-setup / teardown logic when worktrees change
 - `SubagentStart` / `SubagentStop` - logging or context injection for subagent calls
 - `PreCompact` - save critical in-progress state before context compression
 - `TaskCompleted` - post-completion summary or notification
 - `FileChanged` - lint/format trigger on file write
-These are RECOMMEND, not AUTO-FIX.
+- `PermissionDenied` - auto-mode classifier denial handling (return `retry: true` for alternative approach)
+- `Elicitation` / `ElicitationResult` - MCP server user-input request interception
+- `ConfigChange` - config source change detection
+- `CwdChanged` - working directory change handling
+  These are RECOMMEND, not AUTO-FIX.
+
+Additionally, verify awareness of these recent Claude Code capabilities:
+
+- `defer` value for `permissionDecision` in PreToolUse hooks (pause and resume via `--resume`)
+- Hook output over 50K saved to disk with path + preview instead of context injection
+- `if` field for conditional hook execution using permission rule syntax
+- `once` field for single-fire hooks in skill/agent frontmatter
+- `asyncRewake` field for background hooks that wake Claude on exit code 2
 
 **C13 - context: fork on all skills**
 Check: every skill SKILL.md must declare `context: fork` so audits run in an isolated context and do not pollute the main session window.
@@ -200,13 +222,15 @@ Expected: ≤ 200. Any count above 200 = WARN.
 RECOMMEND if failing: invoke P1 and P5 to identify sections to remove or convert to `@import` references. Do not auto-fix - pruning requires judgment.
 
 **C16 - Deprecated model IDs**
-Check: no SKILL.md file or `.claude/settings.json` should reference model IDs from Claude 3 family (deprecated or retiring). Deprecated as of April 19, 2026: `claude-3-haiku-*`, `claude-3-5-haiku-*`. Also check for any `claude-3-opus-*` or `claude-3-sonnet-*` references (superseded by claude-4.x family).
-Run: `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet" .claude/skills/ .claude/settings.json`
+Check: no SKILL.md file or `.claude/settings.json` should reference model IDs from Claude 3 family (retired) or Claude 4.0 family (retiring June 15, 2026). Retired as of April 19, 2026: `claude-3-haiku-*`, `claude-3-5-haiku-*`. Also check for any `claude-3-opus-*`, `claude-3-sonnet-*`, `claude-sonnet-4-20250514`, or `claude-opus-4-20250514` references.
+Run: `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet\|claude-sonnet-4-20250514\|claude-opus-4-20250514" .claude/skills/ .claude/settings.json`
 Expected: 0 matches. Any match = FAIL.
 AUTO-FIX: replace deprecated model IDs with the current equivalents:
+
 - `claude-3-haiku-*` or `claude-3-5-haiku-*` → `claude-haiku-4-5-20251001`
-- `claude-3-opus-*` → `claude-opus-4-6`
+- `claude-3-opus-*` → `claude-opus-4-7`
 - `claude-3-sonnet-*` or `claude-3-5-sonnet-*` → `claude-sonnet-4-6`
+- `claude-sonnet-4-20250514` or `claude-opus-4-20250514` → respective 4.6/4.7 equivalents (retiring June 15, 2026)
 
 **C17 - `allowed-tools` frontmatter on MCP-dependent skills**
 Check: any SKILL.md that calls `mcp__*` tools in its instructions must declare those tools in `allowed-tools:` frontmatter. This ensures Claude requests the correct permissions upfront before the skill runs, preventing mid-execution permission prompts.
@@ -221,9 +245,10 @@ Using the prompting guide content fetched in Step 1 **and the normative baseline
 **Standards file currency check (run first)**: compare the `Last verified` date in `.claude/rules/claudemd-standards.md` against today's date. If > 30 days old AND Step 1 fetched new material changes → flag as RECOMMEND to update the standards file. If ≤ 30 days → skip.
 
 **P1 - CLAUDE.md content type (Anthropic's inclusion test)**
-Anthropic's rule: CLAUDE.md should contain ONLY non-obvious information Claude cannot infer by reading the code. Apply Anthropic's own test to every section: *"Would removing this cause Claude to make mistakes?"*
+Anthropic's rule: CLAUDE.md should contain ONLY non-obvious information Claude cannot infer by reading the code. Apply Anthropic's own test to every section: _"Would removing this cause Claude to make mistakes?"_
 
 Flag as WARN if a section:
+
 - Describes what a file does structurally (e.g. "file X handles Y") without explaining a non-obvious constraint - Claude can read the code
 - States a standard convention Claude already knows without a project-specific reason
 - Contains tutorial-style explanations of concepts (React, TypeScript, SQL) that Claude understands natively
@@ -235,6 +260,7 @@ Report: list any sections that fail the test with a suggested action (remove, co
 Anthropic's guidance: instructions must be specific, actionable, and unambiguous. A vague rule gives Claude discretion where a concrete rule would remove ambiguity.
 
 Flag as WARN:
+
 - Directives with no measurable outcome ("be thorough", "be careful", "verify appropriately")
 - Instructions that say "ensure X" without specifying how to verify X
 - Rules with implicit scope ("update relevant files") where an explicit list would prevent errors
@@ -254,6 +280,7 @@ Report: duplicates with a recommendation on which file is the correct owner.
 Anthropic's principle: instruction complexity should be proportional to the actual risk and value it protects against. Over-specified pipelines make Claude slower and more likely to get stuck on process rather than output.
 
 Evaluate:
+
 - Are there phases (or sub-phases) whose STOP gate catches errors that have actually occurred in practice? Or are they theoretical?
 - Does the Fast Lane meaningfully simplify, or does it mostly duplicate the full pipeline?
 - Are there context-review checks (C1–C12) that have never caught a real issue - suggesting they address a risk that doesn't materialize?
@@ -265,6 +292,7 @@ Report: any phase or check that appears to add friction without demonstrated val
 Anthropic guidance for long system prompts: critical rules should be visually distinct and easy to locate. Recency and position matter - Claude gives more weight to recent context.
 
 Check:
+
 - Are the most-critical, most-referenced rules (RBAC, worktree isolation, migration isolation, environment isolation) marked as CRITICAL or placed at the top of their sections?
 - Is CLAUDE.md structured so Claude can find a rule without reading the entire file?
 - Are there sections that are rarely referenced but consume significant token space in every context window?
@@ -298,6 +326,7 @@ Expected: ≥1 match in each file. Missing from either = FAIL.
 
 **T5 - Skill model fitness (judgment)**
 For each skill, verify `model:` frontmatter fits the task's reasoning requirement:
+
 - `model: haiku` appropriate for: mechanical structural checks, pure grep/pattern matching, URL text extraction, formatting validation
 - `model: sonnet` appropriate for: cross-file judgment, complex analysis, fix application, multi-dimension scoring
 - `model: opus` appropriate for: screenshot-based visual reasoning, multi-role journey simulation, live aesthetic scoring - requires vision + deep analysis
@@ -317,7 +346,7 @@ Current expected state:
 | responsive-audit | opus | Multi-viewport screenshot judgment - visual reasoning requires Opus |
 
 Batch command: `grep -A1 "^name:" .claude/skills/*/SKILL.md | grep "model:"` - compare each result against the table above.
-FAIL: any skill using `model: haiku` as top-level model (only Explore *subagents within* skills should use haiku, not the skill itself).
+FAIL: any skill using `model: haiku` as top-level model (only Explore _subagents within_ skills should use haiku, not the skill itself).
 WARN: any skill using `model: opus` **unless** it is one of the intentional Opus skills: `visual-audit`, `ux-audit`, `responsive-audit` (screenshot-based visual reasoning) or `skill-db` (deep schema normalization + RLS policy reasoning). All other skills should use sonnet.
 
 ## Step 3e - Pipeline.md compliance check
@@ -383,6 +412,7 @@ Run: `grep -n "Commit 1\|Commit 2\|Commit 3\|three-commit\|3-commit" .claude/rul
 Expected: ≥2 matches. Missing = WARN.
 
 Output results in the Step 6 report under a new section:
+
 ```
 ### Pipeline compliance (PE1–PE12) - judgment-based, PASS/WARN only
 - PE1 Phase gates integrity: [PASS/WARN]
@@ -412,6 +442,7 @@ Pass: all events appear in the Step 1 documentation. Any unrecognized event → 
 For each hook with `"type": "prompt"` in settings.json: check that response fields (`ok`, `reason`, `decision`, `updatedInput`) match the documented schema.
 Source: Step 1 hooks doc content.
 If divergence found → RECOMMEND (never AUTO-FIX): specify both files that need updating:
+
 - `.claude/settings.json` - the hook prompt inline text (authoritative)
 - `.claude/rules/prompt-quality-rubric.md` - the "Block output format" section (documentation, follows the hook)
 
@@ -421,19 +452,22 @@ Fail → RECOMMEND update to add bypass instructions.
 
 **H1d - Hook type fitness**
 For each hook, verify `type` matches intent:
+
 - `command` - shell execution, dynamic state (git, files, env)
 - `prompt` - static/contextual text injection, no shell needed
 - `agent` - multi-step async logic
-Flag as RECOMMEND (not AUTO-FIX) any `command` hook that only outputs static text and could be simplified to `prompt`.
+  Flag as RECOMMEND (not AUTO-FIX) any `command` hook that only outputs static text and could be simplified to `prompt`.
 
 **H1e - Rubric-hook drift check**
 Check: `.claude/rules/prompt-quality-rubric.md` must stay in sync with the inline logic in the `UserPromptSubmit` prompt hooks in `settings.json`. Drift = the rubric documents behavior that the hook no longer implements (or vice versa).
 
 Run these two greps and compare results:
+
 - T3 wildcards in rubric: `grep "T3" .claude/rules/prompt-quality-rubric.md`
 - T3 wildcards in hook: `grep "T3" .claude/settings.json`
 
 Also check output format sync:
+
 - Rubric block format: `grep -A5 "Block output format" .claude/rules/prompt-quality-rubric.md`
 - Hook output format: look for the `If a trigger matches` instruction in the settings.json hook prompt
 
@@ -443,6 +477,7 @@ Fail → AUTO-FIX: update the rubric to match the hook (hook is authoritative - 
 **H1f - New events to consider**
 
 Add results to Step 6 report under:
+
 ```
 ### Hook compliance (H1a–H1e)
 - H1a Event name currency: [PASS/FAIL - list unknown events if any]
