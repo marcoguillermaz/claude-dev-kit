@@ -719,7 +719,10 @@ function interpolate(content, config) {
     .replace(/\[E2E_TOOL_NAME\]/g, resolveE2eToolName(config))
     .replace(
       /\[FRAMEWORK\]/g,
-      ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)
+      // Note: 'java' intentionally omitted here — Java Spring/Quarkus are
+      // common server-side web frameworks, so java should fall through to
+      // the hasFrontend branch rather than auto-resolving to 'N/A - native app'.
+      NATIVE_STACKS.filter((s) => s !== 'java').includes(config.techStack)
         ? 'N/A - native app'
         : config.hasFrontend === false
           ? 'N/A - no web frontend'
@@ -727,8 +730,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[SITEMAP_OR_ROUTE_LIST\]/g,
-      config.hasFrontend === false ||
-        ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+      config.hasFrontend === false || NATIVE_STACKS.includes(config.techStack)
         ? 'N/A - no web frontend'
         : 'docs/sitemap.md',
     )
@@ -742,7 +744,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[BUNDLE_TOOL\]/g,
-      ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+      NATIVE_STACKS.includes(config.techStack)
         ? 'N/A - native app'
         : "your build tool's bundle analyzer",
     )

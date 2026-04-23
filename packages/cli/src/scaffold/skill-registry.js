@@ -12,6 +12,13 @@
 export const NATIVE_STACKS = ['swift', 'kotlin', 'rust', 'dotnet', 'java'];
 
 /**
+ * Web-oriented stacks that typically carry a frontend bundle and a sitemap.
+ * Used for placeholder substitution and wizard branching — pair with
+ * NATIVE_STACKS for the complete tech-stack vocabulary.
+ */
+export const WEB_STACKS = ['node-ts', 'node-js', 'python', 'ruby'];
+
+/**
  * @typedef {Object} SkillEntry
  * @property {string}  name           - Skill directory name (matches SKILL.md parent folder)
  * @property {string}  minTier        - Lowest tier that includes this skill: 's', 'm', or 'l'
