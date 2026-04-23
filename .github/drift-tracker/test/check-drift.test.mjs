@@ -72,9 +72,9 @@ describe('extractRecentChangelog', () => {
   });
 
   it('filters entries older than N days', () => {
-    // Only entries from "today" perspective — fixture has April 11, April 5, March 20, Feb 15
-    // With days=10 from April 12 (test date), only April 5 and April 11 should pass
-    const entries = extractRecentChangelog(html, 10);
+    // Fixture has April 11, April 5, March 20, Feb 15 (2026)
+    // Reference date pinned to 2026-04-12 — with days=10, only April 5 and April 11 pass
+    const entries = extractRecentChangelog(html, 10, new Date('2026-04-12'));
     const versions = entries.map((e) => e.version);
     assert.ok(versions.includes('2.1.105'));
     // March 20 and Feb 15 should be filtered
