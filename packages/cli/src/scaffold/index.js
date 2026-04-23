@@ -7,7 +7,7 @@ import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from '.
  * CLAUDE.md is generated separately by generateClaudeMd() - not copied here.
  * No pipeline, no docs folder, no pre-commit, no .github.
  */
-export async function scaffoldTier0(targetDir, config, templatesDir) {
+async function scaffoldTier0(targetDir, config, templatesDir) {
   const tierDir = path.join(templatesDir, 'tier-0');
 
   // Copy Tier 0 files with interpolation (CLAUDE.md handled by generateClaudeMd)
