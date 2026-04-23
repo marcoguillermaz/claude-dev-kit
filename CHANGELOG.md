@@ -9,6 +9,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.10.4] — 2026-04-23
+
+### Added
+- Smoke test suite for `detect-stack.js` (20 tests across 2 describe blocks) covering stack identification markers for all 11 supported stacks (package.json ± tsconfig, pyproject.toml, go.mod, Gemfile, pom.xml, build.gradle.kts, build.gradle, Package.swift, .csproj, Cargo.toml) plus `suggestedTier` thresholds for the three calibrated brackets. Prerequisite coverage for the tier-threshold extraction below.
+
 ### Fixed
 - CLI `--version` now reads from `package.json` at runtime (was hard-coded `1.6.1` — 4 releases of drift vs actual 1.10.3). Identified by `skill-dev` audit (J4).
 - Wizard `AUDIT_MODELS` option list no longer offers `claude-opus-4-6` (Legacy per Anthropic models page); replaced with `claude-opus-4-7`. Fixes the root cause for the `operational-guide.md:166` doc drift below.
@@ -21,6 +28,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Extracted three policy limits to named constants in `utils/constants.js`: `SKILL_DESC_MAX_CHARS` (250), `CLAUDE_MD_MAX_LINES` (200), `STOP_HOOK_MAX_TIMEOUT_SEC` (600). Removes magic numbers from `new-skill.js` and `doctor.js`.
 - Consolidated `NATIVE_STACKS` usage — 7 inline literal arrays in `init-greenfield.js`, `init-in-place.js`, `scaffold/index.js` replaced with the canonical import from `skill-registry.js`. Added `WEB_STACKS` export in the same module and replaced 3 `webStacks` locals.
 - Unified `STACK_CMD_DEFAULTS` (claude-md.js) and `stackCommandDefaults` (scaffold/index.js) into a single `STACK_COMMANDS` table in the new `utils/stack-commands.js` module. Install/dev/build/test values were byte-identical; `typeCheck` has two consumer-specific shapes (`typeCheck` for the CLAUDE.md commands block, `typeCheckPlaceholder` for `[TYPE_CHECK_COMMAND]` template interpolation).
+- Extracted tier-suggestion thresholds into `utils/tier-suggestion.js`: 3 calibrated brackets (nodeWeb 100/30, medium 80/20, compact 60/15) plus `suggestTier(fileCount, thresholds)` helper. `detect-stack.js` 11 inline ternaries now delegate to the helper; values unchanged, single source of truth.
 
 ### Removed
 - Unused `AUDIT_MODEL_DEFAULT` constant (0 consumers — confirmed via grep).
