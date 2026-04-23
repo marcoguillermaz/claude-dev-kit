@@ -185,7 +185,7 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.10.2 - Cross-stack audit fixes (Node-TS + Python), Opus 4.7 alignment, 828 integration + 270 unit tests across 29 scenarios.
+**Current**: v1.10.3 - arch-audit findings resolution: H1a grep covers 27 hook events, C17 regex false-positive fix, claudemd-standards refreshed to v2.1.118, tier-l cheatsheet/deny parity. 828 integration + 270 unit tests.
 
 **Next**: Q2 skills (`/compliance-audit`, `/api-contract-audit`, `/infra-audit`) and `/doc-audit` to close Q1 skill block.
 
