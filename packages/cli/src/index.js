@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
 import { program } from 'commander';
 import { init } from './commands/init.js';
 import { doctor } from './commands/doctor.js';
@@ -8,10 +9,12 @@ import { addSkill, addRule } from './commands/add.js';
 import { newSkill } from './commands/new-skill.js';
 import chalk from 'chalk';
 
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
 program
   .name('claude-dev-kit')
   .description('Scaffold for legible, reviewable AI-assisted development')
-  .version('1.6.1');
+  .version(pkg.version);
 
 program
   .command('init')

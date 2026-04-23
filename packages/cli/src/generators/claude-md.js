@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { interpolate } from '../scaffold/index.js';
 import { getActiveSkills, NATIVE_STACKS } from '../scaffold/skill-registry.js';
+import { STACK_COMMANDS } from '../utils/stack-commands.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -82,67 +83,8 @@ export async function generateClaudeMd(config, targetDir) {
   await fs.writeFile(path.join(targetDir, 'CLAUDE.md'), content);
 }
 
-const STACK_CMD_DEFAULTS = {
-  swift: {
-    install: '# no install step',
-    dev: 'swift run',
-    build: 'xcodebuild build',
-    test: 'xcodebuild test',
-    typeCheck: '',
-  },
-  kotlin: {
-    install: '# no install step',
-    dev: './gradlew run',
-    build: './gradlew build',
-    test: './gradlew test',
-    typeCheck: '',
-  },
-  rust: {
-    install: '# no install step',
-    dev: 'cargo run',
-    build: 'cargo build --release',
-    test: 'cargo test',
-    typeCheck: '',
-  },
-  dotnet: {
-    install: 'dotnet restore',
-    dev: 'dotnet run',
-    build: 'dotnet build',
-    test: 'dotnet test',
-    typeCheck: '',
-  },
-  java: {
-    install: 'mvn install',
-    dev: 'mvn exec:java',
-    build: 'mvn package',
-    test: 'mvn test',
-    typeCheck: '',
-  },
-  python: {
-    install: 'pip install -r requirements.txt',
-    dev: '',
-    build: '',
-    test: 'pytest',
-    typeCheck: '',
-  },
-  go: {
-    install: 'go mod download',
-    dev: 'go run .',
-    build: 'go build ./...',
-    test: 'go test ./...',
-    typeCheck: '',
-  },
-  ruby: {
-    install: 'bundle install',
-    dev: 'rails server',
-    build: '',
-    test: 'bundle exec rspec',
-    typeCheck: '',
-  },
-};
-
 function buildCommandsBlock(config) {
-  const ncd = STACK_CMD_DEFAULTS[config.techStack] || {};
+  const ncd = STACK_COMMANDS[config.techStack] || {};
   // Swift xcodebuild commands need -scheme to target the correct scheme
   const swiftScheme =
     config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';

@@ -1,13 +1,14 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
+import { STACK_COMMANDS } from '../utils/stack-commands.js';
 
 /**
  * Scaffold Tier 0 (Discovery) - minimal: settings.json, GETTING_STARTED.md only.
  * CLAUDE.md is generated separately by generateClaudeMd() - not copied here.
  * No pipeline, no docs folder, no pre-commit, no .github.
  */
-export async function scaffoldTier0(targetDir, config, templatesDir) {
+async function scaffoldTier0(targetDir, config, templatesDir) {
   const tierDir = path.join(templatesDir, 'tier-0');
 
   // Copy Tier 0 files with interpolation (CLAUDE.md handled by generateClaudeMd)
@@ -245,8 +246,16 @@ async function patchSettingsPermissions(targetDir, config) {
       settings.permissions.deny = [...settings.permissions.deny, ...stackDeny];
     }
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-  } catch {
-    // If settings.json is malformed, skip patching silently
+  } catch (err) {
+    // Previously silent — but a scaffold that ships default JS/Node
+    // permissions on a native stack because settings.json was malformed
+    // is a subtle correctness failure. Surface the problem so the user
+    // can fix the template or re-run with --force.
+    console.warn(
+      `[claude-dev-kit] Warning: could not patch ${settingsPath} — ${err.message}. ` +
+        `Stack-specific permissions for "${config.techStack}" were NOT applied; ` +
+        `the file may be malformed JSON or read-only.`,
+    );
   }
 }
 
@@ -629,65 +638,7 @@ function interpolate(content, config) {
     other: 'Mixed',
   };
 
-  const stackCommandDefaults = {
-    swift: {
-      install: '# no install step',
-      dev: 'swift run',
-      build: 'xcodebuild build',
-      test: 'xcodebuild test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    kotlin: {
-      install: '# no install step',
-      dev: './gradlew run',
-      build: './gradlew build',
-      test: './gradlew test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    rust: {
-      install: '# no install step',
-      dev: 'cargo run',
-      build: 'cargo build --release',
-      test: 'cargo test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    dotnet: {
-      install: 'dotnet restore',
-      dev: 'dotnet run',
-      build: 'dotnet build',
-      test: 'dotnet test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    java: {
-      install: 'mvn install',
-      dev: 'mvn exec:java',
-      build: 'mvn package',
-      test: 'mvn test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    python: {
-      install: 'pip install -r requirements.txt',
-      dev: '',
-      build: '',
-      test: 'pytest',
-      typeCheck: 'mypy .',
-    },
-    go: {
-      install: 'go mod download',
-      dev: 'go run .',
-      build: 'go build ./...',
-      test: 'go test ./...',
-      typeCheck: 'go vet ./...',
-    },
-    ruby: {
-      install: 'bundle install',
-      dev: 'rails server',
-      build: '',
-      test: 'bundle exec rspec',
-      typeCheck: '',
-    },
-  };
-  const ncd = stackCommandDefaults[config.techStack] || {};
+  const ncd = STACK_COMMANDS[config.techStack] || {};
   // Swift xcodebuild commands need -scheme to target the correct scheme
   const swiftScheme =
     config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
@@ -700,7 +651,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[TYPE_CHECK_COMMAND\]/g,
-      config.typeCheckCommand || ncd.typeCheck || 'npx tsc --noEmit',
+      config.typeCheckCommand || ncd.typeCheckPlaceholder || 'npx tsc --noEmit',
     )
     .replace(
       /\[TEST_COMMAND\]/g,
@@ -719,7 +670,10 @@ function interpolate(content, config) {
     .replace(/\[E2E_TOOL_NAME\]/g, resolveE2eToolName(config))
     .replace(
       /\[FRAMEWORK\]/g,
-      ['swift', 'kotlin', 'rust', 'dotnet'].includes(config.techStack)
+      // Note: 'java' intentionally omitted here — Java Spring/Quarkus are
+      // common server-side web frameworks, so java should fall through to
+      // the hasFrontend branch rather than auto-resolving to 'N/A - native app'.
+      NATIVE_STACKS.filter((s) => s !== 'java').includes(config.techStack)
         ? 'N/A - native app'
         : config.hasFrontend === false
           ? 'N/A - no web frontend'
@@ -727,8 +681,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[SITEMAP_OR_ROUTE_LIST\]/g,
-      config.hasFrontend === false ||
-        ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+      config.hasFrontend === false || NATIVE_STACKS.includes(config.techStack)
         ? 'N/A - no web frontend'
         : 'docs/sitemap.md',
     )
@@ -742,7 +695,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[BUNDLE_TOOL\]/g,
-      ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(config.techStack)
+      NATIVE_STACKS.includes(config.techStack)
         ? 'N/A - native app'
         : "your build tool's bundle analyzer",
     )

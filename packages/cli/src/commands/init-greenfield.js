@@ -8,6 +8,7 @@ import { generateReadme } from '../generators/readme.js';
 import { scaffoldTier } from '../scaffold/index.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
 import { AUDIT_MODELS } from '../utils/constants.js';
+import { NATIVE_STACKS, WEB_STACKS } from '../scaffold/skill-registry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -158,7 +159,7 @@ export async function initGreenfield(options) {
         type: 'input',
         name: 'devCommand',
         message: (a) => {
-          const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java'].includes(a.techStack);
+          const isNative = NATIVE_STACKS.includes(a.techStack);
           return isNative
             ? 'Launch command (optional, leave blank to skip):'
             : 'Dev server command:';
@@ -182,7 +183,7 @@ export async function initGreenfield(options) {
         type: 'input',
         name: 'e2eCommand',
         message: (a) => {
-          const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
+          const webStacks = WEB_STACKS;
           if (webStacks.includes(a.techStack)) {
             return 'E2E test command (Playwright/Cypress - leave blank to skip):';
           }
@@ -256,9 +257,7 @@ export async function initGreenfield(options) {
         type: 'list',
         name: 'hasDesignSystem',
         message: (a) => {
-          const isNative = ['swift', 'kotlin', 'rust', 'dotnet', 'java', 'other'].includes(
-            a.techStack,
-          );
+          const isNative = [...NATIVE_STACKS, 'other'].includes(a.techStack);
           return isNative
             ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
             : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';

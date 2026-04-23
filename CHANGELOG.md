@@ -7,6 +7,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.10.4] — 2026-04-23
+
+### Added
+- Smoke test suite for `detect-stack.js` (20 tests across 2 describe blocks) covering stack identification markers for all 11 supported stacks (package.json ± tsconfig, pyproject.toml, go.mod, Gemfile, pom.xml, build.gradle.kts, build.gradle, Package.swift, .csproj, Cargo.toml) plus `suggestedTier` thresholds for the three calibrated brackets. Prerequisite coverage for the tier-threshold extraction below.
+
+### Fixed
+- CLI `--version` now reads from `package.json` at runtime (was hard-coded `1.6.1` — 4 releases of drift vs actual 1.10.3). Identified by `skill-dev` audit (J4).
+- Wizard `AUDIT_MODELS` option list no longer offers `claude-opus-4-6` (Legacy per Anthropic models page); replaced with `claude-opus-4-7`. Fixes the root cause for the `operational-guide.md:166` doc drift below.
+- `scaffold/index.js` `patchSettingsPermissions` no longer silently swallows malformed settings.json during stack-permission patching — now logs a `console.warn` that names the file, the target stack, and the underlying error. Prevents scaffolds from shipping default JS/Node permissions on native stacks with no user-visible signal. Two new unit tests assert the warning is emitted and the file content is left unchanged.
+
+### Changed
+- `CONTRIBUTING.md` test counts refreshed to 828 integration + 270 unit (were 464/243, stale vs `README.md` and `CHANGELOG.md [1.10.3]`).
+- `docs/operational-guide.md:166` wizard recommendation for deep-analysis model updated from `claude-opus-4-6` (Legacy per Anthropic models page) to `claude-opus-4-7`.
+- `docs/operational-guide.md:43` + `:403` audit skill count aligned to 16 (was 15); added missing `skill-review` to the available-skills enumeration (added in v1.10.0, #58).
+- Extracted three policy limits to named constants in `utils/constants.js`: `SKILL_DESC_MAX_CHARS` (250), `CLAUDE_MD_MAX_LINES` (200), `STOP_HOOK_MAX_TIMEOUT_SEC` (600). Removes magic numbers from `new-skill.js` and `doctor.js`.
+- Consolidated `NATIVE_STACKS` usage — 7 inline literal arrays in `init-greenfield.js`, `init-in-place.js`, `scaffold/index.js` replaced with the canonical import from `skill-registry.js`. Added `WEB_STACKS` export in the same module and replaced 3 `webStacks` locals.
+- Unified `STACK_CMD_DEFAULTS` (claude-md.js) and `stackCommandDefaults` (scaffold/index.js) into a single `STACK_COMMANDS` table in the new `utils/stack-commands.js` module. Install/dev/build/test values were byte-identical; `typeCheck` has two consumer-specific shapes (`typeCheck` for the CLAUDE.md commands block, `typeCheckPlaceholder` for `[TYPE_CHECK_COMMAND]` template interpolation).
+- Extracted tier-suggestion thresholds into `utils/tier-suggestion.js`: 3 calibrated brackets (nodeWeb 100/30, medium 80/20, compact 60/15) plus `suggestTier(fileCount, thresholds)` helper. `detect-stack.js` 11 inline ternaries now delegate to the helper; values unchanged, single source of truth.
+
+### Removed
+- Unused `AUDIT_MODEL_DEFAULT` constant (0 consumers — confirmed via grep).
+- `export` keyword on `scaffoldTier0` — it is only called internally from `scaffoldTier` and not listed in `_testHelpers`, so the public surface shrinks with no external impact.
+
+---
+
 ## [1.10.3] — 2026-04-23
 
 ### Fixed
@@ -82,7 +111,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased] — v1.9.1
+## [Pre-1.10.0 development log] — targeted v1.9.1, shipped as part of v1.10.0
 
 ### Added
 - `/test-audit` skill (Tier M/L, universal - no `requires`) - static test-suite quality audit. Parses coverage reports in 5 supported formats (lcov.info, Istanbul JSON, Cobertura XML, go coverage.out, tarpaulin JSON; xcresult optional via `xcrun xccov`). Pyramid shape classification (unit/integration/e2e) by path convention + framework imports. 8 anti-pattern checks (T1-T8): `.only`/`fit`/`fdescribe` committed, skipped tests, `.todo` placeholders, empty test bodies, tests without assertions, hardcoded sleeps, debug output in tests, multi-file `.only` broken CI. Backlog prefix `TEST-`. New Pipeline Phase 5d Track C runs for every block after Phase 3 is green. Critical findings (`.only` committed, 0% coverage on a file changed in the block) block Phase 6. Stack-aware across all 11 supported stacks; checks without a stack-specific pattern return `N/A - skipped for <stack>`. Flaky-test detection deferred; v1 is static-only (#58)

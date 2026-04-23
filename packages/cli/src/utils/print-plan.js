@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { execSync } from 'child_process';
-import { NATIVE_STACKS } from '../scaffold/skill-registry.js';
+import { NATIVE_STACKS, WEB_STACKS } from '../scaffold/skill-registry.js';
 
 const TIER_LABELS = { 0: 'Discovery', S: 'Fast Lane', M: 'Standard', L: 'Full' };
 
@@ -173,8 +173,7 @@ function getDoctorCmd() {
  */
 function getCommandSummary(config) {
   const lines = [];
-  const webStacks = ['node-ts', 'node-js', 'python', 'ruby'];
-  const isWeb = webStacks.includes(config.techStack);
+  const isWeb = WEB_STACKS.includes(config.techStack);
   const isNative = NATIVE_STACKS.includes(config.techStack);
 
   if (config.testCommand) {

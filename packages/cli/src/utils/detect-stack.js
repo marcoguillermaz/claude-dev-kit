@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
+import { TIER_THRESHOLDS, suggestTier } from './tier-suggestion.js';
 
 /**
  * Auto-detect tech stack and project characteristics from a directory.
@@ -96,7 +97,7 @@ export async function detectStack(dir) {
 
     // Complexity hints for tier suggestion
     const fileCount = await countFiles(dir, ['node_modules', '.git', '.next', 'dist', 'build']);
-    result.suggestedTier = fileCount > 100 ? 'l' : fileCount > 30 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.nodeWeb);
   } else if (
     (await exists('pyproject.toml')) ||
     (await exists('requirements.txt')) ||
@@ -128,7 +129,7 @@ export async function detectStack(dir) {
       '.venv',
       'node_modules',
     ]);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if (await exists('go.mod')) {
     result.techStack = 'go';
     result.detectedFiles.push('go.mod');
@@ -138,7 +139,7 @@ export async function detectStack(dir) {
     result.devCommand = 'go run .';
 
     const fileCount = await countFiles(dir, ['.git', 'vendor']);
-    result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.compact);
   } else if (await exists('Gemfile')) {
     result.techStack = 'ruby';
     result.detectedFiles.push('Gemfile');
@@ -148,7 +149,7 @@ export async function detectStack(dir) {
     result.devCommand = 'bundle exec rails server';
 
     const fileCount = await countFiles(dir, ['.git', '.bundle', 'tmp', 'log']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if (await exists('pom.xml')) {
     result.techStack = 'java';
     result.detectedFiles.push('pom.xml');
@@ -158,7 +159,7 @@ export async function detectStack(dir) {
     result.devCommand = 'mvn exec:java';
 
     const fileCount = await countFiles(dir, ['.git', 'target']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if ((await exists('build.gradle.kts')) || (await exists('AndroidManifest.xml'))) {
     result.techStack = 'kotlin';
     result.detectedFiles.push(
@@ -170,7 +171,7 @@ export async function detectStack(dir) {
     result.devCommand = './gradlew run';
 
     const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if (await exists('build.gradle')) {
     // Java via Gradle (non-Kotlin) - build.gradle.kts already caught above
     result.techStack = 'java';
@@ -181,7 +182,7 @@ export async function detectStack(dir) {
     result.devCommand = './gradlew run';
 
     const fileCount = await countFiles(dir, ['.git', 'build', '.gradle']);
-    result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.compact);
   } else if (await exists('Package.swift')) {
     result.techStack = 'swift';
     result.detectedFiles.push('Package.swift');
@@ -191,7 +192,7 @@ export async function detectStack(dir) {
     result.devCommand = 'swift run';
 
     const fileCount = await countFiles(dir, ['.git', '.build']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if ((await findDirEndingWith('.xcodeproj')) || (await findDirEndingWith('.xcworkspace'))) {
     result.techStack = 'swift';
     const detected =
@@ -203,7 +204,7 @@ export async function detectStack(dir) {
     result.installCommand = '';
 
     const fileCount = await countFiles(dir, ['.git', 'build', 'DerivedData']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if (
     (await existsFileMatching((n) => n.endsWith('.csproj'))) ||
     (await existsFileMatching((n) => n.endsWith('.sln')))
@@ -216,7 +217,7 @@ export async function detectStack(dir) {
     result.devCommand = 'dotnet run';
 
     const fileCount = await countFiles(dir, ['.git', 'bin', 'obj']);
-    result.suggestedTier = fileCount > 80 ? 'l' : fileCount > 20 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.medium);
   } else if (await exists('Cargo.toml')) {
     result.techStack = 'rust';
     result.detectedFiles.push('Cargo.toml');
@@ -226,7 +227,7 @@ export async function detectStack(dir) {
     result.devCommand = 'cargo run';
 
     const fileCount = await countFiles(dir, ['.git', 'target']);
-    result.suggestedTier = fileCount > 60 ? 'l' : fileCount > 15 ? 'm' : 's';
+    result.suggestedTier = suggestTier(fileCount, TIER_THRESHOLDS.compact);
   }
 
   return result;
