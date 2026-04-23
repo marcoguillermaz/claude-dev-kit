@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { NATIVE_STACKS, getSkillsToRemove, getCheatsheetSkillsToRemove } from './skill-registry.js';
+import { STACK_COMMANDS } from '../utils/stack-commands.js';
 
 /**
  * Scaffold Tier 0 (Discovery) - minimal: settings.json, GETTING_STARTED.md only.
@@ -629,65 +630,7 @@ function interpolate(content, config) {
     other: 'Mixed',
   };
 
-  const stackCommandDefaults = {
-    swift: {
-      install: '# no install step',
-      dev: 'swift run',
-      build: 'xcodebuild build',
-      test: 'xcodebuild test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    kotlin: {
-      install: '# no install step',
-      dev: './gradlew run',
-      build: './gradlew build',
-      test: './gradlew test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    rust: {
-      install: '# no install step',
-      dev: 'cargo run',
-      build: 'cargo build --release',
-      test: 'cargo test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    dotnet: {
-      install: 'dotnet restore',
-      dev: 'dotnet run',
-      build: 'dotnet build',
-      test: 'dotnet test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    java: {
-      install: 'mvn install',
-      dev: 'mvn exec:java',
-      build: 'mvn package',
-      test: 'mvn test',
-      typeCheck: '# type checking handled by compiler',
-    },
-    python: {
-      install: 'pip install -r requirements.txt',
-      dev: '',
-      build: '',
-      test: 'pytest',
-      typeCheck: 'mypy .',
-    },
-    go: {
-      install: 'go mod download',
-      dev: 'go run .',
-      build: 'go build ./...',
-      test: 'go test ./...',
-      typeCheck: 'go vet ./...',
-    },
-    ruby: {
-      install: 'bundle install',
-      dev: 'rails server',
-      build: '',
-      test: 'bundle exec rspec',
-      typeCheck: '',
-    },
-  };
-  const ncd = stackCommandDefaults[config.techStack] || {};
+  const ncd = STACK_COMMANDS[config.techStack] || {};
   // Swift xcodebuild commands need -scheme to target the correct scheme
   const swiftScheme =
     config.techStack === 'swift' && config.projectName ? ` -scheme ${config.projectName}` : '';
@@ -700,7 +643,7 @@ function interpolate(content, config) {
     )
     .replace(
       /\[TYPE_CHECK_COMMAND\]/g,
-      config.typeCheckCommand || ncd.typeCheck || 'npx tsc --noEmit',
+      config.typeCheckCommand || ncd.typeCheckPlaceholder || 'npx tsc --noEmit',
     )
     .replace(
       /\[TEST_COMMAND\]/g,
