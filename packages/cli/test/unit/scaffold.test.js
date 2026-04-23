@@ -762,8 +762,48 @@ describe('patchSettingsPermissions', () => {
     const settingsPath = path.join(tmpDir, '.claude', 'settings.json');
     await fs.ensureDir(path.dirname(settingsPath));
     await fs.writeFile(settingsPath, '{ invalid json !!!');
-    await patchSettingsPermissions(tmpDir, { techStack: 'swift' });
+    // Suppress the expected warning to keep test output clean.
+    const origWarn = console.warn;
+    console.warn = () => {};
+    try {
+      await patchSettingsPermissions(tmpDir, { techStack: 'swift' });
+    } finally {
+      console.warn = origWarn;
+    }
     // should complete without error (catch block)
+  });
+
+  it('malformed JSON emits a console.warn surfacing the issue', async () => {
+    const settingsPath = path.join(tmpDir, '.claude', 'settings.json');
+    await fs.ensureDir(path.dirname(settingsPath));
+    await fs.writeFile(settingsPath, '{ invalid json !!!');
+    const warnings = [];
+    const origWarn = console.warn;
+    console.warn = (msg) => warnings.push(msg);
+    try {
+      await patchSettingsPermissions(tmpDir, { techStack: 'swift' });
+    } finally {
+      console.warn = origWarn;
+    }
+    assert.equal(warnings.length, 1, 'expected exactly one warning');
+    assert.match(warnings[0], /could not patch/i);
+    assert.match(warnings[0], /swift/i);
+  });
+
+  it('malformed JSON leaves the original file contents unchanged', async () => {
+    const settingsPath = path.join(tmpDir, '.claude', 'settings.json');
+    await fs.ensureDir(path.dirname(settingsPath));
+    const originalContent = '{ invalid json !!!';
+    await fs.writeFile(settingsPath, originalContent);
+    const origWarn = console.warn;
+    console.warn = () => {};
+    try {
+      await patchSettingsPermissions(tmpDir, { techStack: 'swift' });
+    } finally {
+      console.warn = origWarn;
+    }
+    const content = await fs.readFile(settingsPath, 'utf8');
+    assert.equal(content, originalContent);
   });
 
   it('go has no deny list - original deny preserved without additions', async () => {

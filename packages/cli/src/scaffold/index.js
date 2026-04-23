@@ -246,8 +246,16 @@ async function patchSettingsPermissions(targetDir, config) {
       settings.permissions.deny = [...settings.permissions.deny, ...stackDeny];
     }
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-  } catch {
-    // If settings.json is malformed, skip patching silently
+  } catch (err) {
+    // Previously silent — but a scaffold that ships default JS/Node
+    // permissions on a native stack because settings.json was malformed
+    // is a subtle correctness failure. Surface the problem so the user
+    // can fix the template or re-run with --force.
+    console.warn(
+      `[claude-dev-kit] Warning: could not patch ${settingsPath} — ${err.message}. ` +
+        `Stack-specific permissions for "${config.techStack}" were NOT applied; ` +
+        `the file may be malformed JSON or read-only.`,
+    );
   }
 }
 
