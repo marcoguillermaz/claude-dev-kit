@@ -34,6 +34,8 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 
 | Skill | What it checks | When to run |
 |---|---|---|
+| `/arch-audit` | CLAUDE.md compliance, Anthropic docs drift, ecosystem consistency, hook config | Weekly; after upgrading Claude Code; after changing CLAUDE.md |
+| `/commit` | Classify staged changes, generate conventional commit message, execute commit | After every implementation phase to commit work |
 | `/security-audit` | Auth guards, input validation, sensitive data in responses, HTTP headers | Before production deploy; after adding new API routes |
 | `/skill-dev` | Coupling, duplication, dead code, magic strings, oversized components | Before major refactoring; quarterly review |
 | `/skill-db` | Missing indexes, access control gaps, constraint completeness, N+1 queries | After migration waves; before production releases |
@@ -47,6 +49,9 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/ui-audit` | Design system token compliance, component adoption, empty/error/loading states | After UI changes; when design system is configured |
 | `/test-audit` | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps) | After Phase 3 tests green; every block |
 | `/simplify` | Early returns, nesting depth, local duplication, dead code, magic values | After writing code (Phase 2); on demand |
+| `/dependency-scan` | Route hrefs, import consumers, shared type consumers, test refs, FK refs, access control | Phase 1 mandatory; before finalizing file list |
+| `/skill-review` | Skill quality audit: structural review, severity calibration, fix verification | After modifying skills; quarterly review cycle |
+| `/context-review` | Phase 8.5 grep checks C1–C3: credential patterns, unresolved placeholders, field name staleness | Before `/compact` at end of block; C4–C12 judgment checks run in main session |
 
 > **Before first run**: open each SKILL.md and replace the `[PLACEHOLDER]` values with the real paths for this project.
 > **Prerequisites for screenshot-based skills**: dev server must be running (check your project's dev command for the URL).
