@@ -7,6 +7,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.10.3] — 2026-04-23
+
+### Fixed
+- arch-audit H1a grep pattern missed 15 hook events (StopFailure, PostToolUseFailure, SubagentStart/Stop, TaskCreated, PermissionRequest/Denied, TeammateIdle, SessionEnd, FileChanged, CwdChanged, ConfigChange, UserPromptExpansion, Elicitation/Result) — would have falsely flagged StopFailure already in use.
+- arch-audit C17 regex false-positive on arch-audit itself (self-referential `mcp__` in grep pattern) — added skip-by-name + `^allowed-tools:` anchor.
+- tier-l cheatsheet out of sync with skills dir: 5 skills missing (arch-audit, commit, context-review, dependency-scan, skill-review) — restored to parity with tier-m + added context-review row (tier-l exclusive).
+- tier-l settings.json hook `model: "claude-haiku-4-5"` undocumented short-form → alias `haiku` (matches 41 SKILL.md frontmatter convention).
+- tier-s settings.json deny missing `Bash(git push origin main*)` — baseline main protection restored.
+- tier-l settings.json deny missing `Bash(DROP TABLE*)`, `Bash(TRUNCATE*)` — regression vs tier-m.
+
+### Updated
+- arch-audit "new events worth adding" catalogue refreshed with 6 events (UserPromptExpansion, SessionEnd, TeammateIdle, TaskCreated, PostToolUseFailure, PermissionRequest) + note on new `type: "mcp_tool"` hook type (v2.1.118).
+- claudemd-standards.md: hook events list v2.1.85 → v2.1.118 (22 → 27 events, `Last verified: 2026-04-23`).
+
+### Unchanged
+- No code changes in CLI source — template-only release. Integration 828/828, unit 270/270.
+
+---
+
 ## [1.10.2] — 2026-04-19
 
 ### Fixed
