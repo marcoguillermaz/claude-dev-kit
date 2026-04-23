@@ -245,9 +245,7 @@ export async function initInPlace(options) {
         type: 'confirm',
         name: 'hasDesignSystem',
         message: (a) => {
-          const isNative = [...NATIVE_STACKS, 'other'].includes(
-            a.techStack,
-          );
+          const isNative = [...NATIVE_STACKS, 'other'].includes(a.techStack);
           return isNative
             ? 'Do you follow a design guideline? (Apple HIG, Material Design, other) (controls whether ui-audit is included)'
             : 'Do you use a component library or design system? (shadcn, MUI, Tailwind…) (controls whether ui-audit is included)';

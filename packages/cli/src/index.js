@@ -9,9 +9,7 @@ import { addSkill, addRule } from './commands/add.js';
 import { newSkill } from './commands/new-skill.js';
 import chalk from 'chalk';
 
-const pkg = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-);
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 program
   .name('claude-dev-kit')
