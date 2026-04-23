@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import inquirer from 'inquirer';
 import { registerSkillInClaudeMd } from '../utils/claudemd-update.js';
+import { SKILL_DESC_MAX_CHARS } from '../utils/constants.js';
 
 // Standard Playwright MCP tools (sourced from visual-audit SKILL.md)
 const PLAYWRIGHT_TOOLS = [
@@ -86,7 +87,7 @@ assert.ok(frontmatter.includes('description:'), 'frontmatter must include descri
 assert.ok(frontmatter.includes('context: fork'), 'context must be fork');
 
 const desc = frontmatter.match(/description:\\s*(.+)/)?.[1] || '';
-assert.ok(desc.length <= 250, \`description too long: \${desc.length}/250\`);
+assert.ok(desc.length <= ${SKILL_DESC_MAX_CHARS}, \`description too long: \${desc.length}/${SKILL_DESC_MAX_CHARS}\`);
 
 if (content.includes('browser_')) {
   assert.ok(frontmatter.includes('allowed-tools'), 'Playwright skills must declare allowed-tools');
@@ -119,8 +120,8 @@ function validateSkillMd(content, dirName) {
   const descMatch = fm.match(/^description:\s*(.+)/m);
   if (descMatch) {
     const desc = descMatch[1].trim();
-    if (desc.length > 250) {
-      errors.push(`Description too long: ${desc.length}/250 chars`);
+    if (desc.length > SKILL_DESC_MAX_CHARS) {
+      errors.push(`Description too long: ${desc.length}/${SKILL_DESC_MAX_CHARS} chars`);
     } else if (desc.length < 10) {
       warnings.push(`Description very short: ${desc.length} chars (min recommended: 10)`);
     }
@@ -182,10 +183,11 @@ export async function newSkill(options) {
       {
         type: 'input',
         name: 'description',
-        message: 'One-line description (max 250 chars):',
+        message: `One-line description (max ${SKILL_DESC_MAX_CHARS} chars):`,
         validate: (v) => {
           if (!v || v.trim().length < 10) return 'Description must be at least 10 characters.';
-          if (v.trim().length > 250) return `Too long: ${v.trim().length}/250 chars.`;
+          if (v.trim().length > SKILL_DESC_MAX_CHARS)
+            return `Too long: ${v.trim().length}/${SKILL_DESC_MAX_CHARS} chars.`;
           return true;
         },
       },

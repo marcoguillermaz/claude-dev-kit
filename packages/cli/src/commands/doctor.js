@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
+import { CLAUDE_MD_MAX_LINES, STOP_HOOK_MAX_TIMEOUT_SEC } from '../utils/constants.js';
 
 const checks = [
   {
@@ -29,15 +30,15 @@ const checks = [
   },
   {
     id: 'claude-md-size',
-    label: 'CLAUDE.md under 200 lines',
+    label: `CLAUDE.md under ${CLAUDE_MD_MAX_LINES} lines`,
     check: (cwd) => {
       const p = path.join(cwd, 'CLAUDE.md');
       if (!fs.existsSync(p)) return { pass: true, skip: true };
       const lines = fs.readFileSync(p, 'utf8').split('\n').length;
       return {
-        pass: lines <= 200,
+        pass: lines <= CLAUDE_MD_MAX_LINES,
         info: `${lines} lines`,
-        fix: 'Trim CLAUDE.md to under 200 lines. Move stable patterns to .claude/rules/ with path-scoped files.',
+        fix: `Trim CLAUDE.md to under ${CLAUDE_MD_MAX_LINES} lines. Move stable patterns to .claude/rules/ with path-scoped files.`,
       };
     },
   },
@@ -290,9 +291,12 @@ const checks = [
         if (stopHooks.length === 0) return { pass: true, skip: true };
         const allHaveTimeout = stopHooks.every((entry) => {
           // Timeout can be at outer level (entry.timeout) or inner level (entry.hooks[].timeout)
-          if (typeof entry.timeout === 'number' && entry.timeout <= 600) return true;
+          if (typeof entry.timeout === 'number' && entry.timeout <= STOP_HOOK_MAX_TIMEOUT_SEC)
+            return true;
           const inner = entry.hooks || [];
-          return inner.every((h) => typeof h.timeout === 'number' && h.timeout <= 600);
+          return inner.every(
+            (h) => typeof h.timeout === 'number' && h.timeout <= STOP_HOOK_MAX_TIMEOUT_SEC,
+          );
         });
         return {
           pass: allHaveTimeout,
