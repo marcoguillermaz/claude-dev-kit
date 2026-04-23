@@ -24,7 +24,9 @@
       "Bash(rm -rf /*)",
       "Bash(chmod 777*)",
       "Bash(npm publish*)",
-      "Bash(DROP DATABASE*)"
+      "Bash(DROP DATABASE*)",
+      "Bash(DROP TABLE*)",
+      "Bash(TRUNCATE*)"
     ]
   },
   "hooks": {
@@ -43,7 +45,7 @@
           {
             "type": "prompt",
             "prompt": "Review the code changes in this session. Check for: (1) hardcoded secrets or credentials, (2) missing input validation on API endpoints, (3) SQL injection or command injection patterns, (4) missing auth checks. If critical issues found, return {\"decision\": \"block\", \"reason\": \"...\"}. If clean, return {\"ok\": true}.",
-            "model": "claude-haiku-4-5"
+            "model": "haiku"
           }
         ]
       }

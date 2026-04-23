@@ -114,7 +114,7 @@ Every RECOMMEND must include: (1) specific file path(s) to modify, (2) section o
 | C14   | `git check-ignore -q CLAUDE.md && echo "PASS" \|\| echo "FAIL"`                                                                                                                          | PASS             |
 | C15   | `wc -l CLAUDE.md \| awk '{print $1}'`                                                                                                                                                    | ≤200             |
 | C16   | `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet\|claude-sonnet-4-20250514\|claude-opus-4-20250514" .claude/skills/ .claude/settings.json` | 0 matches        |
-| C17   | `for f in .claude/skills/*/SKILL.md; do if grep -q "mcp__" "$f" && ! grep -q "allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`                                     | 0 MISSING lines  |
+| C17   | `for f in .claude/skills/*/SKILL.md; do name=$(basename $(dirname "$f")); [ "$name" = "arch-audit" ] && continue; if grep -q "mcp__" "$f" && ! grep -q "^allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`                                     | 0 MISSING lines  |
 
 Collect batch results, then run judgment-tier checks below. For each FAIL: classify as AUTO-FIX or RECOMMEND using the same criteria as Step 3.
 
@@ -187,12 +187,17 @@ Also flag any of the following new events from recent Claude Code releases that 
 - `WorktreeCreate` / `WorktreeRemove` - auto-setup / teardown logic when worktrees change
 - `SubagentStart` / `SubagentStop` - logging or context injection for subagent calls
 - `PreCompact` - save critical in-progress state before context compression
-- `TaskCompleted` - post-completion summary or notification
+- `TaskCreated` / `TaskCompleted` - lifecycle hooks for task delegation (distinct events)
 - `FileChanged` - lint/format trigger on file write
-- `PermissionDenied` - auto-mode classifier denial handling (return `retry: true` for alternative approach)
+- `PermissionRequest` / `PermissionDenied` - permission flow interception (distinct events: request decides upfront, denied fires after rejection; return `retry: true` for alternative approach)
+- `PostToolUseFailure` - recovery logic when a tool call fails after execution
 - `Elicitation` / `ElicitationResult` - MCP server user-input request interception
 - `ConfigChange` - config source change detection
 - `CwdChanged` - working directory change handling
+- `SessionEnd` - session teardown / final logging
+- `UserPromptExpansion` - intercept prompt after macro/template expansion
+- `TeammateIdle` - multi-agent coordination (notify when a teammate agent is idle)
+- Hook type `type: "mcp_tool"` (v2.1.118+) - hooks can invoke MCP tools directly
   These are RECOMMEND, not AUTO-FIX.
 
 Additionally, verify awareness of these recent Claude Code capabilities:
@@ -234,7 +239,7 @@ AUTO-FIX: replace deprecated model IDs with the current equivalents:
 
 **C17 - `allowed-tools` frontmatter on MCP-dependent skills**
 Check: any SKILL.md that calls `mcp__*` tools in its instructions must declare those tools in `allowed-tools:` frontmatter. This ensures Claude requests the correct permissions upfront before the skill runs, preventing mid-execution permission prompts.
-Run: `for f in .claude/skills/*/SKILL.md; do if grep -q "mcp__" "$f" && ! grep -q "allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`
+Run: `for f in .claude/skills/*/SKILL.md; do name=$(basename $(dirname "$f")); [ "$name" = "arch-audit" ] && continue; if grep -q "mcp__" "$f" && ! grep -q "^allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`
 Expected: 0 MISSING lines. Any match = FAIL.
 AUTO-FIX: for each failing skill, read the `mcp__*` tool names from its body and add `allowed-tools: [mcp__tool1, mcp__tool2, ...]` to its frontmatter after the `context:` line.
 
@@ -435,7 +440,7 @@ Using hook documentation fetched in Step 1 (`https://code.claude.com/docs/en/hoo
 
 **H1a - Event name currency**
 Check: every event name in `settings.json` hooks matches the current official event list.
-Run: `grep -o '"SessionStart"\|"UserPromptSubmit"\|"PreToolUse"\|"PostToolUse"\|"Stop"\|"WorktreeCreate"\|"WorktreeRemove"\|"PostCompact"\|"PreCompact"\|"InstructionsLoaded"\|"Notification"\|"TaskCompleted"' .claude/settings.json | sort -u`
+Run: `grep -o '"SessionStart"\|"SessionEnd"\|"UserPromptSubmit"\|"UserPromptExpansion"\|"PreToolUse"\|"PostToolUse"\|"PostToolUseFailure"\|"Stop"\|"StopFailure"\|"PermissionRequest"\|"PermissionDenied"\|"SubagentStart"\|"SubagentStop"\|"TaskCreated"\|"TaskCompleted"\|"TeammateIdle"\|"FileChanged"\|"CwdChanged"\|"ConfigChange"\|"PreCompact"\|"PostCompact"\|"InstructionsLoaded"\|"Notification"\|"Elicitation"\|"ElicitationResult"\|"WorktreeCreate"\|"WorktreeRemove"' .claude/settings.json | sort -u`
 Pass: all events appear in the Step 1 documentation. Any unrecognized event → RECOMMEND removal or rename.
 
 **H1b - JSON response field compliance (prompt hooks)**

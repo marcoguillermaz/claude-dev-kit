@@ -1,6 +1,6 @@
 # CLAUDE.md Standards Reference
 
-Last verified: 2026-03-27
+Last verified: 2026-04-23
 Update protocol: update only when `/arch-audit` detects a material change in official sources. Manual review required - no auto-update.
 
 ## Sources
@@ -92,8 +92,8 @@ Apply this test to every line: **"Would removing this cause Claude to make mista
 - **`InstructionsLoaded` hook**: use exclusively for debugging CLAUDE.md/rules load order - not for general logic. *(Source: 2)*
 - **Conditional `if` field** (v2.1.85+): `"if": "Bash(git *)"` uses permission rule syntax to filter hook activations. *(Source: 3)*
 
-**Available hook events (as of v2.1.85):**
-`SessionStart` · `UserPromptSubmit` · `PreToolUse` · `PostToolUse` · `PostToolUseFailure` · `PermissionRequest` · `Stop` · `SubagentStop` · `TaskCreated` · `TaskCompleted` · `InstructionsLoaded` · `CwdChanged` · `FileChanged` · `PreCompact` · `PostCompact` · `WorktreeCreate` · `ConfigChange` · `StopFailure` · `Elicitation` · `ElicitationResult` · `TeammateIdle` · `SessionEnd`
+**Available hook events (as of v2.1.118):**
+`SessionStart` · `SessionEnd` · `UserPromptSubmit` · `UserPromptExpansion` · `PreToolUse` · `PostToolUse` · `PostToolUseFailure` · `PermissionRequest` · `PermissionDenied` · `Stop` · `StopFailure` · `SubagentStart` · `SubagentStop` · `TaskCreated` · `TaskCompleted` · `InstructionsLoaded` · `CwdChanged` · `FileChanged` · `PreCompact` · `PostCompact` · `WorktreeCreate` · `WorktreeRemove` · `ConfigChange` · `Notification` · `Elicitation` · `ElicitationResult` · `TeammateIdle`
 
 ---
 
