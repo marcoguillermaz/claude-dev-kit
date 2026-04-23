@@ -35,8 +35,8 @@ node packages/cli/src/index.js add rule security --stack swift
 **Run tests:**
 
 ```bash
-node packages/cli/test/integration/run.js       # 464 integration checks
-node --test packages/cli/test/unit/*.test.js      # 243 unit tests
+node packages/cli/test/integration/run.js       # 828 integration checks
+node --test packages/cli/test/unit/*.test.js      # 270 unit tests
 ```
 
 All tests must pass before submitting a PR.

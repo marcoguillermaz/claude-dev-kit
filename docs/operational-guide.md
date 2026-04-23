@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 15 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 16 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -163,7 +163,7 @@ For experienced users, the wizard asks:
   - "Do you use a component library or design system?" -> installs `/ui-audit`
   - "Design system name?" -> populates `[DESIGN_SYSTEM_NAME]` placeholder
   - "Track a PRD per feature block?" -> determines if `docs/prd/prd.md` is referenced in context review
-  - "Preferred model for deep analysis skills?" -> `claude-sonnet-4-6` (faster) or `claude-opus-4-6` (thorough)
+  - "Preferred model for deep analysis skills?" -> `claude-sonnet-4-6` (faster) or `claude-opus-4-7` (thorough)
 - Whether to include pre-commit config and `.github/` files
 
 Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs - ready to open in Claude Code.
@@ -400,7 +400,7 @@ npx mg-claude-dev-kit add skill commit
 
 This copies the SKILL.md file into `.claude/skills/<name>/` and appends it to the `## Active Skills` section in CLAUDE.md (if that section exists). No other files are modified.
 
-Available skills (15): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`, `test-audit`.
+Available skills (16): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `skill-review`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`, `test-audit`.
 
 Options:
 - `--force` - overwrite if the skill already exists
