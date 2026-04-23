@@ -69,8 +69,8 @@ export function stripHtml(html) {
   return text.trim();
 }
 
-export function extractRecentChangelog(html, days = 7) {
-  const cutoff = new Date();
+export function extractRecentChangelog(html, days = 7, now = new Date()) {
+  const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() - days);
   cutoff.setHours(0, 0, 0, 0);
 
