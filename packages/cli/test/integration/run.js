@@ -1259,14 +1259,14 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 85).
+  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 90).
   // The threshold scales linearly with the Active Skills list (one line per skill); raise it as new skills
   // are added to the registry so this guard catches regressions, not growth.
   const lineCountM = claudeM.split('\n').length;
-  if (lineCountM < 85) {
+  if (lineCountM < 90) {
     pass(`Tier M: CLAUDE.md line count reduced (${lineCountM} lines)`);
   } else {
-    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 85 after stripping`);
+    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 90 after stripping`);
   }
 
   // Tier S - Known Patterns stripped (only section applicable)
@@ -2670,8 +2670,8 @@ async function scenarioDocAuditPresent() {
         } else {
           fail(`Tier ${tier}: pipeline.md Track C missing /doc-audit invocation`);
         }
-        if (/Track C - Test \+ doc audit/.test(pipeline)) {
-          pass(`Tier ${tier}: pipeline.md Track C renamed to "Test + doc audit"`);
+        if (/Track C - Test \+ doc( \+ infra)? audit/.test(pipeline)) {
+          pass(`Tier ${tier}: pipeline.md Track C header includes doc audit pairing`);
         } else {
           fail(`Tier ${tier}: pipeline.md Track C header not renamed`);
         }
