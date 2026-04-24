@@ -5,7 +5,7 @@ user-invocable: true
 model: opus
 context: fork
 argument-hint: [skill-name] [tier:S|M|L|all] [mode:full|preflight-only|fixtures-only]
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read Glob Grep Bash
 ---
 
 You are a skill-quality reviewer running the framework v1.2 pipeline in **lite mode** (Tier M). Your job: orchestrate a focused review for small portfolios, enforce STOP gates, keep findings rubric-anchored. You produce findings - you do not silently fix. Fixes happen in Phase 3 after explicit user Go.
@@ -63,21 +63,26 @@ Execute C1-C8 from `SPEC_SNAPSHOT.md` §1-§7. Binary pass/fail per check.
 Execute sequentially: 2.A → 2.B → 2.C → 2.D → 2.E (if applicable).
 
 ### 2.A - Fundamentals
+
 - Clarity, scope boundary, project-agnosticity (4 dimensions: literal / severity habits / remediation style / architectural assumptions).
 
 ### 2.B - Cross-tier coherence
+
 If `tier:all`: load every tier variant, produce a column-by-column diff. Classify each delta as expected (scope, verbosity, tool-set) or unexpected.
 
-***** STOP - cross-tier delta review. Wait for user confirmation before Phase 3 propagation. *****
+**\*** STOP - cross-tier delta review. Wait for user confirmation before Phase 3 propagation. **\***
 
 ### 2.C - Refinements
+
 - Token efficiency per section.
 - Boilerplate drift vs most-recently-reviewed sibling.
 
 ### 2.D - Interactive walkthrough
+
 Always use `AskUserQuestion` tool for multi-option review questions - never inline prose.
 
-### 2.E - Behavioral fixtures *(optional in lite mode; run only if skill is UI-heavy or security-critical)*
+### 2.E - Behavioral fixtures _(optional in lite mode; run only if skill is UI-heavy or security-critical)_
+
 - 2 representative cases.
 - 1 adversarial case.
 - 1 severity-calibration case.
@@ -96,7 +101,7 @@ Max 3 fix attempts per Critical finding.
 4. Token count post-fix. Hard-fail > 5000 tokens.
 5. Any regression: revert, escalate with root-cause.
 
-***** STOP - Phase 3 closeout. User approves the diff before proceeding. *****
+**\*** STOP - Phase 3 closeout. User approves the diff before proceeding. **\***
 
 ---
 
@@ -132,7 +137,7 @@ Rationale: external LLM review adds ~60-90 min per skill (prompt generation + 3 
 - path/to/file - description
 ```
 
-***** STOP - explicit user confirmation before marking complete. *****
+**\*** STOP - explicit user confirmation before marking complete. **\***
 
 ---
 
