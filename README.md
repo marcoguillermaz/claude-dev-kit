@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![834 integration checks](https://img.shields.io/badge/integration-834%20checks-blue.svg)](#testing)
+[![895 integration checks](https://img.shields.io/badge/integration-895%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -46,7 +46,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 16 audit skills
+### 17 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -67,6 +67,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/ui-audit`            | M L   | Design token compliance, component adoption, empty states.                                                                              |
 | `/accessibility-audit` | M L   | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels).                                                          |
 | `/test-audit`          | M L   | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps). |
+| `/doc-audit`           | M L   | Doc drift: link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, stack-sync (Next.js/Django/Swift). |
 | `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
@@ -155,8 +156,8 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 834 integration checks
-node --test packages/cli/test/unit/*.test.js   # 270 unit tests
+node packages/cli/test/integration/run.js    # 895 integration checks
+node --test packages/cli/test/unit/*.test.js   # 332 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
@@ -186,9 +187,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.11.0 ships Anthropic spec compliance. The `allowed-tools` frontmatter syntax is now space-separated across every scaffolded SKILL.md; the fix was surgical (only 2 files still used the comma form — under a spec-conformant parser it resolves to a YAML scalar with literal commas, silently dropping tool pre-authorisation). The `arch-audit` body drops from 508 to 360 lines across all three tiers: Step 3c, 3d, and H1 now live in a sibling `advanced-checks.md`. Two new `doctor` checks (`skill-md-size-budget`, `skill-allowed-tools-syntax`) plus a CDK-internal integration scenario guard against regression. A new shared helper, `skill-frontmatter.js`, consolidates frontmatter parsing. 834 integration + 302 unit tests.
+**Current**: v1.13.0 ships the `/doc-audit` skill (Issue #61, ICE 320): the Q1 skill-expansion spillover, rank #4 in the 3-model consensus, now closed. Doc drift normally stays silent until a new contributor trips over it. `/doc-audit` runs in Phase 5d Track C next to `/test-audit`, so drift gets caught while the change is still fresh. Seven static checks: relative-link resolution, code-block syntax (json, yaml, toml), CDK placeholder residuals (the D3 list is pinned to the ten scaffold tokens, every entry verified against `packages/cli/templates/**`, no generic `[UPPERCASE]` false positives), slash-command name match, skill-count consistency, ADR marker freshness, and stack-specific doc sync for Next.js, Django, and Swift via a sibling `PATTERNS.md`. The SKILL.md body lands at 271 lines, well inside the 500-line guardrail from v1.11.0. Track C in `pipeline.md` tier-M/L is renamed to "Test + doc audit" to reflect the pairing. Integration: 895 checks (+31 from `scenarioDocAuditPresent`); unit: 332 tests.
 
-**Next**: Q2 #3 public documentation site (VitePress, ICE 432) and the `/doc-audit` skill (ICE 320) to close the Q1 skill spillover.
+**Next**: Q2 #7 (Issue #66, ICE 245) adds three more skills on the expansion track: `/compliance-audit`, `/api-contract-audit`, `/infra-audit`. Q2 #3, the public docs site (VitePress, ICE 432), stays deferred on purpose.
 
 ---
 

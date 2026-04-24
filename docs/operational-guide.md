@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 16 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 17 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -712,7 +712,7 @@ Defined in the `CLAUDE.md` template for Tier M/L. Governs how Claude handles non
 
 ## 10. Audit skills
 
-Sixteen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Seventeen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 All skill applicability rules are managed by a central skill registry (`packages/cli/src/scaffold/skill-registry.js`). Each skill declares which tiers and project conditions it requires.
 
@@ -735,6 +735,7 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/ui-audit`            | -   | x   | x   | `hasFrontend=true` AND `hasDesignSystem=true` | - (static)                                                                   |
 | `/accessibility-audit` | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
 | `/test-audit`          | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
+| `/doc-audit`           | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
 | `/skill-review`        | -   | x   | x   | always                                        | - (static analysis)                                                          |
 
 ### General rules
@@ -756,8 +757,9 @@ After the smoke test and before the outcome checklist, three tracks can run:
 **Track B - API/DB** (if the block touches API routes or applies migrations):
 `/security-audit` and `/api-design` (concurrent, static); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables).
 
-**Track C - Test suite** (runs for every block after Phase 3 is green):
-`/test-audit` - static analysis of coverage reports (lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), and anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps). Critical findings (`.only` committed, 0% coverage on a changed file) block Phase 6.
+**Track C - Test + doc audit** (runs for every block after Phase 3 is green):
+`/test-audit` - static analysis of coverage reports (lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), and anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).
+`/doc-audit` - static doc-drift check: relative-link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, and stack-specific doc sync (Next.js / Django / Swift). Critical findings from either skill (`.only` committed, 0% coverage on a changed file, CDK placeholder in README, broken link to a user-visible flow doc) block Phase 6.
 
 ### Severity handling
 
@@ -875,6 +877,29 @@ Checks:
 - **Anti-patterns (T1-T8, all stack-adapted)**: T1 `.only`/`fit`/`fdescribe` committed (Critical), T2 skipped tests (Medium; High if > 10% of suite), T3 `.todo` placeholders (Low), T4 empty test bodies (High), T5 tests without assertions (High), T6 hardcoded sleeps ≥ 500ms (Medium), T7 debug output left in tests (Low), T8 multi-file `.only` pattern (Critical).
 
 Universal gating: installed on every Tier M/L project regardless of feature flags (no `requires`). Backlog prefix: `TEST-`. Flaky-test detection and live re-run analysis are deferred - v1 is static-only.
+
+#### /doc-audit
+
+**File**: `.claude/skills/doc-audit/SKILL.md` | **Tier**: M, L
+
+Static documentation drift audit. Grep / file parsing / filesystem reads only - no URL fetches, no builds, no code execution. Runs in Phase 5d Track C alongside `/test-audit`: drift caught while the change is fresh in memory, not six weeks later when a new contributor trips over it.
+
+Checks:
+
+- **D1 Relative-link resolution**: markdown links to local files (`[text](./path)`, `[text](../path)`) resolve to existing paths. `http(s)://`, `mailto:`, and anchor-only links skipped. Severity: Critical for broken links to user-visible flow docs (CONTRIBUTING, SECURITY, linked guides); High otherwise.
+- **D2 Code-block syntax**: fenced blocks tagged `json`, `yaml`, `toml` are parsed with a stack-appropriate tool (`node -e 'JSON.parse'`, `python -c 'yaml.safe_load'`, `python -c 'tomllib.loads'`). Blocks tagged `bash`, `sh`, `text`, unlabelled, or containing template markers (`<...>`, `{{...}}`) are skipped. Severity: High per unparseable block.
+- **D3 CDK placeholder residuals**: uses a pinned list of the ten scaffold tokens (`[TEST_COMMAND]`, `[FRAMEWORK_VALUE]`, `[LANGUAGE_VALUE]`, `[INSTALL_COMMAND]`, `[DEV_COMMAND]`, `[BUILD_COMMAND]`, `[TYPE_CHECK_COMMAND]`, `[E2E_COMMAND]`, `[ENUM_CASE_CONVENTION]`, `[MIGRATION_COMMAND]`). Every entry is verified against `packages/cli/templates/**` so only tokens the scaffold actually writes are included. Generic `[UPPERCASE]` regex is deliberately avoided to prevent false positives on legitimate user conventions (`[API_KEY]`, `[YOUR_DOMAIN]`, `[FEATURE_FLAG]`). Severity: Critical in `README.md`, High in other user-facing docs.
+- **D4 Slash-command name match**: every `/name` reference in docs is cross-checked against `.claude/skills/<name>/`. Allowlist covers CDK CLI verbs (`init`, `upgrade`, `doctor`, `add`, `new`). Severity: Medium per orphan.
+- **D5 Skill-count consistency**: numeric claims like "16 skills" in README / docs are cross-verified against `ls .claude/skills/ | grep -v '^custom-' | wc -l`. Severity: Medium if mismatch ≤ 2; High if > 2. Scope is intentionally narrow - doctor / test counts are source-specific to the CDK codebase and not in scope for user-project audits.
+- **D6 ADR marker freshness**: if an ADR directory is configured, frontmatter `date:` / `updated:` fields older than 180 days without a terminal `status:` (`accepted`, `deprecated`, `superseded`, `rejected`) are flagged. Severity: Low.
+- **D7 Stack-specific doc sync**: runs only for `node-ts`, `python`, `swift` - other stacks skip D7 and run only D1-D6. Patterns live in a sibling `PATTERNS.md`:
+  - **node-ts**: Next.js `app/` or `pages/` routes cross-referenced against `docs/sitemap.md` and README; `package.json` dependencies cross-referenced against README.
+  - **python**: Django `urls.py` paths cross-referenced against `docs/sitemap.md` and README; `pyproject.toml` / `requirements.txt` top-level deps cross-referenced against README.
+  - **swift**: `Package.swift` products and targets cross-referenced against README; DocC presence hint for library targets.
+
+Severity: Medium per orphan surface (D7 patterns are best-effort hints, not hard validation).
+
+Universal gating: installed on every Tier M/L project regardless of feature flags (no `requires`). Backlog prefix: `DOC-`. Live link check (HTTP/HTTPS), semantic drift reasoning, and doc-bloat judgement are deferred - v1 is static only. Read-only: the skill produces a markdown report; corrections are proposed but never applied.
 
 #### /skill-review
 
