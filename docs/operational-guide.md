@@ -23,7 +23,7 @@
 13. [Governance mechanics](#13-governance-mechanics)
 14. [Conventions and non-negotiables](#14-conventions-and-non-negotiables)
 15. [Maintaining the scaffold](#15-maintaining-the-scaffold)
-15b. [Anthropic drift tracking](#15b-anthropic-drift-tracking)
+    15b. [Anthropic drift tracking](#15b-anthropic-drift-tracking)
 16. [Frequently asked questions](#16-frequently-asked-questions)
 
 ---
@@ -83,11 +83,11 @@ You're using Claude Code but the process is ad-hoc. Claude makes autonomous deci
 
 **Your path**: Tier S, M, or L depending on project complexity.
 
-| Signal | Suggested tier |
-|---|---|
-| Low blast radius, single dev, reversible in minutes | Tier S - Fast Lane |
-| Single feature, moderate impact, 1-2 collaborators | Tier M - Standard |
-| High blast radius, team of 3+, complex domain, shared systems | Tier L - Full |
+| Signal                                                        | Suggested tier     |
+| ------------------------------------------------------------- | ------------------ |
+| Low blast radius, single dev, reversible in minutes           | Tier S - Fast Lane |
+| Single feature, moderate impact, 1-2 collaborators            | Tier M - Standard  |
+| High blast radius, team of 3+, complex domain, shared systems | Tier L - Full      |
 
 Read sections 4, 5, 6 (your tier), 7, and 8 of this guide.
 
@@ -103,15 +103,16 @@ You don't want a full scaffold yet - just one skill or rule to try on your exist
 
 ## 3. Prerequisites
 
-| Requirement | Version | Why |
-|---|---|---|
-| Node.js | >= 22 | CLI runtime |
-| Claude Code | latest | The AI assistant being governed |
-| Git | any | Branch discipline enforced by pipeline |
-| `gh` CLI | any | Optional - needed only for cloning private repos in From context mode |
-| Pre-commit | any | Optional - needed only if you enable the pre-commit hook |
+| Requirement | Version | Why                                                                   |
+| ----------- | ------- | --------------------------------------------------------------------- |
+| Node.js     | >= 22   | CLI runtime                                                           |
+| Claude Code | latest  | The AI assistant being governed                                       |
+| Git         | any     | Branch discipline enforced by pipeline                                |
+| `gh` CLI    | any     | Optional - needed only for cloning private repos in From context mode |
+| Pre-commit  | any     | Optional - needed only if you enable the pre-commit hook              |
 
 Install Claude Code:
+
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
@@ -144,10 +145,12 @@ Three init paths are available. All support `--dry-run` (preview without writing
 **Use when**: you are starting a new project and there is no existing codebase.
 
 The wizard asks first: **"How familiar is your team with Claude Code?"**
+
 - **Just starting out** -> Tier 0 (Discovery). The remaining questions are simplified.
 - **We use it and want guardrails** -> continues to the experienced path below.
 
 For experienced users, the wizard asks:
+
 - Project name and one-line description
 - **3 diagnostic questions -> auto-suggest tier**:
   1. "How many engineers will use Claude Code on this project?" (solo / small team / larger team)
@@ -169,6 +172,7 @@ For experienced users, the wizard asks:
 Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, settings, and docs - ready to open in Claude Code.
 
 **After running:**
+
 1. Read `.claude/FIRST_SESSION.md` (Tier M/L) - your team's guide to the first block cycle. Auto-deleted after first block closure.
 2. Review `CLAUDE.md` - fill in the project-specific details.
 3. Open Claude Code: `claude` from the project root.
@@ -180,6 +184,7 @@ Output: a fully scaffolded project directory with `CLAUDE.md`, pipeline rules, s
 **Use when**: you are starting a new governance project but want to bootstrap it from an existing codebase or documentation.
 
 The wizard asks for:
+
 - One or more source repositories (GitHub URL, `org/repo`, or local path)
 - Optional source documents (PDF, Markdown, TXT file paths)
 - New project name
@@ -187,6 +192,7 @@ The wizard asks for:
 - Pipeline tier, pre-commit, `.github/`
 
 What happens:
+
 1. Each source repo is cloned into `.claude/context/repos/<name>/` using `gh` CLI (private repos) or `git clone --depth=1` (public).
 2. Source documents are copied to `.claude/context/docs/`.
 3. The governance scaffold is created.
@@ -202,6 +208,7 @@ What happens:
 **Use when**: you already have a project at the current directory and you want to add the governance layer without starting fresh.
 
 The CLI:
+
 1. Auto-detects your tech stack by inspecting `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `Package.swift`, `Gemfile`, `pom.xml`, `build.gradle`, `*.csproj`, and Xcode project directories. Supported stacks: Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java.
 2. Shows detected values pre-filled in every prompt - you confirm or override.
 3. Counts your source files to suggest an appropriate tier.
@@ -253,25 +260,28 @@ The pipeline is the sequence of phases Claude follows for every development task
 **Use for**: teams exploring Claude Code for the first time. No pipeline knowledge required.
 **What it provides**: one constraint (tests must pass) and project context (CLAUDE.md). Nothing else.
 
-| File | Purpose |
-|---|---|
-| `CLAUDE.md` | Project context: stack, commands, conventions. Claude reads this every session. |
-| `.claude/settings.json` | Stop hook: tests must pass before Claude declares a task complete. |
-| `GETTING_STARTED.md` | Step-by-step guide for the first session. |
+| File                    | Purpose                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `CLAUDE.md`             | Project context: stack, commands, conventions. Claude reads this every session. |
+| `.claude/settings.json` | Stop hook: tests must pass before Claude declares a task complete.              |
+| `GETTING_STARTED.md`    | Step-by-step guide for the first session.                                       |
 
 **The Stop hook is the only governance control in Tier 0** - and it's the most important one.
 
 **After running init (Tier 0):**
+
 1. Edit `CLAUDE.md` - fill in the project description and verify the commands.
 2. Read `GETTING_STARTED.md` for what to expect.
 3. Run `claude` from the project root.
 
 **Upgrading from Tier 0:**
+
 ```bash
 npx mg-claude-dev-kit upgrade --tier=s   # adds branch discipline + commit rules
 npx mg-claude-dev-kit upgrade --tier=m   # adds phased pipeline + review gates + docs
 npx mg-claude-dev-kit upgrade --tier=l   # adds full governance + audit skills
 ```
+
 Upgrade is non-destructive - it adds new files without overwriting your existing `CLAUDE.md` or `settings.json`.
 
 ---
@@ -282,13 +292,13 @@ Upgrade is non-destructive - it adds new files without overwriting your existing
 **Branch prefix**: `fix/description` - Claude detects this and switches to Fast Lane automatically.
 **Scaffolded files**: minimal set - no informational docs (files-guide, adr-template, pipeline-standards, claudemd-standards are excluded for Tier S).
 
-| Phase | Action |
-|---|---|
-| FL-0 | Check `.claude/session/` for interrupted fix. Create session file. Confirm `fix/*` branch. **Escalation check**: if the fix touches a shared utility with >5 import consumers, escalate to Tier M. |
-| FL-1 | **Compact scope confirm** (one list of files + changes, wait for execution keyword). Implement. Run type check + tests. Commit. |
-| FL-2 | Merge to staging. Wait for deploy. Verify in 1-3 steps. |
-| FL-3 | Merge to main. Verify production deploy. One-line summary: `fix complete - description . type check . tests N/N` |
-| FL-4 | Update checklist if fix closes a tracked item. Delete session file (only after fix confirmed in production). |
+| Phase | Action                                                                                                                                                                                             |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FL-0  | Check `.claude/session/` for interrupted fix. Create session file. Confirm `fix/*` branch. **Escalation check**: if the fix touches a shared utility with >5 import consumers, escalate to Tier M. |
+| FL-1  | **Compact scope confirm** (one list of files + changes, wait for execution keyword). Implement. Run type check + tests. Commit.                                                                    |
+| FL-2  | Merge to staging. Wait for deploy. Verify in 1-3 steps.                                                                                                                                            |
+| FL-3  | Merge to main. Verify production deploy. One-line summary: `fix complete - description . type check . tests N/N`                                                                                   |
+| FL-4  | Update checklist if fix closes a tracked item. Delete session file (only after fix confirmed in production).                                                                                       |
 
 **One lightweight gate** in FL-1 (compact scope confirm). Claude proceeds autonomously after execution keyword.
 
@@ -301,23 +311,24 @@ Upgrade is non-destructive - it adds new files without overwriting your existing
 **Use for**: feature blocks, 1-2 week changes, <=15 files, no complex domain changes.
 **Branch prefix**: `feature/block-name`.
 
-| Phase | Action | Gate |
-|---|---|---|
-| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
-| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (`/dependency-scan`) + spec doc if Mode A. | STOP |
-| 1.5 | Design review - data flow, trade-offs, discarded alternatives. *(skip for <=3 files, no migrations)* | STOP |
-| 2 | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files. | - |
-| 3 | Type check + build + tests. Intermediate commit. | - |
-| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state). *(if routes were added/modified)* | - |
-| 4 | **UAT / E2E tests** (Playwright/Cypress). *(only if E2E command configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | - |
-| 5b | Test data setup - insert representative records for all relevant states. | - |
-| 5c | Staging deploy + smoke test (both themes if UI changes). | - |
-| 5d | **Block-scoped quality audit** - Track A (UI) and Track B (API/DB). Severity: Critical fix before Phase 6; Major flag in checklist; Minor to backlog. | - |
-| 6 | Outcome checklist with actual results. | STOP |
-| 8 | Block closure: session file delete (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main. | - |
-| 8.5 | Context review C1-C12 (all run in main session). Mandatory closing message. `/compact`. | - |
+| Phase | Action                                                                                                                                                | Gate |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 0     | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume). Read CLAUDE.local.md. Read MEMORY.md. Branch check.                       | -    |
+| 1     | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2) + dependency scan (`/dependency-scan`) + spec doc if Mode A.         | STOP |
+| 1.5   | Design review - data flow, trade-offs, discarded alternatives. _(skip for <=3 files, no migrations)_                                                  | STOP |
+| 2     | Implementation. Security checklist (5 checks) before commit. `/simplify` on changed files.                                                            | -    |
+| 3     | Type check + build + tests. Intermediate commit.                                                                                                      | -    |
+| 3b    | API integration tests (auth 401, authz 403, validation 400, business rules, DB state). _(if routes were added/modified)_                              | -    |
+| 4     | **UAT / E2E tests** (Playwright/Cypress). _(only if E2E command configured AND scope gate confirmed UI flows + user defined UAT scenarios)_           | -    |
+| 5b    | Test data setup - insert representative records for all relevant states.                                                                              | -    |
+| 5c    | Staging deploy + smoke test (both themes if UI changes).                                                                                              | -    |
+| 5d    | **Block-scoped quality audit** - Track A (UI) and Track B (API/DB). Severity: Critical fix before Phase 6; Major flag in checklist; Minor to backlog. | -    |
+| 6     | Outcome checklist with actual results.                                                                                                                | STOP |
+| 8     | Block closure: session file delete (with ambiguity check), docs, 3-commit sequence (code/docs/context), promote to main.                              | -    |
+| 8.5   | Context review C1-C12 (all run in main session). Mandatory closing message. `/compact`.                                                               | -    |
 
 **After running init (Tier M):**
+
 1. Read `.claude/FIRST_SESSION.md` - your team's guide to the first block cycle.
 2. Fill in `CLAUDE.md` placeholders and `docs/requirements.md` with planned blocks.
 3. Run `claude` from the project root. Claude orients itself in Phase 0 automatically.
@@ -332,6 +343,7 @@ Claude auto-selects the working mode based on block signals and declares it with
 - **Mode B - Scope-confirm** (auto-selected when all signals are absent: Tier 1 sweep, refactor, bug fix, isolated change with bounded scope): structured sweep, then proceed.
 
 **Scope sweep** (both modes): Claude auto-selects Tier 1 or Tier 2:
+
 - **Tier 1 - Standard Sweep** (<=5 files, single entity, no migration, no new pattern): 8 dimensions (roles, data, triggers, errors, UI states, integrations, reversibility, exclusions).
 - **Tier 2 - Deep Sweep** (>5 files, new entity, migration, multi-role): Tier 1 + states, conditions, pre-mortem.
 - Claude declares: "does this block include critical UI flows?" If yes and E2E is configured, you list the UAT scenarios (1-5 numbered user journeys). Claude tests exactly those - no invented scenarios.
@@ -345,27 +357,28 @@ Claude auto-selects the working mode based on block signals and declares it with
 
 > **Current status**: Tier L is in maintenance mode. It remains functional and tested, but no new features are being added to Tier L exclusively. New capabilities are developed for Tier M first and promoted to L when there is real adoption signal.
 
-| Phase | Action | Gate |
-|---|---|---|
-| 0 | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check. | - |
-| 1 | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (`/dependency-scan`) + spec doc if Mode A. | STOP |
-| 1.5 | Design review - data flow, data structures, discarded alternatives. *(skip for <=3 files)* | STOP |
-| 1.6 | Visual & UX design. ASCII wireframe + component map + UX rationale. *(UI blocks only)* | STOP |
-| Plan lock | EnterPlanMode -> user enables auto-accept -> ExitPlanMode -> `/compact` | - |
-| 2 | Implementation. Destructive migration rollback comments. Security checklist (5 checks). `/simplify`. | - |
-| 3 | Type check + build + unit tests. Intermediate commit. | - |
-| 3b | API integration tests (auth 401, authz 403, validation 400, business rules, DB state, cleanup). | - |
-| 4 | **UAT / E2E tests** *(only if E2E command configured AND scope gate confirmed UI flows + user defined UAT scenarios)* | - |
-| 5b | Test data setup - cleanup-first, all relevant states. | - |
-| 5c | Staging deploy + smoke test (all roles, both themes if UI). | - |
-| 5d | **Block-scoped quality audit** - Track A (UI) and Track B (API/DB) with full skill suite. | - |
-| 6 | Outcome checklist: build/test + design system compliance + features + audit results. | STOP |
-| 8 | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main. | - |
-| 8.5 | C1-C3 via `/context-review`. C4-C12 in main session. **Mandatory closing message**. `/compact`. | - |
+| Phase     | Action                                                                                                                                                  | Gate |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 0         | Session orientation. CONTEXT_IMPORT.md check. Session file (create/resume, rename in Phase 1). Read CLAUDE.local.md. Read MEMORY.md. Branch check.      | -    |
+| 1         | **Mode selection** (Spec-first A or Scope-confirm B) + scope sweep (Tier 1 or 2 EARS) + full dependency scan (`/dependency-scan`) + spec doc if Mode A. | STOP |
+| 1.5       | Design review - data flow, data structures, discarded alternatives. _(skip for <=3 files)_                                                              | STOP |
+| 1.6       | Visual & UX design. ASCII wireframe + component map + UX rationale. _(UI blocks only)_                                                                  | STOP |
+| Plan lock | EnterPlanMode -> user enables auto-accept -> ExitPlanMode -> `/compact`                                                                                 | -    |
+| 2         | Implementation. Destructive migration rollback comments. Security checklist (5 checks). `/simplify`.                                                    | -    |
+| 3         | Type check + build + unit tests. Intermediate commit.                                                                                                   | -    |
+| 3b        | API integration tests (auth 401, authz 403, validation 400, business rules, DB state, cleanup).                                                         | -    |
+| 4         | **UAT / E2E tests** _(only if E2E command configured AND scope gate confirmed UI flows + user defined UAT scenarios)_                                   | -    |
+| 5b        | Test data setup - cleanup-first, all relevant states.                                                                                                   | -    |
+| 5c        | Staging deploy + smoke test (all roles, both themes if UI).                                                                                             | -    |
+| 5d        | **Block-scoped quality audit** - Track A (UI) and Track B (API/DB) with full skill suite.                                                               | -    |
+| 6         | Outcome checklist: build/test + design system compliance + features + audit results.                                                                    | STOP |
+| 8         | Block closure: session file (ambiguity check), docs, ADR, 3-commit sequence (code/docs/context), main.                                                  | -    |
+| 8.5       | C1-C3 via `/context-review`. C4-C12 in main session. **Mandatory closing message**. `/compact`.                                                         | -    |
 
 **Four STOP gates** (Phases 1, 1.5, 1.6, 6). Plan-lock before Phase 2 locks the full approved plan before code is written.
 
 **Structural Requirements Changes (R1-R4)** - separate pipeline activated when stakeholders change functional scope on already-implemented blocks:
+
 - **R1**: update requirements section by section, STOP for approval
 - **R2**: impact analysis - which blocks, which files, which tests
 - **R3**: update checklist + backlog, STOP before touching code
@@ -403,6 +416,7 @@ This copies the SKILL.md file into `.claude/skills/<name>/` and appends it to th
 Available skills (16): `arch-audit`, `security-audit`, `perf-audit`, `skill-dev`, `skill-review`, `simplify`, `commit`, `api-design`, `skill-db`, `migration-audit`, `visual-audit`, `ux-audit`, `responsive-audit`, `ui-audit`, `accessibility-audit`, `test-audit`.
 
 Options:
+
 - `--force` - overwrite if the skill already exists
 - `--dry-run` - show what would be created without writing files
 
@@ -419,12 +433,12 @@ Available rules: `git`, `output-style`, `security`.
 
 The security rule supports stack-specific variants via `--stack`:
 
-| Stack flag | Security variant installed |
-|---|---|
-| *(none)* | Web (default) |
-| `swift` | Native Apple |
-| `kotlin` | Native Android |
-| `rust`, `go`, `dotnet`, `java` | Systems |
+| Stack flag                     | Security variant installed |
+| ------------------------------ | -------------------------- |
+| _(none)_                       | Web (default)              |
+| `swift`                        | Native Apple               |
+| `kotlin`                       | Native Android             |
+| `rust`, `go`, `dotnet`, `java` | Systems                    |
 
 Options: `--force`, `--dry-run` (same as `add skill`).
 
@@ -443,6 +457,7 @@ Interactive wizard that generates a complete custom skill:
 The generated skill uses the `custom-` naming convention, which protects it from being overwritten during `upgrade` or `init` operations.
 
 Options:
+
 - `--name <name>` - skip the name prompt (auto-prepends `custom-` if missing)
 - `--dry-run` - preview what would be created
 - `--answers <json>` - bypass all prompts with JSON (for automation)
@@ -537,6 +552,7 @@ Scaffolded by the CLI for Tier M and Tier L. A practical guide to the first bloc
 The primary project context file. Claude reads it at the start of every session.
 
 **Auto-populated fields** (filled by the scaffold from wizard/detection data):
+
 - **Project name** - from wizard input
 - **Tech Stack Summary** - from detected stack (e.g. "Node.js + TypeScript", "Swift / macOS")
 - **Framework** - auto-detected from dependencies. Shows "N/A - native app" for Swift/Kotlin/Rust/.NET/Java.
@@ -544,6 +560,7 @@ The primary project context file. Claude reads it at the start of every session.
 - **Key Commands** - from wizard input or native defaults (e.g. `xcodebuild test` for Swift)
 
 **What to fill in manually:**
+
 - Project overview (2-4 sentences)
 - Database, Auth, Storage, Email, Deploy fields
 - Folder conventions and naming conventions
@@ -559,6 +576,7 @@ The primary project context file. Claude reads it at the start of every session.
 Shared lessons and active project state. Updated at the end of every block.
 
 **Sections:**
+
 - **Active plan** - block-by-block status table. Updated every block.
 - **Key technical patterns** - non-obvious decisions worth preserving across sessions.
 - **Lessons** - things that went wrong and how to avoid them.
@@ -571,30 +589,30 @@ Shared lessons and active project state. Updated at the end of every block.
 
 Permissions and hooks. Five hooks are pre-configured in Tier M/L (three in Tier S):
 
-| Hook | Event | Tier | What it does |
-|---|---|---|---|
-| Test gate | `Stop` | S M L | Runs test command. If tests fail, Claude is blocked and must fix before declaring done. |
-| Audit log | `PostToolUse` | M L | Appends every Write/Edit/Bash call to `~/.claude/audit/[project].jsonl`. |
-| Session log | `SessionStart` | S M L | Logs session start to `~/.claude/audit/sessions.log`. |
-| Arch-audit reminder | `SessionStart` | S M L | If `/arch-audit` hasn't run in 7 days, prints a reminder at session open. |
-| Instructions debug log | `InstructionsLoaded` | M L | Appends loaded context payload to `/tmp/claude-instructions-YYYYMMDD.log`. |
-| CLAUDE.local.md reminder | `PostCompact` | M L | Reminds Claude to re-read `.claude/CLAUDE.local.md` after `/compact`. |
-| Destructive command block | `PreToolUse` | L | Blocks `rm -rf /`, `DROP DATABASE`, and similar patterns. |
-| LLM security review | `Stop` | L | Haiku checks for hardcoded secrets and missing auth at session close. |
+| Hook                      | Event                | Tier  | What it does                                                                            |
+| ------------------------- | -------------------- | ----- | --------------------------------------------------------------------------------------- |
+| Test gate                 | `Stop`               | S M L | Runs test command. If tests fail, Claude is blocked and must fix before declaring done. |
+| Audit log                 | `PostToolUse`        | M L   | Appends every Write/Edit/Bash call to `~/.claude/audit/[project].jsonl`.                |
+| Session log               | `SessionStart`       | S M L | Logs session start to `~/.claude/audit/sessions.log`.                                   |
+| Arch-audit reminder       | `SessionStart`       | S M L | If `/arch-audit` hasn't run in 7 days, prints a reminder at session open.               |
+| Instructions debug log    | `InstructionsLoaded` | M L   | Appends loaded context payload to `/tmp/claude-instructions-YYYYMMDD.log`.              |
+| CLAUDE.local.md reminder  | `PostCompact`        | M L   | Reminds Claude to re-read `.claude/CLAUDE.local.md` after `/compact`.                   |
+| Destructive command block | `PreToolUse`         | L     | Blocks `rm -rf /`, `DROP DATABASE`, and similar patterns.                               |
+| LLM security review       | `Stop`               | L     | Haiku checks for hardcoded secrets and missing auth at session close.                   |
 
 **Stack-aware permissions**: `permissions.allow` is set to stack-appropriate CLI tools at scaffold time. `permissions.deny` includes base protections (force push, `rm -rf /`, `DROP TABLE`, `TRUNCATE`) plus stack-specific release/publish commands:
 
-| Stack | Allow | Deny (additions) |
-|---|---|---|
-| Node.js (default) | git, node, npm, npx, curl | - |
-| Swift | git, swift, xcodebuild, xcrun, curl | xcodebuild archive, xcrun altool --upload-app |
-| Kotlin | git, gradlew, gradle, curl | gradlew publish |
-| Rust | git, cargo, rustc, curl | cargo publish |
-| .NET | git, dotnet, curl | dotnet nuget push |
-| Java | git, mvn, gradlew, gradle, curl | mvn deploy, gradlew publish |
-| Ruby | git, bundle, rails, rake, curl | gem push |
-| Python | git, python, pip, uv, curl | twine upload |
-| Go | git, go, curl | - |
+| Stack             | Allow                               | Deny (additions)                              |
+| ----------------- | ----------------------------------- | --------------------------------------------- |
+| Node.js (default) | git, node, npm, npx, curl           | -                                             |
+| Swift             | git, swift, xcodebuild, xcrun, curl | xcodebuild archive, xcrun altool --upload-app |
+| Kotlin            | git, gradlew, gradle, curl          | gradlew publish                               |
+| Rust              | git, cargo, rustc, curl             | cargo publish                                 |
+| .NET              | git, dotnet, curl                   | dotnet nuget push                             |
+| Java              | git, mvn, gradlew, gradle, curl     | mvn deploy, gradlew publish                   |
+| Ruby              | git, bundle, rails, rake, curl      | gem push                                      |
+| Python            | git, python, pip, uv, curl          | twine upload                                  |
+| Go                | git, go, curl                       | -                                             |
 
 ---
 
@@ -603,6 +621,7 @@ Permissions and hooks. Five hooks are pre-configured in Tier M/L (three in Tier 
 The development workflow Claude follows. Tier-appropriate content is scaffolded at init time.
 
 You can add project-specific overrides at the bottom of this file:
+
 ```markdown
 ## Project-specific rules
 
@@ -616,12 +635,12 @@ You can add project-specific overrides at the bottom of this file:
 
 Stack-aware security rules. The scaffold selects the appropriate variant based on your tech stack:
 
-| Variant | Stacks | Focus areas |
-|---|---|---|
-| **Web** (default) | Node.js, Python, Ruby, Go/Java/.NET with API | Auth checks, input validation, SQL injection, RLS/ACL, API response security, HTTP headers |
-| **Native Apple** | Swift | App Sandbox entitlements, Keychain access, TCC permissions, Data Protection, code signing |
-| **Native Android** | Kotlin | Manifest permissions, Android Keystore, EncryptedSharedPreferences, network security config, ProGuard |
-| **Systems** | Rust, Go, .NET, Java (without API) | Memory safety, process execution, file permissions, input validation at system boundaries |
+| Variant            | Stacks                                       | Focus areas                                                                                           |
+| ------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Web** (default)  | Node.js, Python, Ruby, Go/Java/.NET with API | Auth checks, input validation, SQL injection, RLS/ACL, API response security, HTTP headers            |
+| **Native Apple**   | Swift                                        | App Sandbox entitlements, Keychain access, TCC permissions, Data Protection, code signing             |
+| **Native Android** | Kotlin                                       | Manifest permissions, Android Keystore, EncryptedSharedPreferences, network security config, ProGuard |
+| **Systems**        | Rust, Go, .NET, Java (without API)           | Memory safety, process execution, file permissions, input validation at system boundaries             |
 
 Selection logic: Swift always gets native-apple, Kotlin always gets native-android. Rust/Go/.NET/Java get the systems variant when `hasApi=false`, otherwise the web variant. All other stacks get the web variant. The output file is always named `security.md` regardless of variant.
 
@@ -645,20 +664,20 @@ Communication rules for Claude in this project. No sycophantic openers, no AI di
 
 End-of-block compliance checklist. Executed in Phase 8.5. Contains 12 checks (C1-C12), each with an explicit grep command, pass condition, and false-positive notes:
 
-| Check | What it verifies |
-|---|---|
-| C1 | No credentials or tokens in auto-memory |
-| C2 | No unresolved `[PLACEHOLDER_NAME]` patterns in active files |
-| C3 | No stale field/config key names in CLAUDE.md |
-| C4 | No forward-looking references to closed blocks |
-| C5 | Every `MEMORY.md` mention in pipeline.md qualified |
-| C6 | No duplication between auto-memory and CLAUDE.md |
-| C7 | Both MEMORY files < 150 lines |
-| C8 | All paths in files-guide.md exist on disk |
-| C9 | Active plan in project-root MEMORY.md is current |
-| C10 | No dead file references in cross-doc paths |
-| C11 | No completed items remain in refactoring-backlog.md |
-| C12 | Canonical docs current (sitemap, db-map, PRD) |
+| Check | What it verifies                                            |
+| ----- | ----------------------------------------------------------- |
+| C1    | No credentials or tokens in auto-memory                     |
+| C2    | No unresolved `[PLACEHOLDER_NAME]` patterns in active files |
+| C3    | No stale field/config key names in CLAUDE.md                |
+| C4    | No forward-looking references to closed blocks              |
+| C5    | Every `MEMORY.md` mention in pipeline.md qualified          |
+| C6    | No duplication between auto-memory and CLAUDE.md            |
+| C7    | Both MEMORY files < 150 lines                               |
+| C8    | All paths in files-guide.md exist on disk                   |
+| C9    | Active plan in project-root MEMORY.md is current            |
+| C10   | No dead file references in cross-doc paths                  |
+| C11   | No completed items remain in refactoring-backlog.md         |
+| C12   | Canonical docs current (sitemap, db-map, PRD)               |
 
 **In Tier L**: C1-C3 are delegated to `/context-review` (grep-only, forked context). C4-C12 run in the main session.
 **In Tier M**: all 12 checks run in the main session.
@@ -699,24 +718,24 @@ All skill applicability rules are managed by a central skill registry (`packages
 
 ### Tier availability and install conditions
 
-| Command | S | M | L | Install condition | Requires |
-|---|---|---|---|---|---|
-| `/arch-audit` | x | x | x | always | Internet access (fetches Anthropic docs) |
-| `/commit` | x | x | x | always | - |
-| `/security-audit` | x | x | x | always | - |
-| `/perf-audit` | x | x | x | always | - |
-| `/skill-dev` | x | x | x | always | - |
-| `/simplify` | x | x | x | always | - |
-| `/api-design` | - | x | x | `hasApi=true` | - |
-| `/skill-db` | - | x | x | `hasDatabase=true` | - |
-| `/migration-audit` | - | x | x | `hasDatabase=true` | - |
-| `/responsive-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/ux-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/visual-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP |
-| `/ui-audit` | - | x | x | `hasFrontend=true` AND `hasDesignSystem=true` | - (static) |
-| `/accessibility-audit` | - | x | x | `hasFrontend=true` | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
-| `/test-audit` | - | x | x | always (no `requires`) | - (static analysis) |
-| `/skill-review` | - | x | x | always | - (static analysis) |
+| Command                | S   | M   | L   | Install condition                             | Requires                                                                     |
+| ---------------------- | --- | --- | --- | --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `/arch-audit`          | x   | x   | x   | always                                        | Internet access (fetches Anthropic docs)                                     |
+| `/commit`              | x   | x   | x   | always                                        | -                                                                            |
+| `/security-audit`      | x   | x   | x   | always                                        | -                                                                            |
+| `/perf-audit`          | x   | x   | x   | always                                        | -                                                                            |
+| `/skill-dev`           | x   | x   | x   | always                                        | -                                                                            |
+| `/simplify`            | x   | x   | x   | always                                        | -                                                                            |
+| `/api-design`          | -   | x   | x   | `hasApi=true`                                 | -                                                                            |
+| `/skill-db`            | -   | x   | x   | `hasDatabase=true`                            | -                                                                            |
+| `/migration-audit`     | -   | x   | x   | `hasDatabase=true`                            | -                                                                            |
+| `/responsive-audit`    | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP                                                  |
+| `/ux-audit`            | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP                                                  |
+| `/visual-audit`        | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP                                                  |
+| `/ui-audit`            | -   | x   | x   | `hasFrontend=true` AND `hasDesignSystem=true` | - (static)                                                                   |
+| `/accessibility-audit` | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
+| `/test-audit`          | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
+| `/skill-review`        | -   | x   | x   | always                                        | - (static analysis)                                                          |
 
 ### General rules
 
@@ -742,15 +761,16 @@ After the smoke test and before the outcome checklist, three tracks can run:
 
 ### Severity handling
 
-| Level | Action |
-|---|---|
+| Level    | Action                                                                 |
+| -------- | ---------------------------------------------------------------------- |
 | Critical | Fix before Phase 6. Claude does not proceed with open Critical issues. |
-| Major | Flag in Phase 6 checklist with planned resolution. |
-| Minor | Log in `docs/refactoring-backlog.md`. |
+| Major    | Flag in Phase 6 checklist with planned resolution.                     |
+| Minor    | Log in `docs/refactoring-backlog.md`.                                  |
 
 ### Playwright MCP prerequisite (for browser skills)
 
 Add to `.claude/settings.json`:
+
 ```json
 "mcpServers": {
   "playwright": {
@@ -767,6 +787,7 @@ Add to `.claude/settings.json`:
 **File**: `.claude/skills/security-audit/SKILL.md` | **Backlog prefix**: `SEC-n`
 
 **3-path selector**: before starting, the skill reads CLAUDE.md and determines the execution mode:
+
 - **WEB**: web or API project - full web audit (Steps 0-5) + Step 3e if non-JS stack
 - **WEB+NATIVE**: native app with API routes - full web audit + Step 3e native checks
 - **NATIVE-ONLY**: native app with no API routes - skips Steps 0-5, runs Step 3e (NS1-NS6 platform checks) + Step 6
@@ -848,6 +869,7 @@ Unified accessibility surface. Three modes: `static` (A1-A8 grep-based patterns:
 Static test-suite quality audit. No live re-runs, no CI-history parsing - parses coverage reports already produced by the project's test runner. Stack-aware across all 11 supported stacks.
 
 Checks:
+
 - **Coverage (C1-C3)**: auto-detects and parses lcov.info (node-ts/node-js/rust), Istanbul JSON (coverage-summary.json/coverage-final.json), Cobertura XML (python/java/dotnet), go coverage.out, tarpaulin JSON, xcresult (swift, optional). Severity: `< 50%` = High, `< 80%` = Medium, `0% on a file changed in this block` = Critical.
 - **Pyramid (P1-P3)**: categorizes discovered tests as unit / integration / e2e by path convention and framework imports (`@playwright/test`, `cypress`, `detox`, `selenium`). Target ~70/20/10. Flags inverted (e2e > 30%), middle-heavy (integration > 50%), and single-layer suites.
 - **Anti-patterns (T1-T8, all stack-adapted)**: T1 `.only`/`fit`/`fdescribe` committed (Critical), T2 skipped tests (Medium; High if > 10% of suite), T3 `.todo` placeholders (Low), T4 empty test bodies (High), T5 tests without assertions (High), T6 hardcoded sleeps ≥ 500ms (Medium), T7 debug output left in tests (Low), T8 multi-file `.only` pattern (Critical).
@@ -900,12 +922,12 @@ Handles checks C1-C3 of the context review (credential scan, placeholder scan, f
 
 ### What stays monolithic
 
-| Phase | Reason |
-|---|---|
+| Phase                    | Reason                                                                  |
+| ------------------------ | ----------------------------------------------------------------------- |
 | Phase 2 - Implementation | Writes have cross-file dependencies; sequential authorship is auditable |
-| Phase 3 - Build + tests | Sequential toolchain constraint (type check -> build -> test) |
-| Phase 8 - Block closure | Document updates have content dependencies between them |
-| Phase 8.5 C4-C12 | Require judgment about the current block's state |
+| Phase 3 - Build + tests  | Sequential toolchain constraint (type check -> build -> test)           |
+| Phase 8 - Block closure  | Document updates have content dependencies between them                 |
+| Phase 8.5 C4-C12         | Require judgment about the current block's state                        |
 
 ---
 
@@ -932,6 +954,7 @@ Every skill file has YAML frontmatter and a markdown body with step-by-step inst
 **Optional fields**: `effort` (low/medium/high), `argument-hint` (parameter syntax), `allowed-tools` (MCP tools the skill needs).
 
 **Model selection**:
+
 - **haiku**: Pattern-matching, classification, grep-based checks, commit messages. Fast, cheap.
 - **sonnet**: Analysis requiring judgment, multi-file reasoning, security audits, design reviews.
 - **opus**: Visual analysis (screenshots, UI review), complex architectural reasoning.
@@ -950,6 +973,7 @@ context: fork
 ## Step 1 - Check outdated packages
 
 Run the appropriate command for the project's package manager:
+
 - npm: `npm outdated --json`
 - pip: `pip list --outdated --format=json`
 
@@ -958,8 +982,8 @@ Run the appropriate command for the project's package manager:
 List packages with major version bumps:
 
 | Package | Current | Latest | Breaking? |
-|---|---|---|---|
-| name | x.y.z | a.b.c | yes/no |
+| ------- | ------- | ------ | --------- |
+| name    | x.y.z   | a.b.c  | yes/no    |
 ```
 
 After creating a custom skill, add it to the `## Active Skills` section in CLAUDE.md. See [Custom Skills Guide](custom-skills.md) for the full authoring reference.
@@ -1027,17 +1051,20 @@ If gitleaks finds a secret: the commit is blocked. Fix by removing the secret an
 These apply in all tiers:
 
 **Branch discipline**
+
 - Never commit directly to `main` or `staging`
 - Features: `feature/block-name`
 - Fixes: `fix/description`
 
 **Conventional commits**
+
 ```
 feat(scope): add user notifications
 fix(auth): handle expired token on refresh
 docs: update API guide
 chore: bump dependencies
 ```
+
 Imperative mood, under 72 characters. Scope is optional but encouraged.
 
 **STOP gates are hard stops** - not suggestions. Never say "yes continue" to a requirements summary you haven't read. The gate exists for a human decision checkpoint.
@@ -1073,7 +1100,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 19 checks:
+Runs 26 checks:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1091,11 +1118,18 @@ Runs 19 checks:
 14. `docs/pipeline-standards.md` present (Tier M/L - warn if missing)
 15. `.claude/skills/commit/` present (Tier M/L - warn if missing)
 16. Skills invoking Playwright `browser_*` tools declare `allowed-tools` frontmatter (warn if missing)
-17. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
-18. Stop hook has `timeout` configured and ≤ 600s (warn if missing - prevents hanging test commands)
-19. No duplicate entries in `permissions.deny` list (warn if duplicates found)
+17. Skills use space-separated `allowed-tools` per Anthropic spec (warn on commas)
+18. Skill bodies respect Anthropic ≤ 500 lines guideline (warn if oversized)
+19. `.claude/settings.json` has no unfilled `[UPPERCASE]` placeholders (warn)
+20. CLAUDE.md Key Commands include the Stop hook test command (warn on drift)
+21. CLAUDE.md `## Active Skills` matches `.claude/skills/` directories (warn on mismatch)
+22. `pipeline.md` H1 matches its phase structure — Tier S/M/L self-consistency (warn)
+23. `security.md` variant matches the detected stack (warn on drift)
+24. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
+25. Stop hook has `timeout` configured and ≤ 600s (warn if missing - prevents hanging test commands)
+26. No duplicate entries in `permissions.deny` list (warn if duplicates found)
 
-Checks 12-19 are skipped for Tier 0 projects.
+Checks 12-26 are skipped for Tier 0 projects.
 
 **`--report` output**: machine-readable JSON with timestamp, cwd, summary (passed/warned/failed/skipped), and per-check details. Consumed by CI systems or external audit tools.
 
@@ -1114,13 +1148,13 @@ Do not edit scaffolded rule files directly if you want upgrade compatibility. In
 
 ### CLAUDE.md vs. MEMORY.md vs. ADRs
 
-| Content | Location |
-|---|---|
-| Stable project truths (stack, conventions, RBAC) | `CLAUDE.md` |
-| Active work state, in-progress lessons, recent patterns | `MEMORY.md` |
-| Architectural decisions + rationale + AI constraints | `docs/adr/NNNN-title.md` |
-| Non-obvious patterns stable enough to be permanent | `CLAUDE.md` Known Patterns section |
-| Block-specific state for session recovery | `.claude/session/block-name.md` |
+| Content                                                 | Location                           |
+| ------------------------------------------------------- | ---------------------------------- |
+| Stable project truths (stack, conventions, RBAC)        | `CLAUDE.md`                        |
+| Active work state, in-progress lessons, recent patterns | `MEMORY.md`                        |
+| Architectural decisions + rationale + AI constraints    | `docs/adr/NNNN-title.md`           |
+| Non-obvious patterns stable enough to be permanent      | `CLAUDE.md` Known Patterns section |
+| Block-specific state for session recovery               | `.claude/session/block-name.md`    |
 
 ---
 
@@ -1187,9 +1221,11 @@ After Claude marks the status as `COMPLETE`, the file is a historical record. Yo
 **Q: How do I handle multiple worktrees (parallel feature development)?**
 
 Create each worktree from `staging`, never from `main`:
+
 ```bash
 git worktree add .claude/worktrees/feature-name -b worktree-feature-name staging
 ```
+
 Rules: each worktree has its own branch. Merge to `staging` sequentially - smoke-test the first before merging the second. Check migration numbering across worktrees.
 
 ---
@@ -1231,4 +1267,4 @@ Nine example fixtures are in `packages/cli/test/fixtures/wizard-answers/`. Copy 
 
 ---
 
-*Last updated: 2026-04-23 - v1.10.4*
+_Last updated: 2026-04-23 - v1.10.4_
