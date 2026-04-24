@@ -48,6 +48,7 @@ Run these on demand. Each skill reads the codebase, produces a structured report
 | `/ux-audit` | Task completion paths, feedback clarity, cognitive load, error recovery | After adding user flows; before usability reviews |
 | `/ui-audit` | Design system token compliance, component adoption, empty/error/loading states | After UI changes; when design system is configured |
 | `/test-audit` | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps) | After Phase 3 tests green; every block |
+| `/doc-audit` | Relative-link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, stack-specific doc sync (Next.js / Django / Swift) | After doc changes; every block that touches README or `docs/` |
 | `/simplify` | Early returns, nesting depth, local duplication, dead code, magic values | After writing code (Phase 2); on demand |
 | `/dependency-scan` | Route hrefs, import consumers, shared type consumers, test refs, FK refs, access control | Phase 1 mandatory; before finalizing file list |
 | `/skill-review` | Skill quality audit: structural review, severity calibration, fix verification | After modifying skills; quarterly review cycle |
