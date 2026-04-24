@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![828 integration checks](https://img.shields.io/badge/integration-828%20checks-blue.svg)](#testing)
+[![834 integration checks](https://img.shields.io/badge/integration-834%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -23,10 +23,10 @@ npx mg-claude-dev-kit init
 
 The wizard detects your project state and guides you through setup. Three paths available:
 
-| Path | Use when |
-|---|---|
-| **Existing project** | Add structure to a project that already has code |
-| **New project** | Starting from scratch |
+| Path                   | Use when                                                         |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Existing project**   | Add structure to a project that already has code                 |
+| **New project**        | Starting from scratch                                            |
 | **From existing docs** | Share repos or docs - Claude reads them and populates everything |
 
 After init, open Claude Code and start working. The scaffold is active immediately.
@@ -37,12 +37,12 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 ### Tiered pipelines matched to risk
 
-| Tier | Pipeline | Best for |
-|---|---|---|
-| **0 - Discovery** | Stop hook only | First exploration - zero process |
-| **S - Fast Lane** | 4 steps, scope-confirm | Single dev, low risk, quick fixes |
-| **M - Standard** | 8 phases, 2 STOP gates | Feature blocks, 1-2 collaborators |
-| **L - Full** | 14 phases, 4 STOP gates | Team projects, complex domain changes |
+| Tier              | Pipeline                | Best for                              |
+| ----------------- | ----------------------- | ------------------------------------- |
+| **0 - Discovery** | Stop hook only          | First exploration - zero process      |
+| **S - Fast Lane** | 4 steps, scope-confirm  | Single dev, low risk, quick fixes     |
+| **M - Standard**  | 8 phases, 2 STOP gates  | Feature blocks, 1-2 collaborators     |
+| **L - Full**      | 14 phases, 4 STOP gates | Team projects, complex domain changes |
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
@@ -50,24 +50,24 @@ Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit up
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
-| Skill | Tiers | Purpose |
-|---|---|---|
-| `/arch-audit` | S M L | Governance files vs Anthropic docs. Auto-fixes deprecations. |
-| `/security-audit` | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID. |
-| `/perf-audit` | S M L | Bundle size, serial awaits, query efficiency. 8-stack patterns. |
-| `/skill-dev` | S M L | Coupling, duplication, dead code, debt-density. |
-| `/simplify` | S M L | Early returns, nesting, dead code. Applies changes directly. |
-| `/commit` | S M L | Conventional Commits - auto-detects type, scope, description. |
-| `/api-design` | M L | URL naming, HTTP verbs, response envelope, pagination. |
-| `/skill-db` | M L | Schema normalization, indexes, N+1 queries, RLS. |
-| `/migration-audit` | M L | Stack-aware migration safety: data loss, rollback, lock-heavy DDL. Prisma/Drizzle/Supabase/SQL. |
-| `/visual-audit` | M L | Typography, spacing, hierarchy, dark-mode, micro-polish. |
-| `/ux-audit` | M L | ISO 9241-11, Nielsen heuristics, user confidence. |
-| `/responsive-audit` | M L | Layout at 320-1024px, tap targets, WCAG. |
-| `/ui-audit` | M L | Design token compliance, component adoption, empty states. |
-| `/accessibility-audit` | M L | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels). |
-| `/test-audit` | M L | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps). |
-| `/skill-review` | M L | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures. |
+| Skill                  | Tiers | Purpose                                                                                                                                 |
+| ---------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/arch-audit`          | S M L | Governance files vs Anthropic docs. Auto-fixes deprecations.                                                                            |
+| `/security-audit`      | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID.                                                                   |
+| `/perf-audit`          | S M L | Bundle size, serial awaits, query efficiency. 8-stack patterns.                                                                         |
+| `/skill-dev`           | S M L | Coupling, duplication, dead code, debt-density.                                                                                         |
+| `/simplify`            | S M L | Early returns, nesting, dead code. Applies changes directly.                                                                            |
+| `/commit`              | S M L | Conventional Commits - auto-detects type, scope, description.                                                                           |
+| `/api-design`          | M L   | URL naming, HTTP verbs, response envelope, pagination.                                                                                  |
+| `/skill-db`            | M L   | Schema normalization, indexes, N+1 queries, RLS.                                                                                        |
+| `/migration-audit`     | M L   | Stack-aware migration safety: data loss, rollback, lock-heavy DDL. Prisma/Drizzle/Supabase/SQL.                                         |
+| `/visual-audit`        | M L   | Typography, spacing, hierarchy, dark-mode, micro-polish.                                                                                |
+| `/ux-audit`            | M L   | ISO 9241-11, Nielsen heuristics, user confidence.                                                                                       |
+| `/responsive-audit`    | M L   | Layout at 320-1024px, tap targets, WCAG.                                                                                                |
+| `/ui-audit`            | M L   | Design token compliance, component adoption, empty states.                                                                              |
+| `/accessibility-audit` | M L   | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels).                                                          |
+| `/test-audit`          | M L   | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps). |
+| `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
 
@@ -133,6 +133,7 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Process controls
 
 **Stop hook** (every tier) - Claude cannot declare done until tests pass:
+
 ```json
 "Stop": [{ "hooks": [{ "type": "command",
   "command": "npm test || echo '{\"decision\": \"block\", \"reason\": \"Tests must pass.\"}'"
@@ -154,7 +155,7 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 828 integration checks
+node packages/cli/test/integration/run.js    # 834 integration checks
 node --test packages/cli/test/unit/*.test.js   # 270 unit tests
 ```
 
@@ -172,12 +173,12 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 ## Documentation
 
-| Document | Audience | Content |
-|---|---|---|
-| [Operational Guide](docs/operational-guide.md) | Teams adopting CDK | Full reference: installation, tiers, workflow, governance, FAQ |
-| [Custom Skills Guide](docs/custom-skills.md) | Developers extending CDK | SKILL.md format, frontmatter schema, authoring patterns |
-| [Product Brief](docs/product-brief.md) | Stakeholders | Strategic positioning, target users, scope |
-| [Quality Rubric](docs/workspace-quality-rubric.md) | Teams evaluating workspaces | 8-dimension scoring (D1-D8, 0-100%) |
+| Document                                           | Audience                    | Content                                                        |
+| -------------------------------------------------- | --------------------------- | -------------------------------------------------------------- |
+| [Operational Guide](docs/operational-guide.md)     | Teams adopting CDK          | Full reference: installation, tiers, workflow, governance, FAQ |
+| [Custom Skills Guide](docs/custom-skills.md)       | Developers extending CDK    | SKILL.md format, frontmatter schema, authoring patterns        |
+| [Product Brief](docs/product-brief.md)             | Stakeholders                | Strategic positioning, target users, scope                     |
+| [Quality Rubric](docs/workspace-quality-rubric.md) | Teams evaluating workspaces | 8-dimension scoring (D1-D8, 0-100%)                            |
 
 ---
 
@@ -185,9 +186,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.10.4 - post-audit Phase 1+2 consolidation: CLI `--version` drift resolved, doc references refreshed (test counts, wizard model ID, skill count), stack constants unified (NATIVE_STACKS / WEB_STACKS / STACK_COMMANDS), scaffold silent-catch hardened with console.warn, detect-stack smoke coverage + tier threshold extraction. 828 integration + 292 unit tests.
+**Current**: v1.11.0 ships Anthropic spec compliance. The `allowed-tools` frontmatter syntax is now space-separated across every scaffolded SKILL.md; the fix was surgical (only 2 files still used the comma form — under a spec-conformant parser it resolves to a YAML scalar with literal commas, silently dropping tool pre-authorisation). The `arch-audit` body drops from 508 to 360 lines across all three tiers: Step 3c, 3d, and H1 now live in a sibling `advanced-checks.md`. Two new `doctor` checks (`skill-md-size-budget`, `skill-allowed-tools-syntax`) plus a CDK-internal integration scenario guard against regression. A new shared helper, `skill-frontmatter.js`, consolidates frontmatter parsing. 834 integration + 302 unit tests.
 
-**Next**: Q2 skills (`/compliance-audit`, `/api-contract-audit`, `/infra-audit`) and `/doc-audit` to close Q1 skill block.
+**Next**: Q2 #3 public documentation site (VitePress, ICE 432) and the `/doc-audit` skill (ICE 320) to close the Q1 skill spillover.
 
 ---
 
