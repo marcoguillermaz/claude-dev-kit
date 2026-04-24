@@ -190,6 +190,7 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 - Run `/api-contract-audit` if the block modifies OpenAPI spec or API routes - checks contract drift, breaking changes, Richardson Maturity.
 - Run `/migration-audit` if the block applies migrations - static analysis of migration files.
 - Run `/skill-db` if the block changes the schema or adds new tables - live verification of schema state, access control policies, and query patterns.
+- Run `/compliance-audit` if the block touches PII fields, user-data endpoints, consent flow, or third-party SDK integration - GDPR profile (v1.14); SOC 2 / HIPAA scaffolded for v1.15+.
 
 **Track C - Test + doc + infra audit** *(runs for every block after Phase 3 is green - static analysis, no dev server needed)*
 - Run `/test-audit` - static analysis of coverage (auto-detects lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).

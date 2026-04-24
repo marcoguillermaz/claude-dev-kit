@@ -76,6 +76,7 @@ export const SKILL_REGISTRY = [
   { name: 'doc-audit', minTier: 'm', requires: {}, cheatsheet: true },
   { name: 'api-contract-audit', minTier: 'm', requires: { hasApi: true }, cheatsheet: true },
   { name: 'infra-audit', minTier: 'm', requires: {}, cheatsheet: true },
+  { name: 'compliance-audit', minTier: 'm', requires: {}, cheatsheet: true },
   { name: 'dependency-scan', minTier: 'm', requires: {}, cheatsheet: false },
   { name: 'context-review', minTier: 'l', requires: {}, cheatsheet: false },
   { name: 'skill-review', minTier: 'm', requires: {}, cheatsheet: false },
