@@ -31,7 +31,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - `new-skill.js:validateSkillMd` migrated from inline regex frontmatter parsing to the shared `parseSkillFile` helper. Removes duplicate regex parser drift risk; behaviour preserved (unit tests unchanged).
-- `docs/reviews/anthropic-spec-deviations.md` refreshed: §2.4 classification closed (MAJOR via triangulation of Anthropic docs + isolated YAML parser test), §2.5 table updated with real 2026-04-24 line counts (perf-audit already compliant), §8 v1.11.0 status block added, footer `Last reviewed: 2026-04-24`.
 - Integration test count: 828 → 834 (6 new checks from `scenarioSkillMdSpecCompliance`, 2 assertions × 3 tiers).
 - Unit test count: 292 → 302 (10 new cases for `skill-frontmatter` helper).
 
