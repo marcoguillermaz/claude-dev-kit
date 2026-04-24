@@ -11,6 +11,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.12.0] — 2026-04-24
+
+### Added
+
+- Five new `doctor` cross-file validation checks, all `warn:true` for user-facing scans (hard-fail only in CDK-internal integration tests):
+  - `settings-no-placeholders`: flags unfilled `[UPPERCASE_TOKEN]` placeholders in `.claude/settings.json`.
+  - `claudemd-stop-hook-test-cmd-match`: confirms the test command in the Stop hook appears in CLAUDE.md Key Commands. Handles both Tier S (`… && exit 0; CMD || echo`) and Tier M/L (`… && exit 0; cd $CLAUDE_PROJECT_DIR && CMD 2>&1 | tail`) hook shapes.
+  - `claudemd-skills-directory-parity`: set-diffs `## Active Skills` in CLAUDE.md against `.claude/skills/` directory listing. `custom-*` skills excluded.
+  - `pipeline-md-tier-coherence`: self-consistency check between the H1 of `pipeline.md` (Fast Lane / Tier M / Tier L) and the phase-section pattern (`FL-N` vs `Phase N` vs `Phase 1.6`).
+  - `security-md-stack-alignment`: detects stack markers in the cwd (`Package.swift`, `build.gradle`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `pyproject.toml`, `tsconfig.json`, `package.json`, `*.csproj`) and verifies `security.md` uses the expected variant (web / native-apple / native-android / systems) via H1 signature with content-marker fallback.
+- New shared helper `packages/cli/src/utils/doctor-cross-file.js` with 9 functions (`parseActiveSkills`, `parseStopHookTestCmd`, `claudeMdContainsCommand`, `hasPlaceholder`, `detectPipelineTier`, `detectPhaseCountTier`, `detectSecurityVariant`, `expectedSecurityVariant`, `detectStackSync`). Sync-only companion to the async `detect-stack.js`.
+- New unit test suite `test/unit/doctor-cross-file.test.js` — 30 cases covering the 9 helpers + edge cases (placeholder detection, YAML list vs scalar `allowed-tools` forms, H1 signature fallback).
+- New integration scenario `scenarioDoctorCrossFileValidation` in `test/integration/run.js`: scaffolds tier-s/m/l, injects stack markers, and exercises both the happy path (all 5 checks pass/skip) and five corruption cases (one per check) that verify the expected drift is detected.
+
+### Changed
+
+- `doctor` runs **26 checks** total (was 21 post-v1.11.0, documented as 19 in stale README/operational-guide). v1.12.0 closes both the legacy doc drift and adds the 5 new checks.
+- README check-count reference updated to `(26 checks)`.
+- `docs/operational-guide.md` §Runs N checks refreshed to enumerate all 26 with Tier-0 skip note updated to "Checks 12-26".
+- Integration test count: 834 → 864 (+30 from 6 assertions × 5 tier rows in `scenarioDoctorCrossFileValidation`).
+- Unit test count: 302 → 332 (+30 from `doctor-cross-file` helper cases).
+
+---
+
 ## [1.11.0] — 2026-04-24
 
 ### Fixed

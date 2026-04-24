@@ -12,6 +12,17 @@ import {
   countBodyLines,
   allowedToolsHasCommas,
 } from '../utils/skill-frontmatter.js';
+import {
+  parseActiveSkills,
+  parseStopHookTestCmd,
+  claudeMdContainsCommand,
+  hasPlaceholder,
+  detectPipelineTier,
+  detectPhaseCountTier,
+  detectSecurityVariant,
+  expectedSecurityVariant,
+  detectStackSync,
+} from '../utils/doctor-cross-file.js';
 
 const checks = [
   {
@@ -322,6 +333,151 @@ const checks = [
         warn: true,
         info: oversize.length > 0 ? oversize.join(', ') : undefined,
         fix: `Extract detailed sections into sibling reference files (progressive disclosure). Over budget: ${oversize.join(', ')}`,
+      };
+    },
+  },
+  {
+    id: 'settings-no-placeholders',
+    label: '.claude/settings.json has no unfilled placeholders',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      const raw = fs.readFileSync(p, 'utf8');
+      const pass = !hasPlaceholder(raw);
+      return {
+        pass,
+        warn: true,
+        info: pass ? undefined : 'placeholder tokens like [TEST_COMMAND] still present',
+        fix: 'Fill or remove [UPPERCASE_TOKEN] placeholders in .claude/settings.json before using the scaffold.',
+      };
+    },
+  },
+  {
+    id: 'claudemd-stop-hook-test-cmd-match',
+    label: 'CLAUDE.md Key Commands include the Stop hook test command',
+    check: (cwd) => {
+      const claudePath = path.join(cwd, 'CLAUDE.md');
+      const settingsPath = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(claudePath) || !fs.existsSync(settingsPath)) {
+        return { pass: true, skip: true };
+      }
+      let settings;
+      try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      } catch {
+        return { pass: true, skip: true };
+      }
+      const testCmd = parseStopHookTestCmd(settings);
+      if (!testCmd || hasPlaceholder(testCmd)) return { pass: true, skip: true };
+      const claudeMd = fs.readFileSync(claudePath, 'utf8');
+      const pass = claudeMdContainsCommand(claudeMd, testCmd);
+      return {
+        pass,
+        warn: true,
+        info: pass
+          ? undefined
+          : `Stop hook runs "${testCmd}" but CLAUDE.md Key Commands does not mention it`,
+        fix: `Align CLAUDE.md Key Commands with Stop hook: add "${testCmd}" or update the Stop hook to match.`,
+      };
+    },
+  },
+  {
+    id: 'claudemd-skills-directory-parity',
+    label: 'CLAUDE.md Active Skills matches .claude/skills/ directories',
+    check: (cwd) => {
+      const claudePath = path.join(cwd, 'CLAUDE.md');
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      if (!fs.existsSync(claudePath) || !fs.existsSync(skillsDir)) {
+        return { pass: true, skip: true };
+      }
+      const claudeMd = fs.readFileSync(claudePath, 'utf8');
+      const declared = new Set(parseActiveSkills(claudeMd));
+      if (declared.size === 0) return { pass: true, skip: true };
+      let installed;
+      try {
+        installed = new Set(
+          fs
+            .readdirSync(skillsDir, { withFileTypes: true })
+            .filter((e) => e.isDirectory() && !e.name.startsWith('custom-'))
+            .map((e) => e.name),
+        );
+      } catch {
+        return { pass: true, skip: true };
+      }
+      const declaredMissing = [...declared].filter((s) => !installed.has(s));
+      const installedNotDeclared = [...installed].filter((s) => !declared.has(s));
+      const pass = declaredMissing.length === 0 && installedNotDeclared.length === 0;
+      const problems = [];
+      if (declaredMissing.length)
+        problems.push(`declared but missing: ${declaredMissing.join(', ')}`);
+      if (installedNotDeclared.length)
+        problems.push(`installed but not declared: ${installedNotDeclared.join(', ')}`);
+      return {
+        pass,
+        warn: true,
+        info: pass ? undefined : problems.join(' · '),
+        fix: 'Align CLAUDE.md "## Active Skills" with the directories under .claude/skills/ (custom-* skills are exempt).',
+      };
+    },
+  },
+  {
+    id: 'pipeline-md-tier-coherence',
+    label: 'pipeline.md H1 matches its phase structure (Tier S/M/L self-consistency)',
+    check: (cwd) => {
+      const p = path.join(cwd, '.claude', 'rules', 'pipeline.md');
+      if (!fs.existsSync(p)) return { pass: true, skip: true };
+      const content = fs.readFileSync(p, 'utf8');
+      const declaredTier = detectPipelineTier(content);
+      if (declaredTier === 'unknown') {
+        return {
+          pass: false,
+          warn: true,
+          info: 'pipeline.md H1 does not declare a tier (Fast Lane / Tier M / Tier L)',
+          fix: 'Restore the canonical H1 from the CDK template (Fast Lane Pipeline, Standard Development Pipeline - Tier M, or Full Development Pipeline - Tier L).',
+        };
+      }
+      const bodyTier = detectPhaseCountTier(content);
+      const pass = bodyTier === 'unknown' || bodyTier === declaredTier;
+      return {
+        pass,
+        warn: true,
+        info: pass
+          ? undefined
+          : `H1 declares Tier ${declaredTier.toUpperCase()} but phase markers look like Tier ${bodyTier.toUpperCase()}`,
+        fix: 'Reconcile pipeline.md: H1 and phase sections must agree on tier. Reinstall via `claude-dev-kit upgrade --tier=<tier>` if in doubt.',
+      };
+    },
+  },
+  {
+    id: 'security-md-stack-alignment',
+    label: 'security.md variant matches the detected stack',
+    check: (cwd) => {
+      const securityPath = path.join(cwd, '.claude', 'rules', 'security.md');
+      if (!fs.existsSync(securityPath)) return { pass: true, skip: true };
+      const stack = detectStackSync(cwd);
+      if (!stack) return { pass: true, skip: true, info: 'stack not detectable in this directory' };
+      const securityMd = fs.readFileSync(securityPath, 'utf8');
+      const actual = detectSecurityVariant(securityMd);
+      if (actual === 'unknown') {
+        return {
+          pass: false,
+          warn: true,
+          info: 'security.md variant could not be identified (H1 and content markers absent)',
+          fix: 'Reinstall security.md via `claude-dev-kit upgrade` so the correct variant is written.',
+        };
+      }
+      const hasApi = fs.existsSync(path.join(cwd, 'CLAUDE.md'))
+        ? /^##\s*API/im.test(fs.readFileSync(path.join(cwd, 'CLAUDE.md'), 'utf8'))
+        : true;
+      const expected = expectedSecurityVariant(stack, hasApi);
+      const pass = actual === expected;
+      return {
+        pass,
+        warn: true,
+        info: pass
+          ? undefined
+          : `stack "${stack}" expects "${expected}" variant, found "${actual}"`,
+        fix: `Reinstall security.md for stack "${stack}" via \`claude-dev-kit upgrade\` — expected variant "${expected}".`,
       };
     },
   },
