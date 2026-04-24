@@ -2429,6 +2429,199 @@ async function scenarioSkillMdSpecCompliance() {
   }
 }
 
+async function scenarioDoctorCrossFileValidation() {
+  section('Doctor cross-file validation (v1.12.0 new checks)');
+
+  const CLI = path.resolve(__dirname, '../../src/index.js');
+  const NEW_CHECK_IDS = [
+    'settings-no-placeholders',
+    'claudemd-stop-hook-test-cmd-match',
+    'claudemd-skills-directory-parity',
+    'pipeline-md-tier-coherence',
+    'security-md-stack-alignment',
+  ];
+
+  function injectStackMarker(dir, stack) {
+    if (stack === 'node-ts') {
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        '{"name":"test","devDependencies":{"typescript":"5.0.0"}}',
+      );
+      fs.writeFileSync(path.join(dir, 'tsconfig.json'), '{}');
+    } else if (stack === 'swift') {
+      fs.writeFileSync(path.join(dir, 'Package.swift'), '// swift-tools-version:5.9\n');
+    }
+  }
+
+  function fillStopHookTestCmd(dir) {
+    const settingsPath = path.join(dir, '.claude/settings.json');
+    const raw = fs.readFileSync(settingsPath, 'utf8');
+    fs.writeFileSync(settingsPath, raw.replace(/\[TEST_COMMAND\]/g, 'npx vitest run'));
+  }
+
+  function fillClaudeMdTestCmd(dir) {
+    const claudePath = path.join(dir, 'CLAUDE.md');
+    const raw = fs.readFileSync(claudePath, 'utf8');
+    fs.writeFileSync(claudePath, raw.replace(/\[TEST_COMMAND\]/g, 'npx vitest run'));
+  }
+
+  function runDoctor(dir) {
+    try {
+      const output = execFileSync('node', [CLI, 'doctor', '--report'], {
+        cwd: dir,
+        encoding: 'utf8',
+      });
+      return JSON.parse(output);
+    } catch (e) {
+      const raw = (e.stdout || '').toString();
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  function getCheckStatus(report, id) {
+    return report?.checks?.find((c) => c.id === id)?.status;
+  }
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = {
+      ...BASE,
+      tier,
+      isDiscovery: false,
+      hasFrontend: true,
+      hasApi: true,
+      hasDatabase: true,
+    };
+
+    // Positive test: scaffold pulito + stack marker + placeholder risolti
+    const cleanDir = await scaffold(`doctor-xfile-clean-tier-${tier}`, tier, config);
+    injectStackMarker(cleanDir, 'node-ts');
+    fillStopHookTestCmd(cleanDir);
+    fillClaudeMdTestCmd(cleanDir);
+    const cleanReport = runDoctor(cleanDir);
+    if (!cleanReport) {
+      fail(`Tier ${tier}: doctor --report did not emit valid JSON on clean scaffold`);
+      continue;
+    }
+    for (const id of NEW_CHECK_IDS) {
+      const status = getCheckStatus(cleanReport, id);
+      if (status === 'pass' || status === 'skip') {
+        pass(`Tier ${tier} clean: ${id} = ${status}`);
+      } else {
+        fail(`Tier ${tier} clean: ${id} = ${status} (expected pass or skip)`);
+      }
+    }
+
+    // Corruption: re-inject [TEST_COMMAND] placeholder into settings.json after scaffold filled it
+    const corruptPlaceholder = await scaffold(
+      `doctor-xfile-corrupt-placeholder-tier-${tier}`,
+      tier,
+      config,
+    );
+    injectStackMarker(corruptPlaceholder, 'node-ts');
+    fillClaudeMdTestCmd(corruptPlaceholder);
+    const placeholderSettingsPath = path.join(corruptPlaceholder, '.claude/settings.json');
+    const placeholderSettings = JSON.parse(fs.readFileSync(placeholderSettingsPath, 'utf8'));
+    if (placeholderSettings?.hooks?.Stop?.[0]?.hooks?.[0]) {
+      placeholderSettings.hooks.Stop[0].hooks[0].command =
+        '[ "$stop_hook_active" = "1" ] && exit 0; [TEST_COMMAND] || echo blocked';
+      fs.writeFileSync(placeholderSettingsPath, JSON.stringify(placeholderSettings, null, 2));
+    }
+    const placeholderReport = runDoctor(corruptPlaceholder);
+    const placeholderStatus = getCheckStatus(placeholderReport, 'settings-no-placeholders');
+    if (placeholderStatus === 'warn' || placeholderStatus === 'fail') {
+      pass(`Tier ${tier} corrupt-placeholder: settings-no-placeholders = ${placeholderStatus}`);
+    } else {
+      fail(`Tier ${tier} corrupt-placeholder: expected warn/fail, got ${placeholderStatus}`);
+    }
+
+    // Corruption: overwrite Stop hook command directly to a different test cmd than CLAUDE.md
+    const corruptCmdMismatch = await scaffold(
+      `doctor-xfile-corrupt-cmd-tier-${tier}`,
+      tier,
+      config,
+    );
+    injectStackMarker(corruptCmdMismatch, 'node-ts');
+    fillClaudeMdTestCmd(corruptCmdMismatch);
+    const mismatchSettingsPath = path.join(corruptCmdMismatch, '.claude/settings.json');
+    const mismatchSettings = JSON.parse(fs.readFileSync(mismatchSettingsPath, 'utf8'));
+    if (mismatchSettings?.hooks?.Stop?.[0]?.hooks?.[0]) {
+      mismatchSettings.hooks.Stop[0].hooks[0].command =
+        '[ "$stop_hook_active" = "1" ] && exit 0; npx jest || echo blocked';
+      fs.writeFileSync(mismatchSettingsPath, JSON.stringify(mismatchSettings, null, 2));
+    }
+    const cmdReport = runDoctor(corruptCmdMismatch);
+    const cmdStatus = getCheckStatus(cmdReport, 'claudemd-stop-hook-test-cmd-match');
+    if (cmdStatus === 'warn' || cmdStatus === 'fail') {
+      pass(`Tier ${tier} corrupt-cmd-mismatch: claudemd-stop-hook-test-cmd-match = ${cmdStatus}`);
+    } else {
+      fail(`Tier ${tier} corrupt-cmd-mismatch: expected warn/fail, got ${cmdStatus}`);
+    }
+
+    // Corruption: remove a skill directory
+    const corruptSkillMissing = await scaffold(
+      `doctor-xfile-corrupt-skill-tier-${tier}`,
+      tier,
+      config,
+    );
+    injectStackMarker(corruptSkillMissing, 'node-ts');
+    fillStopHookTestCmd(corruptSkillMissing);
+    fillClaudeMdTestCmd(corruptSkillMissing);
+    const archSkillDir = path.join(corruptSkillMissing, '.claude/skills/arch-audit');
+    if (fs.existsSync(archSkillDir)) fs.rmSync(archSkillDir, { recursive: true, force: true });
+    const skillReport = runDoctor(corruptSkillMissing);
+    const skillStatus = getCheckStatus(skillReport, 'claudemd-skills-directory-parity');
+    if (skillStatus === 'warn' || skillStatus === 'fail') {
+      pass(`Tier ${tier} corrupt-skill-missing: claudemd-skills-directory-parity = ${skillStatus}`);
+    } else {
+      fail(`Tier ${tier} corrupt-skill-missing: expected warn/fail, got ${skillStatus}`);
+    }
+
+    // Corruption: pipeline.md H1 with a wrong tier name
+    const corruptTier = await scaffold(`doctor-xfile-corrupt-tier-${tier}`, tier, config);
+    injectStackMarker(corruptTier, 'node-ts');
+    fillStopHookTestCmd(corruptTier);
+    fillClaudeMdTestCmd(corruptTier);
+    const pipelinePath = path.join(corruptTier, '.claude/rules/pipeline.md');
+    if (fs.existsSync(pipelinePath)) {
+      const raw = fs.readFileSync(pipelinePath, 'utf8');
+      const wrongH1 =
+        tier === 's' ? '# Full Development Pipeline - Tier L\n' : '# Fast Lane Pipeline\n';
+      fs.writeFileSync(pipelinePath, raw.replace(/^#[^\n]*\n/, wrongH1));
+    }
+    const tierReport = runDoctor(corruptTier);
+    const tierStatus = getCheckStatus(tierReport, 'pipeline-md-tier-coherence');
+    if (tierStatus === 'warn' || tierStatus === 'fail') {
+      pass(`Tier ${tier} corrupt-tier-h1: pipeline-md-tier-coherence = ${tierStatus}`);
+    } else {
+      fail(`Tier ${tier} corrupt-tier-h1: expected warn/fail, got ${tierStatus}`);
+    }
+
+    // Corruption: node-ts marker but security.md overwritten with the Apple variant
+    const corruptSecurity = await scaffold(`doctor-xfile-corrupt-sec-tier-${tier}`, tier, config);
+    injectStackMarker(corruptSecurity, 'node-ts');
+    fillStopHookTestCmd(corruptSecurity);
+    fillClaudeMdTestCmd(corruptSecurity);
+    const securityPath = path.join(corruptSecurity, '.claude/rules/security.md');
+    if (fs.existsSync(securityPath)) {
+      fs.writeFileSync(
+        securityPath,
+        '# Security Rules - Native Apple (macOS / iOS)\n\nStore secrets in Keychain only.\n',
+      );
+    }
+    const secReport = runDoctor(corruptSecurity);
+    const secStatus = getCheckStatus(secReport, 'security-md-stack-alignment');
+    if (secStatus === 'warn' || secStatus === 'fail') {
+      pass(`Tier ${tier} corrupt-security: security-md-stack-alignment = ${secStatus}`);
+    } else {
+      fail(`Tier ${tier} corrupt-security: expected warn/fail, got ${secStatus}`);
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2473,6 +2666,7 @@ async function main() {
   await scenarioPythonContentAssertions();
   await scenarioCrossStackInvariants();
   await scenarioSkillMdSpecCompliance();
+  await scenarioDoctorCrossFileValidation();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 
