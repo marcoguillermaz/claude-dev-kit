@@ -10,6 +10,13 @@ export const AUDIT_MODELS = [
 export const SKILL_DESC_MAX_CHARS = 250;
 
 /**
+ * Maximum line count for a SKILL.md body (excluding frontmatter). Anthropic
+ * best practice: skills ≤ 500 lines; longer bodies belong in sibling reference
+ * files per progressive-disclosure guidance.
+ */
+export const SKILL_MD_MAX_LINES = 500;
+
+/**
  * Maximum line count for a project CLAUDE.md before Anthropic's adherence
  * guidance breaks down. Enforced by doctor check.
  */

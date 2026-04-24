@@ -11,17 +11,45 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.11.0] — 2026-04-24
+
+### Fixed
+
+- `allowed-tools` frontmatter syntax in `skill-review` tier-m/tier-l SKILL.md (`Read, Glob, Grep, Bash` → `Read Glob Grep Bash`). Anthropic spec documents space-separated string or YAML list; the comma-separated form is a scalar value with literal commas (`js-yaml` verified), which under a spec-conformant parser resolves to tool names that do not exist (`Read,`, `Glob,`, `Grep,`) and silently drops pre-authorisation. The remaining 39 SKILL.md were already compliant.
+- `arch-audit` × 3 tier (tier-s/m/l) reduced from 508 to 360 body lines by extracting Step 3c (Prompting Guide P1–P5), Step 3d (token/subagent optimization T1–T5), and Step H1 (hook compliance H1a–H1f) into a sibling `advanced-checks.md` (173 lines, level 1 nesting per Anthropic spec). Closes Anthropic best-practice violation (≤ 500 lines) and CDK-C18 in `/arch-audit`.
+
+### Added
+
+- `doctor` check `skill-md-size-budget`: warns when any `.claude/skills/*/SKILL.md` body exceeds `SKILL_MD_MAX_LINES` (500, per Anthropic best practice).
+- `doctor` check `skill-allowed-tools-syntax`: warns on comma-separated `allowed-tools` values, preventing regression of the v1.11.0 fix.
+- Integration scenario `scenarioSkillMdSpecCompliance`: scaffolds tier-s/m/l and fails if any scaffolded SKILL.md exceeds 500 lines or uses comma syntax. Hard-fails as CDK-internal normative check (distinct from the user `doctor` check which only warns).
+- `packages/cli/src/utils/skill-frontmatter.js` helper exposing `parseSkillFile`, `extractFields`, `countBodyLines`, `allowedToolsHasCommas`. Single regex-based YAML parser shared by `doctor`, `new-skill` validation, and integration tests.
+- `SKILL_MD_MAX_LINES = 500` constant in `utils/constants.js` (threshold alignment with Anthropic best practice).
+- 3 new `advanced-checks.md` reference files in `packages/cli/templates/tier-{s,m,l}/.claude/skills/arch-audit/` (byte-identical across tiers).
+- Unit test suite `test/unit/skill-frontmatter.test.js` (10 new cases covering frontmatter parsing, body line counting, and comma detection edge cases).
+
+### Changed
+
+- `new-skill.js:validateSkillMd` migrated from inline regex frontmatter parsing to the shared `parseSkillFile` helper. Removes duplicate regex parser drift risk; behaviour preserved (unit tests unchanged).
+- Integration test count: 828 → 834 (6 new checks from `scenarioSkillMdSpecCompliance`, 2 assertions × 3 tiers).
+- Unit test count: 292 → 302 (10 new cases for `skill-frontmatter` helper).
+
+---
+
 ## [1.10.4] — 2026-04-23
 
 ### Added
+
 - Smoke test suite for `detect-stack.js` (20 tests across 2 describe blocks) covering stack identification markers for all 11 supported stacks (package.json ± tsconfig, pyproject.toml, go.mod, Gemfile, pom.xml, build.gradle.kts, build.gradle, Package.swift, .csproj, Cargo.toml) plus `suggestedTier` thresholds for the three calibrated brackets. Prerequisite coverage for the tier-threshold extraction below.
 
 ### Fixed
+
 - CLI `--version` now reads from `package.json` at runtime (was hard-coded `1.6.1` — 4 releases of drift vs actual 1.10.3). Identified by `skill-dev` audit (J4).
 - Wizard `AUDIT_MODELS` option list no longer offers `claude-opus-4-6` (Legacy per Anthropic models page); replaced with `claude-opus-4-7`. Fixes the root cause for the `operational-guide.md:166` doc drift below.
 - `scaffold/index.js` `patchSettingsPermissions` no longer silently swallows malformed settings.json during stack-permission patching — now logs a `console.warn` that names the file, the target stack, and the underlying error. Prevents scaffolds from shipping default JS/Node permissions on native stacks with no user-visible signal. Two new unit tests assert the warning is emitted and the file content is left unchanged.
 
 ### Changed
+
 - `CONTRIBUTING.md` test counts refreshed to 828 integration + 270 unit (were 464/243, stale vs `README.md` and `CHANGELOG.md [1.10.3]`).
 - `docs/operational-guide.md:166` wizard recommendation for deep-analysis model updated from `claude-opus-4-6` (Legacy per Anthropic models page) to `claude-opus-4-7`.
 - `docs/operational-guide.md:43` + `:403` audit skill count aligned to 16 (was 15); added missing `skill-review` to the available-skills enumeration (added in v1.10.0, #58).
@@ -31,6 +59,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Extracted tier-suggestion thresholds into `utils/tier-suggestion.js`: 3 calibrated brackets (nodeWeb 100/30, medium 80/20, compact 60/15) plus `suggestTier(fileCount, thresholds)` helper. `detect-stack.js` 11 inline ternaries now delegate to the helper; values unchanged, single source of truth.
 
 ### Removed
+
 - Unused `AUDIT_MODEL_DEFAULT` constant (0 consumers — confirmed via grep).
 - `export` keyword on `scaffoldTier0` — it is only called internally from `scaffoldTier` and not listed in `_testHelpers`, so the public surface shrinks with no external impact.
 
@@ -39,6 +68,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.10.3] — 2026-04-23
 
 ### Fixed
+
 - arch-audit H1a grep pattern missed 15 hook events (StopFailure, PostToolUseFailure, SubagentStart/Stop, TaskCreated, PermissionRequest/Denied, TeammateIdle, SessionEnd, FileChanged, CwdChanged, ConfigChange, UserPromptExpansion, Elicitation/Result) — would have falsely flagged StopFailure already in use.
 - arch-audit C17 regex false-positive on arch-audit itself (self-referential `mcp__` in grep pattern) — added skip-by-name + `^allowed-tools:` anchor.
 - tier-l cheatsheet out of sync with skills dir: 5 skills missing (arch-audit, commit, context-review, dependency-scan, skill-review) — restored to parity with tier-m + added context-review row (tier-l exclusive).
@@ -47,10 +77,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - tier-l settings.json deny missing `Bash(DROP TABLE*)`, `Bash(TRUNCATE*)` — regression vs tier-m.
 
 ### Updated
+
 - arch-audit "new events worth adding" catalogue refreshed with 6 events (UserPromptExpansion, SessionEnd, TeammateIdle, TaskCreated, PostToolUseFailure, PermissionRequest) + note on new `type: "mcp_tool"` hook type (v2.1.118).
 - claudemd-standards.md: hook events list v2.1.85 → v2.1.118 (22 → 27 events, `Last verified: 2026-04-23`).
 
 ### Unchanged
+
 - No code changes in CLI source — template-only release. Integration 828/828, unit 270/270.
 
 ---
@@ -58,6 +90,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.10.2] — 2026-04-19
 
 ### Fixed
+
 - Cross-stack audit fixes (14 items from Node-TS + Python senior audits): NT-B1/B2, NT-T1-T5, PY-B1-B3, PY-T3/T4/T6/T7.
 - Python, Go, Ruby now scaffold with stack-specific commands instead of npm fallbacks (PY-B1).
 - `frameworkValue()` returns per-stack examples: FastAPI/Django/Flask for Python, Gin/Echo for Go, Rails/Sinatra for Ruby (NT-B1).
@@ -65,6 +98,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Phase 3b RLS generalized to "row-level access control (database-level RLS or application-level guards)" (NT-T3).
 
 ### Added
+
 - 5 stack-conditional placeholders: `[VALIDATION_LIBRARIES]`, `[TEST_CLEANUP_PATTERN]`, `[COMMIT_EXAMPLES]`, `[BUILD_ARTIFACTS]`, `[ENVIRONMENT_SETUP]`.
 - Python permissions extended: pytest, mypy, uvicorn, alembic in allow list; `alembic downgrade base` in deny (PY-B2/B3).
 - Deny list hardening: `DROP DATABASE*` and `npm publish*` added to all tier settings.json (PY-T4).
@@ -79,6 +113,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.10.1] — 2026-04-18
 
 ### Fixed
+
 - Native stack scaffolding gaps found via Swift validation: `swift run` default for GUI apps, `# not configured` in pipeline prose, dependency-scan `true is false` interpolation, staff-manager contamination, `Color.red` pilot example.
 - Doctor command: timeout check at both outer and inner hook levels.
 - Cheatsheet gap: 4 skills (responsive/visual/ux/ui-audit) now listed in cheatsheet templates with conditional pruning via `cheatsheet: true` in skill-registry.
@@ -86,6 +121,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dead code: 7 orphan `replace()` calls removed from `interpolate()` (HAS_API, HAS_DATABASE, HAS_FRONTEND, HAS_E2E, AUDIT_MODEL, DESIGN_SYSTEM_NAME, HAS_PRD) — no template contained these placeholders.
 
 ### Added
+
 - `scripts/lint-templates.mjs` — static analysis: banned patterns, wizard placeholder coverage, tier M/L file sync. Zero warnings, zero false positives.
 - Content assertion tests for 3 golden-file stacks: Swift (20 checks), Node-TS (22 checks), Python (22 checks).
 - Cross-stack invariant tests: 10 stacks × 6 invariants = 60 assertions.
@@ -97,10 +133,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.10.0] — 2026-04-17
 
 ### Added
+
 - `/skill-review` skill (Tier M lite, Tier L full) — quality review pipeline for skill portfolios. Includes 5 supporting documents: REVIEW_FRAMEWORK.md, SEVERITY_SCALE.md, SPEC_SNAPSHOT.md, SKILLS_INVENTORY.md, CALIBRATION_KIT.md. Tier M skips Phase 4 (external LLM) and Phase 9 (midpoint drift). Tier L runs full pipeline.
 - 19 reference files across 15 skills: PATTERNS.md (10), CHECKS.md (2), REPORT.md (6), DIMENSIONS.md (1) — stack-scaffolded patterns separated from skill body logic.
 
 ### Changed
+
 - Pipeline v2 body purity: all 17 SKILL.md files reworked — framework-specific patterns (grep commands, CSS utilities, Tailwind classes, SwiftUI literals) extracted from bodies into reference files. Bodies contain only universal principles. Net -2009 lines.
 - Configuration sections added to security-audit (`[SITEMAP_OR_ROUTE_LIST]`), perf-audit (`[PERF_TOOL]`, `[PROFILER_COMMAND]`), skill-dev (`[LINT_COMMAND]`).
 - skill-dev: scope filter for stack-specific check exclusion, refactoring-backlog.md fallback for missing file, D8 native stack clarification.
@@ -114,6 +152,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Pre-1.10.0 development log] — targeted v1.9.1, shipped as part of v1.10.0
 
 ### Added
+
 - `/test-audit` skill (Tier M/L, universal - no `requires`) - static test-suite quality audit. Parses coverage reports in 5 supported formats (lcov.info, Istanbul JSON, Cobertura XML, go coverage.out, tarpaulin JSON; xcresult optional via `xcrun xccov`). Pyramid shape classification (unit/integration/e2e) by path convention + framework imports. 8 anti-pattern checks (T1-T8): `.only`/`fit`/`fdescribe` committed, skipped tests, `.todo` placeholders, empty test bodies, tests without assertions, hardcoded sleeps, debug output in tests, multi-file `.only` broken CI. Backlog prefix `TEST-`. New Pipeline Phase 5d Track C runs for every block after Phase 3 is green. Critical findings (`.only` committed, 0% coverage on a file changed in the block) block Phase 6. Stack-aware across all 11 supported stacks; checks without a stack-specific pattern return `N/A - skipped for <stack>`. Flaky-test detection deferred; v1 is static-only (#58)
 - `/accessibility-audit` skill (Tier M/L, `hasFrontend=true`) - unified accessibility surface. Three modes: `static` (A1-A8 grep patterns: aria-label on icon buttons, positive tabindex, outline-none regression, img alt, form labels, focus ring size, onClick on non-interactive, nav keyboard access); `full` (adds APCA contrast probes C1-C3 via Playwright, both themes); `wcag` (adds axe-core 4.9.1 scan with `wcag2a + wcag2aa + wcag21aa + wcag22aa` tags, plus `best-practice`). Backlog prefix `A11Y-`. Pipeline Phase 5d Track A execution order: `/ui-audit` (static, concurrent) → `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` (#60)
 - `/migration-audit` skill (Tier M/L, `hasDatabase=true`) - stack-aware static analysis of migration files. Detects Prisma, Drizzle, Supabase CLI, raw SQL; Rails/Django/Alembic/Flyway detected but pending support. 8 check families (M1-M8): lock-heavy DDL, missing rollback, unsafe backfills, constraint sequencing, data loss, unsafe type changes, unindexed FKs, ordering integrity. Backlog prefix `MIG-`. Pipeline Phase 5d Track B now runs `/migration-audit` when migrations are applied (#59)
@@ -133,11 +172,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Skill `description` field in all 18 SKILL.md frontmatter files (max 250 chars, used by Claude for auto-invocation)
 
 ### Fixed
+
 - Hook `timeout` values corrected from milliseconds to seconds per Anthropic JSON schema (Tier M: 300000→300, Tier L: 600000→600)
 - Doctor check #18 threshold corrected from 600000 to 600 (seconds, not milliseconds)
 - Doctor check #18 fix message now suggests correct value (`"timeout": 300`)
 
 ### Changed
+
 - `/ui-audit` scope narrowed to design-system compliance only. Extracted to `/accessibility-audit`: CHECK 11 (icon-only aria-label), CHECK 13 (positive tabindex), CHECK 14 (outline-none), CHECK 16 (img alt), CHECK 17 (form labels), S4 (nav keyboard), S6 (focus ring), S7 (onClick non-interactive), and Step 4 (axe-core WCAG scan). `/ui-audit` is now static-only (no Playwright). Check numbering preserves gaps to avoid breaking external references (#60)
 - `/visual-audit` narrowed from 11 to 10 dimensions. V8 (Contrast & legibility) and APCA Lc anchors in V4 extracted to `/accessibility-audit` (C1-C3). Page score denominator changed from `/55` to `/50`; bucket thresholds recalibrated proportionally (Excellent ≥40 / Good 30-39 / Needs work 20-29 / Poor <20). Scoring rules updated: `Score 3 on V1/V3/V4/V9/V10 → Major` (V8 removed) (#60)
 - `/skill-db` scope narrowed to live SQL verification (schema quality S1-S6 + N+1 query patterns Q1-Q3). Migration file analysis extracted to `/migration-audit` - single source of truth for migration safety across all database stacks. Pipeline Phase 5d Track B splits migration audit (`/migration-audit`) from schema audit (`/skill-db`). Affects projects invoking `/skill-db` for migration checks (#59)
@@ -155,6 +196,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CONTRIBUTING.md updated with skill registry workflow and `add` commands
 
 ### Fixed
+
 - `responsive-audit` was not excluded for native stacks in `injectActiveSkills()` - CLAUDE.md listed it but the directory didn't exist for Swift/Kotlin/Rust projects
 - Tier M pipeline Phase 8.5 referenced non-existent `context-reviewer` agent - changed to inline grep
 - (CodeQL High) `init-in-place.js` incomplete URL substring sanitization - `remotes.includes('github.com')` replaced with regex domain match
@@ -166,6 +208,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `doctor` now checks Stop hook timeout presence (check #18) and deny list duplicates (check #19)
 
 ### Evaluated (decisions documented, no code change)
+
 - P5 Tier L: frozen - maintain functional, no new investment until real adoption signal
 - P6 Agents: agent-to-skill conversion scheduled for next cycle (saves 27K tokens/session)
 - P7 MCP: incremental adoption - GitHub MCP Q2, ecosystem reassessment Q4
@@ -175,15 +218,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.0.0] — 2026-03-22
 
 ### Changed — Scope and positioning
+
 - Primary target redefined: Builder PM and tech lead (people with enough technical background to work end-to-end with Claude Code). Not a generic "Product Trio."
 - Tier boundaries reframed around blast radius and collaborator count, not file count or duration
 - "Governance layer" positioning removed throughout — replaced with "scaffold for legible, reviewable AI-assisted development"
 - CLI description, template files, pipeline criteria all updated to match
 
 ### Added — Enforcement layer
+
 - `.github/workflows/claude-dev-kit-verify.yml` — CI template that verifies scaffold integrity on every PR (Stop hook configured, no unfilled placeholder, CLAUDE.md present, CODEOWNERS present)
 
 ### Added — `doctor` compliance reporting
+
 - `--report` flag: machine-readable JSON output (`timestamp`, `cwd`, `summary`, per-check `status`/`fix`) consumable by CI pipelines and external audit systems
 - `--ci` flag: silent mode, exits 1 on any failure — for GitHub Actions
 
@@ -192,6 +238,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.3] — 2026-03-15
 
 ### Fixed — Critical
+
 - Stop hook was missing from Tier S `settings.json`, breaking the core contract ("tests must pass in every tier"). Now enforced in all four tiers.
 
 ---
@@ -199,6 +246,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.2] — 2026-03-10
 
 ### Added
+
 - UAT scenario definition at scope gate: when Phase 4 E2E activates, the user must explicitly list numbered user journeys (1–5 scenarios) at Phase 1. Claude implements exactly those scenarios — it does not invent test cases.
 - Phase 4 renamed "UAT / E2E tests" across Tier M/L pipelines.
 
@@ -207,6 +255,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.1] — 2026-03-05
 
 ### Added
+
 - Interactive tier selector: 3 diagnostic questions → auto-suggest tier with explanation
 - Conditional Phase 4 E2E testing in Tier M/L (opt-in via init wizard, per-block scope gate confirmation)
 - `doctor` now checks Stop hook for unfilled `[TEST_COMMAND]` placeholder (11th check)
@@ -217,6 +266,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.0] — 2026-02-20
 
 ### Added
+
 - Session recovery (`.claude/session/`)
 - Scope gate with Tier 1/2 EARS sweep auto-selection
 - Interaction Protocol in CLAUDE.md templates
@@ -234,6 +284,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.1.0] — 2026-01-15
 
 ### Added
+
 - Initial release: four-tier scaffold system (Discovery / Fast Lane / Standard / Full)
 - Three init paths: Greenfield, From context, In-place
 - `doctor` command with 10 checks

@@ -5,7 +5,7 @@ user-invocable: true
 model: opus
 context: fork
 argument-hint: [skill-name] [tier:S|M|L|all] [mode:full|preflight-only|fixtures-only]
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read Glob Grep Bash
 ---
 
 You are a skill-quality reviewer running the framework v1.2 pipeline. Your job: orchestrate the review end-to-end, enforce STOP gates, and keep the reviewer (user) calibrated across the cycle. You produce findings - you do not silently fix. Fixes happen in Phase 3 after explicit user Go.
@@ -36,7 +36,7 @@ Before Phase 1, read these in order. They are siblings of this file.
 
 - Quick mechanical linting (use `grep` + `wc -l` directly).
 - Skill authoring from scratch (use `/skill-dev` instead).
-- Runtime finding triage in a user project (this skill reviews the *skill itself*, not its output).
+- Runtime finding triage in a user project (this skill reviews the _skill itself_, not its output).
 
 ---
 
@@ -74,6 +74,7 @@ Execute C1-C8 from `anthropic-spec-checklist.md` (if sibling present) or derive 
 Per `REVIEW_FRAMEWORK.md` v1.2, Phase 2 is split 2.A → 2.E. Execute sequentially, never in parallel.
 
 ### 2.A - Fundamentals
+
 - Clarity: is the skill's purpose clear in 3 lines?
 - Scope boundary: does the claimed scope match the body?
 - Project-agnosticity (4 dimensions from framework v1.2 T2.4):
@@ -83,21 +84,26 @@ Per `REVIEW_FRAMEWORK.md` v1.2, Phase 2 is split 2.A → 2.E. Execute sequential
   4. Architectural assumptions (e.g., "there is a database").
 
 ### 2.B - Structural coherence + cross-tier
+
 If `tier:all`: load every tier variant, produce a column-by-column diff artifact. Classify each delta:
+
 - **Expected**: scope difference, verbosity, tool-set shrinkage.
 - **Unexpected**: same check at different severity across tiers, inconsistent naming, divergent output format.
 
-***** STOP - cross-tier delta review. Present diff + classified deltas. Wait for user confirmation before Phase 3 propagation rules apply. *****
+**\*** STOP - cross-tier delta review. Present diff + classified deltas. Wait for user confirmation before Phase 3 propagation rules apply. **\***
 
 ### 2.C - Refinements
+
 - Token efficiency: per-section token count, flag sections > 500 tokens that are not core logic.
 - Boilerplate drift vs most-recently-reviewed sibling skill.
 - Supporting files accuracy (if any).
 
 ### 2.D - Interactive walkthrough
+
 Present findings to user. For multi-option review questions, ALWAYS use `AskUserQuestion` tool - never inline prose.
 
-### 2.E - Behavioral fixtures *(only for 6 targeted skills per D1: ui-audit, visual-audit, accessibility-audit, security-audit, api-design, migration-audit)*
+### 2.E - Behavioral fixtures _(only for 6 targeted skills per D1: ui-audit, visual-audit, accessibility-audit, security-audit, api-design, migration-audit)_
+
 - 3 representative cases: run the skill, record output, verify expected severity labels.
 - 2 adversarial cases: craft input that should trip the skill; verify skill catches it.
 - 1 contamination probe: a pilot-project-like literal; verify the skill does NOT flag as stack-specific.
@@ -117,11 +123,11 @@ Max 3 fix attempts per Critical finding (framework v1.2 C2 rollback protocol).
 4. Token count post-fix: `wc -l SKILL.md` + tokenizer estimate. Hard-fail if > 5000 tokens (framework v1.2 T2.5).
 5. If any check regresses: revert to pre-fix state, report root-cause hypothesis, escalate to user.
 
-***** STOP - Phase 3 → Phase 4 gate (framework v1.2 C7). User approves the diff of applied fixes before any external LLM sees the new version. *****
+**\*** STOP - Phase 3 → Phase 4 gate (framework v1.2 C7). User approves the diff of applied fixes before any external LLM sees the new version. **\***
 
 ---
 
-## Phase 4 - External LLM review *(optional, portfolio-level)*
+## Phase 4 - External LLM review _(optional, portfolio-level)_
 
 Skip unless the user explicitly requests external review or the skill is in the behavioral-fixtures target set AND a pre-existing external review exists (framework v1.2 C4).
 
@@ -163,15 +169,16 @@ Present outcome checklist:
 - path/to/file - description
 ```
 
-***** STOP - do not declare complete until explicit user confirmation. *****
+**\*** STOP - do not declare complete until explicit user confirmation. **\***
 
 ---
 
-## Phase 9 - Midpoint drift check *(portfolio-level only)*
+## Phase 9 - Midpoint drift check _(portfolio-level only)_
 
 Trigger: after completing skill #N/2 (e.g., skill #9 in a 17-skill cycle). Check `SKILLS_INVENTORY.md §Review ordering` for the canonical midpoint.
 
 Procedure per `CALIBRATION_KIT.md §4`:
+
 1. Re-read §1 anchor catalog.
 2. Re-score skill #1 blindly (without looking at original labels).
 3. Compare original vs re-score.
