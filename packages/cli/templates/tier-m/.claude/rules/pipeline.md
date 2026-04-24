@@ -184,9 +184,10 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 - Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
 - **Execution order**: `/ui-audit` is static - launch it concurrently with the first browser-based skill. Then: `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the browser session).
 
-**Track B - API/DB audit** *(if block creates/modifies API routes or applies migrations - static analysis, no dev server needed)*
+**Track B - API/DB + compliance audit** *(if block creates/modifies API routes, applies migrations, or handles PII - static analysis, no dev server needed)*
 - Run `/security-audit` if the block creates or modifies any API route.
 - Run `/api-design` if the block adds new API routes. Both are static - run them concurrently.
+- Run `/api-contract-audit` if the block modifies OpenAPI spec or API routes - checks contract drift, breaking changes, Richardson Maturity.
 - Run `/migration-audit` if the block applies migrations - static analysis of migration files.
 - Run `/skill-db` if the block changes the schema or adds new tables - live verification of schema state, access control policies, and query patterns.
 
