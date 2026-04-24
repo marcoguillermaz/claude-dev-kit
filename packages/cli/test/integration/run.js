@@ -19,6 +19,12 @@ import { execFileSync } from 'child_process';
 import { scaffoldTier, scaffoldTierSafe } from '../../src/scaffold/index.js';
 import { generateClaudeMd } from '../../src/generators/claude-md.js';
 import { generateReadme } from '../../src/generators/readme.js';
+import {
+  parseSkillFile,
+  countBodyLines,
+  allowedToolsHasCommas,
+} from '../../src/utils/skill-frontmatter.js';
+import { SKILL_MD_MAX_LINES } from '../../src/utils/constants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -2357,6 +2363,72 @@ async function scenarioCrossStackInvariants() {
   }
 }
 
+async function scenarioSkillMdSpecCompliance() {
+  section('SKILL.md Anthropic spec compliance (size + allowed-tools syntax)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = {
+      ...BASE,
+      tier,
+      isDiscovery: false,
+      hasFrontend: true,
+      hasApi: true,
+      hasDatabase: true,
+    };
+    const scenarioDir = path.join(OUTPUT_DIR, `spec-compliance-tier-${tier}`);
+    await fs.ensureDir(scenarioDir);
+    await scaffoldTier(tier, scenarioDir, config, TEMPLATES_DIR);
+
+    const skillsDir = path.join(scenarioDir, '.claude/skills');
+    if (!fs.existsSync(skillsDir)) {
+      pass(`Tier ${tier}: no .claude/skills (nothing to validate)`);
+      continue;
+    }
+
+    const skillDirs = fs
+      .readdirSync(skillsDir)
+      .filter((name) => fs.statSync(path.join(skillsDir, name)).isDirectory());
+
+    const tierOversize = [];
+    const tierCommas = [];
+
+    for (const skill of skillDirs) {
+      const skillFile = path.join(skillsDir, skill, 'SKILL.md');
+      if (!fs.existsSync(skillFile)) continue;
+      const raw = fs.readFileSync(skillFile, 'utf8');
+      const { body, fields, frontmatter } = parseSkillFile(raw);
+
+      if (frontmatter === null) {
+        fail(`Tier ${tier}: ${skill}/SKILL.md missing YAML frontmatter`);
+        continue;
+      }
+
+      const lines = countBodyLines(body);
+      if (lines > SKILL_MD_MAX_LINES) {
+        tierOversize.push(`${skill} (${lines} lines)`);
+      }
+
+      if (allowedToolsHasCommas(fields.allowedTools)) {
+        tierCommas.push(skill);
+      }
+    }
+
+    if (tierOversize.length === 0) {
+      pass(`Tier ${tier}: all ${skillDirs.length} SKILL.md bodies ≤ ${SKILL_MD_MAX_LINES} lines`);
+    } else {
+      fail(
+        `Tier ${tier}: SKILL.md bodies over ${SKILL_MD_MAX_LINES} lines: ${tierOversize.join(', ')}`,
+      );
+    }
+
+    if (tierCommas.length === 0) {
+      pass(`Tier ${tier}: all allowed-tools values use space-separated syntax`);
+    } else {
+      fail(`Tier ${tier}: allowed-tools uses comma syntax (not spec): ${tierCommas.join(', ')}`);
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2400,6 +2472,7 @@ async function main() {
   await scenarioNodeTsContentAssertions();
   await scenarioPythonContentAssertions();
   await scenarioCrossStackInvariants();
+  await scenarioSkillMdSpecCompliance();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

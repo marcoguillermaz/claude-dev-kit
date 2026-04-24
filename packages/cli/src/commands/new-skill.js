@@ -4,6 +4,7 @@ import path from 'path';
 import inquirer from 'inquirer';
 import { registerSkillInClaudeMd } from '../utils/claudemd-update.js';
 import { SKILL_DESC_MAX_CHARS } from '../utils/constants.js';
+import { parseSkillFile } from '../utils/skill-frontmatter.js';
 
 // Standard Playwright MCP tools (sourced from visual-audit SKILL.md)
 const PLAYWRIGHT_TOOLS = [
@@ -101,25 +102,18 @@ function validateSkillMd(content, dirName) {
   const errors = [];
   const warnings = [];
 
-  // Frontmatter presence
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!fmMatch) {
+  const { frontmatter, body, fields } = parseSkillFile(content);
+  if (frontmatter === null) {
     errors.push('Missing YAML frontmatter (--- delimiters)');
     return { errors, warnings };
   }
 
-  const fm = fmMatch[1];
-
-  // Name matches directory
-  const nameMatch = fm.match(/^name:\s*(.+)/m);
-  if (nameMatch && nameMatch[1].trim() !== dirName) {
-    errors.push(`name field "${nameMatch[1].trim()}" does not match directory "${dirName}"`);
+  if (fields.name && fields.name !== dirName) {
+    errors.push(`name field "${fields.name}" does not match directory "${dirName}"`);
   }
 
-  // Description length
-  const descMatch = fm.match(/^description:\s*(.+)/m);
-  if (descMatch) {
-    const desc = descMatch[1].trim();
+  if (fields.description) {
+    const desc = fields.description;
     if (desc.length > SKILL_DESC_MAX_CHARS) {
       errors.push(`Description too long: ${desc.length}/${SKILL_DESC_MAX_CHARS} chars`);
     } else if (desc.length < 10) {
@@ -127,14 +121,11 @@ function validateSkillMd(content, dirName) {
     }
   }
 
-  // Context must be fork
-  if (!fm.includes('context: fork')) {
+  if (fields.context !== 'fork') {
     warnings.push('context should be "fork" to prevent context pollution');
   }
 
-  // Playwright + allowed-tools
-  const body = content.slice(fmMatch[0].length);
-  if (body.includes('browser_') && !fm.includes('allowed-tools')) {
+  if (body.includes('browser_') && !fields.allowedTools) {
     warnings.push('Body references browser_ but frontmatter lacks allowed-tools');
   }
 

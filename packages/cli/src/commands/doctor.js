@@ -2,7 +2,16 @@ import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
-import { CLAUDE_MD_MAX_LINES, STOP_HOOK_MAX_TIMEOUT_SEC } from '../utils/constants.js';
+import {
+  CLAUDE_MD_MAX_LINES,
+  SKILL_MD_MAX_LINES,
+  STOP_HOOK_MAX_TIMEOUT_SEC,
+} from '../utils/constants.js';
+import {
+  parseSkillFile,
+  countBodyLines,
+  allowedToolsHasCommas,
+} from '../utils/skill-frontmatter.js';
 
 const checks = [
   {
@@ -262,6 +271,57 @@ const checks = [
         warn: true,
         info: missingTools.length > 0 ? missingTools.join(', ') : undefined,
         fix: `Add 'allowed-tools: Playwright' frontmatter to: ${missingTools.join(', ')}`,
+      };
+    },
+  },
+  {
+    id: 'skill-allowed-tools-syntax',
+    label: `Skills use space-separated allowed-tools (Anthropic spec)`,
+    check: (cwd) => {
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      if (!fs.existsSync(skillsDir)) return { pass: true, skip: true };
+      const offenders = [];
+      try {
+        for (const skill of fs.readdirSync(skillsDir)) {
+          const skillFile = path.join(skillsDir, skill, 'SKILL.md');
+          if (!fs.existsSync(skillFile)) continue;
+          const { fields } = parseSkillFile(fs.readFileSync(skillFile, 'utf8'));
+          if (allowedToolsHasCommas(fields.allowedTools)) offenders.push(skill);
+        }
+      } catch {
+        return { pass: true, skip: true };
+      }
+      return {
+        pass: offenders.length === 0,
+        warn: true,
+        info: offenders.length > 0 ? offenders.join(', ') : undefined,
+        fix: `Replace commas with spaces in allowed-tools frontmatter (Anthropic spec: space-separated string or YAML list). Affected: ${offenders.join(', ')}`,
+      };
+    },
+  },
+  {
+    id: 'skill-md-size-budget',
+    label: `Skill bodies respect Anthropic ≤ ${SKILL_MD_MAX_LINES} lines guideline`,
+    check: (cwd) => {
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      if (!fs.existsSync(skillsDir)) return { pass: true, skip: true };
+      const oversize = [];
+      try {
+        for (const skill of fs.readdirSync(skillsDir)) {
+          const skillFile = path.join(skillsDir, skill, 'SKILL.md');
+          if (!fs.existsSync(skillFile)) continue;
+          const { body } = parseSkillFile(fs.readFileSync(skillFile, 'utf8'));
+          const lines = countBodyLines(body);
+          if (lines > SKILL_MD_MAX_LINES) oversize.push(`${skill} (${lines})`);
+        }
+      } catch {
+        return { pass: true, skip: true };
+      }
+      return {
+        pass: oversize.length === 0,
+        warn: true,
+        info: oversize.length > 0 ? oversize.join(', ') : undefined,
+        fix: `Extract detailed sections into sibling reference files (progressive disclosure). Over budget: ${oversize.join(', ')}`,
       };
     },
   },
