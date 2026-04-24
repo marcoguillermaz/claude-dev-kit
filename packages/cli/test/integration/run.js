@@ -213,6 +213,11 @@ function assertNoUnfilledWizardPlaceholders(dir) {
     // for Claude to fill in pipeline.md - not actual unfilled wizard placeholders
     if (path.basename(f) === 'CONTEXT_IMPORT.md') continue;
 
+    // doc-audit's SKILL.md and PATTERNS.md enumerate the CDK placeholder tokens
+    // verbatim as part of the audit specification (D3 check). Not unfilled.
+    const rel = path.relative(dir, f);
+    if (rel.includes(path.join('skills', 'doc-audit'))) continue;
+
     const ext = path.extname(f);
     if (!['.md', '.json', '.yaml', '.yml', ''].includes(ext)) continue;
     const content = fs.readFileSync(f, 'utf8');
@@ -1254,12 +1259,14 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 80)
+  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 85).
+  // The threshold scales linearly with the Active Skills list (one line per skill); raise it as new skills
+  // are added to the registry so this guard catches regressions, not growth.
   const lineCountM = claudeM.split('\n').length;
-  if (lineCountM < 80) {
+  if (lineCountM < 85) {
     pass(`Tier M: CLAUDE.md line count reduced (${lineCountM} lines)`);
   } else {
-    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 80 after stripping`);
+    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 85 after stripping`);
   }
 
   // Tier S - Known Patterns stripped (only section applicable)
@@ -2622,6 +2629,91 @@ async function scenarioDoctorCrossFileValidation() {
   }
 }
 
+async function scenarioDocAuditPresent() {
+  section('doc-audit skill presence + tier pruning (v1.13.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`doc-audit-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/doc-audit');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      if (fs.existsSync(path.join(skillDir, 'SKILL.md'))) {
+        pass(`Tier ${tier}: doc-audit/SKILL.md scaffolded`);
+      } else {
+        fail(`Tier ${tier}: doc-audit/SKILL.md missing`);
+      }
+      if (fs.existsSync(path.join(skillDir, 'PATTERNS.md'))) {
+        pass(`Tier ${tier}: doc-audit/PATTERNS.md scaffolded`);
+      } else {
+        fail(`Tier ${tier}: doc-audit/PATTERNS.md missing`);
+      }
+
+      const cheatsheetPath = path.join(dir, '.claude/cheatsheet.md');
+      if (fs.existsSync(cheatsheetPath)) {
+        const cheatsheet = fs.readFileSync(cheatsheetPath, 'utf8');
+        if (/`\/doc-audit`/.test(cheatsheet)) {
+          pass(`Tier ${tier}: cheatsheet row for /doc-audit present`);
+        } else {
+          fail(`Tier ${tier}: cheatsheet row for /doc-audit missing`);
+        }
+      } else {
+        fail(`Tier ${tier}: .claude/cheatsheet.md missing`);
+      }
+
+      const pipelinePath = path.join(dir, '.claude/rules/pipeline.md');
+      if (fs.existsSync(pipelinePath)) {
+        const pipeline = fs.readFileSync(pipelinePath, 'utf8');
+        if (/\/doc-audit/.test(pipeline)) {
+          pass(`Tier ${tier}: pipeline.md Track C references /doc-audit`);
+        } else {
+          fail(`Tier ${tier}: pipeline.md Track C missing /doc-audit invocation`);
+        }
+        if (/Track C - Test \+ doc audit/.test(pipeline)) {
+          pass(`Tier ${tier}: pipeline.md Track C renamed to "Test + doc audit"`);
+        } else {
+          fail(`Tier ${tier}: pipeline.md Track C header not renamed`);
+        }
+      } else {
+        fail(`Tier ${tier}: .claude/rules/pipeline.md missing`);
+      }
+
+      const skillMd = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
+      const parsed = parseSkillFile(skillMd);
+      if (parsed.fields.allowedTools && !allowedToolsHasCommas(parsed.fields.allowedTools)) {
+        pass(`Tier ${tier}: doc-audit allowed-tools is space-separated`);
+      } else {
+        fail(`Tier ${tier}: doc-audit allowed-tools uses commas or missing`);
+      }
+      const bodyLines = countBodyLines(parsed.body);
+      if (bodyLines <= SKILL_MD_MAX_LINES) {
+        pass(`Tier ${tier}: doc-audit body ${bodyLines} lines (<= ${SKILL_MD_MAX_LINES})`);
+      } else {
+        fail(
+          `Tier ${tier}: doc-audit body ${bodyLines} lines exceeds ${SKILL_MD_MAX_LINES} budget`,
+        );
+      }
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: doc-audit pruned (not installed on tier S)`);
+      } else {
+        fail(`Tier ${tier}: doc-audit present but should be pruned`);
+      }
+
+      const cheatsheetPath = path.join(dir, '.claude/cheatsheet.md');
+      if (fs.existsSync(cheatsheetPath)) {
+        const cheatsheet = fs.readFileSync(cheatsheetPath, 'utf8');
+        if (!/\/doc-audit/.test(cheatsheet)) {
+          pass(`Tier ${tier}: cheatsheet row for /doc-audit pruned`);
+        } else {
+          fail(`Tier ${tier}: cheatsheet still references /doc-audit`);
+        }
+      }
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2667,6 +2759,7 @@ async function main() {
   await scenarioCrossStackInvariants();
   await scenarioSkillMdSpecCompliance();
   await scenarioDoctorCrossFileValidation();
+  await scenarioDocAuditPresent();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

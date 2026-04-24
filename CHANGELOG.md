@@ -11,6 +11,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.13.0] — 2026-04-24
+
+### Added
+
+- **New skill `/doc-audit`** (Issue #61, Tier M/L): static documentation drift audit. Seven checks:
+  - **D1 Relative-link resolution**: markdown links to local files must resolve. `http(s)://` and anchors excluded.
+  - **D2 Code-block syntax**: `json` / `yaml` / `toml` fenced blocks are parsed with a stack-appropriate tool (`node -e`, `python -c yaml.safe_load`, `python -c tomllib`). Blocks containing template markers (`<...>`, `{{...}}`, `[PLACEHOLDER]`) are skipped.
+  - **D3 CDK placeholder residuals**: pinned list of the ten scaffold tokens — `[TEST_COMMAND]`, `[FRAMEWORK_VALUE]`, `[LANGUAGE_VALUE]`, `[INSTALL_COMMAND]`, `[DEV_COMMAND]`, `[BUILD_COMMAND]`, `[TYPE_CHECK_COMMAND]`, `[E2E_COMMAND]`, `[ENUM_CASE_CONVENTION]`, `[MIGRATION_COMMAND]`. Every token on the list is grepped against `packages/cli/templates/**` — only tokens the scaffold actually writes are included. Generic `[UPPERCASE]` regex is intentionally avoided.
+  - **D4 Slash-command name match**: `/<skill>` mentions cross-verified against `.claude/skills/<skill>/`. CDK CLI verbs (`init`, `upgrade`, `doctor`, `add`, `new`) allowlisted.
+  - **D5 Skill-count consistency**: numeric claims (`\d+ skills`) cross-verified against `.claude/skills/` minus `custom-*`.
+  - **D6 ADR marker freshness**: if `[ADR_PATH]` set, frontmatter dates older than 180 days without a terminal `status:` flagged.
+  - **D7 Stack-specific doc sync**: top-3 stacks only (`node-ts`, `python`, `swift`). Patterns live in a sibling `PATTERNS.md` — Next.js routes, Django URLconf paths, Swift Package.swift products. Other stacks skip D7.
+- New skill directory scaffolded in `packages/cli/templates/tier-m/.claude/skills/doc-audit/` and `tier-l/.claude/skills/doc-audit/` (byte-identical across tiers): `SKILL.md` (271 body lines, inside the 500-line guardrail) + `PATTERNS.md` (agnostic D3 list + D7 stack-specific patterns).
+- Registry entry in `skill-registry.js`: `minTier: 'm'`, `requires: {}` (universal), `cheatsheet: true`, `excludeNative: false`.
+- Cheatsheet row for `/doc-audit` added in both Tier M and Tier L cheatsheet.md.
+- Integration scenario `scenarioDocAuditPresent`: scaffolds tier-s/m/l and verifies SKILL.md + PATTERNS.md presence (or pruning on tier-s), cheatsheet row presence, pipeline.md Track C invocation, `allowed-tools` syntax spec-compliance, and SKILL.md body size budget.
+
+### Changed
+
+- `pipeline.md` Track C in both Tier M and Tier L renamed from `Track C - Test suite audit` to `Track C - Test + doc audit`, with `/doc-audit` invocation added alongside `/test-audit`.
+- `README.md` skill count reference updated from `16 audit skills` to `17 audit skills`; `/doc-audit` row added to the skills table; Testing section updated to `895 integration checks` and `332 unit tests`; shields.io badge updated to `895 checks`.
+- `docs/operational-guide.md` audit-skill table updated with a `/doc-audit` row (universal tier-M/L install, no `requires`); Phase 5d Track C renamed to "Test + doc audit"; full `/doc-audit` skill detail section added after `/test-audit`.
+- Integration test count: 864 → 895 (+31 from `scenarioDocAuditPresent`).
+- CLAUDE.md line-count regression guard in `scenarioPlaceholderNoiseReduction` loosened from `< 80` to `< 85` to accommodate the extra Active Skills row (one line per new skill in the registry). The guard still catches stripping regressions vs. the ~92-line raw template.
+- `skill-registry.test.js` entry-count assertion updated from 18 to 19.
+
+---
+
 ## [1.12.0] — 2026-04-24
 
 ### Added

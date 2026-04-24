@@ -76,7 +76,7 @@ describe('add skill', () => {
     await fs.remove(noClaudeDir);
   });
 
-  it('installs all 12 registry skills', async () => {
+  it('installs every universal Tier S registry skill', async () => {
     const skills = [
       'arch-audit',
       'commit',
