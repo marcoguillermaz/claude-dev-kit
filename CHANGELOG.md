@@ -11,6 +11,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.14.0] — 2026-04-25
+
+### Added
+
+- **Three new skills** (Issue #66, Tier M/L) — closes the Q2 #7 bundle:
+  - **`/api-contract-audit`** — requires `hasApi: true`. Static OpenAPI contract audit. Eight checks AC1-AC8: endpoint drift (spec vs code set-diff), schema drift (field-level compare of Zod / Pydantic / io-ts / class-validator against spec), status-code mismatch, breaking-change detection vs previous spec (`git show HEAD~1:<spec-path>` diff; required field removed, enum value removed, path removed, type change = Critical), versioning consistency, security scheme alignment, deprecation markers, Richardson Maturity Model scoring L0-L3 (HATEOAS detected via `_links` / `rel` / `href` / HAL / JSON:API patterns in response schema). Framework auto-gen: FastAPI (`/openapi.json` endpoint or decorator parsing), NestJS (`@ApiProperty` decorators), Express + swagger-jsdoc (JSDoc annotations), Next.js 13+ route handlers (`app/api/*/route.ts` + Zod inference), Django REST Framework (`drf-spectacular` / `drf-yasg`). Patterns in sibling `PATTERNS.md`. Backlog prefix `API-`. Runs in Phase 5d Track B.
+  - **`/infra-audit`** — universal (no `requires`). Static infra-security audit across five layers, each running only if its markers are detected: **GitHub Actions** (GHA-1..7: pwn-request, secret logging, unpinned actions, permissions overreach, self-hosted runner on public PR, untrusted input in run, workflow modification permission); **Dockerfile** (D-1..6: latest tag, root user, ADD with URL, unpinned base image, secret in build arg, apt without cleanup); **Kubernetes** (K-1..7: runAsNonRoot missing, allowPrivilegeEscalation, privileged container, hostNetwork/hostPID/hostIPC, writable rootfs, secret as env var, imagePullPolicy mismatch); **Terraform** (T-1..6: IAM wildcard action, IAM wildcard resource, public S3, state in git, module without version pin, hardcoded secret); **GitLab CI** (GL-1..4: secret logging, unpinned image, unprotected runner, script injection). Patterns in sibling `PATTERNS.md`. Backlog prefix `INFRA-`. Runs in Phase 5d Track C on every block. Stack-agnostic.
+  - **`/compliance-audit`** — universal (no `requires`). Static compliance audit with regulatory profiles. v1.14 ships the **GDPR profile active** (10 checks G1-G10 across 4 pillars: data-subject rights delete/export/rectify, lawful basis + consent, PII identification + encryption-at-rest for Article 9 special-category + logging hygiene, retention + sub-processors). Output includes a mechanical **GDPR readiness tier** (foundational / operational / mature); explicit caveat that the tier is mechanical and does not constitute legal attestation. **SOC 2 and HIPAA profiles scaffolded** in sibling `PROFILES.md` as future-markers with check IDs `SOC2-1..10` / `HIPAA-1..10`, reserved backlog prefixes, and enablement blockers documented (SOC 2: pattern validation against a real enterprise audit engagement; HIPAA: PHI vocabulary validation in a healthcare-domain project). Backlog prefix `GDPR-` (SOC 2 / HIPAA reserved). Runs in Phase 5d Track B. Stack-agnostic.
+- New skill scaffolded in `packages/cli/templates/tier-m/.claude/skills/` and `tier-l/.claude/skills/` for each of the three skills (byte-identical across tiers):
+  - `api-contract-audit/` — SKILL.md (279 body lines) + PATTERNS.md (framework auto-gen + route discovery + schema extraction + L3 HATEOAS detection)
+  - `infra-audit/` — SKILL.md (185 body lines) + PATTERNS.md (5 layer sections)
+  - `compliance-audit/` — SKILL.md (285 body lines) + PROFILES.md (GDPR active + SOC 2 / HIPAA future-marker scaffolding)
+- Three registry entries in `skill-registry.js`: `api-contract-audit` (`minTier: 'm'`, `requires: { hasApi: true }`, `cheatsheet: true`); `infra-audit` (`minTier: 'm'`, `requires: {}`, `cheatsheet: true`); `compliance-audit` (`minTier: 'm'`, `requires: {}`, `cheatsheet: true`).
+- Cheatsheet rows for all three skills in tier-M and tier-L `cheatsheet.md`.
+- Three integration scenarios in `test/integration/run.js` — `scenarioApiContractAuditPresent`, `scenarioInfraAuditPresent`, `scenarioComplianceAuditPresent` — plus a shared `assertSkillPresent()` helper. Each verifies tier pruning (absent on tier S), presence (SKILL.md + siblings on tier M/L), cheatsheet row presence, pipeline.md invocation, `allowed-tools` spec compliance, and body size budget. `scenarioApiContractAuditPresent` additionally verifies `hasApi: false` pruning; `scenarioComplianceAuditPresent` additionally verifies `PROFILES.md` scaffolds SOC 2 / HIPAA as future-markers.
+
+### Changed
+
+- `pipeline.md` Track B in tier-M/L renamed `Track B - API/DB audit` → `Track B - API/DB + compliance audit`, with `/api-contract-audit` and `/compliance-audit` added to the invocation list.
+- `pipeline.md` Track C in tier-M/L renamed `Track C - Test + doc audit` → `Track C - Test + doc + infra audit`, with `/infra-audit` added to the invocation list.
+- `README.md` skill count `17 audit skills` → `20 audit skills`; three rows added to the skills table; Current/Next roadmap rewritten; Testing section updated to `979 integration checks` and `332 unit tests`; shields.io badge updated to `979 checks`.
+- `docs/operational-guide.md` audit-skill table updated with three new rows; Phase 5d Track B renamed "API/DB + compliance audit"; Phase 5d Track C renamed "Test + doc + infra audit"; three full skill detail sections added after `/doc-audit`.
+- Integration test count: 895 → 979 (+84 across three scenario suites).
+- `CLAUDE.md` line-count regression guard in `scenarioPlaceholderNoiseReduction` loosened from `< 85` to `< 90` to accommodate three additional Active Skills rows.
+- `skill-registry.test.js` entry-count assertion updated from 19 to 22.
+
+---
+
 ## [1.13.0] — 2026-04-24
 
 ### Added
