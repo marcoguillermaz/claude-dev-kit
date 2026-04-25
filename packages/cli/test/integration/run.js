@@ -2765,11 +2765,8 @@ async function assertSkillPresent(dir, tier, skillName, opts = {}) {
   if (bodyLines <= SKILL_MD_MAX_LINES) {
     pass(`Tier ${tier}: ${skillName} body ${bodyLines} lines (<= ${SKILL_MD_MAX_LINES})`);
   } else {
-    fail(
-      `Tier ${tier}: ${skillName} body ${bodyLines} lines exceeds ${SKILL_MD_MAX_LINES} budget`,
-    );
+    fail(`Tier ${tier}: ${skillName} body ${bodyLines} lines exceeds ${SKILL_MD_MAX_LINES} budget`);
   }
-
 }
 
 async function scenarioApiContractAuditPresent() {
@@ -2843,10 +2840,16 @@ async function scenarioComplianceAuditPresent() {
 
       // Verify PROFILES.md scaffolds SOC2/HIPAA as future markers
       const profilesMd = fs.readFileSync(path.join(skillDir, 'PROFILES.md'), 'utf8');
-      if (/NOT ACTIVE in v1\.14/.test(profilesMd) && /SOC 2/.test(profilesMd) && /HIPAA/.test(profilesMd)) {
+      if (
+        /NOT ACTIVE in v1\.14/.test(profilesMd) &&
+        /SOC 2/.test(profilesMd) &&
+        /HIPAA/.test(profilesMd)
+      ) {
         pass(`Tier ${tier}: compliance-audit PROFILES.md scaffolds SOC2 + HIPAA as future-markers`);
       } else {
-        fail(`Tier ${tier}: compliance-audit PROFILES.md missing SOC2/HIPAA future-marker structure`);
+        fail(
+          `Tier ${tier}: compliance-audit PROFILES.md missing SOC2/HIPAA future-marker structure`,
+        );
       }
     } else {
       if (!fs.existsSync(skillDir)) {
