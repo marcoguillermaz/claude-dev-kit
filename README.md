@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![979 integration checks](https://img.shields.io/badge/integration-979%20checks-blue.svg)](#testing)
+[![990 integration checks](https://img.shields.io/badge/integration-990%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -122,11 +122,13 @@ The Stop hook in `settings.json` is the core enforcement mechanism. It blocks Cl
 npx mg-claude-dev-kit init                    # scaffold wizard
 npx mg-claude-dev-kit init --dry-run          # preview without writing
 npx mg-claude-dev-kit init --answers file.json  # skip prompts (CI/automation)
-npx mg-claude-dev-kit doctor                  # validate setup (26 checks)
+npx mg-claude-dev-kit doctor                  # validate setup (27 checks)
 npx mg-claude-dev-kit doctor --report         # JSON output for CI
 npx mg-claude-dev-kit doctor --ci             # silent, exit 1 on failure
 npx mg-claude-dev-kit upgrade                 # update template files
 npx mg-claude-dev-kit upgrade --tier=m        # promote to higher tier
+npx mg-claude-dev-kit upgrade --anthropic     # show diff for Anthropic-influenced files (dry-run)
+npx mg-claude-dev-kit upgrade --anthropic --apply  # write the diff (with .bak backup)
 npx mg-claude-dev-kit add skill <name>        # install one skill
 npx mg-claude-dev-kit add rule <name>         # install one rule
 npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
@@ -159,8 +161,8 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 979 integration checks
-node --test packages/cli/test/unit/*.test.js   # 332 unit tests
+node packages/cli/test/integration/run.js    # 990 integration checks
+node --test packages/cli/test/unit/*.test.js   # 343 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
@@ -190,9 +192,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.14.0 ships the Q2 #7 bundle (Issue #66, ICE 245): three new skills, portfolio from 17 to 20. `/api-contract-audit` parses OpenAPI specs against runtime code and flags drift before clients notice (endpoints present in spec without handler, schema field mismatches, status-code divergence, breaking changes vs the previous committed spec via `git show HEAD~1`, security-scheme alignment, Richardson Maturity grading L0 to L3). Auto-gen coverage spans FastAPI, NestJS, Express with swagger-jsdoc, Next.js 13+ route handlers, and Django REST Framework. `/infra-audit` checks five layers, but only when markers exist (no N/A noise): GitHub Actions for pwn-request and secret-logging patterns, Dockerfile for root user and unpinned images, Kubernetes manifests for privileged containers and host-namespace breakouts, Terraform for IAM wildcards and state files committed to git, GitLab CI for equivalent script-injection vectors. The infra surface is stack-agnostic: it sits apart from backend language. `/compliance-audit` ships with the GDPR profile active: data-subject rights (delete, export, rectify), consent capture and lawful basis, PII identification with special-category encryption check (Article 9), logging hygiene, retention policy, sub-processor transparency. SOC 2 and HIPAA sit scaffolded in `PROFILES.md` as future markers, with their check taxonomies and backlog prefixes reserved, waiting on real enterprise validation before going live in v1.15+. `/api-contract-audit` attaches to Phase 5d Track B; `/compliance-audit` sits alongside it; `/infra-audit` joins Track C (renamed "Test + doc + infra audit"). Integration: 979 checks (+84 across three scenario suites); unit: 332 tests.
+**Current**: v1.15.0 ships the `upgrade --anthropic` flag (Q3 #2, Issue #93, ICE 210). The standard `upgrade` already refreshes 8 template files; `--anthropic` adds a separate flow for the files that encode Anthropic spec and best practices. Default is dry-run with a colourized unified diff (powered by the `diff` npm package); `--apply` writes the change with a timestamped `.bak` backup of the previous content. The two flows compose: `upgrade --anthropic --apply` runs both back to back. v1.15.0 scope is deliberately narrow, one file: `.claude/skills/arch-audit/advanced-checks.md`. The other Anthropic-touching files (`pipeline-standards.md`, `claudemd-standards.md`, `arch-audit/SKILL.md`) pass through the scaffold's placeholder substitution or section-stripping pipeline, so a raw template-vs-scaffold compare produces false positives on a clean install. Expanding the registry needs a transformation-aware compare, tracked for v1.16+. A new doctor check `anthropic-files-current` warns when the file drifts from the installed CDK template; doctor count goes from 26 to 27. Integration: 990 checks (+11 from `scenarioUpgradeAnthropic`); unit: 343 tests (+11 from `upgrade-anthropic.test.js`).
 
-**Next**: Q2 #6 CONTRIBUTING.md overhaul (ICE 256, currently Partial) or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays deferred.
+**Next**: Q3 #3 `team-settings.json` org-wide skill and model restrictions (Issue #94, ICE 175) or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays deferred.
 
 ---
 

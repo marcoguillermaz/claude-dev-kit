@@ -38,6 +38,14 @@ program
   .command('upgrade')
   .description('Update template files to the latest claude-dev-kit version')
   .option('--dry-run', 'Show what would change without writing any files')
+  .option(
+    '--anthropic',
+    'Also refresh files that encode Anthropic spec / best practices (currently arch-audit/advanced-checks.md; v1.15.0 scope)',
+  )
+  .option(
+    '--apply',
+    'Required with --anthropic: write changes to disk (default is dry-run with diff)',
+  )
   .action(upgrade);
 
 const add = program.command('add').description('Add a single skill or rule to the current project');

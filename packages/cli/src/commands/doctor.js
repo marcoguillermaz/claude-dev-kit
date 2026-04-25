@@ -23,6 +23,11 @@ import {
   expectedSecurityVariant,
   detectStackSync,
 } from '../utils/doctor-cross-file.js';
+import { fileURLToPath } from 'url';
+import { ANTHROPIC_FILES, detectScaffoldedTier } from './upgrade.js';
+
+const __doctorDirname = path.dirname(fileURLToPath(import.meta.url));
+const TEMPLATES_DIR_FOR_DOCTOR = path.resolve(__doctorDirname, '../../templates');
 
 const checks = [
   {
@@ -522,6 +527,35 @@ const checks = [
       } catch {
         return { pass: true, skip: true };
       }
+    },
+  },
+  {
+    id: 'anthropic-files-current',
+    label:
+      'Anthropic-influenced files (arch-audit, claudemd-standards, pipeline-standards) match the installed CDK template',
+    check: (cwd) => {
+      const tier = detectScaffoldedTier(cwd);
+      if (!tier) return { pass: true, skip: true };
+      const drifted = [];
+      for (const entry of ANTHROPIC_FILES) {
+        const targetPath = path.join(cwd, entry.target);
+        if (!fs.existsSync(targetPath)) continue;
+        const templatePath = entry.template
+          ? path.join(TEMPLATES_DIR_FOR_DOCTOR, entry.template)
+          : entry.templateTierAware
+            ? path.join(TEMPLATES_DIR_FOR_DOCTOR, entry.templateTierAware.replace('{TIER}', tier))
+            : null;
+        if (!templatePath || !fs.existsSync(templatePath)) continue;
+        const tpl = fs.readFileSync(templatePath, 'utf8');
+        const tgt = fs.readFileSync(targetPath, 'utf8');
+        if (tpl !== tgt) drifted.push(entry.target);
+      }
+      return {
+        pass: drifted.length === 0,
+        warn: true,
+        info: drifted.length > 0 ? `drift: ${drifted.join(', ')}` : undefined,
+        fix: `Run \`claude-dev-kit upgrade --anthropic\` to view diff, then \`--anthropic --apply\` to refresh${drifted.length > 0 ? ` (${drifted.length} file${drifted.length === 1 ? '' : 's'})` : ''}.`,
+      };
     },
   },
   {

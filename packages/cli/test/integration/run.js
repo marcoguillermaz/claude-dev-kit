@@ -2861,6 +2861,158 @@ async function scenarioComplianceAuditPresent() {
   }
 }
 
+async function scenarioUpgradeAnthropic() {
+  section('upgrade --anthropic refresh + dry-run + doctor anthropic-files-current (v1.15.0)');
+
+  const CLI = path.resolve(__dirname, '../../src/index.js');
+
+  function runCli(args, cwd) {
+    try {
+      return {
+        stdout: execFileSync('node', [CLI, ...args], { cwd, encoding: 'utf8' }),
+        code: 0,
+      };
+    } catch (e) {
+      return { stdout: (e.stdout || '').toString(), code: e.status || 1 };
+    }
+  }
+
+  // Scaffold a Tier M project to exercise the tier-aware ANTHROPIC_FILES entries
+  const config = { ...BASE, tier: 'm', isDiscovery: false };
+  const dir = await scaffold('upgrade-anthropic-tier-m', 'm', config);
+
+  // Sanity baseline: dry-run on a clean scaffold reports "already current"
+  {
+    const out = runCli(['upgrade', '--anthropic'], dir);
+    if (/Anthropic-influenced files are already current/.test(out.stdout)) {
+      pass('Clean scaffold: --anthropic dry-run reports up-to-date');
+    } else {
+      fail('Clean scaffold: --anthropic dry-run did not report up-to-date');
+    }
+  }
+
+  // Simulate stale arch-audit/advanced-checks.md by appending a marker line
+  const archSkillPath = path.join(dir, '.claude/skills/arch-audit/advanced-checks.md');
+  const originalArch = fs.readFileSync(archSkillPath, 'utf8');
+  const staleArch = originalArch + '\n<!-- intentional stale marker -->\n';
+  fs.writeFileSync(archSkillPath, staleArch);
+
+  // Dry-run: should print diff and NOT overwrite
+  {
+    const out = runCli(['upgrade', '--anthropic'], dir);
+    if (/arch-audit\/SKILL\.md/.test(out.stdout)) {
+      pass('Stale arch-audit: --anthropic dry-run lists the file');
+    } else {
+      fail('Stale arch-audit: --anthropic dry-run did not list the file');
+    }
+    if (/Dry run\. Re-run with `--anthropic --apply`/.test(out.stdout)) {
+      pass('Dry-run mode emits "--apply" hint');
+    } else {
+      fail('Dry-run mode missing "--apply" hint');
+    }
+    const after = fs.readFileSync(archSkillPath, 'utf8');
+    if (after === staleArch) {
+      pass('Dry-run: arch-audit/advanced-checks.md left untouched on disk');
+    } else {
+      fail('Dry-run: arch-audit/advanced-checks.md was modified - should be untouched');
+    }
+  }
+
+  // Doctor reports drift via anthropic-files-current
+  {
+    const out = runCli(['doctor', '--report'], dir);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    if (report) {
+      const check = report.checks?.find((c) => c.id === 'anthropic-files-current');
+      if (check && (check.status === 'warn' || check.status === 'fail')) {
+        pass(`doctor anthropic-files-current = ${check.status} on stale arch-audit`);
+      } else {
+        fail(`doctor anthropic-files-current = ${check?.status} (expected warn/fail)`);
+      }
+    } else {
+      fail('doctor --report did not emit valid JSON');
+    }
+  }
+
+  // Apply: overwrites file with template + creates .bak
+  {
+    const out = runCli(['upgrade', '--anthropic', '--apply'], dir);
+    if (/Anthropic refresh complete/.test(out.stdout)) {
+      pass('--anthropic --apply emits success message');
+    } else {
+      fail('--anthropic --apply did not emit success message');
+    }
+    const refreshed = fs.readFileSync(archSkillPath, 'utf8');
+    if (refreshed === originalArch) {
+      pass('--apply: arch-audit/advanced-checks.md restored to original template content');
+    } else {
+      fail('--apply: arch-audit/advanced-checks.md content does not match original template');
+    }
+    const after = fs.readdirSync(path.join(dir, '.claude/skills/arch-audit'));
+    const bakFiles = after.filter((f) => f.startsWith('advanced-checks.md.bak.'));
+    if (bakFiles.length === 1) {
+      pass(`--apply: exactly one .bak file created (${bakFiles[0]})`);
+    } else {
+      fail(`--apply: expected 1 .bak file, found ${bakFiles.length}`);
+    }
+  }
+
+  // Doctor anthropic-files-current passes after apply
+  {
+    const out = runCli(['doctor', '--report'], dir);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    if (report) {
+      const check = report.checks?.find((c) => c.id === 'anthropic-files-current');
+      if (check && (check.status === 'pass' || check.status === 'skip')) {
+        pass(`doctor anthropic-files-current = ${check.status} after --apply`);
+      } else {
+        fail(
+          `doctor anthropic-files-current = ${check?.status} (expected pass/skip after refresh)`,
+        );
+      }
+    } else {
+      fail('doctor --report did not emit valid JSON after refresh');
+    }
+  }
+
+  // Tier S scaffold: --anthropic uses tier-s/ template path
+  {
+    const dirS = await scaffold('upgrade-anthropic-tier-s', 's', {
+      ...BASE,
+      tier: 's',
+      isDiscovery: false,
+    });
+    const out = runCli(['upgrade', '--anthropic'], dirS);
+    if (/Anthropic-influenced files are already current/.test(out.stdout)) {
+      pass('Tier S scaffold: --anthropic dry-run reports up-to-date (tier-aware path)');
+    } else {
+      fail('Tier S scaffold: --anthropic dry-run did not report up-to-date');
+    }
+  }
+
+  // No tier detected: --anthropic skips gracefully
+  {
+    const dirNoTier = path.join(OUTPUT_DIR, 'upgrade-anthropic-no-tier');
+    await fs.ensureDir(dirNoTier);
+    const out = runCli(['upgrade', '--anthropic'], dirNoTier);
+    if (/No scaffolded tier detected/.test(out.stdout)) {
+      pass('No-scaffold dir: --anthropic skips with informative message');
+    } else {
+      fail('No-scaffold dir: --anthropic did not skip gracefully');
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2910,6 +3062,7 @@ async function main() {
   await scenarioApiContractAuditPresent();
   await scenarioInfraAuditPresent();
   await scenarioComplianceAuditPresent();
+  await scenarioUpgradeAnthropic();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 
