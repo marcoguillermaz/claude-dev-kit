@@ -3013,6 +3013,227 @@ async function scenarioUpgradeAnthropic() {
   }
 }
 
+async function scenarioTeamSettings() {
+  section('team-settings.json governance: init / upgrade / add / doctor (v1.16.0)');
+
+  const CLI = path.resolve(__dirname, '../../src/index.js');
+
+  function runCli(args, cwd) {
+    try {
+      return {
+        stdout: execFileSync('node', [CLI, ...args], { cwd, encoding: 'utf8' }),
+        code: 0,
+      };
+    } catch (e) {
+      return {
+        stdout: (e.stdout || '').toString() + (e.stderr || '').toString(),
+        code: e.status || 1,
+      };
+    }
+  }
+
+  // Baseline: tier-m scaffold without team-settings.json (unrestricted)
+  const baseConfig = { ...BASE, tier: 'm', isDiscovery: false };
+  const dirNoSettings = await scaffold('team-settings-absent', 'm', baseConfig);
+  {
+    const out = runCli(['doctor', '--report'], dirNoSettings);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (check && check.status === 'skip') {
+      pass('Absent team-settings.json: doctor team-settings-compliance = skip');
+    } else {
+      fail(`Absent team-settings.json: doctor check = ${check?.status} (expected skip)`);
+    }
+  }
+
+  // Tier-S scaffold + team-settings.json with minTier=m → doctor warn
+  const dirTierS = await scaffold('team-settings-mintier-violation', 's', {
+    ...BASE,
+    tier: 's',
+    isDiscovery: false,
+  });
+  fs.writeFileSync(
+    path.join(dirTierS, '.claude/team-settings.json'),
+    JSON.stringify({ minTier: 'm' }, null, 2),
+  );
+  {
+    const out = runCli(['doctor', '--report'], dirTierS);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (check && check.status === 'warn' && /minTier=m/.test(check.info || '')) {
+      pass('Tier-S + minTier=m: doctor warn with minTier violation message');
+    } else {
+      fail(
+        `Tier-S + minTier=m: doctor check = ${check?.status}, info=${check?.info} (expected warn with minTier=m)`,
+      );
+    }
+  }
+
+  // upgrade refuses on minTier violation
+  {
+    const out = runCli(['upgrade'], dirTierS);
+    if (
+      out.code !== 0 &&
+      /requires minTier=m/.test(out.stdout) &&
+      /init --tier=m/.test(out.stdout)
+    ) {
+      pass('upgrade refuses minTier violation with promotion suggestion');
+    } else {
+      fail(`upgrade should refuse + suggest tier promotion (code=${out.code})`);
+    }
+  }
+
+  // Tier-M scaffold + team-settings.json blockedSkills → add skill refused
+  const dirTierM = await scaffold('team-settings-blocked', 'm', baseConfig);
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ blockedSkills: ['security-audit'] }, null, 2),
+  );
+  {
+    const out = runCli(['add', 'skill', 'security-audit'], dirTierM);
+    if (out.code !== 0 && /blocked by .claude\/team-settings\.json/.test(out.stdout)) {
+      pass('add skill: blocked skill is refused with reference to team-settings');
+    } else {
+      fail(`add skill blocked: code=${out.code}, stdout=${out.stdout.slice(0, 200)}`);
+    }
+  }
+
+  // allowedSkills whitelist refuses skill not in list
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ allowedSkills: ['arch-audit', 'visual-audit'] }, null, 2),
+  );
+  {
+    const out = runCli(['add', 'skill', 'security-audit'], dirTierM);
+    if (out.code !== 0 && /not in the allowedSkills/.test(out.stdout)) {
+      pass('add skill: skill outside allowedSkills is refused');
+    } else {
+      fail(`add skill not-allowed: code=${out.code}, stdout=${out.stdout.slice(0, 200)}`);
+    }
+  }
+
+  // Required skills missing → doctor warn
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ requiredSkills: ['nonexistent-skill'] }, null, 2),
+  );
+  {
+    const out = runCli(['doctor', '--report'], dirTierM);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (check && check.status === 'warn' && /required skills missing/.test(check.info || '')) {
+      pass('requiredSkills missing: doctor warn with explicit message');
+    } else {
+      fail(
+        `requiredSkills missing: doctor = ${check?.status}, info=${check?.info} (expected warn)`,
+      );
+    }
+  }
+
+  // Mutual exclusion: invalid team-settings.json → doctor warn with parse error
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ allowedSkills: ['arch-audit'], blockedSkills: ['arch-audit'] }, null, 2),
+  );
+  {
+    const out = runCli(['doctor', '--report'], dirTierM);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (check && check.status === 'warn' && /must not overlap/.test(check.info || '')) {
+      pass('allowed/blocked overlap: doctor warn with mutual-exclusion message');
+    } else {
+      fail(`overlap: doctor = ${check?.status}, info=${check?.info}`);
+    }
+  }
+
+  // Malformed JSON → upgrade exits with parse error
+  fs.writeFileSync(path.join(dirTierM, '.claude/team-settings.json'), '{not json');
+  {
+    const out = runCli(['upgrade'], dirTierM);
+    if (out.code !== 0 && /not valid JSON/.test(out.stdout)) {
+      pass('upgrade: malformed team-settings.json exits with descriptive error');
+    } else {
+      fail(`malformed: upgrade code=${out.code}, stdout=${out.stdout.slice(0, 200)}`);
+    }
+  }
+
+  // custom-* skills bypass allowedSkills whitelist (presence in add does not apply since no template;
+  // verify via doctor that custom-* installed is NOT flagged when allowedSkills omits it)
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ allowedSkills: ['arch-audit'] }, null, 2),
+  );
+  // Simulate a custom skill installed
+  await fs.ensureDir(path.join(dirTierM, '.claude/skills/custom-experimental'));
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/skills/custom-experimental/SKILL.md'),
+    '---\nname: custom-experimental\n---\n# stub\n',
+  );
+  {
+    const out = runCli(['doctor', '--report'], dirTierM);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    // allowedSkills is not presence-required: custom-experimental should NOT cause warn here
+    if (check && check.status === 'pass') {
+      pass('custom-* skill present + allowedSkills set: doctor pass (custom bypass)');
+    } else {
+      fail(
+        `custom bypass: doctor = ${check?.status}, info=${check?.info} (expected pass; custom-* not presence-required)`,
+      );
+    }
+  }
+
+  // blockedSkills enforced even on custom-*
+  fs.writeFileSync(
+    path.join(dirTierM, '.claude/team-settings.json'),
+    JSON.stringify({ blockedSkills: ['custom-experimental'] }, null, 2),
+  );
+  {
+    const out = runCli(['doctor', '--report'], dirTierM);
+    let report = null;
+    try {
+      report = JSON.parse(out.stdout);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (
+      check &&
+      check.status === 'warn' &&
+      /blocked skills installed.*custom-experimental/.test(check.info || '')
+    ) {
+      pass('blockedSkills enforces custom-* (governance > preservation)');
+    } else {
+      fail(`blocked custom: doctor = ${check?.status}, info=${check?.info}`);
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -3063,6 +3284,7 @@ async function main() {
   await scenarioInfraAuditPresent();
   await scenarioComplianceAuditPresent();
   await scenarioUpgradeAnthropic();
+  await scenarioTeamSettings();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 
