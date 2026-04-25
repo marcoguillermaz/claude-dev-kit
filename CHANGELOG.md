@@ -9,7 +9,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.15.0] — 2026-04-25
+
+### Added
+
+- **`upgrade --anthropic` flag** (Q3 #2, Issue #93, ICE 210): refreshes files that encode Anthropic spec / best practices, separately from the standard `upgrade` flow. Default behavior is dry-run with a colourized unified diff (via the `diff` npm package) so the contributor reviews the change before committing it. `--apply` writes the new content with a timestamped backup file (`<original>.bak.<ISO-timestamp>`) for the previous version. Combinable with the standard upgrade in a single invocation.
+- **`ANTHROPIC_FILES` registry** in `packages/cli/src/commands/upgrade.js`: a list of templates that are 1:1 copied to a scaffold (no placeholder interpolation, no flag-based section stripping) and therefore safe to compare raw. v1.15.0 scope is one file: `.claude/skills/arch-audit/advanced-checks.md`. Files that pass through the scaffold transformation pipeline (`pipeline-standards.md`, `claudemd-standards.md`, `arch-audit/SKILL.md`) stay in `REVIEW_REQUIRED` until a transformation-aware compare is implemented in a future release.
+- **Helper exports** from `upgrade.js`: `backupPath(originalPath, now)` and `detectScaffoldedTier(cwd)`. Used by both the upgrade command and the new doctor check.
+- **Doctor check `anthropic-files-current`**: warns when any of the `ANTHROPIC_FILES` differs from the installed CDK template. Doctor check count: 26 → 27.
+- **Integration scenario `scenarioUpgradeAnthropic`** in `test/integration/run.js`: scaffolds tier-m and tier-s projects, exercises the dry-run / `--apply` / `.bak` / no-tier-detected paths, and cross-checks the doctor `anthropic-files-current` status before and after refresh. ~11 new integration assertions.
+- **Unit tests** in `test/unit/upgrade-anthropic.test.js`: 11 cases for `ANTHROPIC_FILES` registry shape, `backupPath` ISO timestamp formatting, and `detectScaffoldedTier` against tier S / M / L / unrecognized H1 / missing pipeline.md.
+
 ### Changed
+
+- New dependency `diff` (^9.0.0) added to `packages/cli/package.json`. Unified-diff generation is cross-platform (no shell-out to system `diff`).
+- Integration test count: 979 → 990 (+11 from `scenarioUpgradeAnthropic`).
+- Unit test count: 332 → 343 (+11 from `upgrade-anthropic.test.js`).
+
+### Notes
+
+- The v1.15.0 `--anthropic` scope is intentionally narrow. It establishes the contract — flag, dry-run, backup, doctor wiring — on a single file that the scaffold copies 1:1 from the template. Expanding the registry to files that go through `interpolate()` or section stripping requires a transformation-aware compare (likely re-running the scaffold pipeline against the user's current config), tracked for v1.16+.
+
+### Documentation
+
+Rolled in from PR #114 (originally merged docs-only without version bump):
 
 - **CONTRIBUTING.md overhaul** (Q2 #6, ICE 256): full restructure to 11 sections aligned to v1.14.0 state. Closes the "Partial" status from PR #46 (2026-04-02).
   - Refreshed test counts (979 integration, 332 unit) and removed the stale "(currently 19)" doctor-check reference.

@@ -1166,10 +1166,14 @@ Imperative mood, under 72 characters. Scope is optional but encouraged.
 
 ```bash
 npx mg-claude-dev-kit upgrade
-npx mg-claude-dev-kit upgrade --tier=m    # promote to higher tier
+npx mg-claude-dev-kit upgrade --tier=m            # promote to higher tier
+npx mg-claude-dev-kit upgrade --anthropic         # show diff for Anthropic-influenced files (dry-run)
+npx mg-claude-dev-kit upgrade --anthropic --apply # write the diff with .bak backup
 ```
 
 Non-destructive files are updated to the latest template version (rules, context-review, files-guide, PR template). Files containing your customizations (`CLAUDE.md`, `pipeline.md`, `settings.json`, `SKILL.md` files) are flagged for manual review.
+
+**`--anthropic` flag** (added in v1.15.0): runs a separate refresh flow targeted at files that encode Anthropic spec / best practices. Default behavior is dry-run — prints a colourized unified diff for each file that differs from the installed template. `--apply` writes the new content with a timestamped backup (`<original>.bak.<ISO-timestamp>`) of the previous version. v1.15.0 scope is one file: `.claude/skills/arch-audit/advanced-checks.md`. Other Anthropic-touching files (`pipeline-standards.md`, `claudemd-standards.md`, `arch-audit/SKILL.md`) pass through the scaffold's placeholder substitution or section-stripping pipeline; expanding the registry needs a transformation-aware compare, tracked for v1.16+.
 
 **Custom skills are preserved** - any directory matching `.claude/skills/custom-*/` is never touched during upgrade. The CLI reports which custom skills were found and confirms they are unchanged.
 
@@ -1183,7 +1187,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 26 checks:
+Runs 27 checks:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1210,9 +1214,10 @@ Runs 26 checks:
 23. `security.md` variant matches the detected stack (warn on drift)
 24. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
 25. Stop hook has `timeout` configured and ≤ 600s (warn if missing - prevents hanging test commands)
-26. No duplicate entries in `permissions.deny` list (warn if duplicates found)
+26. Anthropic-influenced files match the installed CDK template — `arch-audit/advanced-checks.md` in v1.15.0 (warn on drift, suggest `upgrade --anthropic`)
+27. No duplicate entries in `permissions.deny` list (warn if duplicates found)
 
-Checks 12-26 are skipped for Tier 0 projects.
+Checks 12-27 are skipped for Tier 0 projects.
 
 **`--report` output**: machine-readable JSON with timestamp, cwd, summary (passed/warned/failed/skipped), and per-check details. Consumed by CI systems or external audit tools.
 
