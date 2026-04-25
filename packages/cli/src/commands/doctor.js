@@ -25,6 +25,12 @@ import {
 } from '../utils/doctor-cross-file.js';
 import { fileURLToPath } from 'url';
 import { ANTHROPIC_FILES, detectScaffoldedTier } from './upgrade.js';
+import {
+  readTeamSettings,
+  violatesMinTier,
+  isSkillBlocked,
+  getRequiredSkills,
+} from '../utils/team-settings.js';
 
 const __doctorDirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR_FOR_DOCTOR = path.resolve(__doctorDirname, '../../templates');
@@ -559,6 +565,62 @@ const checks = [
     },
   },
   {
+    id: 'team-settings-compliance',
+    label: 'Repo state matches .claude/team-settings.json (minTier, blockedSkills, requiredSkills)',
+    check: (cwd) => {
+      let settings;
+      try {
+        settings = readTeamSettings(cwd);
+      } catch (err) {
+        return {
+          pass: false,
+          warn: true,
+          info: err.message,
+          fix: 'Edit .claude/team-settings.json to match the schema (minTier: s|m|l, allowedSkills/blockedSkills/requiredSkills as string arrays).',
+        };
+      }
+      if (!settings) return { pass: true, skip: true };
+
+      const violations = [];
+      const tier = detectScaffoldedTier(cwd);
+      if (tier) {
+        const minViolation = violatesMinTier(settings, tier);
+        if (minViolation) {
+          violations.push(`minTier=${minViolation} but scaffold is tier ${tier}`);
+        }
+      }
+
+      const skillsDir = path.join(cwd, '.claude', 'skills');
+      const installed = fs.existsSync(skillsDir)
+        ? fs
+            .readdirSync(skillsDir, { withFileTypes: true })
+            .filter((e) => e.isDirectory())
+            .map((e) => e.name)
+        : [];
+
+      const blockedPresent = installed.filter((s) => isSkillBlocked(settings, s));
+      if (blockedPresent.length > 0) {
+        violations.push(`blocked skills installed: ${blockedPresent.join(', ')}`);
+      }
+
+      const required = getRequiredSkills(settings);
+      const missingRequired = required.filter((s) => !installed.includes(s));
+      if (missingRequired.length > 0) {
+        violations.push(`required skills missing: ${missingRequired.join(', ')}`);
+      }
+
+      return {
+        pass: violations.length === 0,
+        warn: true,
+        info: violations.length > 0 ? violations.join('; ') : undefined,
+        fix:
+          violations.length > 0
+            ? 'Resolve each violation: re-init at the higher tier, remove blocked skills with `rm -rf .claude/skills/<name>`, add required skills with `claude-dev-kit add skill <name>`.'
+            : undefined,
+      };
+    },
+  },
+  {
     id: 'permissions-no-duplicates',
     label: 'No duplicate entries in permissions deny list',
     check: (cwd) => {
@@ -612,10 +674,22 @@ export async function doctor(options = {}) {
       results.push({ id: item.id, label: item.label, status: 'pass', info: result.info || null });
     } else if (result.warn) {
       warned++;
-      results.push({ id: item.id, label: item.label, status: 'warn', fix: result.fix });
+      results.push({
+        id: item.id,
+        label: item.label,
+        status: 'warn',
+        info: result.info || null,
+        fix: result.fix,
+      });
     } else {
       failed++;
-      results.push({ id: item.id, label: item.label, status: 'fail', fix: result.fix });
+      results.push({
+        id: item.id,
+        label: item.label,
+        status: 'fail',
+        info: result.info || null,
+        fix: result.fix,
+      });
     }
   }
 

@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { SKILL_REGISTRY } from '../scaffold/skill-registry.js';
 import { registerSkillInClaudeMd } from '../utils/claudemd-update.js';
+import { readTeamSettings, isSkillBlocked, isSkillAllowed } from '../utils/team-settings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -50,6 +51,32 @@ export async function addSkill(name, options) {
     console.error(chalk.red('No .claude/ directory found.'));
     console.log(
       'Run ' + chalk.cyan('claude-dev-kit init') + ' first, or create .claude/ manually.',
+    );
+    process.exit(1);
+  }
+
+  let teamSettings = null;
+  try {
+    teamSettings = readTeamSettings(cwd);
+  } catch (err) {
+    console.error(chalk.red(`team-settings.json is invalid: ${err.message}`));
+    process.exit(1);
+  }
+
+  if (isSkillBlocked(teamSettings, name)) {
+    console.error(chalk.red(`✗ Skill ${name} is blocked by .claude/team-settings.json.`));
+    console.error(
+      `  Edit team-settings.json blockedSkills to allow it, or pick a different skill.`,
+    );
+    process.exit(1);
+  }
+
+  if (!isSkillAllowed(teamSettings, name)) {
+    console.error(
+      chalk.red(`✗ Skill ${name} is not in the allowedSkills list of .claude/team-settings.json.`),
+    );
+    console.error(
+      `  Allowed: ${teamSettings.allowedSkills.join(', ')}. Custom skills (custom-*) bypass this check.`,
     );
     process.exit(1);
   }
