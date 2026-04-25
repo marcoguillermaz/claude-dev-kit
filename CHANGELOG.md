@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **CONTRIBUTING.md overhaul** (Q2 #6, ICE 256): full restructure to 11 sections aligned to v1.14.0 state. Closes the "Partial" status from PR #46 (2026-04-02).
+  - Refreshed test counts (979 integration, 332 unit) and removed the stale "(currently 19)" doctor-check reference.
+  - Expanded project structure with `docs/`, `scripts/`, recent utilities (`skill-frontmatter.js`, `doctor-cross-file.js`, `constants.js`, `stack-commands.js`).
+  - New section "Design principles": mechanical over judgment-heavy, stack-aware depth, agnostic-only patterns in templates, byte-identical Tier M/L, 500-line `SKILL.md` body budget, spec-compliant `allowed-tools` syntax.
+  - New section "Process governance" exposes R1 (`/commit` skill mandatory) and R2 (`/humanize` on user-facing GitHub prose) publicly. Documents atomic-commits-per-skill convention with the per-commit `skill-registry.test.js` length-assertion bump pattern. Notes prettier-before-staging and mid-feature `wc -l` budget checkpoints.
+  - New section "Adding a new skill" with a 9-step inline walkthrough: registry entry shape, frontmatter schema, sibling files (`PATTERNS.md` / `REPORT.md` / `PROFILES.md` / `advanced-checks.md`), Tier M/L copy verification, cheatsheet row, pipeline.md Track A/B/C invocation, integration scenario via `assertSkillPresent` helper, backlog ID prefix selection, documentation touch points. Includes minimal but compilable code examples.
+  - New section "Testing strategy" describes the unit/integration two-layer setup, fixture conventions, the custom `pass()`/`fail()` reporter, output-dir gitignore.
+  - New section "How PRs are reviewed" with explicit must-have / nice-to-have / auto-reject criteria.
+  - New section "For maintainers" at end of document: release process (tag, humanized GitHub Release, issue close, roadmap sync, GitHub Project Status update), npm publish guidance, `gh auth` switching protocol, branch protection notes, pre-release smoke-test protocol.
+  - Welcoming intro paragraph framing the moat principle (mechanical > judgment-heavy) for first-time contributors.
+  - 387 lines (was 116).
+
 ---
 
 ## [1.14.0] — 2026-04-25
