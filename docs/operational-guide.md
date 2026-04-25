@@ -1187,7 +1187,7 @@ npx mg-claude-dev-kit doctor --report  # JSON compliance output for CI pipelines
 npx mg-claude-dev-kit doctor --ci      # silent mode: exit 1 if any check fails
 ```
 
-Runs 27 checks:
+Runs 28 checks:
 
 1. Claude Code CLI is installed and reachable
 2. `CLAUDE.md` is present
@@ -1215,15 +1215,46 @@ Runs 27 checks:
 24. `.claude/rules/context-review.md` includes C12 (warn if not present - upgrade needed)
 25. Stop hook has `timeout` configured and ≤ 600s (warn if missing - prevents hanging test commands)
 26. Anthropic-influenced files match the installed CDK template — `arch-audit/advanced-checks.md` in v1.15.0 (warn on drift, suggest `upgrade --anthropic`)
-27. No duplicate entries in `permissions.deny` list (warn if duplicates found)
+27. Repo state matches `.claude/team-settings.json` — minTier ≥ scaffold tier, no blocked skills installed, all required skills present (warn-level; skips when the file is absent)
+28. No duplicate entries in `permissions.deny` list (warn if duplicates found)
 
-Checks 12-27 are skipped for Tier 0 projects.
+Checks 12-28 are skipped for Tier 0 projects.
 
 **`--report` output**: machine-readable JSON with timestamp, cwd, summary (passed/warned/failed/skipped), and per-check details. Consumed by CI systems or external audit tools.
 
 **CI integration**: `.github/workflows/claude-dev-kit-verify.yml` (scaffolded by `init`) runs doctor on every PR. Prevents merging when the scaffold is broken or bypassed.
 
 ---
+
+### Team-wide policy with `team-settings.json`
+
+For teams that want to enforce a baseline across every member's clone, drop a `.claude/team-settings.json` into the repo. The file is opt-in: when absent, CDK behaves as before. When present, the CLI applies the policy at every relevant entry point.
+
+Schema (v1):
+
+```json
+{
+  "minTier": "m",
+  "allowedSkills": ["arch-audit", "security-audit", "test-audit"],
+  "blockedSkills": ["custom-experimental"],
+  "requiredSkills": ["arch-audit"]
+}
+```
+
+Field semantics:
+
+- `minTier` — `s` | `m` | `l`. The lowest tier the project may scaffold to. `init` refuses lower tiers. `upgrade` refuses to run on a current scaffold below the floor and points the user at `init --tier=<min>` to promote.
+- `allowedSkills` — whitelist for `add skill`. Skills outside the list are rejected. `custom-*` skills bypass this list by design (custom skills aren't part of CDK governance).
+- `blockedSkills` — denylist for `add skill` and the doctor compliance check. `custom-*` skills are NOT exempt from the blocklist (governance overrides the "custom skills preserved across upgrades" convention).
+- `requiredSkills` — must be installed in `.claude/skills/`. Doctor warns if any are missing; CDK does not auto-install on its own.
+
+`allowedSkills ∩ blockedSkills` is rejected at parse time as a mutual-exclusion error.
+
+Enforcement points: `init` (refuse + explain), `upgrade` (refuse + suggest), `add skill` (refuse + explain), and the warn-level doctor check `team-settings-compliance`.
+
+`init-from-context` does not enforce `team-settings.json` because the target directory is greenfield; a parent `team-settings.json` doesn't propagate by design.
+
+v1.16.0 keeps enforcement strictly CLI-side. Native `Skill()` permission rules in `.claude/settings.json` are not generated this release: Claude Code's permission grammar for skills is not part of the documented public schema. Native rule generation tracks for v1.17+, after upstream verification.
 
 ### Adding team-specific rules
 

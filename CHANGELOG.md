@@ -11,6 +11,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.16.0] — 2026-04-25
+
+### Added
+
+- **`team-settings.json` governance file** (Q3 #3, Issue #94, ICE 175): opt-in `.claude/team-settings.json` for team-wide CLI policy. Schema v1: `minTier` (s | m | l), `allowedSkills`, `blockedSkills`, `requiredSkills`. Empty/absent file = unrestricted (full backward compatibility).
+- **CLI enforcement** across `init`, `upgrade`, and `add skill`. `init` refuses scaffolds that violate `minTier` and explains the violation. `upgrade` refuses on `minTier` violation in an existing scaffold and suggests `init --tier=<min>` to promote. `add skill` refuses skills that are blocked or absent from the `allowedSkills` whitelist (`custom-*` skills bypass the whitelist by design).
+- **Doctor check `team-settings-compliance`** (warn-level): flags `minTier` violations on the current scaffold, blocked skills present in `.claude/skills/`, missing `requiredSkills`, and reports schema parse errors with the exact field. Doctor check count: 27 → 28.
+- **Schema validation** with descriptive errors: malformed JSON, unknown `minTier` value, non-array skill lists, non-string skill entries, and `allowedSkills ∩ blockedSkills` overlap (mutual exclusion).
+- **Helpers** in `packages/cli/src/utils/team-settings.js`: `readTeamSettings`, `validateTeamSettings`, `violatesMinTier`, `isSkillBlocked`, `isSkillAllowed`, `getRequiredSkills`. CLI-side wrappers in `team-settings-cli.js` (`loadTeamSettingsOrExit`, `enforceTeamSettingsTier`).
+- **Integration scenario `scenarioTeamSettings`** in `test/integration/run.js`: 10 assertions covering absent file (skip), `minTier` violation (doctor warn + upgrade refuse), blocked skill add (refuse), allowed-list whitelist refuse, missing required skill (doctor warn), allowed/blocked overlap (doctor warn), malformed JSON (upgrade exit), and `custom-*` semantics (whitelist bypass + blocklist enforcement).
+- **Unit tests** in `test/unit/team-settings.test.js`: 22 cases covering parser, validator, mutual exclusion, `violatesMinTier` precedence, `isSkillBlocked`/`isSkillAllowed` semantics including `custom-*` bypass, and `getRequiredSkills` array immutability.
+
+### Changed
+
+- Doctor JSON `--report` now includes `info` on `warn` and `fail` results (previously only on `pass`). Existing checks gain diagnostic context in CI output without behavior change.
+- Integration test count: 990 → 1000 (+10 from `scenarioTeamSettings`).
+- Unit test count: 343 → 365 (+22 from `team-settings.test.js`).
+
+### Notes
+
+- v1.16.0 enforcement is **CDK-only**. Skill restrictions and model selection are not translated to native `permissions.allow/deny` in `.claude/settings.json` because Claude Code's `Skill()` permission rule is not part of the documented public schema. Generation of native rules will land once the upstream contract is verified, tracked for v1.17+. Until then, governance is enforced when the user runs the CDK CLI; Claude Code sessions can still invoke skills directly.
+- `init-from-context` does not enforce `team-settings.json`. The target directory is greenfield (newly created), so a parent `team-settings.json` does not propagate by design.
+
+---
+
 ## [1.15.0] — 2026-04-25
 
 ### Added

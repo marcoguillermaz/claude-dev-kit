@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![990 integration checks](https://img.shields.io/badge/integration-990%20checks-blue.svg)](#testing)
+[![1000 integration checks](https://img.shields.io/badge/integration-1000%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -122,7 +122,7 @@ The Stop hook in `settings.json` is the core enforcement mechanism. It blocks Cl
 npx mg-claude-dev-kit init                    # scaffold wizard
 npx mg-claude-dev-kit init --dry-run          # preview without writing
 npx mg-claude-dev-kit init --answers file.json  # skip prompts (CI/automation)
-npx mg-claude-dev-kit doctor                  # validate setup (27 checks)
+npx mg-claude-dev-kit doctor                  # validate setup (28 checks)
 npx mg-claude-dev-kit doctor --report         # JSON output for CI
 npx mg-claude-dev-kit doctor --ci             # silent, exit 1 on failure
 npx mg-claude-dev-kit upgrade                 # update template files
@@ -161,8 +161,8 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 990 integration checks
-node --test packages/cli/test/unit/*.test.js   # 343 unit tests
+node packages/cli/test/integration/run.js    # 1000 integration checks
+node --test packages/cli/test/unit/*.test.js   # 365 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
@@ -192,9 +192,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.15.0 ships the `upgrade --anthropic` flag (Q3 #2, Issue #93, ICE 210). The standard `upgrade` already refreshes 8 template files; `--anthropic` adds a separate flow for the files that encode Anthropic spec and best practices. Default is dry-run with a colourized unified diff (powered by the `diff` npm package); `--apply` writes the change with a timestamped `.bak` backup of the previous content. The two flows compose: `upgrade --anthropic --apply` runs both back to back. v1.15.0 scope is deliberately narrow, one file: `.claude/skills/arch-audit/advanced-checks.md`. The other Anthropic-touching files (`pipeline-standards.md`, `claudemd-standards.md`, `arch-audit/SKILL.md`) pass through the scaffold's placeholder substitution or section-stripping pipeline, so a raw template-vs-scaffold compare produces false positives on a clean install. Expanding the registry needs a transformation-aware compare, tracked for v1.16+. A new doctor check `anthropic-files-current` warns when the file drifts from the installed CDK template; doctor count goes from 26 to 27. Integration: 990 checks (+11 from `scenarioUpgradeAnthropic`); unit: 343 tests (+11 from `upgrade-anthropic.test.js`).
+**Current**: v1.16.0 ships `team-settings.json` for team-wide CLI governance (Q3 #3, Issue #94, ICE 175). Schema v1: `minTier` (s/m/l), `allowedSkills`, `blockedSkills`, `requiredSkills`. An empty or absent file means no restrictions, so existing setups keep working untouched. Enforcement covers `init` (refuses scaffolds below `minTier`), `upgrade` (refuses promotion-required scaffolds and suggests an alternative), `add skill` (refuses blocked or non-whitelisted skills, with `custom-*` bypassing the whitelist), and a new warn-level doctor check, `team-settings-compliance`. The doctor count moves from 27 to 28. Validation rejects any allowed/blocked overlap as a mutual-exclusion error. Native `Skill()` permission rules don't ship this release: Claude Code's permission grammar for skills isn't part of the documented public schema, so v1.16.0 keeps enforcement strictly CLI-side. Native rule generation is on the table for v1.17+. Integration: 1000 checks (+10 from `scenarioTeamSettings`). Unit: 365 tests (+22 from `team-settings.test.js`).
 
-**Next**: Q3 #3 `team-settings.json` org-wide skill and model restrictions (Issue #94, ICE 175) or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays deferred.
+**Next**: Q3 #4 `cdk sync` for cross-project rules sync (ICE 168), or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 
