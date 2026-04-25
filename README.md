@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![895 integration checks](https://img.shields.io/badge/integration-895%20checks-blue.svg)](#testing)
+[![979 integration checks](https://img.shields.io/badge/integration-979%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -46,7 +46,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 17 audit skills
+### 20 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -68,6 +68,9 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/accessibility-audit` | M L   | axe-core WCAG 2.2, APCA contrast, static a11y (aria, tabindex, focus, labels).                                                          |
 | `/test-audit`          | M L   | Coverage (lcov/Istanbul/Cobertura/go/tarpaulin/xcresult), pyramid shape, anti-patterns (`.only`, skipped, empty, no-assertion, sleeps). |
 | `/doc-audit`           | M L   | Doc drift: link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, stack-sync (Next.js/Django/Swift). |
+| `/api-contract-audit`  | M L   | OpenAPI contract drift (endpoints, schemas, status), breaking-change detection vs previous spec, versioning consistency, security scheme alignment, Richardson Maturity L0-L3 scoring. Auto-gen for FastAPI / NestJS / Express+swagger-jsdoc / Next.js route handlers / Django REST. |
+| `/infra-audit`         | M L   | Infrastructure security across GitHub Actions (pwn-request, secret logging, pinning, permissions), Dockerfile (root, latest tag, URL add), K8s (runAsNonRoot, privileged, hostNetwork), Terraform (IAM wildcards, state in git), GitLab CI. Stack-agnostic. |
+| `/compliance-audit`    | M L   | GDPR profile: data-subject rights (delete, export, rectify), consent, lawful basis, PII identification, encryption-at-rest on special-category, logging hygiene, retention, sub-processors. SOC 2 / HIPAA scaffolded for v1.15+. |
 | `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
@@ -156,7 +159,7 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 895 integration checks
+node packages/cli/test/integration/run.js    # 979 integration checks
 node --test packages/cli/test/unit/*.test.js   # 332 unit tests
 ```
 
@@ -187,9 +190,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.13.0 ships the `/doc-audit` skill (Issue #61, ICE 320): the Q1 skill-expansion spillover, rank #4 in the 3-model consensus, now closed. Doc drift normally stays silent until a new contributor trips over it. `/doc-audit` runs in Phase 5d Track C next to `/test-audit`, so drift gets caught while the change is still fresh. Seven static checks: relative-link resolution, code-block syntax (json, yaml, toml), CDK placeholder residuals (the D3 list is pinned to the ten scaffold tokens, every entry verified against `packages/cli/templates/**`, no generic `[UPPERCASE]` false positives), slash-command name match, skill-count consistency, ADR marker freshness, and stack-specific doc sync for Next.js, Django, and Swift via a sibling `PATTERNS.md`. The SKILL.md body lands at 271 lines, well inside the 500-line guardrail from v1.11.0. Track C in `pipeline.md` tier-M/L is renamed to "Test + doc audit" to reflect the pairing. Integration: 895 checks (+31 from `scenarioDocAuditPresent`); unit: 332 tests.
+**Current**: v1.14.0 ships the Q2 #7 bundle (Issue #66, ICE 245): three new skills, portfolio from 17 to 20. `/api-contract-audit` parses OpenAPI specs against runtime code and flags drift before clients notice (endpoints present in spec without handler, schema field mismatches, status-code divergence, breaking changes vs the previous committed spec via `git show HEAD~1`, security-scheme alignment, Richardson Maturity grading L0 to L3). Auto-gen coverage spans FastAPI, NestJS, Express with swagger-jsdoc, Next.js 13+ route handlers, and Django REST Framework. `/infra-audit` checks five layers, but only when markers exist (no N/A noise): GitHub Actions for pwn-request and secret-logging patterns, Dockerfile for root user and unpinned images, Kubernetes manifests for privileged containers and host-namespace breakouts, Terraform for IAM wildcards and state files committed to git, GitLab CI for equivalent script-injection vectors. The infra surface is stack-agnostic: it sits apart from backend language. `/compliance-audit` ships with the GDPR profile active: data-subject rights (delete, export, rectify), consent capture and lawful basis, PII identification with special-category encryption check (Article 9), logging hygiene, retention policy, sub-processor transparency. SOC 2 and HIPAA sit scaffolded in `PROFILES.md` as future markers, with their check taxonomies and backlog prefixes reserved, waiting on real enterprise validation before going live in v1.15+. `/api-contract-audit` attaches to Phase 5d Track B; `/compliance-audit` sits alongside it; `/infra-audit` joins Track C (renamed "Test + doc + infra audit"). Integration: 979 checks (+84 across three scenario suites); unit: 332 tests.
 
-**Next**: Q2 #7 (Issue #66, ICE 245) adds three more skills on the expansion track: `/compliance-audit`, `/api-contract-audit`, `/infra-audit`. Q2 #3, the public docs site (VitePress, ICE 432), stays deferred on purpose.
+**Next**: Q2 #6 CONTRIBUTING.md overhaul (ICE 256, currently Partial) or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays deferred.
 
 ---
 

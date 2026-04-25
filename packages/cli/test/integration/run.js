@@ -1259,14 +1259,14 @@ async function scenarioPlaceholderNoiseReduction() {
     }
   }
 
-  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 85).
+  // Verify CLAUDE.md line count reduced (raw template ~92 lines with injections, stripped should be < 90).
   // The threshold scales linearly with the Active Skills list (one line per skill); raise it as new skills
   // are added to the registry so this guard catches regressions, not growth.
   const lineCountM = claudeM.split('\n').length;
-  if (lineCountM < 85) {
+  if (lineCountM < 90) {
     pass(`Tier M: CLAUDE.md line count reduced (${lineCountM} lines)`);
   } else {
-    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 85 after stripping`);
+    fail(`Tier M: CLAUDE.md still ${lineCountM} lines - expected < 90 after stripping`);
   }
 
   // Tier S - Known Patterns stripped (only section applicable)
@@ -2670,8 +2670,8 @@ async function scenarioDocAuditPresent() {
         } else {
           fail(`Tier ${tier}: pipeline.md Track C missing /doc-audit invocation`);
         }
-        if (/Track C - Test \+ doc audit/.test(pipeline)) {
-          pass(`Tier ${tier}: pipeline.md Track C renamed to "Test + doc audit"`);
+        if (/Track C - Test \+ doc( \+ infra)? audit/.test(pipeline)) {
+          pass(`Tier ${tier}: pipeline.md Track C header includes doc audit pairing`);
         } else {
           fail(`Tier ${tier}: pipeline.md Track C header not renamed`);
         }
@@ -2709,6 +2709,153 @@ async function scenarioDocAuditPresent() {
         } else {
           fail(`Tier ${tier}: cheatsheet still references /doc-audit`);
         }
+      }
+    }
+  }
+}
+
+async function assertSkillPresent(dir, tier, skillName, opts = {}) {
+  const { siblings = [], pipelineRegex, cheatsheetRegex } = opts;
+  const skillDir = path.join(dir, `.claude/skills/${skillName}`);
+
+  if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) {
+    fail(`Tier ${tier}: ${skillName}/SKILL.md missing`);
+    return;
+  }
+  pass(`Tier ${tier}: ${skillName}/SKILL.md scaffolded`);
+
+  for (const sib of siblings) {
+    if (fs.existsSync(path.join(skillDir, sib))) {
+      pass(`Tier ${tier}: ${skillName}/${sib} scaffolded`);
+    } else {
+      fail(`Tier ${tier}: ${skillName}/${sib} missing`);
+    }
+  }
+
+  const cheatsheetPath = path.join(dir, '.claude/cheatsheet.md');
+  if (fs.existsSync(cheatsheetPath)) {
+    const cheatsheet = fs.readFileSync(cheatsheetPath, 'utf8');
+    if ((cheatsheetRegex || new RegExp(`\`/${skillName}\``)).test(cheatsheet)) {
+      pass(`Tier ${tier}: cheatsheet row for /${skillName} present`);
+    } else {
+      fail(`Tier ${tier}: cheatsheet row for /${skillName} missing`);
+    }
+  } else {
+    fail(`Tier ${tier}: .claude/cheatsheet.md missing`);
+  }
+
+  const pipelinePath = path.join(dir, '.claude/rules/pipeline.md');
+  if (fs.existsSync(pipelinePath)) {
+    const pipeline = fs.readFileSync(pipelinePath, 'utf8');
+    if ((pipelineRegex || new RegExp(`/${skillName}`)).test(pipeline)) {
+      pass(`Tier ${tier}: pipeline.md references /${skillName}`);
+    } else {
+      fail(`Tier ${tier}: pipeline.md missing /${skillName} invocation`);
+    }
+  }
+
+  const skillMd = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
+  const parsed = parseSkillFile(skillMd);
+  if (parsed.fields.allowedTools && !allowedToolsHasCommas(parsed.fields.allowedTools)) {
+    pass(`Tier ${tier}: ${skillName} allowed-tools is space-separated`);
+  } else {
+    fail(`Tier ${tier}: ${skillName} allowed-tools uses commas or missing`);
+  }
+  const bodyLines = countBodyLines(parsed.body);
+  if (bodyLines <= SKILL_MD_MAX_LINES) {
+    pass(`Tier ${tier}: ${skillName} body ${bodyLines} lines (<= ${SKILL_MD_MAX_LINES})`);
+  } else {
+    fail(`Tier ${tier}: ${skillName} body ${bodyLines} lines exceeds ${SKILL_MD_MAX_LINES} budget`);
+  }
+}
+
+async function scenarioApiContractAuditPresent() {
+  section('api-contract-audit skill presence + tier/flag pruning (v1.14.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`api-contract-audit-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/api-contract-audit');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      await assertSkillPresent(dir, tier, 'api-contract-audit', { siblings: ['PATTERNS.md'] });
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: api-contract-audit pruned (not on tier S)`);
+      } else {
+        fail(`Tier ${tier}: api-contract-audit present but should be pruned`);
+      }
+    }
+  }
+
+  // hasApi=false: api-contract-audit must be pruned even on tier M/L
+  const noApiConfig = { ...BASE, tier: 'm', isDiscovery: false, hasApi: false };
+  const noApiDir = await scaffold('api-contract-audit-no-api', 'm', noApiConfig);
+  if (!fs.existsSync(path.join(noApiDir, '.claude/skills/api-contract-audit'))) {
+    pass('Tier M + hasApi=false: api-contract-audit pruned');
+  } else {
+    fail('Tier M + hasApi=false: api-contract-audit should be pruned');
+  }
+  const noApiCheatsheet = fs.readFileSync(path.join(noApiDir, '.claude/cheatsheet.md'), 'utf8');
+  if (!/\/api-contract-audit/.test(noApiCheatsheet)) {
+    pass('Tier M + hasApi=false: cheatsheet row for /api-contract-audit pruned');
+  } else {
+    fail('Tier M + hasApi=false: cheatsheet still references /api-contract-audit');
+  }
+}
+
+async function scenarioInfraAuditPresent() {
+  section('infra-audit skill presence + tier pruning (v1.14.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`infra-audit-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/infra-audit');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      await assertSkillPresent(dir, tier, 'infra-audit', { siblings: ['PATTERNS.md'] });
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: infra-audit pruned (not on tier S)`);
+      } else {
+        fail(`Tier ${tier}: infra-audit present but should be pruned`);
+      }
+    }
+  }
+}
+
+async function scenarioComplianceAuditPresent() {
+  section('compliance-audit skill presence + tier pruning (v1.14.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`compliance-audit-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/compliance-audit');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      await assertSkillPresent(dir, tier, 'compliance-audit', { siblings: ['PROFILES.md'] });
+
+      // Verify PROFILES.md scaffolds SOC2/HIPAA as future markers
+      const profilesMd = fs.readFileSync(path.join(skillDir, 'PROFILES.md'), 'utf8');
+      if (
+        /NOT ACTIVE in v1\.14/.test(profilesMd) &&
+        /SOC 2/.test(profilesMd) &&
+        /HIPAA/.test(profilesMd)
+      ) {
+        pass(`Tier ${tier}: compliance-audit PROFILES.md scaffolds SOC2 + HIPAA as future-markers`);
+      } else {
+        fail(
+          `Tier ${tier}: compliance-audit PROFILES.md missing SOC2/HIPAA future-marker structure`,
+        );
+      }
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: compliance-audit pruned (not on tier S)`);
+      } else {
+        fail(`Tier ${tier}: compliance-audit present but should be pruned`);
       }
     }
   }
@@ -2760,6 +2907,9 @@ async function main() {
   await scenarioSkillMdSpecCompliance();
   await scenarioDoctorCrossFileValidation();
   await scenarioDocAuditPresent();
+  await scenarioApiContractAuditPresent();
+  await scenarioInfraAuditPresent();
+  await scenarioComplianceAuditPresent();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 

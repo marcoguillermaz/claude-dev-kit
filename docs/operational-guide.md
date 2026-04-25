@@ -40,7 +40,7 @@ Claude Code is a powerful CLI assistant that can read, write, and reason about y
 - A development pipeline Claude follows strictly - requirements reviewed before code is written, tests verified before declaring done
 - Pre-wired hooks that enforce the pipeline mechanically, not just as instructions
 - A tiered system matching process overhead to task complexity: a two-line bugfix does not go through the same process as a multi-week feature
-- 17 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
+- 20 audit skills - executable multi-step programs with model routing (haiku for mechanical checks, sonnet for analysis)
 - Audit trails, commit attribution, secret scanning, and CODEOWNERS gates for full visibility over AI-generated changes
 - A discovery mechanism that teaches Claude about your existing codebase in a single structured session
 
@@ -712,7 +712,7 @@ Defined in the `CLAUDE.md` template for Tier M/L. Governs how Claude handles non
 
 ## 10. Audit skills
 
-Seventeen audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
+Twenty audit skills are scaffolded across the tiers. Run them as slash commands in Claude Code at any time - no pipeline phase required. Skills are **conditionally installed** based on wizard answers at init time.
 
 All skill applicability rules are managed by a central skill registry (`packages/cli/src/scaffold/skill-registry.js`). Each skill declares which tiers and project conditions it requires.
 
@@ -736,6 +736,9 @@ All skill applicability rules are managed by a central skill registry (`packages
 | `/accessibility-audit` | -   | x   | x   | `hasFrontend=true`                            | Dev server + Playwright MCP (for full/wcag modes; static mode needs nothing) |
 | `/test-audit`          | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
 | `/doc-audit`           | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
+| `/api-contract-audit`  | -   | x   | x   | `hasApi=true`                                 | - (static analysis; optional dev server for framework auto-gen)              |
+| `/infra-audit`         | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
+| `/compliance-audit`    | -   | x   | x   | always (no `requires`)                        | - (static analysis)                                                          |
 | `/skill-review`        | -   | x   | x   | always                                        | - (static analysis)                                                          |
 
 ### General rules
@@ -754,12 +757,13 @@ After the smoke test and before the outcome checklist, three tracks can run:
 **Track A - UI** (if the block touches UI routes):
 `/ui-audit` (static, concurrent with first Playwright skill) -> `/accessibility-audit` -> `/visual-audit` -> `/ux-audit` -> `/responsive-audit` (sequential, shared Playwright session).
 
-**Track B - API/DB** (if the block touches API routes or applies migrations):
-`/security-audit` and `/api-design` (concurrent, static); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables).
+**Track B - API/DB + compliance** (if the block touches API routes, applies migrations, or handles PII):
+`/security-audit` and `/api-design` (concurrent, static); `/api-contract-audit` (if OpenAPI spec or API routes modified); `/migration-audit` (if the block applies migrations); `/skill-db` (if the block changes schema or adds new tables); `/compliance-audit` (if the block touches PII fields, user-data endpoints, consent flow, or third-party SDK integration).
 
-**Track C - Test + doc audit** (runs for every block after Phase 3 is green):
+**Track C - Test + doc + infra audit** (runs for every block after Phase 3 is green):
 `/test-audit` - static analysis of coverage reports (lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), and anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).
-`/doc-audit` - static doc-drift check: relative-link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, and stack-specific doc sync (Next.js / Django / Swift). Critical findings from either skill (`.only` committed, 0% coverage on a changed file, CDK placeholder in README, broken link to a user-visible flow doc) block Phase 6.
+`/doc-audit` - static doc-drift check: relative-link resolution, code-block syntax (json/yaml/toml), CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness, and stack-specific doc sync (Next.js / Django / Swift).
+`/infra-audit` - static infrastructure-security check across five layers (GitHub Actions, Dockerfile, K8s manifests, Terraform, GitLab CI); each layer runs only if its markers are detected. Critical findings from any of the three skills (`.only` committed, 0% coverage on a changed file, CDK placeholder in README, pwn-request in workflow, secret logging in CI, privileged K8s container, IAM wildcard action, hardcoded secret in Terraform, no right-to-delete endpoint when PII is stored) block Phase 6.
 
 ### Severity handling
 
@@ -900,6 +904,60 @@ Checks:
 Severity: Medium per orphan surface (D7 patterns are best-effort hints, not hard validation).
 
 Universal gating: installed on every Tier M/L project regardless of feature flags (no `requires`). Backlog prefix: `DOC-`. Live link check (HTTP/HTTPS), semantic drift reasoning, and doc-bloat judgement are deferred - v1 is static only. Read-only: the skill produces a markdown report; corrections are proposed but never applied.
+
+#### /api-contract-audit
+
+**File**: `.claude/skills/api-contract-audit/SKILL.md` | **Tier**: M, L | **Requires**: `hasApi=true`
+
+Static OpenAPI contract audit. Reads the spec (committed file or framework auto-gen) and cross-references it with route handlers in the codebase. Complements `/api-design` (forward-looking, new-route review) by catching contract drift on existing endpoints.
+
+Checks:
+
+- **AC1 Endpoint drift**: set-diff between `SpecEndpoints` and `CodeEndpoints`. Routes implemented without spec entry = High; spec endpoints without handler = Critical (clients hit 404).
+- **AC2 Schema drift**: request body schema (spec) vs request validation schema in code (Zod / Pydantic / io-ts / class-validator); response body schema vs handler return shape. Field-level comparison; type mismatches flagged High.
+- **AC3 Status-code mismatch**: spec `responses:` keys vs `res.status(N)` / `HTTPException(status_code=N)` in handler body. Medium per mismatch; High when the mismatch breaks documented contract (spec says 200, code returns 201).
+- **AC4 Breaking-change detection**: if the spec is tracked in git, diff against `HEAD~1` via `git show HEAD~1:<spec-path>`. Flags Critical: required field removed, enum value removed, status code removed, path removed without prior `deprecated: true`, type change, response field removed. Non-breaking additive changes are Low informational.
+- **AC5 Versioning consistency**: path-versioned specs (`/v1/`, `/v2/`) should share the same major prefix or match `info.version`. Mixed-version specs flagged Medium.
+- **AC6 Security scheme alignment**: `securitySchemes` in spec vs auth middleware in code (`requireAuth`, `@UseGuards(AuthGuard)`, `Depends(get_current_user)`, `permission_classes = [IsAuthenticated]`). Mismatches High.
+- **AC7 Deprecation markers**: `deprecated: true` endpoints should have `Sunset:` header or `x-sunset` with date. Endpoints deprecated > 180 days without sunset = Medium.
+- **AC8 Richardson Maturity Model scoring (L0-L3)**: per-endpoint classification. L0 (RPC over HTTP), L1 (resource URLs), L2 (correct HTTP verbs + status codes), L3 (HATEOAS via `_links` / `rel` / `href` / HAL / JSON:API patterns in response schema). L3 detection is best-effort via schema inspection. Overall grade reported as distribution plus aggregate level.
+
+Framework auto-gen (priority order): FastAPI (`$DEV_SERVER_URL/openapi.json` or decorator parsing), NestJS (`@ApiProperty` decorators), Express + swagger-jsdoc (JSDoc annotations), Next.js 13+ route handlers (`app/api/*/route.ts` + Zod), Django REST Framework (`drf-spectacular` / `drf-yasg`). Patterns in sibling `PATTERNS.md`. Other frameworks fall back to static-file-only mode.
+
+Modes: `mode:drift` (AC1-AC3 only), `mode:richardson` (AC8 only), `mode:all` (default). Backlog prefix: `API-`. Runs in Phase 5d Track B. AC4 requires git history; skipped gracefully if unavailable.
+
+#### /infra-audit
+
+**File**: `.claude/skills/infra-audit/SKILL.md` | **Tier**: M, L
+
+Static infrastructure-security audit across five layers: GitHub Actions, Dockerfile, Kubernetes manifests, Terraform, GitLab CI. Each layer runs only if its markers are detected at Step 1 - no noisy N/A sections for absent layers. Stack-agnostic: infrastructure is orthogonal to the backend language.
+
+Checks per layer (full list in SKILL.md; Critical / High shown here):
+
+- **GitHub Actions** (GHA-1 to GHA-7): pwn-request pattern (`pull_request_target` + PR head checkout) = Critical; secret logging (`echo ${{ secrets.X }}`) = Critical; self-hosted runner on public PR = Critical; unpinned actions (no SHA) = High; permissions overreach (no explicit `permissions:` block + token writes) = High; untrusted input in run commands = High; workflow modification permission = Medium.
+- **Dockerfile** (D-1 to D-6): secret baked into ARG/ENV = Critical; running as root in final image = High; `ADD https://...` = High; latest-tagged base image = Medium; unpinned base image (no digest) = Medium; apt install without cleanup = Low.
+- **Kubernetes** (K-1 to K-7): `privileged: true` container = Critical; `hostNetwork`/`hostPID`/`hostIPC` = Critical; `runAsNonRoot: false` or missing = High; `allowPrivilegeEscalation: true` = High; writable rootfs (missing `readOnlyRootFilesystem`) = Medium; secret as env var = Medium; `imagePullPolicy: IfNotPresent` with mutable tag = Low.
+- **Terraform** (T-1 to T-6): IAM wildcard action (`Action: "*"` or `Action: "<service>:*"`) = Critical; hardcoded secret in `.tf` literal = Critical; IAM wildcard resource = High; public S3 bucket (`public-read` / `public-read-write`) = High; state file (`*.tfstate*`) committed to git = High; module without version pin = Medium.
+- **GitLab CI** (GL-1 to GL-4): secret logging = Critical; script injection via `$CI_COMMIT_MESSAGE` / `$CI_MERGE_REQUEST_TITLE` = High; unprotected runner consuming protected variables = High; unpinned image = Medium.
+
+Patterns in sibling `PATTERNS.md` (five sections, one per layer). Backlog prefix: `INFRA-`. Runs in Phase 5d Track C on every block alongside `/test-audit` and `/doc-audit`. Static file analysis only: does not connect to cloud providers or clusters.
+
+#### /compliance-audit
+
+**File**: `.claude/skills/compliance-audit/SKILL.md` | **Tier**: M, L
+
+Static compliance audit with regulatory profiles. v1.14 ships the GDPR profile active; SOC 2 and HIPAA profiles are scaffolded in `PROFILES.md` as future-markers with their check taxonomies and backlog prefixes reserved, waiting on real enterprise validation before enablement. The audit produces mechanical findings only - legal compliance attestation requires human counsel review.
+
+GDPR checks (10 checks across 4 pillars):
+
+- **Data subject rights** (G1-G3): right to delete (Article 17) - Critical if no delete endpoint for user data exists, High if the endpoint exists but cascade delete to associated records is not evident; right to export (Article 20) - High if no export endpoint; right to rectification (Article 16) - Medium if no update endpoint for user profile data.
+- **Lawful basis + consent** (G4-G5): consent capture - High if PII is handled without consent artifacts (cookie banner, consent ledger, `consent` table); Medium if consent exists but is non-granular (single boolean for all purposes); lawful basis declaration - Medium if `[PRIVACY_DOC_PATH]` is set but lacks Article 6 language (consent, contractual necessity, legal obligation, legitimate interest, vital interest, public interest).
+- **Security measures** (G6-G8): PII field identification - informational, scans schema for columns matching a PII vocabulary (email, phone, ssn, address, birthdate, IP, credit card, special-category per Art. 9); encryption-at-rest for special-category - High per unencrypted field in the Art. 9 list (health, genetic, biometric, religion, ethnicity); PII logging hygiene - High per logging call that expands a PII field raw.
+- **Accountability** (G9-G10): retention policy declaration - Medium if PII is stored but no retention window is declared anywhere searchable; sub-processor transparency - Low informational, cross-references third-party SDK packages and env-var keys against a `docs/sub-processors.md` or `[PRIVACY_DOC_PATH]`.
+
+Output includes a mechanical **GDPR readiness tier** (foundational / operational / mature) based on Critical and High finding counts. The tier is explicitly mechanical and does not constitute legal attestation.
+
+Backlog prefix: `GDPR-` (SOC 2 and HIPAA reserve `SOC2-` / `HIPAA-` for v1.15+). Runs in Phase 5d Track B when a block touches PII fields, user-data endpoints, consent flow, or third-party SDK integration. Stack-agnostic: GDPR applies to any EU-facing product regardless of backend language.
 
 #### /skill-review
 
