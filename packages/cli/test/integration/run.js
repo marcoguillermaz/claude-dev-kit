@@ -2826,6 +2826,134 @@ async function scenarioInfraAuditPresent() {
   }
 }
 
+async function scenarioPrReviewPresent() {
+  section('pr-review skill presence + tier pruning + team-settings prReviewSeverity (v1.19.0, C2)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`pr-review-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/pr-review');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      await assertSkillPresent(dir, tier, 'pr-review', { siblings: ['PATTERNS.md'] });
+
+      const patternsMd = fs.readFileSync(path.join(skillDir, 'PATTERNS.md'), 'utf8');
+      if (
+        /## node-ts/.test(patternsMd) &&
+        /## python/.test(patternsMd) &&
+        /## swift/.test(patternsMd)
+      ) {
+        pass(`Tier ${tier}: pr-review PATTERNS.md covers top-3 stacks (node-ts, python, swift)`);
+      } else {
+        fail(`Tier ${tier}: pr-review PATTERNS.md missing top-3 stack sections`);
+      }
+
+      const skillMd = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
+      const isReadOnly =
+        /Never call `gh pr merge`/.test(skillMd) && /Never modify code/.test(skillMd);
+      if (isReadOnly) {
+        pass(`Tier ${tier}: pr-review enforces hard rules (no auto-merge, no code modification)`);
+      } else {
+        fail(`Tier ${tier}: pr-review missing read-only hard rules`);
+      }
+
+      const cheatsheet = fs.readFileSync(path.join(dir, '.claude/cheatsheet.md'), 'utf8');
+      if (/\/pr-review/.test(cheatsheet)) {
+        pass(`Tier ${tier}: cheatsheet has /pr-review row`);
+      } else {
+        fail(`Tier ${tier}: cheatsheet missing /pr-review row`);
+      }
+
+      const pipeline = fs.readFileSync(path.join(dir, '.claude/rules/pipeline.md'), 'utf8');
+      if (/\/pr-review/.test(pipeline)) {
+        pass(`Tier ${tier}: pipeline.md Phase 8 invokes /pr-review`);
+      } else {
+        fail(`Tier ${tier}: pipeline.md missing /pr-review invocation`);
+      }
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: pr-review pruned (not on tier S)`);
+      } else {
+        fail(`Tier ${tier}: pr-review present but should be pruned`);
+      }
+    }
+  }
+
+  // team-settings prReviewSeverity validation (using doctor --report indirectly)
+  const dir = await scaffold('pr-review-team-settings', 'm', {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+  });
+
+  // Valid prReviewSeverity passes doctor team-settings-compliance
+  fs.writeFileSync(
+    path.join(dir, '.claude/team-settings.json'),
+    JSON.stringify(
+      { prReviewSeverity: { critical: ['src/auth/**'], major: ['src/api/**'] } },
+      null,
+      2,
+    ),
+  );
+  {
+    const out = execFileSync(
+      'node',
+      [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
+      {
+        cwd: dir,
+        encoding: 'utf8',
+      },
+    );
+    let report = null;
+    try {
+      report = JSON.parse(out);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (check && (check.status === 'pass' || check.status === 'skip')) {
+      pass('Valid prReviewSeverity: doctor team-settings-compliance passes');
+    } else {
+      fail(`Valid prReviewSeverity: doctor = ${check?.status}, info=${check?.info}`);
+    }
+  }
+
+  // Invalid prReviewSeverity (non-array critical) fails parsing
+  fs.writeFileSync(
+    path.join(dir, '.claude/team-settings.json'),
+    JSON.stringify({ prReviewSeverity: { critical: 'src/auth/**' } }, null, 2),
+  );
+  {
+    let out;
+    try {
+      out = execFileSync(
+        'node',
+        [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
+        { cwd: dir, encoding: 'utf8' },
+      );
+    } catch (e) {
+      out = (e.stdout || '').toString();
+    }
+    let report = null;
+    try {
+      report = JSON.parse(out);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-compliance');
+    if (
+      check &&
+      check.status === 'warn' &&
+      /prReviewSeverity\.critical must be an array/.test(check.info || '')
+    ) {
+      pass('Invalid prReviewSeverity: doctor warns with descriptive parser error');
+    } else {
+      fail(`Invalid prReviewSeverity: doctor = ${check?.status}, info=${check?.info}`);
+    }
+  }
+}
+
 async function scenarioDependencyAuditPresent() {
   section('dependency-audit skill presence + tier pruning (v1.18.0, C1)');
 
@@ -3343,6 +3471,7 @@ async function scenarioMCPServer() {
       'cdk_arch_audit_status',
       'cdk_skill_inventory',
       'cdk_package_meta',
+      'cdk_pr_review',
     ];
     const got = tools.tools.map((t) => t.name).sort();
     if (JSON.stringify(got) === JSON.stringify(expected.sort())) {
@@ -3507,6 +3636,7 @@ async function main() {
   await scenarioInfraAuditPresent();
   await scenarioComplianceAuditPresent();
   await scenarioDependencyAuditPresent();
+  await scenarioPrReviewPresent();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
   await scenarioMCPServer();
