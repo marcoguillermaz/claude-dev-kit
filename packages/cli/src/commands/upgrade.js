@@ -3,6 +3,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createPatch } from 'diff';
+import { violatesMinTier } from '../utils/team-settings.js';
+import { loadTeamSettingsOrExit } from '../utils/team-settings-cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -102,6 +104,23 @@ export async function upgrade(options) {
   console.log();
   console.log(chalk.bold('claude-dev-kit upgrade'));
   console.log();
+
+  const settings = loadTeamSettingsOrExit(cwd);
+  const currentTier = detectScaffoldedTier(cwd);
+  if (currentTier) {
+    const required = violatesMinTier(settings, currentTier);
+    if (required) {
+      console.error(
+        chalk.red(
+          `✗ team-settings.json requires minTier=${required}, current scaffold is tier ${currentTier}.`,
+        ),
+      );
+      console.error(
+        `  Re-run ${chalk.cyan(`claude-dev-kit init --tier=${required}`)} to promote, or edit .claude/team-settings.json.`,
+      );
+      process.exit(1);
+    }
+  }
 
   await runStandardUpgrade(cwd, options);
 

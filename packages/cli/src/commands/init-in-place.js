@@ -5,6 +5,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { detectStack } from '../utils/detect-stack.js';
+import { enforceTeamSettingsTier } from '../utils/team-settings-cli.js';
 import { scaffoldTierSafe } from '../scaffold/index.js';
 import { generateClaudeMd } from '../generators/claude-md.js';
 import { generateContextImport } from '../generators/context-import.js';
@@ -314,9 +315,12 @@ export async function initInPlace(options) {
     ]);
   } // end else (interactive path)
 
+  const finalTier = options.tier || answers.tier;
+  enforceTeamSettingsTier(cwd, finalTier);
+
   const config = {
     ...answers,
-    tier: options.tier || answers.tier,
+    tier: finalTier,
     mode: 'in-place',
     // Pass detected values as fallbacks for the Stop hook interpolation
     buildCommand: answers.buildCommand || detected.buildCommand,

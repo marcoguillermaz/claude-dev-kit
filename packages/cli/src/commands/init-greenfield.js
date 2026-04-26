@@ -9,6 +9,7 @@ import { scaffoldTier } from '../scaffold/index.js';
 import { printPlan, printNextSteps } from '../utils/print-plan.js';
 import { AUDIT_MODELS } from '../utils/constants.js';
 import { NATIVE_STACKS, WEB_STACKS } from '../scaffold/skill-registry.js';
+import { enforceTeamSettingsTier } from '../utils/team-settings-cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.resolve(__dirname, '../../templates');
@@ -328,6 +329,8 @@ export async function initGreenfield(options) {
   } // end else (interactive path)
 
   const tier = isDiscovery ? '0' : options.tier || answers.tier || 's';
+
+  enforceTeamSettingsTier(process.cwd(), tier);
 
   const config = {
     ...answers,
