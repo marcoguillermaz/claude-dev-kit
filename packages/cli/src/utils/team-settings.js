@@ -58,7 +58,49 @@ export function validateTeamSettings(settings) {
     }
   }
 
+  if (settings.prReviewSeverity !== undefined) {
+    if (
+      typeof settings.prReviewSeverity !== 'object' ||
+      settings.prReviewSeverity === null ||
+      Array.isArray(settings.prReviewSeverity)
+    ) {
+      throw new Error(
+        'team-settings.json: prReviewSeverity must be an object with critical/major/minor arrays',
+      );
+    }
+    for (const level of ['critical', 'major', 'minor']) {
+      if (settings.prReviewSeverity[level] === undefined) continue;
+      if (!Array.isArray(settings.prReviewSeverity[level])) {
+        throw new Error(
+          `team-settings.json: prReviewSeverity.${level} must be an array of glob patterns`,
+        );
+      }
+      for (const pattern of settings.prReviewSeverity[level]) {
+        if (typeof pattern !== 'string' || pattern.length === 0) {
+          throw new Error(
+            `team-settings.json: prReviewSeverity.${level} must contain only non-empty strings`,
+          );
+        }
+      }
+    }
+  }
+
   return settings;
+}
+
+export function getPrReviewSeverity(settings) {
+  if (!settings || !settings.prReviewSeverity) return null;
+  return {
+    critical: Array.isArray(settings.prReviewSeverity.critical)
+      ? [...settings.prReviewSeverity.critical]
+      : [],
+    major: Array.isArray(settings.prReviewSeverity.major)
+      ? [...settings.prReviewSeverity.major]
+      : [],
+    minor: Array.isArray(settings.prReviewSeverity.minor)
+      ? [...settings.prReviewSeverity.minor]
+      : [],
+  };
 }
 
 export function violatesMinTier(settings, tier) {

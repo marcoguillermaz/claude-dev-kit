@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1046 integration checks](https://img.shields.io/badge/integration-1046%20checks-blue.svg)](#testing)
+[![1085 integration checks](https://img.shields.io/badge/integration-1085%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -49,7 +49,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 21 audit skills
+### 22 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -75,6 +75,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/infra-audit`         | M L   | Infrastructure security across GitHub Actions (pwn-request, secret logging, pinning, permissions), Dockerfile (root, latest tag, URL add), K8s (runAsNonRoot, privileged, hostNetwork), Terraform (IAM wildcards, state in git), GitLab CI. Stack-agnostic. |
 | `/compliance-audit`    | M L   | GDPR profile: data-subject rights (delete, export, rectify), consent, lawful basis, PII identification, encryption-at-rest on special-category, logging hygiene, retention, sub-processors. SOC 2 / HIPAA scaffolded for v1.15+. |
 | `/dependency-audit`    | M L   | Outdated package audit: Tier A (safe batch) / B (non-core major) / C (core/breaking-risk) classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS status. Stack-aware (node-ts/python/swift); agnostic fallback for other stacks. Audit-only in v1; mutating apply-tier-a deferred to Q4. |
+| `/pr-review`           | M L   | Autonomous local PR review via gh CLI: spawns review subagent on the diff, classifies findings (Critical / Major / Minor) using universal + stack-specific severity criteria, posts review as PR comment for audit trail. Configurable via team-settings.json `prReviewSeverity`. Read-only. `--deep` escalates to opus for sensitive changes. Also exposed as `cdk_pr_review` MCP tool. |
 | `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
@@ -168,6 +169,7 @@ Read-only tools exposed:
 | `cdk_arch_audit_status` | last `arch-audit` run timestamp + age |
 | `cdk_skill_inventory` | installed skills + frontmatter snapshot |
 | `cdk_package_meta` | CDK package name, version, CLI path, cwd |
+| `cdk_pr_review` | reads existing `/pr-review` skill comments on a GitHub PR (verdict, severity counts). Read-only — to generate a fresh review, invoke the `/pr-review` CDK skill. |
 
 The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise from `process.cwd()`. No mutating tools in v1.17.0 by design.
 
@@ -198,8 +200,8 @@ The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise 
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1046 integration checks
-node --test packages/cli/test/unit/*.test.js   # 365 unit tests
+node packages/cli/test/integration/run.js    # 1085 integration checks
+node --test packages/cli/test/unit/*.test.js   # 373 unit tests
 ```
 
 Covers: file structure per tier, Stop hook presence, pipeline gate counts, placeholder resolution, skill pruning, security variant selection, native stack adaptation, rubric scoring, cross-stack content invariants (10 stacks), golden-file assertions (Swift, Node-TS, Python), full CLI execution via `--answers` fixtures.
@@ -229,9 +231,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.18.0 ships `/dependency-audit` (Q3 #6 Issue #97, ICE 281 cross-LLM verdict). Ports the just-released staff-manager `/deps-audit` skill, agnosticized for CDK's 11 stacks with per-stack PATTERNS.md siblings (top 3: node-ts, python, swift; agnostic fallback for the rest). Audit-only in v1: outdated-package inventory, Tier A/B/C classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS check. Mutating `apply-tier-a` mode is scheduled for Q4 per cross-LLM push-back, not deferred indefinitely. Skill count moves from 20 to 21. Integration: 1046 checks (+37 from `scenarioDependencyAuditPresent` and auto-pickup by parameterized scenarios). The decision rationale is in `docs/reviews/2026-04-26-roadmap-candidates/synthesis.md`.
+**Current**: v1.19.0 ships `/pr-review` (C2 from the 2026-04-26 cross-LLM review, Issue #122, ICE 267 cross-LLM). Autonomous local PR review via the `gh` CLI: the skill resolves a PR, fetches the diff, spawns a review subagent with universal + stack-specific severity criteria, posts the review as a PR comment for audit trail, and surfaces a merge decision (`integrate` / `fix branch` / `proceed`). Severity is configurable via the new `prReviewSeverity` section in `team-settings.json`; absent that, hard-coded universal defaults apply. The skill is read-only — never modifies code, never auto-merges. PATTERNS.md sibling adds stack-specific severity for node-ts / python / swift; other stacks fall back to the universal defaults. Per Mistral's cross-LLM push-back, the skill is also exposed from day one as the `cdk_pr_review` MCP tool, so any MCP-aware client can read the audit trail of a PR's review history without invoking the CDK CLI. Skill count moves from 21 to 22; MCP tools from 5 to 6. Integration: 1085 checks; unit: 373 tests (+8 for the new `prReviewSeverity` validation and helper).
 
-**Next**: Q3 #4d `/pr-review` skill port (Issue #122, ICE 267 cross-LLM), then Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240). Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240). Q3 #6 sub-tracks 2-3 (`/debt-triage`, `/privacy-audit`) re-score next. Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 

@@ -11,6 +11,7 @@ import {
   isSkillBlocked,
   isSkillAllowed,
   getRequiredSkills,
+  getPrReviewSeverity,
 } from '../../src/utils/team-settings.js';
 
 let TMP;
@@ -177,5 +178,87 @@ describe('getRequiredSkills', () => {
     assert.deepEqual(required, ['arch-audit', 'security-audit']);
     required.push('mutation');
     assert.deepEqual(s.requiredSkills, ['arch-audit', 'security-audit']);
+  });
+});
+
+describe('prReviewSeverity validation', () => {
+  it('rejects non-object prReviewSeverity', () => {
+    assert.throws(
+      () => validateTeamSettings({ prReviewSeverity: 'critical' }),
+      /must be an object with critical\/major\/minor arrays/,
+    );
+    assert.throws(
+      () => validateTeamSettings({ prReviewSeverity: [] }),
+      /must be an object with critical\/major\/minor arrays/,
+    );
+  });
+
+  it('rejects non-array severity-level fields', () => {
+    assert.throws(
+      () => validateTeamSettings({ prReviewSeverity: { critical: 'src/auth/**' } }),
+      /prReviewSeverity\.critical must be an array of glob patterns/,
+    );
+  });
+
+  it('rejects non-string entries in a severity array', () => {
+    assert.throws(
+      () => validateTeamSettings({ prReviewSeverity: { major: ['src/api/**', 42] } }),
+      /prReviewSeverity\.major must contain only non-empty strings/,
+    );
+    assert.throws(
+      () => validateTeamSettings({ prReviewSeverity: { minor: ['ok', ''] } }),
+      /prReviewSeverity\.minor must contain only non-empty strings/,
+    );
+  });
+
+  it('accepts a valid prReviewSeverity object', () => {
+    assert.doesNotThrow(() =>
+      validateTeamSettings({
+        prReviewSeverity: {
+          critical: ['src/auth/**', 'migrations/**'],
+          major: ['src/api/**'],
+          minor: [],
+        },
+      }),
+    );
+  });
+
+  it('accepts partial prReviewSeverity (only one level)', () => {
+    assert.doesNotThrow(() =>
+      validateTeamSettings({ prReviewSeverity: { critical: ['src/payments/**'] } }),
+    );
+  });
+});
+
+describe('getPrReviewSeverity', () => {
+  it('returns null when no settings or no prReviewSeverity', () => {
+    assert.equal(getPrReviewSeverity(null), null);
+    assert.equal(getPrReviewSeverity({}), null);
+  });
+
+  it('returns three arrays (critical/major/minor) defaulting empty when level absent', () => {
+    const s = {
+      prReviewSeverity: {
+        critical: ['src/auth/**'],
+        major: ['src/api/**'],
+      },
+    };
+    const got = getPrReviewSeverity(s);
+    assert.deepEqual(got.critical, ['src/auth/**']);
+    assert.deepEqual(got.major, ['src/api/**']);
+    assert.deepEqual(got.minor, []);
+  });
+
+  it('returns copies, not references (mutation safety)', () => {
+    const s = {
+      prReviewSeverity: {
+        critical: ['src/auth/**'],
+        major: [],
+        minor: [],
+      },
+    };
+    const got = getPrReviewSeverity(s);
+    got.critical.push('src/mutation/**');
+    assert.deepEqual(s.prReviewSeverity.critical, ['src/auth/**']);
   });
 });

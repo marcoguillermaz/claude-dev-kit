@@ -253,7 +253,8 @@ Only after explicit confirmation:
    - **Commit 1** (already done in Phase 3): source files only.
    - **Commit 2 - docs**: `docs/` changes + `README.md` if updated.
    - **Commit 3 - context** (only if updated): `CLAUDE.md` and/or `MEMORY.md` - never mixed with code or docs.
-9. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
+9. **PR review** (recommended): once the PR is open and CI is green, run `/pr-review <PR_NUMBER>` for an autonomous local code review. The review is posted as a PR comment for audit trail and surfaces a merge decision (`integrate` / `fix branch` / `proceed`). Use `--deep` for changes touching auth, money paths, or migrations.
+10. Promote to production: `git checkout main && git merge staging --no-ff && git push origin main`
 
 ## Phase 8.5 - Context review + compact
 
