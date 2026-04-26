@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1000 integration checks](https://img.shields.io/badge/integration-1000%20checks-blue.svg)](#testing)
+[![1009 integration checks](https://img.shields.io/badge/integration-1009%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -132,7 +132,34 @@ npx mg-claude-dev-kit upgrade --anthropic --apply  # write the diff (with .bak b
 npx mg-claude-dev-kit add skill <name>        # install one skill
 npx mg-claude-dev-kit add rule <name>         # install one rule
 npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
+claude-dev-kit-mcp                            # MCP server (stdio); wire from .mcp.json
 ```
+
+## MCP server
+
+`claude-dev-kit-mcp` is a Model Context Protocol server that exposes CDK governance signals to any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio). The CLI and MCP server ship in the same npm package, version-locked.
+
+Wire it up by adding to `.mcp.json` (project-scoped) or `~/.claude/.mcp.json` (user-scoped):
+
+```json
+{
+  "mcpServers": {
+    "cdk": { "command": "claude-dev-kit-mcp" }
+  }
+}
+```
+
+Read-only tools exposed:
+
+| Tool | Returns |
+| ---- | ------- |
+| `cdk_doctor_report` | `doctor --report` JSON (28 checks) |
+| `cdk_team_settings` | parsed `.claude/team-settings.json` |
+| `cdk_arch_audit_status` | last `arch-audit` run timestamp + age |
+| `cdk_skill_inventory` | installed skills + frontmatter snapshot |
+| `cdk_package_meta` | CDK package name, version, CLI path, cwd |
+
+The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise from `process.cwd()`. No mutating tools in v1.17.0 by design.
 
 ---
 
@@ -161,7 +188,7 @@ npx mg-claude-dev-kit new skill               # create a custom skill (wizard)
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1000 integration checks
+node packages/cli/test/integration/run.js    # 1009 integration checks
 node --test packages/cli/test/unit/*.test.js   # 365 unit tests
 ```
 
@@ -192,9 +219,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.16.0 ships `team-settings.json` for team-wide CLI governance (Q3 #3, Issue #94, ICE 175). Schema v1: `minTier` (s/m/l), `allowedSkills`, `blockedSkills`, `requiredSkills`. An empty or absent file means no restrictions, so existing setups keep working untouched. Enforcement covers `init` (refuses scaffolds below `minTier`), `upgrade` (refuses promotion-required scaffolds and suggests an alternative), `add skill` (refuses blocked or non-whitelisted skills, with `custom-*` bypassing the whitelist), and a new warn-level doctor check, `team-settings-compliance`. The doctor count moves from 27 to 28. Validation rejects any allowed/blocked overlap as a mutual-exclusion error. Native `Skill()` permission rules don't ship this release: Claude Code's permission grammar for skills isn't part of the documented public schema, so v1.16.0 keeps enforcement strictly CLI-side. Native rule generation is on the table for v1.17+. Integration: 1000 checks (+10 from `scenarioTeamSettings`). Unit: 365 tests (+22 from `team-settings.test.js`).
+**Current**: v1.17.0 ships the **CDK governance MCP server** (Q3 #4a, Issue #118, ICE 294). Any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio) can now read CDK project state without the CDK CLI installed. The `mg-claude-dev-kit` npm package ships two binaries together — `claude-dev-kit` and `claude-dev-kit-mcp` — version-locked. Five read-only tools cover doctor reports, team-settings, last arch-audit run, skill inventory, and package metadata. Wire up via `.mcp.json` and CDK appears as a tool option in every MCP client your team already uses. This release is the first in which CDK is itself an MCP citizen rather than only a consumer. Integration: 1009 checks (+9 from `scenarioMCPServer`). Unit: 365 tests (unchanged — server logic covered by the integration scenario at the process boundary).
 
-**Next**: Q3 #4 `cdk sync` for cross-project rules sync (ICE 168), or Q2 #8 external review prompt template update (ICE 162). Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (proposed by the 2026-04-26 external review, ICE ~240). The 2026-04-26 MCP reassessment memo records the full reasoning. Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 
