@@ -3234,6 +3234,166 @@ async function scenarioTeamSettings() {
   }
 }
 
+async function scenarioMCPServer() {
+  section('CDK governance MCP server (v1.17.0): tool surface + read-only outputs');
+
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+  const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
+
+  const SERVER_PATH = path.resolve(__dirname, '../../src/mcp/server.js');
+
+  const config = { ...BASE, tier: 'm', isDiscovery: false };
+  const dir = await scaffold('mcp-server-tier-m', 'm', config);
+
+  // Drop a team-settings.json so cdk_team_settings has something interesting to return
+  fs.writeFileSync(
+    path.join(dir, '.claude/team-settings.json'),
+    JSON.stringify({ minTier: 'm', requiredSkills: ['arch-audit'] }, null, 2),
+  );
+
+  // Mark a recent arch-audit so cdk_arch_audit_status returns a populated payload
+  const sessionDir = path.join(dir, '.claude/session');
+  await fs.ensureDir(sessionDir);
+  const fixedEpoch = Math.floor(Date.now() / 1000) - 3 * 86400; // 3 days ago
+  fs.writeFileSync(path.join(sessionDir, 'last-arch-audit'), `${fixedEpoch}\n`);
+
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: [SERVER_PATH],
+    env: { ...process.env, CDK_PROJECT_ROOT: dir },
+    stderr: 'pipe',
+  });
+
+  const client = new Client(
+    { name: 'cdk-integration-test', version: '0.0.1' },
+    { capabilities: {} },
+  );
+
+  try {
+    await client.connect(transport);
+    pass('MCP server: connect via stdio succeeds');
+
+    const tools = await client.listTools();
+    const expected = [
+      'cdk_doctor_report',
+      'cdk_team_settings',
+      'cdk_arch_audit_status',
+      'cdk_skill_inventory',
+      'cdk_package_meta',
+    ];
+    const got = tools.tools.map((t) => t.name).sort();
+    if (JSON.stringify(got) === JSON.stringify(expected.sort())) {
+      pass(`MCP server: listTools returns ${expected.length} expected tools`);
+    } else {
+      fail(`MCP server: tool list mismatch. expected=${expected}, got=${got}`);
+    }
+
+    function parseToolReply(result) {
+      const text = result?.content?.[0]?.text;
+      if (!text) throw new Error('no content[0].text in tool result');
+      return JSON.parse(text);
+    }
+
+    const meta = parseToolReply(await client.callTool({ name: 'cdk_package_meta', arguments: {} }));
+    if (meta.name === 'mg-claude-dev-kit' && meta.cwd === dir) {
+      pass('cdk_package_meta: name + cwd correct');
+    } else {
+      fail(`cdk_package_meta: ${JSON.stringify(meta)}`);
+    }
+
+    const team = parseToolReply(
+      await client.callTool({ name: 'cdk_team_settings', arguments: {} }),
+    );
+    if (
+      team.present === true &&
+      team.settings?.minTier === 'm' &&
+      Array.isArray(team.settings?.requiredSkills)
+    ) {
+      pass('cdk_team_settings: present=true, minTier and requiredSkills parsed');
+    } else {
+      fail(`cdk_team_settings: ${JSON.stringify(team)}`);
+    }
+
+    const arch = parseToolReply(
+      await client.callTool({ name: 'cdk_arch_audit_status', arguments: {} }),
+    );
+    if (
+      arch.everRan === true &&
+      arch.lastRunUnix === fixedEpoch &&
+      typeof arch.ageDays === 'number'
+    ) {
+      pass(`cdk_arch_audit_status: lastRunUnix matches, ageDays=${arch.ageDays.toFixed(2)}`);
+    } else {
+      fail(`cdk_arch_audit_status: ${JSON.stringify(arch)}`);
+    }
+
+    const inv = parseToolReply(
+      await client.callTool({ name: 'cdk_skill_inventory', arguments: {} }),
+    );
+    if (inv.present === true && Array.isArray(inv.skills) && inv.count > 0) {
+      pass(`cdk_skill_inventory: present, count=${inv.count}`);
+    } else {
+      fail(`cdk_skill_inventory: ${JSON.stringify(inv)}`);
+    }
+
+    const doctorReport = parseToolReply(
+      await client.callTool({ name: 'cdk_doctor_report', arguments: {} }),
+    );
+    if (
+      doctorReport &&
+      typeof doctorReport.timestamp === 'string' &&
+      Array.isArray(doctorReport.checks) &&
+      doctorReport.checks.length >= 20
+    ) {
+      pass(
+        `cdk_doctor_report: ${doctorReport.checks.length} checks, summary=${JSON.stringify(doctorReport.summary)}`,
+      );
+    } else {
+      fail(`cdk_doctor_report: unexpected shape ${JSON.stringify(doctorReport).slice(0, 200)}`);
+    }
+
+    // Negative case: arch-audit absent
+    const dirNoAudit = await scaffold('mcp-server-no-audit', 'm', config);
+    const transport2 = new StdioClientTransport({
+      command: 'node',
+      args: [SERVER_PATH],
+      env: { ...process.env, CDK_PROJECT_ROOT: dirNoAudit },
+      stderr: 'pipe',
+    });
+    const client2 = new Client(
+      { name: 'cdk-integration-test-2', version: '0.0.1' },
+      { capabilities: {} },
+    );
+    await client2.connect(transport2);
+    const archEmpty = parseToolReply(
+      await client2.callTool({ name: 'cdk_arch_audit_status', arguments: {} }),
+    );
+    if (archEmpty.everRan === false && archEmpty.lastRunUnix === null) {
+      pass('cdk_arch_audit_status: clean scaffold reports everRan=false');
+    } else {
+      fail(`cdk_arch_audit_status (no run): ${JSON.stringify(archEmpty)}`);
+    }
+    const teamAbsent = parseToolReply(
+      await client2.callTool({ name: 'cdk_team_settings', arguments: {} }),
+    );
+    if (teamAbsent.present === false && teamAbsent.settings === null) {
+      pass('cdk_team_settings: absent file reports present=false');
+    } else {
+      fail(`cdk_team_settings (absent): ${JSON.stringify(teamAbsent)}`);
+    }
+    await client2.close();
+
+    await client.close();
+  } catch (err) {
+    fail(`MCP server scenario: ${err.message}`);
+    try {
+      await client.close();
+    } catch {
+      // ignore
+    }
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -3285,6 +3445,7 @@ async function main() {
   await scenarioComplianceAuditPresent();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
+  await scenarioMCPServer();
 
   // ── Summary ────────────────────────────────────────────────────────────────
 
