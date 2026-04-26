@@ -2826,6 +2826,69 @@ async function scenarioInfraAuditPresent() {
   }
 }
 
+async function scenarioDependencyAuditPresent() {
+  section('dependency-audit skill presence + tier pruning (v1.18.0, C1)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`dependency-audit-tier-${tier}`, tier, config);
+    const skillDir = path.join(dir, '.claude/skills/dependency-audit');
+    const shouldExist = tier === 'm' || tier === 'l';
+
+    if (shouldExist) {
+      await assertSkillPresent(dir, tier, 'dependency-audit', { siblings: ['PATTERNS.md'] });
+
+      const patternsMd = fs.readFileSync(path.join(skillDir, 'PATTERNS.md'), 'utf8');
+      if (
+        /## node-ts/.test(patternsMd) &&
+        /## python/.test(patternsMd) &&
+        /## swift/.test(patternsMd)
+      ) {
+        pass(
+          `Tier ${tier}: dependency-audit PATTERNS.md covers top-3 stacks (node-ts, python, swift)`,
+        );
+      } else {
+        fail(`Tier ${tier}: dependency-audit PATTERNS.md missing top-3 stack sections`);
+      }
+
+      const skillMd = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
+      const hasAuditOnly = /read-only by default|Audit-only/.test(skillMd);
+      const applyModeOnlyInOutOfScope =
+        /## Out of scope[\s\S]*?Apply mode/.test(skillMd) &&
+        !/^\| `mode:apply-tier-a`/m.test(skillMd);
+      if (hasAuditOnly && applyModeOnlyInOutOfScope) {
+        pass(
+          `Tier ${tier}: dependency-audit ships audit-only in v1 (apply mode only in Out of scope)`,
+        );
+      } else {
+        fail(
+          `Tier ${tier}: dependency-audit should be audit-only in v1; apply mode leaked into SKILL.md operating modes`,
+        );
+      }
+
+      const cheatsheet = fs.readFileSync(path.join(dir, '.claude/cheatsheet.md'), 'utf8');
+      if (/\/dependency-audit/.test(cheatsheet)) {
+        pass(`Tier ${tier}: cheatsheet has /dependency-audit row`);
+      } else {
+        fail(`Tier ${tier}: cheatsheet missing /dependency-audit row`);
+      }
+
+      const pipeline = fs.readFileSync(path.join(dir, '.claude/rules/pipeline.md'), 'utf8');
+      if (/\/dependency-audit/.test(pipeline)) {
+        pass(`Tier ${tier}: pipeline.md Track C invokes /dependency-audit`);
+      } else {
+        fail(`Tier ${tier}: pipeline.md missing /dependency-audit invocation`);
+      }
+    } else {
+      if (!fs.existsSync(skillDir)) {
+        pass(`Tier ${tier}: dependency-audit pruned (not on tier S)`);
+      } else {
+        fail(`Tier ${tier}: dependency-audit present but should be pruned`);
+      }
+    }
+  }
+}
+
 async function scenarioComplianceAuditPresent() {
   section('compliance-audit skill presence + tier pruning (v1.14.0)');
 
@@ -3443,6 +3506,7 @@ async function main() {
   await scenarioApiContractAuditPresent();
   await scenarioInfraAuditPresent();
   await scenarioComplianceAuditPresent();
+  await scenarioDependencyAuditPresent();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
   await scenarioMCPServer();

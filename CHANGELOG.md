@@ -11,6 +11,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.18.0] — 2026-04-26
+
+### Added
+
+- **`/dependency-audit` skill** (Q3 #6, Issue #97, ICE 281 cross-LLM): port + agnosticization of the staff-manager `/deps-audit` skill (just released on `worktree-deps-audit-skill`). Stack-agnostic core SKILL.md (217 lines) + per-stack PATTERNS.md sibling (194 lines, top 3 stacks: node-ts, python, swift). Tier A/B/C classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS check. Audit-only in v1; mutating `apply-tier-a` mode scheduled for Q4 per cross-LLM push-back.
+- **Integration scenario `scenarioDependencyAuditPresent`** in `test/integration/run.js`: tier presence + pruning, PATTERNS.md top-3-stack coverage, audit-only invariant (apply mode confined to Out of scope), cheatsheet row, Track C pipeline.md invocation.
+- **Cheatsheet rows** in tier-m + tier-l: `/dependency-audit` after `/compliance-audit` with usage cadence.
+- **Pipeline.md Track C invocation** in tier-m + tier-l: skill invokes when the block touches a dependency manifest (`package.json`, `pyproject.toml`, `Package.swift`, `Cargo.toml`, `go.mod`, etc.).
+
+### Changed
+
+- Skill registry length: 22 → 23 (`dependency-audit` added; existing `dependency-scan` is unchanged — separate skill, internal Phase 1 entity-dependency tracker).
+- README skill count: 20 → 21 (table row added).
+- Integration test count: 1009 → 1046 (+37: 9 from new scenario, 28 from existing parameterized scenarios picking up the new skill via the registry).
+
+### Notes
+
+- The cross-LLM evaluation (GPT-4.1, Gemini 2.5 Pro, Mistral Large, Perplexity Sonar Pro) returned unanimous SHIP with ICE re-scores 216/294/336/336 (avg 281). All four reviewers raised the maintainer's preliminary 252. Mistral specifically pushed back on indefinite deferral of mutating mode — Q4 commitment is now explicit in the skill body's "Out of scope" section.
+- Parent Issue #97 originally bundled three skills (`/dependency-audit`, `/debt-triage`, `/privacy-audit`); this release narrows to the first. The other two remain in the same Issue as separate sub-tracks for future re-scoring.
+- The skill is agnostic to package manager (npm / pnpm / pip / uv / poetry / SPM / Cargo / Maven / Gradle / dotnet / bundler). Stack detection picks the right inventory command at Step 0.
+
+---
+
 ## [1.17.0] — 2026-04-26
 
 ### Added
