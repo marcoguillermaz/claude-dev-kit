@@ -220,6 +220,7 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 - Run `/test-audit` - static analysis of coverage (auto-detects lcov / Istanbul / Cobertura / go / tarpaulin / xcresult), pyramid shape (unit/integration/e2e ratio), anti-patterns (`.only` leaks, skipped tests, empty bodies, no-assertion tests, hardcoded sleeps).
 - Run `/doc-audit` - static doc-drift check (relative-link resolution, code-block syntax, CDK placeholder residuals, slash-command name match, skill-count consistency, ADR freshness). Stack-aware for Next.js / Django / Swift.
 - Run `/infra-audit` - static infra-security check across GitHub Actions, Dockerfile, Kubernetes manifests, Terraform, GitLab CI. Each layer runs only if its markers are detected. Stack-agnostic.
+- Run `/dependency-audit` if the block touches `package.json`, `pyproject.toml`, `Package.swift`, `Cargo.toml`, `go.mod`, or any other dependency manifest - tier classification (A/B/C), changelog summary for Tier B/C, codebase impact grep, runtime LTS status. Audit-only in v1.
 - Output: one-paragraph summary per skill. Critical findings (`.only` committed, 0% coverage on a file changed in this block, CDK placeholder in README, pwn-request in workflow, secret logging in CI, privileged K8s container, IAM wildcard action, hardcoded secret in Terraform) block Phase 6.
 
 **Severity handling - all tracks**:
