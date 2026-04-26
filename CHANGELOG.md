@@ -11,6 +11,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.17.0] — 2026-04-26
+
+### Added
+
+- **CDK governance MCP server** (Q3 #4a, Issue #118, ICE 294): a local Model Context Protocol server that exposes CDK's existing JSON outputs as MCP tools. Any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio) can now query CDK project health without the CDK CLI installed. Five read-only tools: `cdk_doctor_report`, `cdk_team_settings`, `cdk_arch_audit_status`, `cdk_skill_inventory`, `cdk_package_meta`.
+- **`claude-dev-kit-mcp` binary**: shipped in the same npm package as the existing `claude-dev-kit` CLI. Single `npm install -g`, two binaries, version-locked. Wire up via `.mcp.json` or `~/.claude/.mcp.json`:
+  ```json
+  { "mcpServers": { "cdk": { "command": "claude-dev-kit-mcp" } } }
+  ```
+- **`@modelcontextprotocol/sdk` (^1.29.0)** added as dependency. ESM-only, stdio transport, official Anthropic SDK.
+- **Integration scenario `scenarioMCPServer`** in `test/integration/run.js`: end-to-end test that spawns the MCP server as a child process, connects via the SDK client, lists tools, calls each tool, and verifies the JSON shape — both on a fully scaffolded project and on a clean scaffold (everRan=false, present=false).
+
+### Changed
+
+- npm `bin` entries: `mg-claude-dev-kit` package now ships `claude-dev-kit` and `claude-dev-kit-mcp` together. No standalone CLI version exists.
+- Integration test count: 1000 → 1009 (+9 from `scenarioMCPServer`).
+
+### Notes
+
+- This is the first release in which CDK is itself an MCP citizen. Previously, CDK *consumed* MCP via the Playwright tools wired into the visual / responsive / accessibility / UI skills. Now CDK *publishes* an MCP server too, closing the asymmetry flagged in the 2026-04-26 MCP reassessment.
+- Read-only tool surface in v1.17.0 by design. Mutating tools (`cdk_apply_skill`, `cdk_run_doctor` triggered remotely) are deferred until adoption signal supports them.
+- Q3 #4b (MCP-aware audit skills, Issue #119, ICE 210) is the natural follow-on once 4a is in production. Schedule TBD.
+
+---
+
 ## [1.16.0] — 2026-04-25
 
 ### Added

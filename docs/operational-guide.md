@@ -1256,6 +1256,30 @@ Enforcement points: `init` (refuse + explain), `upgrade` (refuse + suggest), `ad
 
 v1.16.0 keeps enforcement strictly CLI-side. Native `Skill()` permission rules in `.claude/settings.json` are not generated this release: Claude Code's permission grammar for skills is not part of the documented public schema. Native rule generation tracks for v1.17+, after upstream verification.
 
+### MCP server
+
+The `mg-claude-dev-kit` npm package ships two binaries: `claude-dev-kit` (the wizard CLI) and `claude-dev-kit-mcp` (a Model Context Protocol server). Version-locked, single install.
+
+The MCP server exposes CDK governance state to any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio). Five read-only tools:
+
+- `cdk_doctor_report` — runs `doctor --report` and returns the JSON
+- `cdk_team_settings` — parsed `.claude/team-settings.json` contents
+- `cdk_arch_audit_status` — last arch-audit run timestamp + age in days
+- `cdk_skill_inventory` — installed skills with frontmatter snapshot
+- `cdk_package_meta` — package name, version, CLI path, project root
+
+Wire up by adding to `.mcp.json` (project-scoped) or `~/.claude/.mcp.json` (user-scoped):
+
+```json
+{
+  "mcpServers": {
+    "cdk": { "command": "claude-dev-kit-mcp" }
+  }
+}
+```
+
+The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise from the calling process's `cwd`. No mutating tools in v1.17.0 — adoption signal first, then read-write surface in a future minor.
+
 ### Adding team-specific rules
 
 Do not edit scaffolded rule files directly if you want upgrade compatibility. Instead:
