@@ -34,7 +34,9 @@ CLAUDE.md
 .claude/worktrees/
 
 # Claude Code — regenerable scaffold output (canonical source: packages/cli/templates/)
-.claude/skills/
+.claude/skills/*
+!.claude/skills/external-review/
+!.claude/skills/external-review/**
 .claude/cheatsheet.md
 .claude/files-guide.md
 .claude/commands/
@@ -65,8 +67,10 @@ packages/cli/test/integration/output/
 
 # Local-only scripts (not part of published CLI)
 packages/cli/src/commands/sync-from-pilot.js
-scripts/
+scripts/*
 !scripts/lint-templates.mjs
+!scripts/external-review.mjs
+!scripts/external-review-bundle.mjs
 
 # Internal project management (not product docs)
 FIRST_SESSION.md
@@ -75,7 +79,12 @@ MEMORY.md
 .env.example
 .sync-report.md
 tasks/
-docs/reviews/
+docs/reviews/*
+!docs/reviews/external-review-prompt.md
+!docs/reviews/[0-9]*-quick/
+!docs/reviews/[0-9]*-quick/**
+!docs/reviews/[0-9]*-full/
+!docs/reviews/[0-9]*-full/**
 docs/specs/
 docs/implementation-checklist.md
 docs/refactoring-backlog.md
