@@ -8,10 +8,13 @@
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
+> MCP-native — read CDK governance state from Claude Desktop, ChatGPT, Cursor, VS Code.
 
 Claude Code is a powerful CLI that reads, writes, and reasons about your entire codebase. Without shared process, it makes autonomous decisions that are hard to track and harder to review.
 
 **claude-dev-kit** scaffolds a structured, reviewable development process on top of Claude Code. It enforces one non-negotiable rule mechanically: Claude cannot declare a task complete until your tests pass. Everything else scales with your needs.
+
+Since v1.17.0, CDK ships an MCP server alongside the CLI. Any MCP-aware client can read your project's doctor report, team-settings policy, last arch-audit, and skill inventory without anyone running the CDK CLI. See [MCP server](#mcp-server).
 
 ---
 
@@ -79,6 +82,10 @@ Skills are conditionally installed based on your project: `hasApi`, `hasDatabase
 
 Node.js/TS, Node.js/JS, Python, Go, Swift, Kotlin, Rust, .NET, Ruby, Java - plus generic fallback. Security rules, permissions, and CLAUDE.md fields adapt automatically.
 
+### MCP server (v1.17.0+)
+
+The `mg-claude-dev-kit` package ships an MCP server (`claude-dev-kit-mcp` binary) alongside the CLI, version-locked, single `npm install -g`. Any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio) can query CDK governance state without the CDK CLI running. Five read-only tools cover doctor report, team-settings, last arch-audit, skill inventory, and package metadata. Full reference in the [MCP server](#mcp-server) section below.
+
 ### Incremental adoption
 
 Install individual components without a full scaffold:
@@ -100,13 +107,15 @@ your-project/
 ├── CLAUDE.md                    # Project context (<200 lines)
 ├── .claude/
 │   ├── settings.json            # Permissions + Stop hook (mechanical enforcement)
+│   ├── team-settings.json       # Team policy: minTier / allowed / blocked / required (v1.16+)
 │   ├── rules/
 │   │   ├── pipeline.md          # Development workflow (tier-appropriate)
 │   │   ├── security.md          # Stack-aware: web / apple / android / systems
 │   │   ├── git.md               # Commit format, branch rules
 │   │   └── output-style.md      # Communication rules
 │   ├── skills/                  # Audit skills (conditional per project)
-│   └── session/                 # Session recovery (gitignored)
+│   ├── session/                 # Session recovery (gitignored)
+│   └── .mcp.json                # Wire claude-dev-kit-mcp into MCP-aware clients (v1.17+)
 ├── docs/                        # Requirements, specs, backlog (M/L)
 ├── .github/                     # PR template, CODEOWNERS
 └── .pre-commit-config.yaml      # Secret scanning

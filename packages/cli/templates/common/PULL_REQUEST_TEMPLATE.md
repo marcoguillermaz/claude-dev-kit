@@ -34,6 +34,15 @@
 - [ ] New tests written for new behaviour (if applicable)
 - [ ] Smoke tested on staging
 
+## Documentation
+
+User-facing changes (CLI flags, public API, schemas, migrations, configuration) must be reflected in the corresponding project docs before merge. Internal-only changes (refactor, test, CI) tick the last item.
+
+- [ ] README updated where the user-facing surface is described
+- [ ] Inline docstrings or operational docs updated for new public APIs / schemas / commands
+- [ ] CHANGELOG entry under `[Unreleased]` or the relevant version block
+- [ ] No user-facing change — internal/refactor/test/CI only
+
 ## Breaking Changes
 
 - [ ] No breaking changes
