@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1009 integration checks](https://img.shields.io/badge/integration-1009%20checks-blue.svg)](#testing)
+[![1046 integration checks](https://img.shields.io/badge/integration-1046%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -49,7 +49,7 @@ After init, open Claude Code and start working. The scaffold is active immediate
 
 Start at Tier 0. Move up when you need more structure: `npx mg-claude-dev-kit upgrade --tier=m`
 
-### 20 audit skills
+### 21 audit skills
 
 Executable multi-step programs that run inside Claude Code. Not prompt instructions - structured audit workflows with model routing (haiku for mechanical checks, sonnet for analysis).
 
@@ -74,6 +74,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/api-contract-audit`  | M L   | OpenAPI contract drift (endpoints, schemas, status), breaking-change detection vs previous spec, versioning consistency, security scheme alignment, Richardson Maturity L0-L3 scoring. Auto-gen for FastAPI / NestJS / Express+swagger-jsdoc / Next.js route handlers / Django REST. |
 | `/infra-audit`         | M L   | Infrastructure security across GitHub Actions (pwn-request, secret logging, pinning, permissions), Dockerfile (root, latest tag, URL add), K8s (runAsNonRoot, privileged, hostNetwork), Terraform (IAM wildcards, state in git), GitLab CI. Stack-agnostic. |
 | `/compliance-audit`    | M L   | GDPR profile: data-subject rights (delete, export, rectify), consent, lawful basis, PII identification, encryption-at-rest on special-category, logging hygiene, retention, sub-processors. SOC 2 / HIPAA scaffolded for v1.15+. |
+| `/dependency-audit`    | M L   | Outdated package audit: Tier A (safe batch) / B (non-core major) / C (core/breaking-risk) classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS status. Stack-aware (node-ts/python/swift); agnostic fallback for other stacks. Audit-only in v1; mutating apply-tier-a deferred to Q4. |
 | `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
 Skills are conditionally installed based on your project: `hasApi`, `hasDatabase`, `hasFrontend`, `hasDesignSystem`.
@@ -197,7 +198,7 @@ The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise 
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1009 integration checks
+node packages/cli/test/integration/run.js    # 1046 integration checks
 node --test packages/cli/test/unit/*.test.js   # 365 unit tests
 ```
 
@@ -228,9 +229,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.17.0 ships the **CDK governance MCP server** (Q3 #4a, Issue #118, ICE 294). Any MCP-aware client (Claude Desktop, ChatGPT desktop, Cursor, VS Code, Copilot Studio) can now read CDK project state without the CDK CLI installed. The `mg-claude-dev-kit` npm package ships two binaries together — `claude-dev-kit` and `claude-dev-kit-mcp` — version-locked. Five read-only tools cover doctor reports, team-settings, last arch-audit run, skill inventory, and package metadata. Wire up via `.mcp.json` and CDK appears as a tool option in every MCP client your team already uses. This release is the first in which CDK is itself an MCP citizen rather than only a consumer. Integration: 1009 checks (+9 from `scenarioMCPServer`). Unit: 365 tests (unchanged — server logic covered by the integration scenario at the process boundary).
+**Current**: v1.18.0 ships `/dependency-audit` (Q3 #6 Issue #97, ICE 281 cross-LLM verdict). Ports the just-released staff-manager `/deps-audit` skill, agnosticized for CDK's 11 stacks with per-stack PATTERNS.md siblings (top 3: node-ts, python, swift; agnostic fallback for the rest). Audit-only in v1: outdated-package inventory, Tier A/B/C classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS check. Mutating `apply-tier-a` mode is scheduled for Q4 per cross-LLM push-back, not deferred indefinitely. Skill count moves from 20 to 21. Integration: 1046 checks (+37 from `scenarioDependencyAuditPresent` and auto-pickup by parameterized scenarios). The decision rationale is in `docs/reviews/2026-04-26-roadmap-candidates/synthesis.md`.
 
-**Next**: Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (proposed by the 2026-04-26 external review, ICE ~240). The 2026-04-26 MCP reassessment memo records the full reasoning. Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: Q3 #4d `/pr-review` skill port (Issue #122, ICE 267 cross-LLM), then Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240). Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 
