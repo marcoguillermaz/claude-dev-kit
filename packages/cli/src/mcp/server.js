@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { z } from 'zod';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -124,6 +125,106 @@ function readSkillInventory(cwd) {
   return { skills, skillsDir, present: true, count: skills.length };
 }
 
+function readPrReviewState(prNumber) {
+  if (!Number.isInteger(prNumber) || prNumber <= 0) {
+    return { _error: 'prNumber must be a positive integer' };
+  }
+  const cwd = getCwd();
+  let repo;
+  try {
+    repo = execFileSync('gh', ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (err) {
+    return {
+      _error: 'gh CLI not available or repo lookup failed',
+      message: err.message.slice(0, 200),
+    };
+  }
+
+  let metadata;
+  try {
+    const out = execFileSync(
+      'gh',
+      [
+        'pr',
+        'view',
+        String(prNumber),
+        '--repo',
+        repo,
+        '--json',
+        'title,state,headRefName,baseRefName,additions,deletions,changedFiles,url',
+      ],
+      { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    metadata = JSON.parse(out);
+  } catch (err) {
+    return {
+      _error: `PR #${prNumber} not found or gh access denied`,
+      repo,
+      message: err.message.slice(0, 200),
+    };
+  }
+
+  let comments = [];
+  try {
+    const out = execFileSync(
+      'gh',
+      ['pr', 'view', String(prNumber), '--repo', repo, '--json', 'comments'],
+      { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    const parsed = JSON.parse(out);
+    comments = Array.isArray(parsed.comments) ? parsed.comments : [];
+  } catch {
+    // best effort; metadata still useful
+  }
+
+  const reviewMarker = '/pr-review — autonomous local review';
+  const skillReviews = comments
+    .filter((c) => typeof c.body === 'string' && c.body.includes(reviewMarker))
+    .map((c) => {
+      const body = c.body;
+      const verdictMatch = body.match(/### Verdict\s*\n([^\n]+)/);
+      const criticalMatch = body.match(/### Critical \((\d+)\)/);
+      const majorMatch = body.match(/### Major \((\d+)\)/);
+      const minorMatch = body.match(/### Minor \((\d+)\)/);
+      return {
+        author: c.author?.login || c.author || null,
+        createdAt: c.createdAt,
+        url: c.url,
+        verdict: verdictMatch ? verdictMatch[1].trim() : null,
+        critical: criticalMatch ? Number(criticalMatch[1]) : null,
+        major: majorMatch ? Number(majorMatch[1]) : null,
+        minor: minorMatch ? Number(minorMatch[1]) : null,
+        bodyPreview: body.slice(0, 500),
+      };
+    });
+
+  return {
+    repo,
+    pr: {
+      number: prNumber,
+      title: metadata.title,
+      state: metadata.state,
+      head: metadata.headRefName,
+      base: metadata.baseRefName,
+      additions: metadata.additions,
+      deletions: metadata.deletions,
+      changedFiles: metadata.changedFiles,
+      url: metadata.url,
+    },
+    skillReviewComments: skillReviews,
+    skillReviewCount: skillReviews.length,
+    cliInvocation: `claude-dev-kit /pr-review ${prNumber}`,
+    note:
+      skillReviews.length === 0
+        ? `No /pr-review skill comment found on this PR yet. Run \`claude-dev-kit /pr-review ${prNumber}\` (or invoke the skill from Claude Code) to generate one.`
+        : `${skillReviews.length} /pr-review skill comment(s) found. Latest verdict: ${skillReviews[skillReviews.length - 1].verdict || 'unknown'}.`,
+  };
+}
+
 function getPackageMeta() {
   return {
     name: 'mg-claude-dev-kit',
@@ -181,6 +282,19 @@ export function buildServer() {
       inputSchema: {},
     },
     async () => buildToolReply(readSkillInventory(getCwd())),
+  );
+
+  server.registerTool(
+    'cdk_pr_review',
+    {
+      title: 'Read /pr-review skill state on a PR',
+      description:
+        "Reads the audit trail of `/pr-review` skill comments on a GitHub PR (verdict, severity counts, body preview). Read-only: this tool does not run a fresh review. To generate a new review, invoke the `/pr-review` CDK skill via the CLI (the tool returns the exact invocation in `cliInvocation`). Requires the `gh` CLI to be authenticated against the project's GitHub repo.",
+      inputSchema: {
+        prNumber: z.number().int().positive().describe('GitHub PR number to inspect'),
+      },
+    },
+    async (args) => buildToolReply(readPrReviewState(args?.prNumber)),
   );
 
   server.registerTool(
