@@ -11,6 +11,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.19.0] — 2026-04-26
+
+### Added
+
+- **`/pr-review` skill** (Q3 #4d, Issue #122, ICE 267 cross-LLM): autonomous local PR review via `gh` CLI. Spawns a review subagent on the diff with universal + stack-specific severity criteria, posts the review as a PR comment for audit trail, surfaces a merge decision. Read-only: never modifies code, never auto-merges. Stack-aware via sibling PATTERNS.md (node-ts, python, swift in v1; agnostic fallback for the rest). `--deep` flag escalates to opus for sensitive changes. `--with-context` is opt-in for project-context-aware review.
+- **`prReviewSeverity` extension** to `team-settings.json` schema (Option β): an optional object with `critical` / `major` / `minor` glob arrays that override + extend the universal defaults. Validation rejects non-array level fields and non-string entries.
+- **`getPrReviewSeverity()` helper** in `team-settings.js`: returns the parsed override (mutation-safe copies) or `null` when absent.
+- **`cdk_pr_review` MCP tool** on the v1.17.0 governance MCP server (Mistral's cross-LLM recommendation): reads the audit trail of `/pr-review` skill comments on a GitHub PR — repo, PR metadata, list of skill review comments with verdict + severity counts + body preview, plus the exact CLI invocation needed to generate a fresh review. Read-only — does not run a fresh review itself; that requires the CDK CLI (orchestration too involved to expose as a single MCP call in v1).
+- **`zod` (^4.3.6)** added as direct dependency (was transitive via `@modelcontextprotocol/sdk`). Used to define the `cdk_pr_review` MCP tool input schema.
+- **Integration scenario `scenarioPrReviewPresent`** in `test/integration/run.js`: tier presence + pruning, PATTERNS.md top-3-stack coverage, read-only invariant (hard rules in body), cheatsheet row, Phase 8 pipeline.md invocation, valid + invalid `prReviewSeverity` validation through `doctor --report`.
+- **Pipeline.md Phase 8 step 9** in tier-m + tier-l: optional `/pr-review` invocation after CI green, before promotion to production.
+
+### Changed
+
+- Skill registry length: 23 → 24 (`pr-review` added).
+- README skill count: 21 → 22 (table row added).
+- MCP server tools: 5 → 6 (`cdk_pr_review` added).
+- Integration test count: 1046 → 1085 (+39: ~23 from `scenarioPrReviewPresent` + auto-pickup by parameterized scenarios + 1 fix to MCP tool list assertion to expect 6 tools).
+- Unit test count: 365 → 373 (+8 for `prReviewSeverity` validation suite + `getPrReviewSeverity` helper).
+
+### Notes
+
+- The cross-LLM evaluation returned unanimous SHIP with Impact pushed up by all four reviewers (maintainer 7, cross-LLM 8-9). Gemini specifically called this skill a "potential killer application" that operationalizes the "review-before-merge" moat described in CDK's roadmap.
+- The MCP tool is intentionally lightweight in v1: it reads existing review comments and points to the CLI for fresh reviews. Generating a full review from MCP would require the server to orchestrate a subagent + post a comment + return the result, which is multi-step and stateful in ways MCP's request-response model doesn't natively support. Once adoption justifies the lift, v2 can expose a richer `cdk_pr_review_run` write tool.
+- Severity criteria are layered: universal defaults in `SKILL.md`, stack-specific additions in `PATTERNS.md` (when the stack matches), project overrides in `team-settings.json` `prReviewSeverity` (when present). The skill body documents the precedence.
+- Out of scope in v1: CI workflow auto-running `/pr-review` on every PR, auto-merging based on verdict, multi-language reviewer comments. Each is a separate v2+ track.
+
+---
+
 ## [1.18.0] — 2026-04-26
 
 ### Added
