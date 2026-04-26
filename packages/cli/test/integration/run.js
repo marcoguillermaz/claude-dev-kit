@@ -2897,14 +2897,18 @@ async function scenarioPrReviewPresent() {
     ),
   );
   {
-    const out = execFileSync(
-      'node',
-      [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
-      {
-        cwd: dir,
-        encoding: 'utf8',
-      },
-    );
+    let out;
+    try {
+      out = execFileSync(
+        'node',
+        [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
+        { cwd: dir, encoding: 'utf8' },
+      );
+    } catch (e) {
+      // doctor exits non-zero when any check fails (e.g., claude-cli missing on CI runners).
+      // The JSON report is still emitted on stdout — capture it.
+      out = (e.stdout || '').toString();
+    }
     let report = null;
     try {
       report = JSON.parse(out);
