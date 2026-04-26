@@ -133,6 +133,8 @@ These conventions are mandatory for every PR. We follow them ourselves on every 
 
 **Mid-feature budget checkpoints.** When writing a `SKILL.md` body, run `wc -l` after roughly half the steps. If the body is trending over 400 lines with material left to write, extract stack-specific or layer-specific content into a sibling file before the budget runs out.
 
+**R3 — Documentation update is mandatory for any user-facing change.** A user-facing change is anything that adds, removes, or alters a CLI command, scaffolded file, skill, doctor check, MCP tool, schema, or public API surface. The PR cannot land until the relevant docs are touched: `README.md` where the surface is described (opening tagline, "What it does", Architecture, CLI Commands, dedicated section), `docs/operational-guide.md` for the operational subsection, and `CHANGELOG.md` with an entry under `[Unreleased]` or the release block. The `.github/PULL_REQUEST_TEMPLATE.md` checklist enforces this at PR-open time. Buried documentation is treated as a credibility regression — the smoke-test review on v1.16.0 caught exactly this drift, where a headline feature was technically present but invisible from the README.
+
 ---
 
 ## 6. Adding a new skill
