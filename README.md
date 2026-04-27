@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1085 integration checks](https://img.shields.io/badge/integration-1085%20checks-blue.svg)](#testing)
+[![1100 integration checks](https://img.shields.io/badge/integration-1100%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -56,7 +56,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | Skill                  | Tiers | Purpose                                                                                                                                 |
 | ---------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `/arch-audit`          | S M L | Governance files vs Anthropic docs. Auto-fixes deprecations.                                                                            |
-| `/security-audit`      | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID.                                                                   |
+| `/security-audit`      | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID. **MCP-aware (v1.20+)**: Step 3c queries `mcp-nvd` server for live CVE data with local audit fallback. |
 | `/perf-audit`          | S M L | Bundle size, serial awaits, query efficiency. 8-stack patterns.                                                                         |
 | `/skill-dev`           | S M L | Coupling, duplication, dead code, debt-density.                                                                                         |
 | `/simplify`            | S M L | Early returns, nesting, dead code. Applies changes directly.                                                                            |
@@ -74,7 +74,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/api-contract-audit`  | M L   | OpenAPI contract drift (endpoints, schemas, status), breaking-change detection vs previous spec, versioning consistency, security scheme alignment, Richardson Maturity L0-L3 scoring. Auto-gen for FastAPI / NestJS / Express+swagger-jsdoc / Next.js route handlers / Django REST. |
 | `/infra-audit`         | M L   | Infrastructure security across GitHub Actions (pwn-request, secret logging, pinning, permissions), Dockerfile (root, latest tag, URL add), K8s (runAsNonRoot, privileged, hostNetwork), Terraform (IAM wildcards, state in git), GitLab CI. Stack-agnostic. |
 | `/compliance-audit`    | M L   | GDPR profile: data-subject rights (delete, export, rectify), consent, lawful basis, PII identification, encryption-at-rest on special-category, logging hygiene, retention, sub-processors. SOC 2 / HIPAA scaffolded for v1.15+. |
-| `/dependency-audit`    | M L   | Outdated package audit: Tier A (safe batch) / B (non-core major) / C (core/breaking-risk) classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS status. Stack-aware (node-ts/python/swift); agnostic fallback for other stacks. Audit-only in v1; mutating apply-tier-a deferred to Q4. |
+| `/dependency-audit`    | M L   | Outdated package audit: Tier A (safe batch) / B (non-core major) / C (core/breaking-risk) classification, changelog summary for Tier B/C, codebase impact grep, runtime LTS status. Stack-aware (node-ts/python/swift); agnostic fallback for other stacks. Audit-only in v1; mutating apply-tier-a deferred to Q4. **MCP-aware (v1.20+)**: Step 2 queries `package-registry-mcp` for multi-ecosystem package metadata with WebFetch fallback. |
 | `/pr-review`           | M L   | Autonomous local PR review via gh CLI: spawns review subagent on the diff, classifies findings (Critical / Major / Minor) using universal + stack-specific severity criteria, posts review as PR comment for audit trail. Configurable via team-settings.json `prReviewSeverity`. Read-only. `--deep` escalates to opus for sensitive changes. Also exposed as `cdk_pr_review` MCP tool. |
 | `/skill-review`        | M L   | Quality review pipeline for skill portfolios. Spec compliance, cross-tier coherence, behavioral fixtures.                               |
 
@@ -200,7 +200,7 @@ The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise 
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1085 integration checks
+node packages/cli/test/integration/run.js    # 1100 integration checks
 node --test packages/cli/test/unit/*.test.js   # 373 unit tests
 ```
 
@@ -231,9 +231,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.19.0 ships `/pr-review` (C2 from the 2026-04-26 cross-LLM review, Issue #122, ICE 267 cross-LLM). Autonomous local PR review via the `gh` CLI: the skill resolves a PR, fetches the diff, spawns a review subagent with universal + stack-specific severity criteria, posts the review as a PR comment for audit trail, and surfaces a merge decision (`integrate` / `fix branch` / `proceed`). Severity is configurable via the new `prReviewSeverity` section in `team-settings.json`; absent that, hard-coded universal defaults apply. The skill is read-only — never modifies code, never auto-merges. PATTERNS.md sibling adds stack-specific severity for node-ts / python / swift; other stacks fall back to the universal defaults. Per Mistral's cross-LLM push-back, the skill is also exposed from day one as the `cdk_pr_review` MCP tool, so any MCP-aware client can read the audit trail of a PR's review history without invoking the CDK CLI. Skill count moves from 21 to 22; MCP tools from 5 to 6. Integration: 1085 checks; unit: 373 tests (+8 for the new `prReviewSeverity` validation and helper).
+**Current**: v1.20.0 ships **MCP-aware audit skills** (Q3 #4b, Issue #119, ICE 210). `/security-audit` Step 3c now queries the [`mcp-nvd`](https://github.com/marcoeg/mcp-nvd) MCP server for live CVE data; `/dependency-audit` Step 2 queries [`package-registry-mcp`](https://github.com/Artmann/package-registry-mcp) for multi-ecosystem package metadata. Both skills fall back to their existing static logic with a clear warning when the MCP server is unreachable, so projects without MCP wiring keep working unchanged. Frontmatter declares the consumed `mcp__*` tools per Anthropic spec. Issue #119 originally bundled three skills; the third (`/arch-audit` instrumentation against Anthropic's Claude Code spec) is **deferred** because no production-grade MCP server exists for `code.claude.com/docs` as of 2026-04-27 — wrapping the existing WebFetch path in an MCP layer would have added indirection without value. Re-evaluate when Anthropic ships an official spec MCP server. Integration: 1100 checks (+15 from `scenarioMcpAwareSkillsV120`).
 
-**Next**: Q3 #4b MCP-aware audit skills (Issue #119, ICE 210), then a runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240). Q3 #6 sub-tracks 2-3 (`/debt-triage`, `/privacy-audit`) re-score next. Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: Q3 #6 sub-tracks 2-3 (`/debt-triage`, `/privacy-audit`) cross-LLM re-score, then runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240), then `/arch-audit` MCP-aware once the upstream server lands. Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 

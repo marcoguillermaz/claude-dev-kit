@@ -11,6 +11,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.20.0] — 2026-04-27
+
+### Added
+
+- **`/security-audit` MCP-aware Step 3c** (Q3 #4b sub-track 1, Issue #119, ICE 210): when the [`mcp-nvd`](https://github.com/marcoeg/mcp-nvd) server is wired in `~/.claude/.mcp.json` (or project-scoped), the skill calls `mcp__mcp-nvd__search_cve` for each direct production dependency and consumes live CVE data with severity, affected version range, fixed version, publication date. Falls back to existing local audit commands (`npm audit`, `pip-audit`, `cargo audit`, etc.) with explicit warning when the MCP server is unreachable. Frontmatter declares the consumed `mcp__*` tools. Tier-s + tier-m + tier-l byte-identical.
+- **`/dependency-audit` MCP-aware Step 2** (Q3 #4b sub-track 2): when [`package-registry-mcp`](https://github.com/Artmann/package-registry-mcp) is wired, the skill calls `mcp__package-registry-mcp__lookup_package` for current package metadata (latest version, repository URL, maintainer, dist-tags) and uses the returned repo URL to fetch the GitHub releases changelog. Falls back to WebFetch with explicit warning when the MCP server is unreachable. Tier-m + tier-l byte-identical.
+- **Integration scenario `scenarioMcpAwareSkillsV120`** in `test/integration/run.js`: validates frontmatter declares the expected `mcp__*` tools, body contains the MCP-aware path + fallback wording, and pinned server repo URLs are present. ~15 new assertions across tier-s/m/l.
+
+### Changed
+
+- Integration test count: 1085 → 1100 (+15 from `scenarioMcpAwareSkillsV120`).
+
+### Deferred
+
+- **`/arch-audit` MCP-aware** (Q3 #4b sub-track 3): originally part of the Issue #119 scope. After 2026-04-26 research, no production-grade MCP server exists for Anthropic's Claude Code spec / `code.claude.com/docs`. Wrapping the existing WebFetch path in an MCP layer would have added indirection without measurable value; pinning a research-grade community server would have reduced reliability. Defer until either (a) Anthropic publishes an official spec MCP server (likely entry as Claude Cowork integrations expand) or (b) a community server reaches production-grade stability with multi-vendor signal. Re-score in v1.21.x.
+
+### Notes
+
+- This release intentionally does NOT generate a mock MCP server fixture for integration testing. The skill instrumentation is content-level (frontmatter + body); the actual MCP invocation happens at Claude Code session time, outside CI scope. A mock fixture would only be useful for testing CDK CLI code that itself invokes MCP — which v1.20.0 does not add. Future v1.20.x releases that add MCP-invoking CLI code (e.g., `cdk_pr_review_run` write tool) will need the fixture.
+- The fallback path in both skills is intentionally adoption-friendly: MCP-aware is a value addition, not a requirement. Projects without MCP wiring see the warning and continue with the prior static logic. Audit coverage never regresses.
+- The third skill choice (`/dependency-audit` over `/infra-audit` and `/test-audit`) was decided on the basis of staff-manager `/deps-audit` having just been ported in v1.18.0 — the changelog/registry path was already familiar, lowering implementation risk. `/infra-audit` MCP-aware (Terraform Cloud / AWS MCP servers) is a future candidate.
+
+---
+
 ## [1.19.0] — 2026-04-26
 
 ### Added
