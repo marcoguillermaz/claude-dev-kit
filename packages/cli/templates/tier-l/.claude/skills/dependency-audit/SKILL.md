@@ -5,7 +5,7 @@ user-invocable: true
 model: sonnet
 context: fork
 argument-hint: [tier:A|tier:B|tier:C|pkg:<name>]
-allowed-tools: Bash WebFetch Read Glob Grep
+allowed-tools: Bash WebFetch Read Glob Grep mcp__package-registry-mcp__lookup_package mcp__package-registry-mcp__search_package
 ---
 
 You are performing a dependency update audit on the current project. The skill is **read-only by default**: it produces a decision report; it never modifies `package.json`, lockfiles, or any source.
@@ -78,10 +78,20 @@ For each package:
 
 1. Compute severity (patch / minor / major).
 2. Apply tier rules: PATTERNS.md first if present, otherwise the agnostic rules above.
-3. For Tier B/C only, fetch the changelog:
+3. For Tier B/C only, fetch the changelog. Two paths, MCP-aware preferred (v1.20+):
+
+   **Path A — MCP-aware (preferred when `package-registry-mcp` is wired)**
+   Pinned MCP server: [`package-registry-mcp`](https://github.com/Artmann/package-registry-mcp). Multi-ecosystem (npm / PyPI / Cargo / NuGet), no auth.
+   - Call `mcp__package-registry-mcp__lookup_package` with the package name + ecosystem to get current metadata: latest version, repository URL, maintainer, dist-tags.
+   - Use the returned repository URL to fetch the GitHub releases (`gh api repos/<owner>/<repo>/releases/latest --jq '.body'`).
+   - This path is more reliable than guessing the repo URL from the package homepage and avoids stale npm-registry HTML scraping.
+
+   **Path B — Fallback (when MCP unreachable)**
+   Print explicitly: `"⚠ package-registry-mcp unavailable, falling back to WebFetch (registry HTML may be stale or rate-limited)."`
    - GitHub releases first if the source is known (`gh api repos/<owner>/<repo>/releases/latest --jq '.body' 2>/dev/null`).
    - Fallback: `WebFetch` against the package homepage / npm-registry / PyPI / crates.io page.
-   - Cache changelog text in `/tmp/dependency-audit-changelog-<pkg>.txt`.
+
+   Cache changelog text in `/tmp/dependency-audit-changelog-<pkg>.txt` regardless of path.
 4. From each Tier B/C changelog, extract: top 3 breaking changes, deprecated APIs, minimum runtime requirements.
 
 ## Step 3 — Decision matrix
