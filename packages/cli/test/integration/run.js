@@ -2826,6 +2826,83 @@ async function scenarioInfraAuditPresent() {
   }
 }
 
+async function scenarioMcpAwareSkillsV120() {
+  section('MCP-aware skill instrumentation: security-audit + dependency-audit (v1.20.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`mcp-aware-tier-${tier}`, tier, config);
+
+    // /security-audit ships in all three tiers (minTier: 's')
+    const securityPath = path.join(dir, '.claude/skills/security-audit/SKILL.md');
+    if (fs.existsSync(securityPath)) {
+      const body = fs.readFileSync(securityPath, 'utf8');
+
+      if (
+        /allowed-tools:.*mcp__mcp-nvd__get_cve/.test(body) &&
+        /mcp__mcp-nvd__search_cve/.test(body)
+      ) {
+        pass(`Tier ${tier}: security-audit frontmatter declares mcp-nvd tools`);
+      } else {
+        fail(`Tier ${tier}: security-audit frontmatter missing mcp-nvd allowed-tools entries`);
+      }
+
+      if (
+        /Step 3c\.A — MCP-aware path/.test(body) &&
+        /Step 3c\.B — Fallback path/.test(body) &&
+        /mcp-nvd unavailable, falling back/.test(body)
+      ) {
+        pass(`Tier ${tier}: security-audit Step 3c documents MCP path + fallback wording`);
+      } else {
+        fail(`Tier ${tier}: security-audit Step 3c missing MCP-aware structure or fallback text`);
+      }
+
+      if (/github\.com\/marcoeg\/mcp-nvd/.test(body)) {
+        pass(`Tier ${tier}: security-audit pins mcp-nvd repo URL`);
+      } else {
+        fail(`Tier ${tier}: security-audit missing mcp-nvd repo URL pin`);
+      }
+    }
+
+    // /dependency-audit only in M and L
+    const depAuditPath = path.join(dir, '.claude/skills/dependency-audit/SKILL.md');
+    if (tier === 'm' || tier === 'l') {
+      if (!fs.existsSync(depAuditPath)) {
+        fail(`Tier ${tier}: dependency-audit expected but absent`);
+        continue;
+      }
+      const body = fs.readFileSync(depAuditPath, 'utf8');
+
+      if (
+        /allowed-tools:.*mcp__package-registry-mcp__lookup_package/.test(body) &&
+        /mcp__package-registry-mcp__search_package/.test(body)
+      ) {
+        pass(`Tier ${tier}: dependency-audit frontmatter declares package-registry-mcp tools`);
+      } else {
+        fail(
+          `Tier ${tier}: dependency-audit frontmatter missing package-registry-mcp allowed-tools entries`,
+        );
+      }
+
+      if (
+        /Path A — MCP-aware/.test(body) &&
+        /Path B — Fallback/.test(body) &&
+        /package-registry-mcp unavailable, falling back/.test(body)
+      ) {
+        pass(`Tier ${tier}: dependency-audit Step 2 documents MCP path + fallback wording`);
+      } else {
+        fail(`Tier ${tier}: dependency-audit Step 2 missing MCP-aware structure or fallback text`);
+      }
+
+      if (/github\.com\/Artmann\/package-registry-mcp/.test(body)) {
+        pass(`Tier ${tier}: dependency-audit pins package-registry-mcp repo URL`);
+      } else {
+        fail(`Tier ${tier}: dependency-audit missing package-registry-mcp repo URL pin`);
+      }
+    }
+  }
+}
+
 async function scenarioPrReviewPresent() {
   section('pr-review skill presence + tier pruning + team-settings prReviewSeverity (v1.19.0, C2)');
 
@@ -3641,6 +3718,7 @@ async function main() {
   await scenarioComplianceAuditPresent();
   await scenarioDependencyAuditPresent();
   await scenarioPrReviewPresent();
+  await scenarioMcpAwareSkillsV120();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
   await scenarioMCPServer();

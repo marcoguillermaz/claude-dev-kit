@@ -1,10 +1,11 @@
 ---
 name: security-audit
-description: Security audit: auth/authz on API routes, input validation, RLS policies, response shape review, secret exposure, HTTP headers. Native mode checks entitlements and Keychain.
+description: Security audit: auth/authz on API routes, input validation, RLS policies, response shape review, secret exposure, HTTP headers. Native mode checks entitlements and Keychain. MCP-aware (v1.20+): when `mcp-nvd` server is wired, Step 3c queries live CVE data instead of static `npm audit` / `pip-audit` snapshots; falls back to local audit commands when MCP unreachable.
 user-invocable: true
 model: sonnet
 context: fork
 argument-hint: [target:page:<route>|target:role:<role>|target:section:<section>]
+allowed-tools: Bash Read Glob Grep WebFetch Agent mcp__mcp-nvd__get_cve mcp__mcp-nvd__search_cve
 ---
 
 ## Configuration (adapt before first run)
@@ -181,6 +182,22 @@ If no automated advisors are available, skip this step and note it in the report
 
 ## Step 3c - Dependency CVE audit
 
+**Pinned MCP server (v1.20+): `mcp-nvd`** ([github.com/marcoeg/mcp-nvd](https://github.com/marcoeg/mcp-nvd)) — exposes the NVD CVE database via two tools: `mcp__mcp-nvd__get_cve` (lookup by CVE ID) and `mcp__mcp-nvd__search_cve` (keyword + product search). Wire it up in `~/.claude/.mcp.json` or project-scoped `.mcp.json` with the user's NVD API key.
+
+### Step 3c.A — MCP-aware path (when available)
+
+If the `mcp-nvd` MCP tools are available in the current session (frontmatter declares them, server reachable):
+
+1. For each direct production dependency in the project's manifest, call `mcp__mcp-nvd__search_cve` with the package name + ecosystem tag.
+2. For each result, capture: CVE ID, severity (CVSS v3), affected version range, fixed version, publication date.
+3. Cross-reference against the manifest version. Skip CVEs with `affected_version_max < installed_version`.
+
+The MCP path returns CVEs as fresh as the NVD feed (typically < 24h lag) instead of the local audit cache (typically ≥ 1 release behind).
+
+### Step 3c.B — Fallback path (MCP unavailable)
+
+If `mcp-nvd` is not configured or returns an error, fall back to local audit commands. Print explicitly: `"⚠ mcp-nvd unavailable, falling back to local audit (snapshot may be stale)."`
+
 Run the appropriate dependency audit for the project's package manager:
 - Node.js: `npm audit --json --omit=dev` or `yarn audit --json`
 - Python: `pip-audit` or `safety check`
@@ -190,6 +207,8 @@ Run the appropriate dependency audit for the project's package manager:
 - Java/Kotlin: `mvn dependency-check:check` or `./gradlew dependencyCheckAnalyze`
 - .NET: `dotnet list package --vulnerable`
 - Swift: check Package.resolved for known CVEs
+
+### Step 3c.C — Severity classification (both paths)
 
 For each finding, record:
 - Package name and affected version range
@@ -201,7 +220,7 @@ Flag any `critical` CVE in a production dependency as a **Critical** finding.
 Flag any `high` CVE as a **High** finding.
 `moderate` and `low` → note in report but do not add to backlog unless directly exploitable in this app's context.
 
-If the audit command fails or is unavailable, note it and skip.
+If both the MCP path and the fallback audit command are unavailable, note it explicitly in the report and skip — do not silently proceed without dependency CVE coverage.
 
 ---
 
