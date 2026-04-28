@@ -2826,6 +2826,56 @@ async function scenarioInfraAuditPresent() {
   }
 }
 
+async function scenarioSkillDevHotspot() {
+  section('skill-dev v2 hotspot priority (churn × debt) — content assertions (v1.22.0)');
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`skill-dev-hotspot-tier-${tier}`, tier, config);
+    const skillPath = path.join(dir, '.claude/skills/skill-dev/SKILL.md');
+    if (!fs.existsSync(skillPath)) {
+      fail(`Tier ${tier}: skill-dev SKILL.md missing`);
+      continue;
+    }
+    const body = fs.readFileSync(skillPath, 'utf8');
+
+    if (/## Step 3b - Hotspot priority/.test(body)) {
+      pass(`Tier ${tier}: skill-dev declares Step 3b — Hotspot priority`);
+    } else {
+      fail(`Tier ${tier}: skill-dev missing Step 3b`);
+    }
+
+    if (/git log --since="6\.months\.ago" --numstat/.test(body)) {
+      pass(`Tier ${tier}: skill-dev Step 3b uses git log churn signal`);
+    } else {
+      fail(`Tier ${tier}: skill-dev Step 3b missing git log churn command`);
+    }
+
+    if (
+      /Q1 — Hot mess/.test(body) &&
+      /Q2 — Stable rot/.test(body) &&
+      /Q3 — Flaky frontier/.test(body) &&
+      /Q4 — Cold corner/.test(body)
+    ) {
+      pass(`Tier ${tier}: skill-dev Step 3b documents 4-quadrant priority matrix`);
+    } else {
+      fail(`Tier ${tier}: skill-dev Step 3b missing one or more priority quadrants`);
+    }
+
+    if (/### Hotspot priority \(churn × debt\) — top 10/.test(body)) {
+      pass(`Tier ${tier}: skill-dev report includes Hotspot priority section`);
+    } else {
+      fail(`Tier ${tier}: skill-dev report missing Hotspot priority section`);
+    }
+
+    if (/Hotspot table skipped: insufficient signal/.test(body)) {
+      pass(`Tier ${tier}: skill-dev documents fallback when not a Git repo / low signal`);
+    } else {
+      fail(`Tier ${tier}: skill-dev missing Hotspot fallback wording`);
+    }
+  }
+}
+
 async function scenarioRuntimeEnforcementHook() {
   section('team-settings runtime enforcement hook (v1.21.0)');
 
@@ -3938,6 +3988,7 @@ async function main() {
   await scenarioPrReviewPresent();
   await scenarioMcpAwareSkillsV120();
   await scenarioRuntimeEnforcementHook();
+  await scenarioSkillDevHotspot();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
   await scenarioMCPServer();
