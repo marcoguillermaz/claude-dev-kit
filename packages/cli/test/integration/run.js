@@ -2826,6 +2826,224 @@ async function scenarioInfraAuditPresent() {
   }
 }
 
+async function scenarioRuntimeEnforcementHook() {
+  section('team-settings runtime enforcement hook (v1.21.0)');
+
+  const HOOK_PATH = path.resolve(
+    __dirname,
+    '../../templates/common/.claude/hooks/team-settings-enforcement.mjs',
+  );
+
+  function invokeHook(cwd, payload) {
+    try {
+      const out = execFileSync('node', [HOOK_PATH], {
+        cwd,
+        encoding: 'utf8',
+        input: JSON.stringify(payload),
+        env: { ...process.env, CLAUDE_PROJECT_DIR: cwd },
+      });
+      return { code: 0, out };
+    } catch (e) {
+      return { code: e.status || 1, out: (e.stdout || '').toString() };
+    }
+  }
+
+  for (const tier of ['s', 'm', 'l']) {
+    const config = { ...BASE, tier, isDiscovery: false };
+    const dir = await scaffold(`runtime-enforcement-tier-${tier}`, tier, config);
+
+    const hookFile = path.join(dir, '.claude/hooks/team-settings-enforcement.mjs');
+    if (fs.existsSync(hookFile)) {
+      pass(`Tier ${tier}: hook script scaffolded at .claude/hooks/team-settings-enforcement.mjs`);
+    } else {
+      fail(`Tier ${tier}: hook script missing`);
+      continue;
+    }
+
+    const settings = JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8'));
+    const preToolUse = settings?.hooks?.PreToolUse || [];
+    const skillMatcher = preToolUse.find((e) => e.matcher === 'Skill');
+    if (skillMatcher?.hooks?.some((h) => /team-settings-enforcement\.mjs/.test(h.command || ''))) {
+      pass(`Tier ${tier}: settings.json registers PreToolUse Skill matcher with hook command`);
+    } else {
+      fail(`Tier ${tier}: settings.json does not register the runtime enforcement hook`);
+    }
+  }
+
+  // Behavior tests against the hook script directly.
+  const dir = await scaffold('runtime-enforcement-behavior', 'm', {
+    ...BASE,
+    tier: 'm',
+    isDiscovery: false,
+  });
+
+  // No team-settings.json → allow (exit 0, no output)
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Skill',
+      tool_input: { skill_name: 'security-audit' },
+    });
+    if (r.code === 0 && r.out.trim() === '') {
+      pass('No team-settings.json: hook allows silently');
+    } else {
+      fail(`No team-settings.json: hook returned code=${r.code} out=${r.out.slice(0, 100)}`);
+    }
+  }
+
+  // blockedSkills hits → deny JSON
+  fs.writeFileSync(
+    path.join(dir, '.claude/team-settings.json'),
+    JSON.stringify({ blockedSkills: ['security-audit'] }, null, 2),
+  );
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Skill',
+      tool_input: { skill_name: 'security-audit' },
+    });
+    let parsed = null;
+    try {
+      parsed = JSON.parse(r.out);
+    } catch {
+      // ignore
+    }
+    if (
+      r.code === 0 &&
+      parsed?.hookSpecificOutput?.permissionDecision === 'deny' &&
+      /blocked/.test(parsed?.hookSpecificOutput?.permissionDecisionReason || '')
+    ) {
+      pass('blockedSkills: hook returns deny JSON with reason mentioning blocked');
+    } else {
+      fail(`blockedSkills: hook code=${r.code} out=${r.out.slice(0, 200)}`);
+    }
+  }
+
+  // allowedSkills whitelist refuses skill not in list (custom-* exempt)
+  fs.writeFileSync(
+    path.join(dir, '.claude/team-settings.json'),
+    JSON.stringify({ allowedSkills: ['arch-audit', 'visual-audit'] }, null, 2),
+  );
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Skill',
+      tool_input: { skill_name: 'security-audit' },
+    });
+    let parsed = null;
+    try {
+      parsed = JSON.parse(r.out);
+    } catch {
+      // ignore
+    }
+    if (
+      r.code === 0 &&
+      parsed?.hookSpecificOutput?.permissionDecision === 'deny' &&
+      /allowedSkills/.test(parsed?.hookSpecificOutput?.permissionDecisionReason || '')
+    ) {
+      pass('allowedSkills whitelist: hook denies skill not in list');
+    } else {
+      fail(`allowedSkills deny: code=${r.code} out=${r.out.slice(0, 200)}`);
+    }
+  }
+
+  // custom-* bypasses allowedSkills
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Skill',
+      tool_input: { skill_name: 'custom-experimental' },
+    });
+    if (r.code === 0 && r.out.trim() === '') {
+      pass('allowedSkills: custom-* skill bypasses whitelist');
+    } else {
+      fail(`custom-* bypass: code=${r.code} out=${r.out.slice(0, 200)}`);
+    }
+  }
+
+  // Non-Skill tool: hook does not interfere
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Bash',
+      tool_input: { command: 'ls' },
+    });
+    if (r.code === 0 && r.out.trim() === '') {
+      pass('Non-Skill tool (Bash): hook passes through silently');
+    } else {
+      fail(`Bash passthrough: code=${r.code} out=${r.out.slice(0, 200)}`);
+    }
+  }
+
+  // Malformed team-settings.json: hook fails-open (allow)
+  fs.writeFileSync(path.join(dir, '.claude/team-settings.json'), '{not json');
+  {
+    const r = invokeHook(dir, {
+      tool_name: 'Skill',
+      tool_input: { skill_name: 'security-audit' },
+    });
+    if (r.code === 0 && r.out.trim() === '') {
+      pass('Malformed team-settings.json: hook fails open (allows silently)');
+    } else {
+      fail(`Malformed settings: code=${r.code} out=${r.out.slice(0, 200)}`);
+    }
+  }
+
+  // Doctor team-settings-runtime-hook check passes when wired correctly
+  {
+    fs.writeFileSync(
+      path.join(dir, '.claude/team-settings.json'),
+      JSON.stringify({ blockedSkills: ['security-audit'] }, null, 2),
+    );
+    let out;
+    try {
+      out = execFileSync(
+        'node',
+        [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
+        { cwd: dir, encoding: 'utf8' },
+      );
+    } catch (e) {
+      out = (e.stdout || '').toString();
+    }
+    let report = null;
+    try {
+      report = JSON.parse(out);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-runtime-hook');
+    if (check && check.status === 'pass') {
+      pass(
+        'doctor team-settings-runtime-hook: pass when team-settings.json + hook + settings.json all present',
+      );
+    } else {
+      fail(`doctor team-settings-runtime-hook: ${check?.status} info=${check?.info}`);
+    }
+  }
+
+  // Doctor team-settings-runtime-hook check warns when hook is removed
+  {
+    fs.unlinkSync(path.join(dir, '.claude/hooks/team-settings-enforcement.mjs'));
+    let out;
+    try {
+      out = execFileSync(
+        'node',
+        [path.resolve(__dirname, '../../src/index.js'), 'doctor', '--report'],
+        { cwd: dir, encoding: 'utf8' },
+      );
+    } catch (e) {
+      out = (e.stdout || '').toString();
+    }
+    let report = null;
+    try {
+      report = JSON.parse(out);
+    } catch {
+      // ignore
+    }
+    const check = report?.checks?.find((c) => c.id === 'team-settings-runtime-hook');
+    if (check && check.status === 'warn' && /missing/.test(check.info || '')) {
+      pass('doctor team-settings-runtime-hook: warns when hook script is missing');
+    } else {
+      fail(`doctor warn missing: ${check?.status} info=${check?.info}`);
+    }
+  }
+}
+
 async function scenarioMcpAwareSkillsV120() {
   section('MCP-aware skill instrumentation: security-audit + dependency-audit (v1.20.0)');
 
@@ -3719,6 +3937,7 @@ async function main() {
   await scenarioDependencyAuditPresent();
   await scenarioPrReviewPresent();
   await scenarioMcpAwareSkillsV120();
+  await scenarioRuntimeEnforcementHook();
   await scenarioUpgradeAnthropic();
   await scenarioTeamSettings();
   await scenarioMCPServer();
