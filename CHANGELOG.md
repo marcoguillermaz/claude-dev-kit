@@ -11,6 +11,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.22.0] — 2026-04-28
+
+### Added
+
+- **`/skill-dev` Step 3b — Hotspot priority (churn × debt)**: new step computes a remediation priority matrix by intersecting per-file debt count (from Step 2 D1–D10 + Step 3 J1–J5 matches) with code churn from `git log --since="6.months.ago" --numstat`. Ranks files into 4 quadrants (Q1 hot mess / Q2 stable rot / Q3 flaky frontier / Q4 cold corner) and renders a top-10 hotspot table in the audit report. Origin: 2026-04-28 cross-LLM verdict on Issue #97 sub-track 2 (`/debt-triage` was closed; the differentiating churn-axis prioritization was folded here per all three reviewers' convergent recommendation).
+- **Hotspot priority report section**: between "Findings requiring action" and "Backlog decision gate". Top-10 rows max, sorted Q1 first by debt_count desc, then Q2/Q3/Q4. Skips with explicit "Hotspot table skipped: insufficient signal" wording on non-Git projects or projects with < 5 files showing both debt and churn.
+- **Integration scenario `scenarioSkillDevHotspot`** in `test/integration/run.js`: validates Step 3b presence, git log churn command, 4-quadrant matrix wording, report section header, and fallback wording. Tier-s + tier-m + tier-l (skill-dev minTier='s' so it ships in all three).
+
+### Changed
+
+- `/skill-dev` SKILL.md body: 330 → 368 lines (+38 lines for Step 3b + report section). Tier-s + tier-m + tier-l byte-identical.
+- Integration test count: 1114 → 1129 (+15 from `scenarioSkillDevHotspot`).
+- README skill table: `/skill-dev` row now mentions Step 3b hotspot priority.
+
+### Notes
+
+- v1.22.0 is intentionally minimal in scope. The cross-LLM verdict on 2026-04-28 said the differentiation between `/debt-triage` and `/skill-dev` was the churn-axis prioritization — nothing else. This release adds exactly that, no more. `/debt-triage` stays closed.
+- The 6-month churn window is hard-coded for v1.22. A configurable window via `CLAUDE.md` comment is documented in the skill body as a future iteration; the maintainer's bias is to ship the simple version first and add configurability only if a real project surfaces a need.
+- Hotspot priority does NOT gate the backlog. Every finding above Low severity still goes through Step 4's debt-density escalation + regression-risk downgrade unchanged. The hotspot section re-orders backlog work by leverage; it does not add or remove findings.
+- This release closes the work item created by the 2026-04-28 cross-LLM verdict. Issue #97 sub-track 3 (`/privacy-audit`) remains deferred per the criteria pinned in that comment.
+
+---
+
 ## [1.21.0] — 2026-04-28
 
 ### Added

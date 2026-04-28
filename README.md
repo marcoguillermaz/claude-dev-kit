@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1114 integration checks](https://img.shields.io/badge/integration-1114%20checks-blue.svg)](#testing)
+[![1129 integration checks](https://img.shields.io/badge/integration-1129%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -58,7 +58,7 @@ Executable multi-step programs that run inside Claude Code. Not prompt instructi
 | `/arch-audit`          | S M L | Governance files vs Anthropic docs. Auto-fixes deprecations.                                                                            |
 | `/security-audit`      | S M L | Auth, input validation, RLS, CVE scan. 3-path: WEB / NATIVE / HYBRID. **MCP-aware (v1.20+)**: Step 3c queries `mcp-nvd` server for live CVE data with local audit fallback. |
 | `/perf-audit`          | S M L | Bundle size, serial awaits, query efficiency. 8-stack patterns.                                                                         |
-| `/skill-dev`           | S M L | Coupling, duplication, dead code, debt-density.                                                                                         |
+| `/skill-dev`           | S M L | Coupling, duplication, dead code, debt-density. **Step 3b (v1.22+)**: hotspot priority via churn × debt — top-10 ranked by 4-quadrant matrix using `git log --since="6.months.ago"`.                                                                                         |
 | `/simplify`            | S M L | Early returns, nesting, dead code. Applies changes directly.                                                                            |
 | `/commit`              | S M L | Conventional Commits - auto-detects type, scope, description.                                                                           |
 | `/api-design`          | M L   | URL naming, HTTP verbs, response envelope, pagination.                                                                                  |
@@ -200,7 +200,7 @@ The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise 
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1114 integration checks
+node packages/cli/test/integration/run.js    # 1129 integration checks
 node --test packages/cli/test/unit/*.test.js   # 373 unit tests
 ```
 
@@ -231,9 +231,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.21.0 ships **`team-settings.json` runtime enforcement** (smoke-test review proposal, ICE ~240). The new `.claude/hooks/team-settings-enforcement.mjs` script — wired as a `PreToolUse` hook on the `Skill` matcher — refuses skill invocations that violate `blockedSkills` or `allowedSkills` at runtime, before the skill body executes. This closes the credibility gap flagged on v1.16: previously `team-settings.json` enforcement was CLI-only (a Claude Code session could bypass it by typing `/skill-name` directly); now it's mechanical at the agent runtime. The hook fails-open on any error (malformed input, missing files, parse errors) so a misconfigured project never loses access to all skills — worst case is the v1.16-1.20 status quo. Doctor gains a new check `team-settings-runtime-hook` (warn-level, skips when team-settings.json is absent). Integration: 1114 checks (+14 from `scenarioRuntimeEnforcementHook`). v1.20.0 (MCP-aware audit skills) shipped 2026-04-27; the 2026-04-28 cross-LLM re-score on Q3 #6 sub-tracks 2-3 closed `/debt-triage` (fold the churn-axis prioritization into `/skill-dev` v2) and deferred `/privacy-audit` with explicit re-eval criteria.
+**Current**: v1.22.0 ships the **`/skill-dev` v2 hotspot enhancement** — the differentiating piece of the closed `/debt-triage` sub-track (Issue #97 sub-track 2), folded into `/skill-dev` per the 2026-04-28 cross-LLM verdict. New Step 3b "Hotspot priority (churn × debt)" intersects per-file debt count with `git log --since="6.months.ago" --numstat` churn data, ranks files into a 4-quadrant matrix (Q1 hot mess / Q2 stable rot / Q3 flaky frontier / Q4 cold corner), and renders a top-10 hotspot table in the audit report. The hotspot section does NOT change which findings get added to the backlog (Step 4 still applies the same severity rules) — it re-orders backlog work by leverage. Stack-agnostic; gracefully skips on non-Git projects or projects with insufficient signal. Integration: 1129 checks (+15 from `scenarioSkillDevHotspot`). The v1.21.0 PreToolUse runtime enforcement remains in place; v1.20.0 MCP-aware audit skills (`/security-audit` + `/dependency-audit`) remain pinned to `mcp-nvd` and `package-registry-mcp`.
 
-**Next**: `/skill-dev` v2 enhancement (churn × debt prioritization output, low-priority backlog), `/arch-audit` MCP-aware once the upstream Anthropic spec MCP server lands. Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: `/arch-audit` MCP-aware once the upstream Anthropic spec MCP server lands. `/privacy-audit` re-eval (Issue #97 sub-track 3) when AST tracing matures or demand signal materializes. Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 

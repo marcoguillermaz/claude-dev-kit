@@ -225,6 +225,36 @@ Read the shared types file (e.g. `lib/types.ts`, `types/`, or equivalent). Flag:
 
 ---
 
+## Step 3b - Hotspot priority (churn × debt)
+
+Skip this step if the project is not a Git repository. Otherwise compute a remediation priority matrix that intersects per-file debt count with code churn — the file the team has touched the most and that also has the most findings is what to fix first.
+
+**Churn signal**:
+```bash
+git log --since="6.months.ago" --numstat --pretty=tformat: -- <project source paths> 2>/dev/null \
+  | awk '$3 != "" && $3 !~ /^node_modules/ && $3 !~ /^vendor/ && $3 !~ /^dist/ && $3 !~ /^build/ {print $3}' \
+  | sort | uniq -c | sort -rn | head -50
+```
+
+For each unique file in the union of (Step 2 D1–D10 matches, Step 3 J1–J5 matches), record:
+- `debt_count` — number of distinct findings across D1–D10 and J1–J5 that point at this file
+- `churn` — number of commits touching this file in the last 6 months (from the command above; cap to recent activity, not whole history)
+
+**Priority matrix**:
+
+| Quadrant | debt_count | churn | Priority |
+|---|---|---|---|
+| Q1 — Hot mess | ≥ 3 | top 25% of churn | **P1 — fix first** (read often, high debt) |
+| Q2 — Stable rot | ≥ 3 | bottom 50% of churn | P2 — schedule (low traffic, but real debt) |
+| Q3 — Flaky frontier | 1–2 | top 25% of churn | P2 — watch (read often, low debt today, may grow) |
+| Q4 — Cold corner | 1–2 | bottom 50% of churn | P3 — backlog only (low traffic + low debt) |
+
+The point is to **rank backlog work by leverage**, not to add findings. Files in Q1 are the same files Step 2/3 already flagged — Step 3b only re-orders them.
+
+**Configuration**: the 6-month window is the universal default. For very young projects (< 6 months of history), the window collapses to "all available history" automatically (`git log --since` simply returns everything if the repository is younger). For long-lived monorepos where 6 months is too noisy, set a `# skill-dev: hotspot_window=N.months.ago` comment in the project's `CLAUDE.md` (consumed by future iterations of this skill — for v1.22 the window is hard-coded).
+
+The hotspot table goes in the report between "Findings requiring action" and "Backlog decision gate". It does not gate the backlog: every finding above Low severity still goes through Step 4 unchanged.
+
 ## Step 4 - Wait for Step 2 agent, then produce combined report
 
 **Wait for the Step 2 Explore agent to complete before proceeding.**
@@ -274,6 +304,14 @@ For remaining findings, apply severity modifiers in this exact order:
 ### Findings requiring action ([N] total)
 [Sorted Critical → High → Medium → Low]
 [file:line - check# - final-severity - issue - suggested fix for each]
+
+### Hotspot priority (churn × debt) — top 10
+| File | debt_count | churn (6mo) | Quadrant | Priority |
+|---|---|---|---|---|
+| path/to/file.ts | N | N | Q1 / Q2 / Q3 / Q4 | P1 / P2 / P3 |
+[10 rows max, sorted: Q1 first by debt_count desc, then Q2, then Q3, then Q4]
+
+If the project is not a Git repository or has < 5 files with both debt and churn, omit this table and note "Hotspot table skipped: insufficient signal."
 ```
 
 ### Backlog decision gate
