@@ -11,6 +11,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.21.0] — 2026-04-28
+
+### Added
+
+- **`team-settings.json` runtime enforcement hook** (smoke-test review proposal, ICE ~240). New `.claude/hooks/team-settings-enforcement.mjs` script wired as a `PreToolUse` hook on the `Skill` matcher in `.claude/settings.json`. Refuses skill invocations that violate `blockedSkills` or `allowedSkills` at runtime, before the skill body executes. Closes the credibility gap flagged on v1.16: previously `team-settings.json` enforcement was CLI-only (a Claude Code session could bypass it by typing `/skill-name` directly); now it's mechanical at the agent runtime.
+- **Doctor check `team-settings-runtime-hook`** (warn-level): verifies the hook script is scaffolded AND `.claude/settings.json` registers it on the Skill matcher. Skips silently when `.claude/team-settings.json` is absent (unrestricted projects don't need the hook). Doctor check count: 28 → 29.
+- **Integration scenario `scenarioRuntimeEnforcementHook`** in `test/integration/run.js`: validates hook scaffolding across tier-s/m/l, settings.json registration, behavior on no-team-settings (allow), `blockedSkills` (deny JSON), `allowedSkills` whitelist (deny + custom-* bypass), non-Skill tools (passthrough), malformed settings (fail-open), and the doctor check passing/warning paths. ~14 new assertions.
+- **Hook protocol implementation** matches the Anthropic [PreToolUse hook spec](https://code.claude.com/docs/en/hooks): reads JSON from stdin (`tool_name`, `tool_input.skill_name`), returns `hookSpecificOutput.permissionDecision = "deny"` with reason on stdout for blocked invocations, exits 0 silently to allow.
+
+### Changed
+
+- All three tier templates (`tier-s/.claude/settings.json`, `tier-m`, `tier-l`) now register the `PreToolUse` Skill matcher. Tier-l merges with the pre-existing PreToolUse Bash destructive-command guard (the previous duplicate-key issue is fixed in this release).
+- Integration test count: 1100 → 1114 (+14 from `scenarioRuntimeEnforcementHook`).
+
+### Notes
+
+- The hook is intentionally fail-open. Any error (malformed stdin, missing project root, JSON parse failure, unexpected exception) results in exit 0 with no output — i.e., skill invocation is allowed. Rationale: the hook is a value-add, not a critical path; a bug in the hook itself should never lock a user out of all skills. The doctor `team-settings-compliance` check surfaces parse errors in interactive runs.
+- Custom skills (`custom-*` prefix) bypass the `allowedSkills` whitelist (matches v1.16 CLI semantics) but NOT the `blockedSkills` denylist (governance overrides the "custom skills preserved across upgrades" convention). The hook implements both rules consistently with the CLI side.
+- The hook script is self-contained (no CDK package dependency at hook-execution time) so user projects don't need to keep `node_modules` for it. It uses only Node built-ins (`node:fs`, `node:path`).
+- Hook timeout is 5 seconds. The hook script does I/O on a small JSON file and exits — well under the budget. If the hook ever exceeds 5s, treat it as a CDK bug, not a user-config issue.
+- This release closes the architectural feedback loop opened by the 2026-04-26 smoke-test review on v1.16.
+
+---
+
 ## [1.20.0] — 2026-04-27
 
 ### Added

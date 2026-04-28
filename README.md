@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/marcoguillermaz/claude-dev-kit/actions/workflows/ci.yml)
-[![1100 integration checks](https://img.shields.io/badge/integration-1100%20checks-blue.svg)](#testing)
+[![1114 integration checks](https://img.shields.io/badge/integration-1114%20checks-blue.svg)](#testing)
 
 > Scaffold for legible, reviewable AI-assisted development.
 > Claude generates. Your team decides.
@@ -200,7 +200,7 @@ The server resolves the project root from `$CDK_PROJECT_ROOT` if set, otherwise 
 ## Testing
 
 ```bash
-node packages/cli/test/integration/run.js    # 1100 integration checks
+node packages/cli/test/integration/run.js    # 1114 integration checks
 node --test packages/cli/test/unit/*.test.js   # 373 unit tests
 ```
 
@@ -231,9 +231,9 @@ Covers: file structure per tier, Stop hook presence, pipeline gate counts, place
 
 See [GitHub Milestones](https://github.com/marcoguillermaz/claude-dev-kit/milestones) for the 12-month plan.
 
-**Current**: v1.20.0 ships **MCP-aware audit skills** (Q3 #4b, Issue #119, ICE 210). `/security-audit` Step 3c now queries the [`mcp-nvd`](https://github.com/marcoeg/mcp-nvd) MCP server for live CVE data; `/dependency-audit` Step 2 queries [`package-registry-mcp`](https://github.com/Artmann/package-registry-mcp) for multi-ecosystem package metadata. Both skills fall back to their existing static logic with a clear warning when the MCP server is unreachable, so projects without MCP wiring keep working unchanged. Frontmatter declares the consumed `mcp__*` tools per Anthropic spec. Issue #119 originally bundled three skills; the third (`/arch-audit` instrumentation against Anthropic's Claude Code spec) is **deferred** because no production-grade MCP server exists for `code.claude.com/docs` as of 2026-04-27 — wrapping the existing WebFetch path in an MCP layer would have added indirection without value. Re-evaluate when Anthropic ships an official spec MCP server. Integration: 1100 checks (+15 from `scenarioMcpAwareSkillsV120`).
+**Current**: v1.21.0 ships **`team-settings.json` runtime enforcement** (smoke-test review proposal, ICE ~240). The new `.claude/hooks/team-settings-enforcement.mjs` script — wired as a `PreToolUse` hook on the `Skill` matcher — refuses skill invocations that violate `blockedSkills` or `allowedSkills` at runtime, before the skill body executes. This closes the credibility gap flagged on v1.16: previously `team-settings.json` enforcement was CLI-only (a Claude Code session could bypass it by typing `/skill-name` directly); now it's mechanical at the agent runtime. The hook fails-open on any error (malformed input, missing files, parse errors) so a misconfigured project never loses access to all skills — worst case is the v1.16-1.20 status quo. Doctor gains a new check `team-settings-runtime-hook` (warn-level, skips when team-settings.json is absent). Integration: 1114 checks (+14 from `scenarioRuntimeEnforcementHook`). v1.20.0 (MCP-aware audit skills) shipped 2026-04-27; the 2026-04-28 cross-LLM re-score on Q3 #6 sub-tracks 2-3 closed `/debt-triage` (fold the churn-axis prioritization into `/skill-dev` v2) and deferred `/privacy-audit` with explicit re-eval criteria.
 
-**Next**: Q3 #6 sub-tracks 2-3 (`/debt-triage`, `/privacy-audit`) cross-LLM re-score, then runtime-enforcement hook for `team-settings.json` (smoke-test review proposal, ICE ~240), then `/arch-audit` MCP-aware once the upstream server lands. Q2 #3 VitePress docs site (ICE 432) stays on hold.
+**Next**: `/skill-dev` v2 enhancement (churn × debt prioritization output, low-priority backlog), `/arch-audit` MCP-aware once the upstream Anthropic spec MCP server lands. Q2 #3 VitePress docs site (ICE 432) stays on hold.
 
 ---
 
