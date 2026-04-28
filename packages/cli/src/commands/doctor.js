@@ -621,6 +621,61 @@ const checks = [
     },
   },
   {
+    id: 'team-settings-runtime-hook',
+    label:
+      '`team-settings.json` runtime enforcement hook is wired (`.claude/hooks/team-settings-enforcement.mjs` + PreToolUse Skill matcher in settings.json)',
+    check: (cwd) => {
+      const teamSettingsPath = path.join(cwd, '.claude', 'team-settings.json');
+      if (!fs.existsSync(teamSettingsPath)) return { pass: true, skip: true };
+
+      const hookScript = path.join(cwd, '.claude', 'hooks', 'team-settings-enforcement.mjs');
+      if (!fs.existsSync(hookScript)) {
+        return {
+          pass: false,
+          warn: true,
+          info: 'team-settings.json present but `.claude/hooks/team-settings-enforcement.mjs` missing — runtime enforcement disabled (CLI-side enforcement only).',
+          fix: 'Run `claude-dev-kit upgrade` to refresh the hook script, or copy it manually from the CDK template.',
+        };
+      }
+
+      const settingsPath = path.join(cwd, '.claude', 'settings.json');
+      if (!fs.existsSync(settingsPath)) {
+        return {
+          pass: false,
+          warn: true,
+          info: 'team-settings.json + hook script present, but `.claude/settings.json` missing — hook will not fire.',
+          fix: 'Run `claude-dev-kit init` to scaffold settings.json, or restore from the CDK template.',
+        };
+      }
+
+      try {
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        const preToolUse = settings?.hooks?.PreToolUse || [];
+        const skillMatcher = preToolUse.find((entry) => entry.matcher === 'Skill');
+        const hasHook = skillMatcher?.hooks?.some(
+          (h) => typeof h.command === 'string' && /team-settings-enforcement\.mjs/.test(h.command),
+        );
+        if (!hasHook) {
+          return {
+            pass: false,
+            warn: true,
+            info: '`.claude/settings.json` does not register the team-settings PreToolUse hook for the Skill matcher.',
+            fix: 'Add a PreToolUse entry with matcher \'Skill\' that runs `node "$CLAUDE_PROJECT_DIR/.claude/hooks/team-settings-enforcement.mjs"` (timeout: 5).',
+          };
+        }
+      } catch (err) {
+        return {
+          pass: false,
+          warn: true,
+          info: `Could not parse settings.json: ${err.message}`,
+          fix: 'Fix the JSON syntax in .claude/settings.json.',
+        };
+      }
+
+      return { pass: true };
+    },
+  },
+  {
     id: 'permissions-no-duplicates',
     label: 'No duplicate entries in permissions deny list',
     check: (cwd) => {
