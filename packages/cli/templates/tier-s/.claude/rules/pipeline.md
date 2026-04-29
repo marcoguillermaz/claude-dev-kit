@@ -12,7 +12,7 @@ Branch prefix `fix/` activates this pipeline automatically.
   - If none: create `.claude/session/fix-[description].md` with a one-line description and the current date.
 - Confirm current branch starts with `fix/`. If not: `git checkout -b fix/description`.
 - Never commit directly to `main` or `staging`.
-- **Escalation check**: if the fix touches a shared utility or type with >5 import consumers, stop - notify the user and escalate to Tier M (full pipeline). A fix with wide-impact shared changes is not a fast-lane operation.
+- **Escalation check**: if the fix touches a shared utility, type, or module with >5 dependent consumers (TypeScript/JS imports, Python `import` statements, Go `import` paths from the same module, Swift modules, Rust crate paths, or the language-equivalent dependency reference), stop - notify the user and escalate to Tier M (full pipeline). A fix with wide-impact shared changes is not a fast-lane operation. If the project's dependency model is non-obvious, ask the user before counting consumers.
 
 ## FL-1 - Implement
 
@@ -49,7 +49,7 @@ Branch prefix `fix/` activates this pipeline automatically.
 - Output a one-line summary: `fix complete ✅ - [description] · type check ✅ · tests N/N ✅`
 
 > Fast Lane has one compact scope-confirm gate in FL-1. Escalate to Tier M or Tier L if:
-> scope expands beyond 3 files, a migration is required, or a shared utility with >5 consumers is touched.
+> scope expands beyond 3 files, a migration is required, or a shared utility/module with >5 dependent consumers (regardless of language) is touched.
 
 ---
 
