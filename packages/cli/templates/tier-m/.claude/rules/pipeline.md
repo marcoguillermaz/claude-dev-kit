@@ -122,7 +122,7 @@ Branch prefix `feature/` activates this pipeline automatically.
 - Update `docs/requirements.md` with the approved plan before writing any code.
 - Follow all coding conventions in `CLAUDE.md`.
 - **After every new migration**: apply to remote DB immediately + verify + log in your project's migrations log (e.g. `docs/migrations-log.md`) if one is tracked.
-- **Security checklist** (before intermediate commit): for every new/modified API route: (1) auth check before any operation, (2) input validated, (3) no sensitive data exposed in response, (4) access control not bypassed. For every new DB table: (5) row-level access control enabled (database-level RLS or application-level guards).
+- **Security checklist** (before intermediate commit): for every new/modified API route: (1) auth check before any operation, (2) input validated, (3) no sensitive data exposed in response, (4) access control not bypassed. For every new DB table: (5) row-level access control enabled — RLS in Postgres, equivalent feature in your DB engine, or application-level guards as fallback.
 - Run `/simplify` on changed files after writing (skip for trivial 1-file changes).
 
 ## Phase 3 - Build + tests
@@ -162,14 +162,14 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 ## Phase 5b - Test data setup *(before smoke test)*
 
 - Identify the test account(s) from the role scope of the block.
-- Insert representative test records covering all relevant states.
+- Set up representative test data covering all relevant states. Form depends on project type — DB records for backend/full-stack work, fixture files for libraries, mock services for distributed apps, manual inputs for CLI. Skip explicitly if not applicable.
 - Goal: the test account has realistic data for every UI state that must be visible during smoke.
 
 ## Phase 5c - Staging deploy + smoke test
 
-- Start the dev server if needed: `[DEV_COMMAND]`. Declare the endpoint before proceeding.
+- Bring up the staging context appropriate for the project — web: dev server `[DEV_COMMAND]` and declare the endpoint; native: build and run on simulator/emulator; CLI: install the binary in a test sandbox; library: prepare a consumer test harness. Skip explicitly with a one-line statement if not applicable.
 - Merge to staging: `git checkout staging && git merge feature/block-name --no-ff && git push origin staging`
-- Wait for deploy. Open staging URL and verify the main flow in 3–5 steps using a test account.
+- Wait for the staging context to be ready, then verify the main flow in 3–5 steps using a test account on the appropriate surface (staging URL for web, simulator session for native, terminal session for CLI, consumer test for libraries).
 - For blocks with UI changes: verify in both light and dark mode.
 - Output: "smoke test OK" or describe the problem and fix before proceeding.
 - Fix issues on `feature/` branch, re-merge if needed.
