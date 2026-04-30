@@ -285,7 +285,9 @@ Skip Phase 4 when ALL three hold:
 
 For simple skills (commit, simplify), marginal value low. Document skip explicitly in review log.
 
-**For all other skills**: submit to 3 models (Gemini 2.5 Pro, Mistral Large, GPT-4.1) with identical prompt.
+**For all other skills**: submit to 3 models (Gemini 2.5 Pro, Mistral Large, GPT-4.1) with identical prompt:
+
+> "Would this skill produce correct, actionable results on a [Vue/Svelte/Angular/vanilla/Python FastAPI/Go CLI/Swift iOS] project?"
 
 **LLM adjudication rule (C1)**:
 - Models produce **candidate findings**, not verdicts.
