@@ -5,6 +5,17 @@ Branch prefix `fix/` activates this pipeline automatically.
 
 ---
 
+## Placeholder behavior
+
+When a placeholder like `[TYPE_CHECK_COMMAND]`, `[BUILD_COMMAND]`, `[TEST_COMMAND]`, `[E2E_COMMAND]`, or `[DEV_COMMAND]` is `# not configured` (or absent from `CLAUDE.md`):
+- Emit a visible step: `[SKIP] No <command-name> configured for this stack — verify manually if applicable.`
+- Do NOT proceed as if the command succeeded.
+- Do NOT mark the gate green.
+
+A skip is a legitimate outcome. Silent degradation is not.
+
+---
+
 ## FL-0 - Branch check + session file
 
 - **Session file**: check `.claude/session/` for existing `fix-*.md` files.
