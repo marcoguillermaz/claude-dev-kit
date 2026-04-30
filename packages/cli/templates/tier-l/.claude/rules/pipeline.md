@@ -146,7 +146,7 @@ Then:
 - Follow all coding conventions in `CLAUDE.md`.
 - **After every new migration**: apply to remote DB immediately + verify + log in your project's migrations log (e.g. `docs/migrations-log.md`) if one is tracked.
 - **Destructive migrations** (`DROP COLUMN`, `DROP TABLE`): write rollback SQL in a comment block at the top of the migration file before applying.
-- **Security checklist** (before intermediate commit): (1) auth check before any operation, (2) input validated, (3) no sensitive data in response, (4) access control not bypassed; (5) new tables have row-level access control enabled (database-level RLS or application-level guards).
+- **Security checklist** (before intermediate commit): (1) auth check before any operation, (2) input validated, (3) no sensitive data in response, (4) access control not bypassed; (5) new tables have row-level access control enabled — RLS in Postgres, equivalent feature in your DB engine, or application-level guards as fallback.
 - Run `/simplify` on changed files after writing (skip for trivial 1-file changes).
 
 ## Phase 3 - Build + unit tests
@@ -186,15 +186,15 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 ## Phase 5b - Test data setup *(MANDATORY - must complete before Phase 5c)*
 
 - Identify test account(s) from the role scope of the block.
-- Insert representative test records covering all relevant states via a one-shot script (cleanup-first: delete existing test records before inserting fresh ones).
+- Set up representative test data covering all relevant states. For backend/full-stack work: insert DB records via a one-shot script (cleanup-first: delete existing test records before inserting fresh ones). For other project types: prepare fixture files, mock services, or manual inputs as appropriate. Skip explicitly if not applicable.
 - Goal: the test account has realistic data for every UI state visible in Phase 5c.
 - Leave test data in DB for the smoke test. Clean up after Phase 5c only if records would break other tests.
 
 ## Phase 5c - Staging deploy + smoke test
 
-- Start dev server if needed: `[DEV_COMMAND]`. Declare the endpoint before proceeding.
+- Bring up the staging context appropriate for the project — web: dev server `[DEV_COMMAND]` and declare the endpoint; native: build and run on simulator/emulator; CLI: install the binary in a test sandbox; library: prepare a consumer test harness. Skip explicitly with a one-line statement if not applicable.
 - Merge to staging: `git checkout staging && git merge feature/block-name --no-ff && git push origin staging`
-- Wait for deploy (~1–2 min). Smoke test the main flow in 3–5 steps using a test account.
+- Wait for the staging context to be ready (~1–2 min if cloud deploy). Smoke test the main flow in 3–5 steps using a test account on the appropriate surface (staging URL for web, simulator session for native, terminal session for CLI, consumer test for libraries).
 - For UI changes: verify in both light and dark mode.
 - Output: "smoke test OK" or describe the problem and fix before proceeding.
 - Fix on `feature/` branch, re-merge if issues found.
