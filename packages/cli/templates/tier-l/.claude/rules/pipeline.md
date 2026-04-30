@@ -15,6 +15,17 @@ Branch prefix `feature/` activates the full pipeline automatically.
 
 ---
 
+## Placeholder behavior
+
+When a command placeholder in `CLAUDE.md` (type-check, build, test, E2E, or dev-server command) has no configured value (absent or left as a comment placeholder):
+- Emit a visible step: `[SKIP] No <command-name> configured for this stack — verify manually if applicable.`
+- Do NOT proceed as if the command succeeded.
+- Do NOT mark the gate green.
+
+A skip is a legitimate outcome. Silent degradation is not.
+
+---
+
 ## Phase 0 - Session orientation
 
 **FIRST**: check for `CONTEXT_IMPORT.md` in the project root. If it exists and contains `Status: PENDING_DISCOVERY`, run the Discovery Workflow inside that file **before any other work**. Do not proceed until discovery is marked `COMPLETE`.
