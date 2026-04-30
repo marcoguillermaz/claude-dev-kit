@@ -178,7 +178,7 @@ Then:
 If either condition is false: **skip this phase and state so explicitly** - do not proceed silently.
 
 - Implement exactly the numbered UAT scenarios defined by the user at the Phase 1 scope gate. Do not add, remove, or reinterpret scenarios.
-- Use `data-*` attribute selectors - never CSS color classes or positional selectors.
+- Use stable, non-visual selectors appropriate for the target platform — `data-*` attributes for web, accessibility identifiers for native mobile (iOS/Android), element IDs or automation IDs for desktop. Never use CSS color classes or positional selectors.
 - Each scenario becomes one test: scenario title as test name, steps as the test body.
 - Run: `[E2E_COMMAND]`
 - Output: summary line only (`✓ N/N`). On failure: list the failing scenario by name.
@@ -209,7 +209,7 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 - Run `/responsive-audit` only if the block modifies routes used by non-admin roles.
 - **Execution order**: `/ui-audit` is static - launch it concurrently with the first browser-based skill. Then: `/accessibility-audit` → `/visual-audit` → `/ux-audit` → `/responsive-audit` sequentially (they share the browser session).
 
-**Track B - API/DB + compliance audit** *(if block creates/modifies API routes, applies migrations, or handles PII - static analysis, no dev server needed)*
+**Track B - API/DB + compliance audit** *(if the project has a backend component AND the block creates/modifies API routes, applies migrations, or handles PII - static analysis, no dev server needed; on CLI-only or native-standalone projects without a backend, skip Track B and state explicitly)*
 - Run `/security-audit` if the block creates or modifies any API route. Run `/api-design` if the block adds new API routes. Both are static - run them concurrently.
 - Run `/api-contract-audit` if the block modifies OpenAPI spec or API routes - checks contract drift, breaking changes, Richardson Maturity.
 - Run `/migration-audit` if the block applies migrations - static analysis of migration files.
