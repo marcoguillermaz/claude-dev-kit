@@ -25,9 +25,10 @@
  * Override a model id per provider with e.g. OPENAI_MODEL=gpt-5.
  *
  * Exit codes:
- *   0  all providers returned a response
+ *   0  all providers returned a response, no Critical findings
  *   1  at least one provider failed (response files for failures contain the error)
  *   2  configuration error (missing files, no providers, bad arguments)
+ *   3  Critical findings detected in at least one response — resolve before closing the review
  */
 
 import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises';
@@ -294,6 +295,27 @@ async function main() {
   if (failed.length > 0) {
     process.stdout.write(`Failed: ${failed.length}/${results.length}\n`);
     process.exit(1);
+  }
+
+  // Scan successful responses for Critical findings.
+  // Matches **Critical**, **[Critical]**, and **[Critical] some text** (all observed model formats).
+  const criticalPattern = /\*\*\[?Critical/;
+  const criticalHits = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value.ok) {
+      const content = await readFile(r.value.outPath, 'utf8');
+      const hits = content.split('\n').filter((l) => criticalPattern.test(l)).map((l) => l.trim());
+      if (hits.length > 0) criticalHits.push({ name: r.value.name, hits });
+    }
+  }
+  if (criticalHits.length > 0) {
+    process.stdout.write('\nCritical findings detected:\n');
+    for (const { name, hits } of criticalHits) {
+      process.stdout.write(`\n[${name}] ${hits.length} Critical finding(s):\n`);
+      for (const h of hits) process.stdout.write(`  ${h}\n`);
+    }
+    process.stdout.write('\nResolve Critical findings before closing the review.\n');
+    process.exit(3);
   }
 }
 
