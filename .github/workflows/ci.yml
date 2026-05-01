@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -22,6 +26,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -43,6 +49,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -52,6 +60,9 @@ jobs:
 
       - name: Prettier
         run: npx --prefix packages/cli prettier --check packages/cli/src/ packages/cli/test/
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate --prefix packages/cli
 
   unit-tests:
     name: Unit tests
@@ -65,6 +76,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -81,6 +94,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
       - name: Run drift tracker tests
         run: node --test .github/drift-tracker/test/check-drift.test.mjs
 
@@ -96,9 +111,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: packages/cli/package-lock.json
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
 
-      - name: Run 459 integration checks
+      - name: Run integration tests
         run: npm test --prefix packages/cli
