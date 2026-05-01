@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: 24
           cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -77,7 +77,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
@@ -94,8 +94,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
       - name: Run drift tracker tests
         run: node --test .github/drift-tracker/test/check-drift.test.mjs
 
@@ -112,7 +110,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: packages/cli/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm install --prefix packages/cli
