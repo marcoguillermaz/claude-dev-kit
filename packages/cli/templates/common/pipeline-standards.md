@@ -1,6 +1,6 @@
 # Pipeline Standards Reference
 
-Last verified: 2026-03-27
+Last verified: 2026-05-01
 Update protocol: update only when `/arch-audit` detects a material discrepancy. Manual review required.
 
 ## Sources
@@ -35,17 +35,17 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 ### Test pyramid (bottom = most, top = fewest)
 1. **Unit tests** - fast (ms), isolated, test public interface + observable behavior. Most tests live here. *(Source: 2)*
 2. **API / service / integration tests** - test through the service layer without UI. Covers route auth, validation, DB state. *(Source: 2)*
-3. **E2E / Playwright tests** - fewest, slowest. Cover full user journeys per role, not exhaustive combinations. *(Source: 2)*
+3. **E2E / UI automation tests** - fewest, slowest. Cover full user journeys per role, not exhaustive combinations. Tool depends on stack: Playwright or Cypress for web, XCUITest or Espresso for native, acceptance test suites for CLI tools. *(Source: 2)*
 
 ### Rules
 - **Anti-pattern (ice-cream cone)**: mostly e2e tests + few unit tests = slow, brittle, expensive. Invert it. *(Source: 2)*
-- **Bug found by e2e → replicate with unit test first**: before fixing a bug discovered in Playwright, write a failing unit/API test that reproduces it. Fix the unit test first. Merge requires both levels passing. *(Source: 2)*
+- **Bug found by e2e → replicate with unit test first**: before fixing a bug discovered in UI automation or acceptance tests, write a failing unit/API test that reproduces it. Fix the unit test first. Merge requires both levels passing. *(Source: 2)*
 - **AAA structure**: every test - unit, API, e2e - follows Arrange → Act → Assert. No exceptions. *(Source: 2)*
 - **No test duplication across layers**: if a behavior is covered at a lower layer, do not re-cover it at a higher layer. Each layer covers what lower layers structurally cannot. *(Source: 2)*
-- **Fast tests first in pipeline**: Phases 3 (vitest) → 3b (API integration) → 4 (Playwright). Never block a fast test on a slow suite. *(Source: 2)*
-- **Cleanup-first pattern**: every test that writes to DB must delete existing test fixtures in `beforeAll` before inserting fresh ones. Prevents orphaned records from interrupted runs. *(Source: project pattern)*
-- **Auth boundary coverage**: every new API route requires: no-token → 401, unauthorized role → 403, valid role → 2xx. These are non-negotiable minimum cases. *(Source: 1, project pattern)*
-- **DB state verification**: after write operations, verify the expected record exists using the service role client - not by reading the API response alone. *(Source: project pattern)*
+- **Fast tests first in pipeline**: unit → integration → E2E, in that order. Never block a fast test suite on a slow one. *(Source: 2)*
+- **Cleanup-first pattern**: every test that writes to persistent state must reset existing fixtures in test setup (e.g., `beforeAll`, `setUp`, `TestMain`) before inserting fresh ones. Prevents orphaned state from interrupted runs. *(Source: project pattern)*
+- **Auth boundary coverage** *(if block adds API routes)*: no-token → 401, unauthorized role → 403, valid role → 2xx. These are non-negotiable minimum cases for every new endpoint. *(Source: 1, project pattern)*
+- **Data state verification**: after write operations, verify the expected record exists using a read at the same layer or a privileged/admin client — not by reading the response body alone. *(Source: project pattern)*
 
 ---
 
@@ -53,12 +53,12 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 
 - **Gate standard**: "definitely improves overall code health" - not perfection. Merge when code is better than before, even if imperfect. Block only if code demonstrably worsens health. *(Source: 1)*
 - **Automated typecheck on every stop** (hook-level): if typecheck takes < 5 seconds, it should run on every agent stop via Stop hook - surface errors immediately rather than discovering them at Phase 3. *(Source: 7)*
-- **Security checklist per API route** (Phase 2 self-review):
+- **Security checklist** *(if block adds or modifies API routes or data models — Phase 2 self-review)*:
   1. Auth check before any operation
-  2. Input validated (Zod)
+  2. Input validated (use the canonical validation library for your stack: Zod for TypeScript, Pydantic for Python, validator for Rust, etc.)
   3. No sensitive data in response
-  4. RLS not implicitly bypassed
-  5. New tables: `ALTER TABLE t ENABLE ROW LEVEL SECURITY` present *(Source: project pattern)*
+  4. Access control not bypassed (e.g., RLS for PostgreSQL/Supabase, middleware policy enforcement for other stacks)
+  5. New data stores: access control policy applied and verified (e.g., `ENABLE ROW LEVEL SECURITY` for PostgreSQL, IAM policy for cloud storage, file permissions for local storage) *(Source: project pattern)*
 - **No unrequested features**: changes stay within the approved plan scope. Scope creep discovered during Phase 2 requires returning to Phase 1 gate. *(Source: 1, 6)*
 - **CL size discipline**: a change that cannot be reviewed in one sitting should be split. Reviewers are empowered to reject oversized CLs. *(Source: 1)*
 
@@ -113,11 +113,11 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 
 ## S7 - Documentation requirements
 
-- **Requirements before implementation**: `docs/requirements.md` updated at the start of Phase 2 (not after). The spec is written before code, not derived from code. *(Source: 6, project pipeline)*
-- **Entity contract updates are mandatory**: if a block modifies a domain entity (compensation, ticket, document…), `docs/contracts/<entity>.md` MUST be updated in Phase 8. Stale contracts mislead future implementers. *(Source: project Phase 8)*
-- **PRD is a hard gate**: `docs/prd/prd.md` and the GDoc Changelog entry are mandatory in every block. A block is not closed until both are updated. No exceptions. *(Source: project CLAUDE.md)*
-- **Sitemap and db-map are canonical references**: if a block adds routes or DB changes, `docs/sitemap.md` and `docs/db-map.md` must be updated in Phase 8 before closure. *(Source: project pipeline)*
-- **Implementation checklist as audit trail**: every block gets a Log row in `docs/implementation-checklist.md` with date, files, test results. This is the team's memory of what changed and why. *(Source: project pipeline)*
+- **Spec before implementation**: write or update the requirements spec at the start of Phase 2 — not after. The spec is written before code, not derived from it. *(Source: 6, project pipeline)*
+- **Contract updates when entities change**: if a block modifies a domain entity (data model, API contract, CLI interface, or equivalent), update its documentation (schema file, API spec, man page, or project-equivalent artifact) before block closure. Stale contracts mislead future implementers. *(Source: project Phase 8)*
+- **Changelog entry is mandatory**: every block that ships to users requires a changelog entry in the project's own changelog (CHANGELOG.md, release notes, or equivalent). A block is not closed until the changelog reflects the change. *(Source: project CLAUDE.md)*
+- **Route and schema maps** *(if applicable)*: if a block adds routes, screens, commands, or DB schema changes, update the relevant navigation or schema reference before closure. Format and location are project-defined. *(Source: project pipeline)*
+- **Audit trail**: every block gets a log entry — date, scope, files changed, test results. This is the team's memory of what changed and why. Format and location are project-defined. *(Source: project pipeline)*
 
 ---
 
@@ -134,9 +134,9 @@ Rules derived from Conventional Commits 1.0.0:
 - **One commit per logical change**: if a commit logically covers multiple types, split it into multiple commits. *(Source: 4)*
 - **Three-commit block pattern** (project convention):
   1. Commit 1 - code (after Phase 3 green build)
-  2. Commit 2 - docs (Phase 8: implementation-checklist, sitemap, db-map, contracts)
-  3. Commit 3 - context files (CLAUDE.md, MEMORY.md - only if updated) *(Source: project pipeline)*
-- **CLAUDE.md is gitignored**: NEVER include it in `git add`. It is personal context, not shared code. *(Source: project MEMORY.md)*
+  2. Commit 2 - docs (Phase 8: requirements, contracts, changelogs, schema/route maps — only what changed)
+  3. Commit 3 - context files (CLAUDE.md and project-specific context files — only if updated) *(Source: project pipeline)*
+- **CLAUDE.md is a committed project file**: include it in version control — it is shared team context. Personal local overrides (e.g., `CLAUDE.local.md`) should be gitignored. *(Source: CDK pattern)*
 - **Never commit directly to `main` or `staging`**: functional blocks use worktrees; fixes use `fix/` branches. Staging/production promotion is via merge commands only. *(Source: project HARD RULES)*
 - **Intermediate commit at Phase 3**: commit after green build + tests, before UAT. Creates a known-good checkpoint. *(Source: 2)*
 
