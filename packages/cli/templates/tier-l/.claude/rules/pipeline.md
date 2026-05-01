@@ -70,7 +70,7 @@ Then:
   - **Data**: entities read/written? Silent data loss possible?
   - **Triggers**: activating event? Secondary triggers?
   - **Error conditions**: invalid input, missing data, concurrent edits - behavior defined?
-  - **UI states**: empty, error, loading covered?
+  - **UI/output states**: empty, error, loading covered? For CLI: exit codes, stderr output, no-results case.
   - **Integrations**: notifications, external systems affected?
   - **Reversibility**: irreversible operation? Rollback defined?
   - **Explicit exclusions**: what is NOT being done that a reader might assume?
@@ -80,7 +80,7 @@ Then:
   - **Conditions** `IF/THEN`: preconditions that change behavior? Edge cases, concurrent edits?
   - **States** `WHILE`: which entity states or user states affect behavior? All combinations covered?
   - **Optional / role-gated** `WHERE`: what is conditional on role, community, or config?
-  - All Tier 1 dimensions (roles, data, error conditions, UI states, integrations, reversibility, exclusions)
+  - All Tier 1 dimensions (roles, data, error conditions, UI/output states, integrations, reversibility, exclusions)
   - **Pre-mortem**: if this plan fails in Phase 2 due to scope ambiguity, what caused it?
 
   Also declare: **does this block include critical UI flows?** (yes/no). Determines whether Phase 4 activates.
@@ -90,7 +90,7 @@ Then:
   Compose one `AskUserQuestion` with all open items. The user - not Claude - declares when scope is complete.
 
 - **Dependency scan** (mandatory - always run `/dependency-scan`):
-  Run `/dependency-scan` with the full list of affected routes, components, types/utilities, DB tables in one prompt. It runs all 6 checks and returns exact file paths + line numbers. Do not run checks manually in the main session - an incomplete scan is an incomplete file list, which is a process error.
+  Run `/dependency-scan` with the full list of affected routes/screens/commands, components/views, types/utilities, data models/DB tables in one prompt. It runs all 6 checks and returns exact file paths + line numbers. Do not run checks manually in the main session - an incomplete scan is an incomplete file list, which is a process error.
   Every file listed under "Mandatory additions" in the report must be in the file list before the STOP gate.
 - **All clarification questions must use `AskUserQuestion` tool** - never inline.
 

@@ -67,7 +67,7 @@ A skip is a legitimate outcome. Silent degradation is not.
   - **Data**: entities read/written? Silent data loss possible?
   - **Triggers**: what user action activates this? Secondary triggers?
   - **Error conditions**: invalid input, missing data, concurrent edits - behavior defined?
-  - **UI states**: empty, error, loading covered?
+  - **UI/output states**: empty, error, loading covered? For CLI: exit codes, stderr output, no-results case.
   - **Integrations**: emails, notifications, external systems affected?
   - **Reversibility**: any irreversible operation? Rollback defined?
   - **Explicit exclusions**: what is NOT being done that a reader might assume is included?
@@ -86,7 +86,7 @@ A skip is a legitimate outcome. Silent degradation is not.
   Compose one `AskUserQuestion` with all open items from the sweep. Do NOT proceed to the dependency scan until an execution keyword is received.
 
 - **Dependency scan** (mandatory - always run `/dependency-scan`):
-  Run `/dependency-scan` with the full list of affected routes, components, types/utilities, and DB tables. Every file listed under "Mandatory additions" must be in the file list before the STOP gate.
+  Run `/dependency-scan` with the full list of affected routes/screens/commands, components/views, types/utilities, and data models/DB tables. Every file listed under "Mandatory additions" must be in the file list before the STOP gate.
 
 - **Path A - Spec-first**: generate `docs/specs/[block-name].md` using this structure:
 
