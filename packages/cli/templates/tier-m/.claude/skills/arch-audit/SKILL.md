@@ -100,21 +100,7 @@ Every RECOMMEND must include: (1) specific file path(s) to modify, (2) section o
 - **Grep-tier** (pure pattern matching, no judgment): C2, C4, C6, C9, C10, C11, C12, C13, C14, C15, C16, C17 - batch into a **single haiku subagent** that runs all commands and returns structured pass/fail results.
 - **Judgment-tier** (require file reading + interpretation): C1, C3, C5, C7, C8 - run in main context using files already read in Step 2.
 
-**Grep-tier batch** - invoke one Agent with `model: "haiku"`, pass these exact commands, and receive one structured result:
-
-| Check | Command                                                                                                                                                                                  | Pass condition   |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| C4    | `grep -n "ln -s" .claude/rules/pipeline.md`                                                                                                                                              | 0 matches        |
-| C6    | `grep -A3 "Phase 5b" .claude/rules/pipeline.md \| grep -i "dev\|server\|localhost"`                                                                                                      | ≥1 match         |
-| C9    | `grep -c "\*\*\* STOP" .claude/rules/pipeline.md`                                                                                                                                        | ≥5               |
-| C10   | `grep -n "Worktree isolation" .claude/rules/pipeline.md`                                                                                                                                 | ≥1 match         |
-| C11   | `for skill_dir in .claude/skills/*/; do name=$(basename "$skill_dir"); grep -q "$name" .claude/cheatsheet.md && echo "OK: $name" \|\| echo "MISSING: $name"; done`                       | 0 MISSING lines  |
-| C12   | `grep -o "SessionStart\|PostCompact\|InstructionsLoaded" .claude/settings.json \| sort -u`                                                                                               | 3 lines          |
-| C13   | `grep -rL --include="SKILL.md" "context: fork" .claude/skills/`                                                                                                                          | 0 files returned |
-| C14   | `git check-ignore -q CLAUDE.md && echo "PASS" \|\| echo "FAIL"`                                                                                                                          | PASS             |
-| C15   | `wc -l CLAUDE.md \| awk '{print $1}'`                                                                                                                                                    | ≤200             |
-| C16   | `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet\|claude-sonnet-4-20250514\|claude-opus-4-20250514" .claude/skills/ .claude/settings.json` | 0 matches        |
-| C17   | `for f in .claude/skills/*/SKILL.md; do name=$(basename $(dirname "$f")); [ "$name" = "arch-audit" ] && continue; if grep -q "mcp__" "$f" && ! grep -q "^allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`                                     | 0 MISSING lines  |
+**Grep-tier batch** - invoke one Agent with `model: "haiku"`, pass the table from [`BATCH_COMMANDS.md § Grep-tier batch`](BATCH_COMMANDS.md), and receive one structured result.
 
 Collect batch results, then run judgment-tier checks below. For each FAIL: classify as AUTO-FIX or RECOMMEND using the same criteria as Step 3.
 
@@ -130,7 +116,6 @@ Check: does the CLAUDE.local.md section in files-guide.md contain specific curre
 Expected: generic description only. Specific current content = FAIL (live state in static doc).
 
 **C4 - settings.json ↔ pipeline.md worktree symlink alignment**
-Run: `grep -n "ln -s" .claude/rules/pipeline.md`
 Expected: 0 matches. Any `ln -s` = FAIL (redundant, potentially conflicting with auto-symlink).
 
 **C5 - CLAUDE.md Worktree Known Pattern: reflects standard (not optional) usage**
@@ -139,7 +124,6 @@ Expected: language like "standard pattern for all functional blocks". Language i
 
 **C6 - Phase 5b dev server prerequisite**
 Check: does Phase 5b in pipeline.md contain an explicit prerequisite to verify `[DEV_COMMAND]` is running before fixture setup?
-Run: `grep -A3 "Phase 5b" .claude/rules/pipeline.md | grep -i "dev\|server\|localhost"`
 Expected: at least one mention. Missing = FAIL.
 
 **C7 - Cross-file path references (dead pointers)**
@@ -149,28 +133,23 @@ Expected: all paths resolve. Any "No such file or directory" = FAIL.
 
 **C8 - Interaction Protocol present in CLAUDE.md**
 Check: does CLAUDE.md contain a `## Interaction Protocol - Plan-then-Confirm` section with execution keywords defined?
-Run: `grep -n "Interaction Protocol" CLAUDE.md`
-Expected: at least 1 match. Missing = FAIL.
+Expected: at least 1 match. Missing = FAIL. Run command from [`BATCH_COMMANDS.md § Judgment-tier standalone (C8)`](BATCH_COMMANDS.md).
 
 **C9 - Pipeline STOP gate integrity**
 Check: pipeline.md must contain at least 5 `*** STOP` markers (Phase 1, Phase 1.5, Phase 1.6, Phase 6, Phase 8 worktree cleanup).
-Run: `grep -c "\*\*\* STOP" .claude/rules/pipeline.md`
 Expected: ≥ 5. Fewer = FAIL (gate was accidentally removed).
 
 **C10 - Worktree isolation rule present in Cross-Cutting**
 Check: pipeline.md Cross-Cutting Rules must contain the "Worktree isolation (hard rule)" entry prohibiting staging merges before Phase 8.
-Run: `grep -n "Worktree isolation" .claude/rules/pipeline.md`
 Expected: at least 1 match. Missing = FAIL.
 
 **C11 - Cheatsheet skill registry completeness**
 Check: every directory under `.claude/skills/` must have a corresponding entry in `.claude/cheatsheet.md`.
-Run: `for skill_dir in .claude/skills/*/; do name=$(basename "$skill_dir"); grep -q "$name" .claude/cheatsheet.md && echo "OK: $name" || echo "MISSING: $name"; done`
 Expected: all lines show "OK". Any "MISSING" = FAIL.
 AUTO-FIX: add a minimal row to the "Custom Skills" table in cheatsheet.md for any missing skill.
 
 **C12 - settings.json hook integrity and hook type coverage**
 Check: `.claude/settings.json` must contain all 3 essential hooks: `SessionStart` (audit overdue reminder), `PostCompact` (CLAUDE.local.md restore reminder), `InstructionsLoaded` (debug log).
-Run: `grep -o "SessionStart\|PostCompact\|InstructionsLoaded" .claude/settings.json | sort -u`
 Expected: 3 lines (SessionStart, PostCompact, InstructionsLoaded). Any missing = FAIL.
 RECOMMEND if failing - do not auto-fix (hooks require verifying intent before restoring).
 
@@ -210,25 +189,21 @@ Additionally, verify awareness of these recent Claude Code capabilities:
 
 **C13 - context: fork on all skills**
 Check: every skill SKILL.md must declare `context: fork` so audits run in an isolated context and do not pollute the main session window.
-Run: `grep -rL --include="SKILL.md" "context: fork" .claude/skills/`
 Expected: 0 files returned. Any returned file path = FAIL.
 AUTO-FIX: insert `context: fork` after the `model: sonnet` line in any failing skill.
 
 **C14 - CLAUDE.md is gitignored**
 Check: `CLAUDE.md` must be listed in `.gitignore` (project convention: personal CLAUDE.md is never committed - exposes internal context, causes commit history pollution).
-Run: `git check-ignore -q CLAUDE.md && echo "PASS" || echo "FAIL"`
 Expected: "PASS" (exit 0 - file is ignored). "FAIL" = FAIL.
 RECOMMEND if failing - do not auto-fix (requires user to add `CLAUDE.md` to `.gitignore` explicitly).
 
 **C15 - CLAUDE.md line budget**
 Check: CLAUDE.md must stay within 200 lines. Beyond this threshold, Anthropic's own research shows instruction adherence degrades - lower-priority rules get silently ignored (hard auto-truncation at 200 lines per Claude Code docs).
-Run: `wc -l CLAUDE.md | awk '{print $1}'`
 Expected: ≤ 200. Any count above 200 = WARN.
 RECOMMEND if failing: invoke P1 and P5 to identify sections to remove or convert to `@import` references. Do not auto-fix - pruning requires judgment.
 
 **C16 - Deprecated model IDs**
 Check: no SKILL.md file or `.claude/settings.json` should reference model IDs from Claude 3 family (retired) or Claude 4.0 family (retiring June 15, 2026). Retired as of April 19, 2026: `claude-3-haiku-*`, `claude-3-5-haiku-*`. Also check for any `claude-3-opus-*`, `claude-3-sonnet-*`, `claude-sonnet-4-20250514`, or `claude-opus-4-20250514` references.
-Run: `grep -rn "claude-3-haiku\|claude-3-5-haiku\|claude-3-opus\|claude-3-sonnet\|claude-3-5-sonnet\|claude-sonnet-4-20250514\|claude-opus-4-20250514" .claude/skills/ .claude/settings.json`
 Expected: 0 matches. Any match = FAIL.
 AUTO-FIX: replace deprecated model IDs with the current equivalents:
 
@@ -239,7 +214,6 @@ AUTO-FIX: replace deprecated model IDs with the current equivalents:
 
 **C17 - `allowed-tools` frontmatter on MCP-dependent skills**
 Check: any SKILL.md that calls `mcp__*` tools in its instructions must declare those tools in `allowed-tools:` frontmatter. This ensures Claude requests the correct permissions upfront before the skill runs, preventing mid-execution permission prompts.
-Run: `for f in .claude/skills/*/SKILL.md; do name=$(basename $(dirname "$f")); [ "$name" = "arch-audit" ] && continue; if grep -q "mcp__" "$f" && ! grep -q "^allowed-tools:" "$f"; then echo "MISSING allowed-tools: $f"; fi; done`
 Expected: 0 MISSING lines. Any match = FAIL.
 AUTO-FIX: for each failing skill, read the `mcp__*` tool names from its body and add `allowed-tools: [mcp__tool1, mcp__tool2, ...]` to its frontmatter after the `context:` line.
 
