@@ -138,11 +138,18 @@ Then:
 
 **Triggers**: new page route, new layout pattern, changed information architecture, complex interactive pattern.
 
+**For visual/UI blocks:**
 1. **ASCII wireframe** - full page layout with named regions, column structure, action placement, empty/loading states.
 2. **Design system mapping** - map every wireframe region to the correct component and token. No region "TBD".
 3. **UX rationale** - mental model used, why alternatives were discarded, key UX improvement.
 
-***** STOP - present wireframe + UX rationale. Wait for approval before Phase 2. *****
+**For non-visual blocks (APIs, CLIs, libraries):** replace the wireframe with the appropriate design artifact:
+- API block → API contract definition (endpoints, request/response shape, error codes)
+- CLI block → command structure outline (commands, flags, argument validation, output format)
+- Library/module block → module API sketch (public surface, types, invariants)
+- Data flow change → data flow diagram (entity states, transitions, edge cases)
+
+***** STOP - present design artifact + rationale. Wait for approval before Phase 2. *****
 
 ## Plan lock + context reset *(after Phase 1/1.5 STOP gate confirmed)*
 
@@ -260,12 +267,18 @@ If the project is CLI-only, backend-only, or native-standalone without a UI laye
 - [ ] API integration tests: N/N passed
 - [ ] E2E tests: N/N passed (if applicable)
 
-### Design System compliance (UI blocks)
+### Design System compliance *(if block has UI impact)*
 - [ ] No hardcoded color values on interactive elements
 - [ ] Empty states handled with a dedicated component, not bare text
 - [ ] New async routes have loading/skeleton states
 - [ ] Icon-only buttons have aria-label
 - [ ] Verified in both light and dark mode
+
+### Backend / CLI compliance *(if block has no UI impact)*
+- [ ] API contract matches implementation (request/response shape, status codes, error format)
+- [ ] No new secrets or credentials committed
+- [ ] Auth and authorization checks present on every new route or command
+- [ ] CLI commands handle invalid input and missing args explicitly (no silent no-op)
 
 ### Implemented features
 - [ ] [feature 1]: [outcome]
