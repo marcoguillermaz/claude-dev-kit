@@ -23,7 +23,7 @@ A skip is a legitimate outcome. Silent degradation is not.
   - If none: create `.claude/session/fix-[description].md` with a one-line description and the current date.
 - Confirm current branch starts with `fix/`. If not: `git checkout -b fix/description`.
 - Never commit directly to `main` or `staging`.
-- **Escalation check**: if the fix touches a shared utility or type with >5 import consumers, stop - notify the user and escalate to Tier M (full pipeline). A fix with wide-impact shared changes is not a fast-lane operation.
+- **Escalation check**: if the fix touches a shared utility or type with >5 import consumers (or the equivalent in the project's language — Go `pkg/`, Swift shared framework, Python package imports), stop - notify the user and escalate to Tier M (full pipeline). A fix with wide-impact shared changes is not a fast-lane operation.
 
 ## FL-1 - Implement
 
