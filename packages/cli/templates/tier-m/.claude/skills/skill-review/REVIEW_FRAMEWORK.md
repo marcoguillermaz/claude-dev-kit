@@ -1,8 +1,8 @@
 # Skills Quality Review Framework
 
-**Version**: 1.2
+**Version**: 1.3
 **Created**: 2026-04-14
-**Updated**: 2026-04-14 - cross-model review (Gemini 2.5 Pro + Mistral Large + GPT-4.1) integrated. 7 convergent structural fixes (C1-C7) + 3 single-model critical (T2.1 targeted / T2.3 / T2.4) applied.
+**Updated**: 2026-05-01 - P2 mechanical checks from 2026-04-29 cross-LLM meta-review: Phase 1 checks 7+8 (architectural/paradigm vocab scan + reference file coverage), Phase 2.A(e) test-runner idiom expansion.
 **Status**: Consolidated - ready for execution once pre-work artifacts P1-P5 are produced.
 
 **Purpose**: single source of truth for the quality review of all 18 CDK skills. Replaces any prior partial framework. Every check, decision point, and severity level lives here.
@@ -170,6 +170,11 @@ Checks:
 4. **Allowed-tools↔body instructions** - grep body for capability keywords, cross-reference declared tools.
 5. **Placeholder resolution** - every `[PLACEHOLDER]` handled by `interpolate()` or documented as user-fill.
 6. **Model↔complexity alignment** - heuristic: line count + subagent usage + judgment steps.
+7. **Architectural + paradigm vocabulary scan (forms 4+5)** - grep SKILL.md body for unguarded occurrences of:
+   - Form 4 (architectural): `layer`, `MVC`, `hexagonal`, `microservice`, `monolith`, `repository pattern`, `service boundary`, `bounded context`
+   - Form 5 (paradigm): `props`, `state management`, `virtual DOM`, `bundler`, `reactive`, `component tree`, `hydration`
+   A match is flagged unless adjacent to a non-web context clause (`or equivalent`, `[web only]`, `if applicable`, `if the project has`). Output: list of unguarded matches per term. Feeds Phase 2.A (d)+(e) for human judgment on each candidate.
+8. **Reference file coverage check (stack-dependent skills only)** - for each check ID found in the body (grep pattern: `\*\*[A-Z][0-9]\+`), verify the same ID appears in the reference file (e.g., `PATTERNS.md`). Each missing ID = High candidate (skill silently provides no guidance for that check on any stack variant lacking coverage). Stack-agnostic skills: skip.
 
 **Fail handling**: Critical findings block Phase 2. Fixed in Phase 3.
 
@@ -189,7 +194,7 @@ Grouped by gravity. 2.A/2.B/2.C autonomous; 2.D interactive; 2.E targeted on hig
    - **(b) Severity habits**: severity labels not inherited from pilot project's domain. E.g., "any hardcoded color = Critical" is a pilot-project habit; in non-UI projects, color is not Critical.
    - **(c) Remediation style**: fix suggestions not formatted/structured in pilot project's conventions. E.g., remediation always in "SwiftUI-like" declarative form.
    - **(d) Architectural assumptions**: no implicit assumption about routing, state management, persistence layer, auth pattern tied to pilot's architecture.
-   - **(e) Default mental-model**: no framework-specific vocabulary ("View", "ViewModel", "@Published") or design pattern as default expectation.
+   - **(e) Default mental-model**: no framework-specific vocabulary ("View", "ViewModel", "@Published") or design pattern as default expectation. Also inspect fenced code blocks for test-runner idioms that are platform-specific: `describe`/`it` (JS/TS), `#[test]` (Rust), `XCTAssert*`/`func test*` (Swift XCTest), `@Test` (JUnit/NUnit) — any snippet embedding one without a cross-stack equivalent is a candidate finding flagged by Phase 1 check 7.
 
    If a reader who doesn't know the origin project could ask "why this specific case?" on ANY of (a)-(e), it's an artifact.
 
@@ -432,6 +437,7 @@ Deferred to vNext (v1.3 or later):
 
 ## Changelog
 
+- **v1.3 (2026-05-01)**: P2 mechanical checks (CDK #131). Phase 1 check 7: architectural (layer/MVC/hexagonal/microservice/monolith/repository pattern/service boundary/bounded context) + paradigm (props/state management/virtual DOM/bundler/reactive/component tree/hydration) unguarded-match scan feeding Phase 2.A(d)+(e). Phase 1 check 8: reference file coverage check for stack-dependent skills (missing check ID = High). Phase 2.A(e): test-runner idiom detection extended to Rust (#[test]), Swift XCTest, JUnit (@Test).
 - **v1.2 (2026-04-14)**: cross-model review integrated. Fixes C1-C7 convergent + T2.1 targeted (D1 behavioral fixtures on 6 skills) + T2.3 (D2 P5 calibration + Phase 9 midpoint drift check) + T2.4 (D3 4-dimensional project-agnosticity) + T2.5/T2.6 trivial. New pre-work P5. New Phase 2.E and Phase 9. Severity scale patched (C5). Retroactive re-application freezed (C3). 2 new STOP gates (C6 cross-tier + C7 Phase 3→4).
 - **v1.1 (2026-04-14)**: O1-O5 omissions fixed; P1/P2 potential codified; Phase 2 regrouped (2.A/B/C/D); severity mapping clarified.
 - **v1.0 (2026-04-14)**: initial consolidation.
