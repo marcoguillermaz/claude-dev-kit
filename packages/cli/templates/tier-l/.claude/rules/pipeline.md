@@ -157,7 +157,12 @@ Then:
 - Follow all coding conventions in `CLAUDE.md`.
 - **After every new migration**: apply to remote DB immediately + verify + log in your project's migrations log (e.g. `docs/migrations-log.md`) if one is tracked.
 - **Destructive migrations** (`DROP COLUMN`, `DROP TABLE`): write rollback SQL in a comment block at the top of the migration file before applying.
-- **Security checklist** (before intermediate commit): (1) auth check before any operation, (2) input validated, (3) no sensitive data in response, (4) access control not bypassed; (5) new tables have row-level access control enabled — RLS in Postgres, equivalent feature in your DB engine, or application-level guards as fallback.
+- **Security checklist** (before intermediate commit):
+  - If block adds/modifies API routes: (1) auth check before any operation, (2) input validated, (3) no sensitive data in response, (4) access control not bypassed.
+  - If block adds/modifies DB tables: (5) row-level access control enabled — RLS in Postgres, equivalent feature in your DB engine, or application-level guards as fallback.
+  - If project is CLI: check argument sanitization, filesystem access patterns, command injection vectors.
+  - If project is native mobile: check keychain usage, data-at-rest encryption, App Transport Security (ATS).
+  - If none of the above apply to this block: state explicitly that no security checklist items are applicable and why.
 - Run `/simplify` on changed files after writing (skip for trivial 1-file changes).
 
 ## Phase 3 - Build + unit tests
@@ -212,7 +217,10 @@ If either condition is false: **skip this phase and state so explicitly** - do n
 
 ## Phase 5d - Block-scoped quality audit *(blocks with UI or API changes)*
 
-**Track A - UI audit** *(if block adds/modifies UI routes or components - web applications only; skip for CLI, backend-only, or native projects)*
+**Track A - UI audit** *(if block adds/modifies UI routes or components AND the project is a web or native UI application)*
+
+If the project is CLI-only, backend-only, or native-standalone without a UI layer: state `[SKIP] Track A — not a web or native UI project` and move to Track B.
+
 - Run `/ui-audit` scoped to the block's new/modified routes only (token compliance, component adoption, empty states).
 - Run `/accessibility-audit` scoped to the block's new/modified routes (WCAG 2.2, contrast, static a11y patterns).
 - Run `/visual-audit` scoped to the block's new/modified pages (typography, spacing, hierarchy, colour, density, dark-mode, micro-polish).
