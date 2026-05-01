@@ -34,7 +34,7 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 
 ### Test pyramid (bottom = most, top = fewest)
 1. **Unit tests** - fast (ms), isolated, test public interface + observable behavior. Most tests live here. *(Source: 2)*
-2. **API / service / integration tests** - test through the service layer without UI. Covers route auth, validation, DB state. *(Source: 2)*
+2. **Integration tests** - test through the service, module, or component layer without full UI or acceptance harness. Covers component interactions, data flow, and shared state. *(Source: 2)*
 3. **E2E / UI automation tests** - fewest, slowest. Cover full user journeys per role, not exhaustive combinations. Tool depends on stack: Playwright or Cypress for web, XCUITest or Espresso for native, acceptance test suites for CLI tools. *(Source: 2)*
 
 ### Rules
@@ -44,7 +44,10 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 - **No test duplication across layers**: if a behavior is covered at a lower layer, do not re-cover it at a higher layer. Each layer covers what lower layers structurally cannot. *(Source: 2)*
 - **Fast tests first in pipeline**: unit → integration → E2E, in that order. Never block a fast test suite on a slow one. *(Source: 2)*
 - **Cleanup-first pattern**: every test that writes to persistent state must reset existing fixtures in test setup (e.g., `beforeAll`, `setUp`, `TestMain`) before inserting fresh ones. Prevents orphaned state from interrupted runs. *(Source: project pattern)*
-- **Auth boundary coverage** *(if block adds API routes)*: no-token → 401, unauthorized role → 403, valid role → 2xx. These are non-negotiable minimum cases for every new endpoint. *(Source: 1, project pattern)*
+- **Access control coverage**: for every new access-controlled surface, verify the minimal auth paths — unauthenticated denied, unauthorized role denied, authorized succeeds. Applies per stack:
+  - Backend API routes: no-token → 401, unauthorized role → 403, valid role → 2xx
+  - CLI commands with auth: missing credentials → non-zero exit + clear error, valid credentials → success
+  - Native features behind permissions: permission denied → graceful degradation, permission granted → success *(Source: 1, project pattern)*
 - **Data state verification**: after write operations, verify the expected record exists using a read at the same layer or a privileged/admin client — not by reading the response body alone. *(Source: project pattern)*
 
 ---
@@ -52,13 +55,24 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 ## S3 - Code quality gates
 
 - **Gate standard**: "definitely improves overall code health" - not perfection. Merge when code is better than before, even if imperfect. Block only if code demonstrably worsens health. *(Source: 1)*
-- **Automated typecheck on every stop** (hook-level): if typecheck takes < 5 seconds, it should run on every agent stop via Stop hook - surface errors immediately rather than discovering them at Phase 3. *(Source: 7)*
-- **Security checklist** *(if block adds or modifies API routes or data models — Phase 2 self-review)*:
-  1. Auth check before any operation
-  2. Input validated (use the canonical validation library for your stack: Zod for TypeScript, Pydantic for Python, validator for Rust, etc.)
-  3. No sensitive data in response
-  4. Access control not bypassed (e.g., RLS for PostgreSQL/Supabase, middleware policy enforcement for other stacks)
-  5. New data stores: access control policy applied and verified (e.g., `ENABLE ROW LEVEL SECURITY` for PostgreSQL, IAM policy for cloud storage, file permissions for local storage) *(Source: project pattern)*
+- **Automated typecheck on every stop** (hook-level): if the stack supports static type checking in < 5 seconds, run it on every agent stop via Stop hook — surface errors immediately rather than at Phase 3. *(Source: 7)*
+- **Security checklist** *(Phase 2 self-review — apply all Universal items every block; add cluster-specific items where the block's surface area matches)*:
+  - **Universal** (all stacks, every block):
+    1. No sensitive data in responses, output, or logs
+    2. Input validated before use (canonical library for the stack: Zod/TypeScript, Pydantic/Python, validator/Rust, etc.)
+    3. Access control enforced at the correct layer — not bypassed
+  - **Backend API** *(if block adds or modifies API routes)*:
+    4. Auth check before any operation
+    5. Access control policy applied to new data stores (e.g., `ENABLE ROW LEVEL SECURITY` for PostgreSQL, IAM policy for cloud storage)
+  - **Frontend SPA** *(if block adds or modifies UI rendering or form handling)*:
+    4. XSS: no unescaped user input rendered as HTML
+    5. CSRF: state-modifying requests protected by tokens or SameSite cookies; sensitive tokens not stored in `localStorage`
+  - **Native mobile** *(if block touches auth, storage, or IPC)*:
+    4. Secrets use the platform keychain (Keychain/Keystore) — not plain files or UserDefaults
+    5. Permissions requested at minimum scope; not requested until needed
+  - **CLI / library** *(if block handles user input or file paths)*:
+    4. Arguments sanitized — no shell injection via `exec`/`subprocess` with unsanitized input
+    5. File path operations validated — no path traversal via user-supplied input *(Source: project pattern)*
 - **No unrequested features**: changes stay within the approved plan scope. Scope creep discovered during Phase 2 requires returning to Phase 1 gate. *(Source: 1, 6)*
 - **CL size discipline**: a change that cannot be reviewed in one sitting should be split. Reviewers are empowered to reject oversized CLs. *(Source: 1)*
 
@@ -66,15 +80,19 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 
 ## S4 - Environment isolation & deployment
 
-- **Test environment must match production**: OS, DB version, config. Differences between staging and prod hide bugs. *(Source: 2)*
-- **Environment branches are an anti-pattern**: using separate branches per environment creates config drift. Use env vars + feature flags instead. *(Source: 5)*
-- **Staging before production, always**: no direct deploy to production. Every block merges to staging first, smoke-tests, then promotes. *(Source: 3, project pattern)*
-- **Feature flags for incomplete work**: incomplete features on mainline MUST be behind a flag or hidden - never break the build or expose broken UI. *(Source: 2, 3)*
-- **DORA elite targets** (benchmarks, not hard requirements):
-  - Deployment frequency: ≥ 1×/week → OK; daily = good; on-demand = elite
+- **Test environment must match production**: OS, runtime version, and config must match the production target. Differences between pre-production and production environments hide bugs. *(Source: 2)*
+- **Environment branches are an anti-pattern**: using separate branches per environment creates config drift. Use env vars and release channels instead. *(Source: 5)*
+- **Pre-production validation before release**: no direct release to production. Every block validates in a pre-production environment appropriate to the stack:
+  - Web services: merge to staging server, smoke-test, then promote to production
+  - Native mobile: distribute via TestFlight (iOS) or internal test track (Android), validate, then submit to store
+  - CLI / library: publish a pre-release version (e.g., `1.2.0-rc.1`) to the registry, validate, then promote to stable *(Source: 3, project pattern)*
+- **Incomplete work must be hidden**: incomplete features on mainline MUST be hidden — behind a feature flag, a pre-release version tag, or excluded from navigation. Never break the build or expose unfinished user-facing behavior. *(Source: 2, 3)*
+- **SemVer discipline for CLI/library**: follow Semantic Versioning. Breaking changes require a major bump and a deprecation notice in the previous minor release. Patch releases must be backward-compatible. *(Source: 4, project pattern)*
+- **DORA elite targets** (benchmarks, not hard requirements; apply where the deployment model supports them):
+  - Deployment frequency: ≥ 1×/week → OK; daily = good; on-demand = elite. *Native mobile: store review cycles make on-demand infeasible — optimize for release batch discipline instead.*
   - Lead time for changes: < 1 week target
   - Change failure rate: < 15% target
-  - Time to restore: < 1 day target *(Source: 3)*
+  - Time to restore: < 1 day target for the release pipeline. *Native apps and published libraries: measure time to publish the fix, not end-user adoption, which follows the store/registry cycle.* *(Source: 3)*
 
 ---
 
@@ -103,11 +121,11 @@ Update protocol: update only when `/arch-audit` detects a material discrepancy. 
 
 ## S6 - Fast lane / hotfix process
 
-- **Hotfix discipline**: a production fix must merge back to BOTH mainline (staging) AND the release branch. Fixing only in production is guaranteed to regress on the next release. *(Source: 5)*
-- **Fast lane scope limit**: fast lane is valid only for ≤ 3 files, no migration, no shared type changes, no new pattern. Anything larger escalates to full pipeline. *(Source: project CLAUDE.md)*
+- **Hotfix discipline**: a production fix must merge back to the primary development branch (and the active release branch, if one exists). Fixing only in production is guaranteed to regress on the next release. *(Source: 5)*
+- **Fast lane scope limit**: fast lane is valid only for ≤ 3 files, no schema or persistent storage format changes, no shared type changes, no new pattern. Anything larger escalates to full pipeline. *(Source: project CLAUDE.md)*
 - **Fast lane gate still required**: even a 1-line fix requires a scope confirmation before implementation (compact Interaction Protocol). No exception. *(Source: 1, 6)*
 - **Change failure rate as fast lane health metric**: if fast lane fixes repeatedly break production (change failure rate > 15%), the fast lane criteria are too permissive - tighten the escalation threshold. *(Source: 3)*
-- **Commit before promoting**: intermediate commit on `fix/` branch before merging to staging. Never promote uncommitted changes. *(Source: 2)*
+- **Commit before promoting**: intermediate commit on `fix/` branch before merging to the pre-production environment. Never promote uncommitted changes. *(Source: 2)*
 
 ---
 
@@ -137,7 +155,7 @@ Rules derived from Conventional Commits 1.0.0:
   2. Commit 2 - docs (Phase 8: requirements, contracts, changelogs, schema/route maps — only what changed)
   3. Commit 3 - context files (CLAUDE.md and project-specific context files — only if updated) *(Source: project pipeline)*
 - **CLAUDE.md is a committed project file**: include it in version control — it is shared team context. Personal local overrides (e.g., `CLAUDE.local.md`) should be gitignored. *(Source: CDK pattern)*
-- **Never commit directly to `main` or `staging`**: functional blocks use worktrees; fixes use `fix/` branches. Staging/production promotion is via merge commands only. *(Source: project HARD RULES)*
+- **Never commit directly to protected branches** (`main`, `staging`, or project-equivalent): functional blocks use worktrees; fixes use `fix/` branches. Promotion is via merge commands only. *(Source: project HARD RULES)*
 - **Intermediate commit at Phase 3**: commit after green build + tests, before UAT. Creates a known-good checkpoint. *(Source: 2)*
 
 ---
