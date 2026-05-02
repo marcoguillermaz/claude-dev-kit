@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -52,6 +56,9 @@ jobs:
 
       - name: Prettier
         run: npx --prefix packages/cli prettier --check packages/cli/src/ packages/cli/test/
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate --prefix packages/cli
 
   unit-tests:
     name: Unit tests
@@ -100,5 +107,5 @@ jobs:
       - name: Install dependencies
         run: npm install --prefix packages/cli
 
-      - name: Run 459 integration checks
+      - name: Run integration tests
         run: npm test --prefix packages/cli
